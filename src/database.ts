@@ -35,8 +35,8 @@ export interface Blog {
     category: string;
     tags: string[];
     author: string;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface BlogData {

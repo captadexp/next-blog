@@ -3,7 +3,18 @@ import {Blog, Category, DatabaseProvider, Tag} from "./database";
 import {NextRequest, NextResponse} from "next/server";
 import {getParamFromUrl, matchPathToFunction, PathObject} from "./utils/parse-path";
 
-const ShowBlog = ({blog}: { blog: Blog }) => <div>Show Blog: {blog?.title}</div>;
+const ShowBlog = ({blog}: { blog: Blog }) => {
+    return <div className="space-y-8">
+        <article className="p-6 rounded-lg">
+            <h1 className="text-2xl font-bold mb-2">{blog.title}</h1>
+            <p className="mb-4">Posted on <time
+                dateTime={blog.createdAt}>{blog.createdAt}</time></p>
+            <p className="text-sm font-bold">By {blog.author}</p>
+            <div className="[&>p]:py-2 [&>p>strong]:font-extrabold [&>ol]:list-disc"
+                 dangerouslySetInnerHTML={{__html: blog.content}}/>
+        </article>
+    </div>;
+};
 const ShowCategory = ({category, blogs}: { category: Category, blogs: Blog[] }) => <div>Show
     Category: {category.name}</div>;
 const ShowTag = ({tag, blogs}: { tag: Tag, blogs: Blog[] }) => <div>Show Tag: {tag.name}</div>;
@@ -15,7 +26,7 @@ const NotFound = () => <div>404 - Not Found</div>;
 
 export * from "./database"
 
-export default function nextBlog({db}: { db: DatabaseProvider }) {
+export default function nextBlog({rewrite, db}: { rewrite: string, db: DatabaseProvider }) {
     const cmsPaths: PathObject = {
         'api': {
             'sgai-blog': {
@@ -104,7 +115,7 @@ export default function nextBlog({db}: { db: DatabaseProvider }) {
             params,
             handler,
             templatePath
-        } = matchPathToFunction(cmsPaths, request.nextUrl.pathname)
+        } = matchPathToFunction(cmsPaths, request.nextUrl.pathname.replace(rewrite, "/api/sgai-blog/"))
 
         return new NextResponse(ReactDOMServer.renderToString(await handler?.(params) ||
             <NotFound/>), {headers: {"Content-Type": "text/html"}});
