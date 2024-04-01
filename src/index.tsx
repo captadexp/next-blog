@@ -2,27 +2,14 @@ import React from "react";
 import {Blog, Category, DatabaseProvider, Tag} from "./database";
 import {NextRequest, NextResponse} from "next/server";
 import {getParamFromUrl, matchPathToFunction, PathObject} from "./utils/parse-path";
-
-const ShowBlog = ({blog}: { blog: Blog }) => {
-    return <div className="space-y-8">
-        <article className="p-6 rounded-lg">
-            <h1 className="text-2xl font-bold mb-2">{blog.title}</h1>
-            <p className="mb-4">Posted on <time
-                dateTime={blog.createdAt}>{blog.createdAt}</time></p>
-            <p className="text-sm font-bold">By {blog.author}</p>
-            <div className="[&>p]:py-2 [&>p>strong]:font-extrabold [&>ol]:list-disc"
-                 dangerouslySetInnerHTML={{__html: blog.content}}/>
-        </article>
-    </div>;
-};
-const ShowCategory = ({category, blogs}: { category: Category, blogs: Blog[] }) => <div>Show
-    Category: {category.name}</div>;
-const ShowTag = ({tag, blogs}: { tag: Tag, blogs: Blog[] }) => <div>Show Tag: {tag.name}</div>;
-const ShowDashboard = () => <div>Dashboard</div>;
-const ManageBlogs = () => <div>Manage Blogs</div>;
-const ManageCategories = () => <div>Manage Categories</div>;
-const ManageTags = () => <div>Manage Tags</div>;
-const NotFound = () => <div>404 - Not Found</div>;
+import BlogUI from "./components/BlogUI";
+import CategoryUI from "./components/CategoryUI";
+import TagUI from "./components/TagUI";
+import InternalDashboard from "./components/internal/Dashboard";
+import NotFound from "./components/NotFound";
+import ManageCategories from "./components/internal/ManageCategories";
+import ManageTags from "./components/internal/ManageTags";
+import ManageBlogs from "./components/internal/ManageBlogs";
 
 export * from "./database"
 
@@ -35,7 +22,7 @@ export default function nextBlog({rewrite, db}: { rewrite: string, db: DatabaseP
                         '': async (params: { slug: string }) => {
                             const slug = params["slug"];
                             const blog = await db.blogs.findOne({slug});
-                            return <ShowBlog blog={blog}/>;
+                            return <BlogUI blog={blog}/>;
                         }
                     }
                 },
@@ -45,7 +32,7 @@ export default function nextBlog({rewrite, db}: { rewrite: string, db: DatabaseP
                             const categorySlug = params['category'];
                             const category = await db.categories.findById(categorySlug)
                             const blogs = await db.blogs.find({category});
-                            return <ShowCategory category={category} blogs={blogs}/>;
+                            return <CategoryUI category={category} blogs={blogs}/>;
                         }
                     }
                 },
@@ -55,12 +42,12 @@ export default function nextBlog({rewrite, db}: { rewrite: string, db: DatabaseP
                             const tagSlug = params['tag'];
                             const tag = await db.tags.findById(tagSlug)
                             const blogs = await db.blogs.find({tags: tag});
-                            return <ShowTag tag={tag} blogs={blogs}/>;
+                            return <TagUI tag={tag} blogs={blogs}/>;
                         }
                     }
                 },
                 'dashboard': {
-                    '': () => <ShowDashboard/>,
+                    '': () => <InternalDashboard/>,
                     'blogs': {
                         '': () => <ManageBlogs/>,
                         'create': async () => {
@@ -108,17 +95,25 @@ export default function nextBlog({rewrite, db}: { rewrite: string, db: DatabaseP
         }
     };
 
-    async function GET(request: NextRequest, response: NextResponse) {
+    async function GET(request: NextRequest, _response: NextResponse) {
         const ReactDOMServer = (await import('react-dom/server')).default;
+        const finalPathname = request.nextUrl.pathname.replace(rewrite, "/api/sgai-blog/")
 
         const {
             params,
             handler,
             templatePath
-        } = matchPathToFunction(cmsPaths, request.nextUrl.pathname.replace(rewrite, "/api/sgai-blog/"))
+        } = matchPathToFunction(cmsPaths, finalPathname)
 
-        return new NextResponse(ReactDOMServer.renderToString(await handler?.(params) ||
-            <NotFound/>), {headers: {"Content-Type": "text/html"}});
+        if (!handler)
+            return new NextResponse(ReactDOMServer.renderToString(
+                <NotFound/>), {headers: {"Content-Type": "text/html"}})
+
+        const response = await handler(params);
+        if (response instanceof NextResponse)
+            return response;
+
+        return new NextResponse(ReactDOMServer.renderToString(response), {headers: {"Content-Type": "text/html"}});
     }
 
     function POST(request: NextRequest, response: NextResponse) {
