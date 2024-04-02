@@ -8,18 +8,21 @@ export interface DatabaseProvider {
         deleteOne(filter: Object): Promise<void>;
     };
     categories: {
+        find(filter: Object): Promise<Category[]>;
         findById(id: string): Promise<Category>;
         create(data: CategoryData): Promise<Category>;
         updateOne(filter: Object, update: Object): Promise<void>;
         deleteOne(filter: Object): Promise<void>;
     };
     tags: {
+        find(filter: Object): Promise<Tag[]>;
         findById(id: string): Promise<Tag>;
         create(data: TagData): Promise<Tag>;
         updateOne(filter: Object, update: Object): Promise<void>;
         deleteOne(filter: Object): Promise<void>;
     };
     authors: {
+        find(filter: Object): Promise<Author[]>;
         findById(id: string): Promise<Author>;
         create(data: AuthorData): Promise<Author>;
         updateOne(filter: Object, update: Object): Promise<void>;
