@@ -1,35 +1,3 @@
-export interface DatabaseProvider {
-    blogs: {
-        findOne(filter: Object): Promise<Blog>;
-        find(filter: Object): Promise<Blog[]>;
-        findById(id: string): Promise<Blog>;
-        create(data: BlogData): Promise<Blog>;
-        updateOne(filter: Object, update: Object): Promise<void>;
-        deleteOne(filter: Object): Promise<void>;
-    };
-    categories: {
-        find(filter: Object): Promise<Category[]>;
-        findById(id: string): Promise<Category>;
-        create(data: CategoryData): Promise<Category>;
-        updateOne(filter: Object, update: Object): Promise<void>;
-        deleteOne(filter: Object): Promise<void>;
-    };
-    tags: {
-        find(filter: Object): Promise<Tag[]>;
-        findById(id: string): Promise<Tag>;
-        create(data: TagData): Promise<Tag>;
-        updateOne(filter: Object, update: Object): Promise<void>;
-        deleteOne(filter: Object): Promise<void>;
-    };
-    authors: {
-        find(filter: Object): Promise<Author[]>;
-        findById(id: string): Promise<Author>;
-        create(data: AuthorData): Promise<Author>;
-        updateOne(filter: Object, update: Object): Promise<void>;
-        deleteOne(filter: Object): Promise<void>;
-    };
-}
-
 export interface Blog {
     _id: string;
     title: string;
@@ -82,5 +50,26 @@ export interface AuthorData {
     name: string;
     email: string;
     bio: string;
+}
+
+export interface DatabaseProvider {
+    blogs: CollectionOperations<Blog, BlogData>;
+    categories: CollectionOperations<Category, CategoryData>;
+    tags: CollectionOperations<Tag, TagData>;
+    authors: CollectionOperations<Author, AuthorData>;
+}
+
+export interface CollectionOperations<T, U> {
+    findOne(filter: Object): Promise<T | null>;
+
+    find(filter: Object): Promise<T[]>;
+
+    findById(id: string): Promise<T | null>;
+
+    create(data: U): Promise<T>;
+
+    updateOne(filter: Object, update: Object): Promise<void>;
+
+    deleteOne(filter: Object): Promise<void>;
 }
 

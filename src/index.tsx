@@ -10,7 +10,8 @@ import CategoryUI from "./components/CategoryUI";
 import TagUI from "./components/TagUI";
 import AuthorUI from "./components/AuthorUI";
 import BasePage from "./components/utils/BasePage";
-
+import fileDBProvider from "./providers/FileDBProvider"
+import MongoDBProvider from "./providers/MongoDBProvider"
 
 export type CNextRequest = NextRequest & { _params: Record<string, string> }
 
@@ -49,6 +50,7 @@ export default function nextBlog({db}: { db: DatabaseProvider }) {
                     ':id': secure(async (request: CNextRequest) => {
                         const id = request._params.id;
                         const blog = await db.blogs.findById(id)
+                        if (!blog) return <NotFound/>
                         return <BasePage>
                             <p>{blog._id}</p>
                             <p>{blog.title}</p>
@@ -233,3 +235,4 @@ export default function nextBlog({db}: { db: DatabaseProvider }) {
 
 export * from "./database"
 export {BlogUI, CategoryUI, TagUI, AuthorUI}
+export {fileDBProvider, MongoDBProvider}
