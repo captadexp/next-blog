@@ -6,16 +6,15 @@ import {
     Category,
     CategoryData,
     CollectionOperations,
-    DatabaseProvider,
+    DatabaseProvider, Filter,
     Tag,
     TagData
 } from "../database";
+import {MongoClient, Db, Collection, ObjectId} from "mongodb"
 
-type MongoClient = any
-type Collection<T> = any
 
 export default class MongoDBProvider implements DatabaseProvider {
-    private db: MongoClient['db'];
+    private db: Db;
 
     constructor(dbName: string, client: MongoClient) {
         this.db = client.db(dbName);
@@ -38,19 +37,18 @@ export default class MongoDBProvider implements DatabaseProvider {
     }
 
     private getCollectionOperations<T, U>(collectionName: string): CollectionOperations<T, U> {
-        const collection: Collection<T> = this.db.collection(collectionName);
+        const collection: Collection<any> = this.db.collection(collectionName);
 
         return {
-            findOne: (filter: Object) => collection.findOne(filter),
-            find: async (filter: Object) => collection.find(filter).toArray(),
-            // @ts-ignore
+            findOne: (filter: Filter<T>) => collection.findOne(filter),
+            find: async (filter: Filter<T>) => collection.find(filter).toArray(),
             findById: (id: string) => collection.findOne({_id: new ObjectId(id)}),
             create: async (data: U) => {
                 const result = await collection.insertOne(data);
                 return {_id: result.insertedId.toString(), ...data} as unknown as T;
             },
-            updateOne: (filter: Object, update: Object) => collection.updateOne(filter, {$set: update}),
-            deleteOne: (filter: Object) => collection.deleteOne(filter),
+            updateOne: (filter: Filter<T>, update: Omit<Filter<T>, "_id">) => collection.updateOne(filter, {$set: update}).then(() => undefined),
+            deleteOne: (filter: Filter<T>) => collection.deleteOne(filter).then(() => undefined),
         };
     }
 }

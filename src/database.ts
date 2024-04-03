@@ -23,33 +23,43 @@ export interface Category {
     _id: string;
     name: string;
     description: string;
+    slug: string;
 }
 
 export interface CategoryData {
     name: string;
     description: string;
+    slug: string;
 }
 
 export interface Tag {
     _id: string;
     name: string;
+    slug: string;
 }
 
 export interface TagData {
     name: string;
+    slug: string;
 }
 
 export interface Author {
     _id: string;
     name: string;
+    slug: string;
+    username: string;
     email: string;
     bio: string;
+    password: string;
 }
 
 export interface AuthorData {
     name: string;
     email: string;
+    slug: string;
+    username: string;
     bio: string;
+    password: string;
 }
 
 export interface DatabaseProvider {

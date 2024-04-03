@@ -11,11 +11,11 @@ export default function createBlog(request: CNextRequest) {
         {key: 'slug', label: 'Slug', type: 'text'},
         {key: 'content', label: 'Content', type: 'richtext'},
         {key: 'category', label: 'Category', type: 'text'},
-        {key: 'tags', label: 'Tags (comma-separated)', type: 'text'},
-        {key: 'author', label: 'Author', type: 'text'},
+        {key: 'tags', label: 'Tags (comma-separated)', type: 'text'}
     ];
 
     return <BasePage>
-        <DynamicForm redirectTo={"/api/sgai-blog/dashboard/blogs"} id={"createBlog"} postTo={"/api/sgai-blog/api/blogs/create"} fields={fields} submitLabel={"Create"}/>
+        <DynamicForm redirectTo={"/api/sgai-blog/dashboard/blogs"} id={"createBlog"}
+                     postTo={"/api/sgai-blog/api/blogs/create"} fields={fields} submitLabel={"Create"}/>
     </BasePage>
 }

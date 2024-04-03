@@ -6,11 +6,13 @@ import BasePage from "../../../components/utils/BasePage";
 export default function CreateCategory() {
     const fields: DynamicFormFieldType[] = [
         {key: 'name', label: 'Name', type: 'text'},
+        {key: 'slug', label: 'Slug', type: 'text'},
     ];
 
     return (
         <BasePage>
-            <DynamicForm redirectTo={"/api/sgai-blog/dashboard/tags"} submitLabel={"Create"} id={"createTag"} postTo={"/api/sgai-blog/api/tags/create"}
+            <DynamicForm redirectTo={"/api/sgai-blog/dashboard/tags"} submitLabel={"Create"} id={"createTag"}
+                         postTo={"/api/sgai-blog/api/tags/create"}
                          fields={fields}/>
         </BasePage>
     );

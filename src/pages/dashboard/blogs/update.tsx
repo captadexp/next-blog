@@ -17,12 +17,12 @@ export default async function updateBlog(request: CNextRequest) {
         {key: 'content', label: 'Content', type: 'richtext', value: blog.content},
         {key: 'category', label: 'Category', type: 'text', value: blog.category},
         {key: 'tags', label: 'Tags (comma-separated)', type: 'text', value: blog.tags.join(', ')},
-        {key: 'author', label: 'Author', type: 'text', value: blog.author},
     ];
 
     return (
         <BasePage>
-            <DynamicForm redirectTo={"/api/sgai-blog/dashboard/blogs"} submitLabel={"Update"} id={"updateBlog"} postTo={`/api/sgai-blog/api/blog/${id}/update`}
+            <DynamicForm redirectTo={"/api/sgai-blog/dashboard/blogs"} submitLabel={"Update"} id={"updateBlog"}
+                         postTo={`/api/sgai-blog/api/blog/${id}/update`}
                          fields={fields}/>
         </BasePage>
     );

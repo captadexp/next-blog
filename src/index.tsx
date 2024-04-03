@@ -1,5 +1,5 @@
 import React from "react";
-import {DatabaseProvider} from "./database";
+import {Author, DatabaseProvider} from "./database";
 import {NextRequest, NextResponse} from "next/server";
 import {matchPathToFunction, PathObject} from "./utils/parse-path";
 import NotFound from "./components/NotFound";
@@ -23,8 +23,17 @@ import authors from "./pages/dashboard//authors";
 import createAuthor from "./pages/dashboard//authors/create";
 import updateAuthor from "./pages/dashboard//authors/update";
 import dashboard from "./pages/dashboard";
+import crypto from "./utils/crypto"
 
-export type CNextRequest = NextRequest & { _params: Record<string, string>, db(): Promise<DatabaseProvider> }
+
+export type Configuration = { db(): Promise<DatabaseProvider>, byPassSecurity?: boolean }
+
+export type CNextRequest = NextRequest & {
+    _params: Record<string, string>,
+    db(): Promise<DatabaseProvider>,
+    configuration: Configuration,
+    sessionUser: Author
+}
 
 const cmsPaths: { GET: PathObject, POST: PathObject } = {
     GET: {
@@ -71,8 +80,9 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
             },
             blogs: {
                 create: secure(async (request: CNextRequest) => {
-                    const db = await request.db()
-                    const creation = await db.blogs.create(await request.json())
+                    const db = await request.db();
+                    const body = await request.json()
+                    const creation = await db.blogs.create({...body, author: request.sessionUser._id})
                     return JSON.stringify(creation)
                 }),
             },
@@ -122,7 +132,8 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
                 ':id': {
                     update: secure(async (request: CNextRequest) => {
                         const db = await request.db()
-                        const updation = await db.authors.updateOne({_id: request._params.id}, await request.json())
+                        const {password, ...other} = await request.json()
+                        const updation = await db.authors.updateOne({_id: request._params.id}, other)
                         return JSON.stringify(updation)
                     }),
                     delete: secure(async (request: CNextRequest) => {
@@ -135,7 +146,10 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
             authors: {
                 create: secure(async (request: CNextRequest) => {
                     const db = await request.db()
-                    const creation = await db.authors.create(await request.json())
+                    const {password, ...other} = await request.json();
+                    const creation = await db.authors.create({...other, password: crypto.hashPassword(password)})
+
+
                     return JSON.stringify(creation)
                 })
             },
@@ -143,10 +157,10 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
     }
 };
 
-export default function nextBlog({db}: { db(): Promise<DatabaseProvider> }) {
+export default function nextBlog(configuration: Configuration) {
     async function processRequest(pathObject: PathObject, request: NextRequest, _response: NextResponse) {
         const finalPathname = request.nextUrl.pathname.replace("/api/sgai-blog/", "")
-
+        const {db, byPassSecurity} = configuration
         const {
             params,
             handler,
@@ -163,6 +177,8 @@ export default function nextBlog({db}: { db(): Promise<DatabaseProvider> }) {
 
         (request as any)._params = params;
         (request as any).db = db;
+        (request as any).configuration = configuration;
+
         const response = await handler(request);
 
         if (response instanceof NextResponse || response instanceof Response)

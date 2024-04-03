@@ -13,11 +13,13 @@ export default async function updateTag(request: CNextRequest) {
     const fields: DynamicFormFieldType[] = [
         {key: "id", label: "ID", type: "text", value: tag._id, disabled: true},
         {key: 'name', label: 'Name', type: 'text', value: tag.name},
+        {key: 'slug', label: 'Slug', type: 'text', value: tag.slug},
     ];
 
     return (
         <BasePage>
-            <DynamicForm redirectTo={"/api/sgai-blog/dashboard/tags"} submitLabel={"Update"} id={"updateTag"} postTo={`/api/sgai-blog/api/tag/${id}/update`}
+            <DynamicForm redirectTo={"/api/sgai-blog/dashboard/tags"} submitLabel={"Update"} id={"updateTag"}
+                         postTo={`/api/sgai-blog/api/tag/${id}/update`}
                          fields={fields}/>
         </BasePage>
     );

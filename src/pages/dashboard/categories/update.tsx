@@ -13,6 +13,7 @@ export default async function updateCategory(request: CNextRequest) {
     const fields: DynamicFormFieldType[] = [
         {key: "id", label: "ID", type: "text", value: category._id, disabled: true},
         {key: 'name', label: 'Name', type: 'text', value: category.name},
+        {key: 'slug', label: 'Slug', type: 'text', value: category.slug},
         {key: 'description', label: 'Description', type: 'textarea', value: category.description},
     ];
 

@@ -15,13 +15,16 @@ export default async function updateAuthor(request: CNextRequest) {
     const fields: DynamicFormFieldType[] = [
         {key: "id", label: "id", type: "text", value: author._id, disabled: true},
         {key: 'name', label: 'Name', type: 'text', value: author.name},
+        {key: 'username', label: 'Username', type: 'text', value: author.username},
+        {key: 'slug', label: 'Slug', type: 'text', value: author.slug},
         {key: 'email', label: 'Email', type: 'text', value: author.email},
         {key: 'bio', label: 'Bio', type: 'textarea', value: author.bio},
     ];
 
     return (
         <BasePage>
-            <DynamicForm redirectTo={"/api/sgai-blog/dashboard/authors"} submitLabel={"Update"} id={"createAuthor"} postTo={`/api/sgai-blog/api/author/${id}/update`}
+            <DynamicForm redirectTo={"/api/sgai-blog/dashboard/authors"} submitLabel={"Update"} id={"createAuthor"}
+                         postTo={`/api/sgai-blog/api/author/${id}/update`}
                          fields={fields}/>
         </BasePage>
     );
