@@ -5,7 +5,7 @@ export interface Blog {
     content: string;
     category: string;
     tags: string[];
-    author: string;
+    authorId: string;
     createdAt: number;
     updatedAt: number;
 }
@@ -16,7 +16,6 @@ export interface BlogData {
     content: string;
     category: string;
     tags: string[];
-    author: string;
 }
 
 export interface Category {

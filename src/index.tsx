@@ -88,7 +88,7 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
                         createdAt: Date.now(),
                         updatedAt: Date.now()
                     }
-                    const creation = await db.blogs.create({...body, ...extras, author: request.sessionUser._id})
+                    const creation = await db.blogs.create({...body, ...extras, authorId: request.sessionUser._id})
                     return JSON.stringify(creation)
                 }),
             },
