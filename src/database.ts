@@ -59,17 +59,19 @@ export interface DatabaseProvider {
     authors: CollectionOperations<Author, AuthorData>;
 }
 
-export interface CollectionOperations<T, U> {
-    findOne(filter: Object): Promise<T | null>;
+export type Filter<T> = Partial<Record<keyof T, any>>;
 
-    find(filter: Object): Promise<T[]>;
+export interface CollectionOperations<T, U> {
+    findOne(filter: Filter<T>): Promise<T | null>;
+
+    find(filter: Filter<T>): Promise<T[]>;
 
     findById(id: string): Promise<T | null>;
 
     create(data: U): Promise<T>;
 
-    updateOne(filter: Object, update: Object): Promise<void>;
+    updateOne(filter: Filter<T>, update: Omit<Filter<T>, "_id">): Promise<void>;
 
-    deleteOne(filter: Object): Promise<void>;
+    deleteOne(filter: Filter<T>): Promise<void>;
 }
 

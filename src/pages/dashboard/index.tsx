@@ -1,0 +1,35 @@
+import React from "react";
+import BasePage from "../../components/utils/BasePage";
+
+export default function dashboard() {
+    return <BasePage>
+        <div style={{
+            maxWidth: "600px",
+            margin: "0 auto",
+            padding: "20px",
+            backgroundColor: "#f9f9f9",
+            borderRadius: "8px",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+        }}>
+            <ul style={{listStyleType: "none", padding: "0", margin: "0"}}>
+                <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
+                    <a href={"/api/sgai-blog/dashboard/blogs"}
+                       style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Blogs</a>
+                </li>
+                <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
+                    <a href={"/api/sgai-blog/dashboard/tags"}
+                       style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Tags</a>
+                </li>
+                <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
+                    <a href={"/api/sgai-blog/dashboard/categories"}
+                       style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Categories</a>
+                </li>
+                <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
+                    <a href={"/api/sgai-blog/dashboard/authors"}
+                       style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Authors</a>
+                </li>
+            </ul>
+        </div>
+    </BasePage>
+
+}

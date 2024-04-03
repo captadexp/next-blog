@@ -1,196 +1,149 @@
 import React from "react";
-import {Blog, Category, DatabaseProvider, Tag} from "./database";
+import {DatabaseProvider} from "./database";
 import {NextRequest, NextResponse} from "next/server";
-import {getParamFromUrl, matchPathToFunction, PathObject} from "./utils/parse-path";
+import {matchPathToFunction, PathObject} from "./utils/parse-path";
 import NotFound from "./components/NotFound";
-import ManageBlogs from "./components/dashboard/ManageBlogs";
 import secure from "./utils/secureInternal";
 import BlogUI from "./components/BlogUI";
 import CategoryUI from "./components/CategoryUI";
 import TagUI from "./components/TagUI";
 import AuthorUI from "./components/AuthorUI";
-import BasePage from "./components/utils/BasePage";
-import fileDBProvider from "./providers/FileDBProvider"
+import FileDBProvider from "./providers/FileDBProvider"
 import MongoDBProvider from "./providers/MongoDBProvider"
+import blogs from "./pages/dashboard/blogs";
+import createBlog from "./pages/dashboard//blogs/create";
+import updateBlog from "./pages/dashboard//blogs/update";
+import categories from "./pages/dashboard//categories";
+import createCategory from "./pages/dashboard//categories/create";
+import updateCategory from "./pages/dashboard//categories/update";
+import tags from "./pages/dashboard//tags";
+import createTag from "./pages/dashboard//tags/create";
+import updateTag from "./pages/dashboard//tags/update";
+import authors from "./pages/dashboard//authors";
+import createAuthor from "./pages/dashboard//authors/create";
+import updateAuthor from "./pages/dashboard//authors/update";
+import dashboard from "./pages/dashboard";
 
-export type CNextRequest = NextRequest & { _params: Record<string, string> }
+export type CNextRequest = NextRequest & { _params: Record<string, string>, db(): Promise<DatabaseProvider> }
 
-export default function nextBlog({db}: { db: DatabaseProvider }) {
-    const cmsPaths: { GET: PathObject, POST: PathObject } = {
-        GET: {
-            api: {},
-            dashboard: {
-                '': secure(() => <BasePage>
-                    <div>
-                        <ul>
-                            <li><a href={"/api/sgai-blog/dashboard/blogs"}>Blogs</a></li>
-                            <li><a href={"/api/sgai-blog/dashboard/tags"}>Tags</a></li>
-                            <li><a href={"/api/sgai-blog/dashboard/categories"}>Categories</a></li>
-                            <li><a href={"/api/sgai-blog/dashboard/authors"}>Authors</a></li>
-                        </ul>
-                    </div>
-                </BasePage>),
-                blogs: {
-                    '': secure(async (request: CNextRequest) => {
-                        const items = await db.blogs.find({})
-                        return <BasePage>
-                            <a href={"/api/sgai-blog/dashboard/blogs/create"}>Create Blog</a><br/>
-                            <ul>
-                                {items.map((item, index) => <li key={index}>
-                                    <a href={`/api/sgai-blog/dashboard/blogs/${item._id}`}>
-                                        {item.title}
-                                    </a>
-                                </li>)}
-                            </ul>
-                        </BasePage>
-                    }),
-                    create: secure(async (request: CNextRequest) => {
-                        return <BasePage><ManageBlogs/></BasePage>;
-                    }),
-                    ':id': secure(async (request: CNextRequest) => {
-                        const id = request._params.id;
-                        const blog = await db.blogs.findById(id)
-                        if (!blog) return <NotFound/>
-                        return <BasePage>
-                            <p>{blog._id}</p>
-                            <p>{blog.title}</p>
-                        </BasePage>
-                    })
-                },
-                categories: {
-                    '': secure(async (request: CNextRequest) => {
-                        const items = await db.categories.find({})
-                        return <>
-                            <a href={"/api/sgai-blog/dashboard/categories/create"}>Create Category</a>
-                            <ul>
-                                {items.map((item, index) => <li key={index}>
-                                    <a href={`/api/sgai-blog/dashboard/categories/${item._id}`}>
-                                        {item.name}
-                                    </a>
-                                </li>)}
-                            </ul>
-                        </>
-                    }),
-                    create: async () => {
-                        return <NotFound/>
-                    },
-                    ':id': secure(async (request: CNextRequest) => {
-                        const id = request._params.id
-                        return await db.categories.findById(id)
-                    })
-                },
-                tags: {
-                    '': secure(async (request: CNextRequest) => {
-                        const items = await db.tags.find({})
-                        return <>
-                            <a href={"/api/sgai-blog/dashboard/tags/create"}>Create Tags</a>
-                            <ul>
-                                {items.map((item, index) => <li key={index}>
-                                    <a href={`/api/sgai-blog/dashboard/tags/${item._id}`}>
-                                        {item.name}
-                                    </a>
-                                </li>)}
-                            </ul>
-                        </>
-                    }),
-                    create: secure(async () => {
-                        return <NotFound/>
-                    }),
-                    ':id': secure(async (request: CNextRequest) => {
-                        const id = request._params.id
-                        return await db.tags.findById(id)
-                    })
-                },
-                authors: {
-                    '': secure(async (request: CNextRequest) => {
-                        const items = await db.authors.find({})
-                        return <>
-                            <a href={"/api/sgai-blog/dashboard/tags/create"}>Create Authors</a>
-                            <ul>{items.map((item, index) => <li key={index}>
-                                <a href={`/api/sgai-blog/dashboard/tags/${item._id}`}>
-                                    {item.name}
-                                </a>
-                            </li>)}
-                            </ul>
-                        </>
-                    }),
-                    create: secure(async () => {
-                        return <NotFound/>
-                    }),
-                    ':id': secure(async (request: CNextRequest) => {
-                        const id = request._params.id
-                        return await db.authors.findById(id)
-                    })
-                }
-            }
-        },
-        POST: {
-            api: {
-                blog: {
-                    ':id': {
-                        update: secure(async (request: CNextRequest) => {
-                            return db.blogs.updateOne({id: request._params}, await request.json())
-                        }),
-                        delete: secure(async (request: CNextRequest) => {
-                            return db.blogs.deleteOne({id: request._params})
-                        })
-                    }
-                },
-                blogs: {
-                    create: secure(async (request: CNextRequest) => {
-                        const creation = await db.blogs.create(await request.json())
-                        return JSON.stringify(creation)
-                    }),
-                },
-                category: {
-                    ':id': {
-                        update: secure(async (request: CNextRequest) => {
-                            return db.categories.updateOne({id: request._params}, await request.json())
-                        }),
-                        delete: secure(async (request: CNextRequest) => {
-                            return db.categories.deleteOne({id: request._params})
-                        })
-                    }
-                },
-                categories: {
-                    create: secure(async (request: CNextRequest) => {
-                        return db.categories.create(await request.json())
-                    })
-                },
-                tag: {
-                    ':id': {
-                        update: secure(async (request: CNextRequest) => {
-                            return db.tags.updateOne({id: request._params}, await request.json())
-                        }),
-                        delete: secure(async (request: CNextRequest) => {
-                            return db.tags.deleteOne({id: request._params})
-                        })
-                    }
-                },
-                tags: {
-                    create: secure(async (request: CNextRequest) => {
-                        return db.tags.create(await request.json())
-                    })
-                },
-                author: {
-                    ':id': {
-                        update: secure(async (request: CNextRequest) => {
-                            return db.authors.updateOne({id: request._params}, await request.json())
-                        }),
-                        delete: secure(async (request: CNextRequest) => {
-                            return db.authors.deleteOne({id: request._params})
-                        })
-                    }
-                },
-                authors: {
-                    create: secure(async (request: CNextRequest) => {
-                        return db.tags.create(await request.json())
-                    })
-                },
+const cmsPaths: { GET: PathObject, POST: PathObject } = {
+    GET: {
+        api: {},
+        dashboard: {
+            '': secure(dashboard),
+            blogs: {
+                '': secure(blogs),
+                create: secure(createBlog),
+                ':id': secure(updateBlog)
+            },
+            categories: {
+                '': secure(categories),
+                create: secure(createCategory),
+                ':id': secure(updateCategory)
+            },
+            tags: {
+                '': secure(tags),
+                create: secure(createTag),
+                ':id': secure(updateTag)
+            },
+            authors: {
+                '': secure(authors),
+                create: secure(createAuthor),
+                ':id': secure(updateAuthor)
             }
         }
-    };
+    },
+    POST: {
+        api: {
+            blog: {
+                ':id': {
+                    update: secure(async (request: CNextRequest) => {
+                        const db = await request.db()
+                        const updation = db.blogs.updateOne({_id: request._params.id}, await request.json())
+                        return JSON.stringify(updation)
+                    }),
+                    delete: secure(async (request: CNextRequest) => {
+                        const db = await request.db();
+                        const deletion = await db.blogs.deleteOne({_id: request._params.id})
+                        return JSON.stringify(deletion)
+                    })
+                }
+            },
+            blogs: {
+                create: secure(async (request: CNextRequest) => {
+                    const db = await request.db()
+                    const creation = await db.blogs.create(await request.json())
+                    return JSON.stringify(creation)
+                }),
+            },
+            category: {
+                ':id': {
+                    update: secure(async (request: CNextRequest) => {
+                        const db = await request.db()
+                        const updation = await db.categories.updateOne({_id: request._params.id}, await request.json())
+                        return JSON.stringify(updation)
+                    }),
+                    delete: secure(async (request: CNextRequest) => {
+                        const db = await request.db()
+                        const deletion = await db.categories.deleteOne({_id: request._params.id})
+                        return JSON.stringify(deletion)
+                    })
+                }
+            },
+            categories: {
+                create: secure(async (request: CNextRequest) => {
+                    const db = await request.db()
+                    const creation = await db.categories.create(await request.json())
+                    return JSON.stringify(creation)
+                })
+            },
+            tag: {
+                ':id': {
+                    update: secure(async (request: CNextRequest) => {
+                        const db = await request.db()
+                        const updation = await db.tags.updateOne({_id: request._params.id}, await request.json())
+                        return JSON.stringify(updation)
+                    }),
+                    delete: secure(async (request: CNextRequest) => {
+                        const db = await request.db();
+                        const deletion = await db.tags.deleteOne({_id: request._params.id})
+                        return JSON.stringify(deletion)
+                    })
+                }
+            },
+            tags: {
+                create: secure(async (request: CNextRequest) => {
+                    const db = await request.db()
+                    const creation = await db.tags.create(await request.json())
+                    return JSON.stringify(creation)
+                })
+            },
+            author: {
+                ':id': {
+                    update: secure(async (request: CNextRequest) => {
+                        const db = await request.db()
+                        const updation = await db.authors.updateOne({_id: request._params.id}, await request.json())
+                        return JSON.stringify(updation)
+                    }),
+                    delete: secure(async (request: CNextRequest) => {
+                        const db = await request.db()
+                        const deletion = await db.authors.deleteOne({_id: request._params.id})
+                        return JSON.stringify(deletion)
+                    })
+                }
+            },
+            authors: {
+                create: secure(async (request: CNextRequest) => {
+                    const db = await request.db()
+                    const creation = await db.authors.create(await request.json())
+                    return JSON.stringify(creation)
+                })
+            },
+        }
+    }
+};
 
+export default function nextBlog({db}: { db(): Promise<DatabaseProvider> }) {
     async function processRequest(pathObject: PathObject, request: NextRequest, _response: NextResponse) {
         const finalPathname = request.nextUrl.pathname.replace("/api/sgai-blog/", "")
 
@@ -209,6 +162,7 @@ export default function nextBlog({db}: { db: DatabaseProvider }) {
         }
 
         (request as any)._params = params;
+        (request as any).db = db;
         const response = await handler(request);
 
         if (response instanceof NextResponse || response instanceof Response)
@@ -235,4 +189,4 @@ export default function nextBlog({db}: { db: DatabaseProvider }) {
 
 export * from "./database"
 export {BlogUI, CategoryUI, TagUI, AuthorUI}
-export {fileDBProvider, MongoDBProvider}
+export {FileDBProvider, MongoDBProvider}

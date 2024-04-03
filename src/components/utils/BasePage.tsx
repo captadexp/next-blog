@@ -29,6 +29,7 @@ export default function BasePage({children, title}: { children: any, title?: str
 
         /* Elevated effect for child content */
         .elevated-content {
+        max-width: 90dvw;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Simple shadow for depth */
         background-color: #ffffff; /* White background */
         padding: 20px; /* Spacing around the content */

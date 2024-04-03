@@ -3,6 +3,7 @@ import {NextResponse} from "next/server";
 import {CNextRequest} from "../index";
 
 export default function secure<T>(fn: (request: CNextRequest) => T) {
+
     return (request: CNextRequest) => {
         const headerList = headers()
         const [authMethod, authData] = headerList.get("authorization")?.split(" ") || [];
