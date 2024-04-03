@@ -73,19 +73,28 @@ export default class FileDbProvider implements DatabaseProvider {
                 return newBlog;
             },
 
-            updateOne: async (filter: Filter<Blog>, {_id, ...update}: Filter<Blog>): Promise<void> => {
+            updateOne: async (filter: Filter<Blog>, {_id, ...update}: Filter<Blog>) => {
                 let blogs = await this.readData<Blog>('blogs.json');
                 const blogIndex = blogs.findIndex((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
                 if (blogIndex !== -1) {
                     blogs[blogIndex] = {...blogs[blogIndex], ...update, updatedAt: Date.now()};
                     await this.writeData('blogs.json', blogs);
+                    return blogs[blogIndex];
                 }
+                throw new Error("Nothing to update")
             },
 
-            deleteOne: async (filter: Filter<Blog>): Promise<void> => {
+            deleteOne: async (filter: Filter<Blog>) => {
                 let blogs = await this.readData<Blog>('blogs.json');
-                blogs = blogs.filter((blog: any) => !Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
-                await this.writeData('blogs.json', blogs);
+                const blogIndex = blogs.findIndex((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
+
+                if (blogIndex !== -1) {
+                    const duplicate = JSON.parse(JSON.stringify(blogs[blogIndex]));
+                    blogs = blogs.filter((blog: any, index) => index !== blogIndex);
+                    await this.writeData('blogs.json', blogs);
+                    return duplicate;
+                }
+                throw new Error("Nothing to update")
             },
         }
     }
@@ -113,19 +122,27 @@ export default class FileDbProvider implements DatabaseProvider {
                 return newCategory;
             },
 
-            updateOne: async (filter: Filter<Category>, {_id, ...update}: Filter<Category>): Promise<void> => {
+            updateOne: async (filter: Filter<Category>, {_id, ...update}: Filter<Category>) => {
                 let categories = await this.readData<Category>('categories.json');
                 const categoryIndex = categories.findIndex((category: any) => Object.keys(filter).every(key => category[key] === (filter as any)[key]));
                 if (categoryIndex !== -1) {
                     categories[categoryIndex] = {...categories[categoryIndex], ...update};
                     await this.writeData('categories.json', categories);
+                    return categories[categoryIndex];
                 }
+                throw new Error("Nothing to update")
             },
-
-            deleteOne: async (filter: Filter<Category>): Promise<void> => {
+            deleteOne: async (filter: Filter<Category>) => {
                 let categories = await this.readData<Category>('categories.json');
-                categories = categories.filter((category: any) => !Object.keys(filter).every(key => category[key] === (filter as any)[key]));
-                await this.writeData('categories.json', categories);
+                const blogIndex = categories.findIndex((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
+
+                if (blogIndex !== -1) {
+                    const duplicate = JSON.parse(JSON.stringify(categories[blogIndex]));
+                    categories = categories.filter((blog: any, index) => index !== blogIndex);
+                    await this.writeData('categories.json', categories);
+                    return duplicate;
+                }
+                throw new Error("Nothing to update")
             },
         }
     }
@@ -153,20 +170,29 @@ export default class FileDbProvider implements DatabaseProvider {
                 return newTag;
             },
 
-            updateOne: async (filter: Filter<Tag>, {_id, ...update}: Filter<Tag>): Promise<void> => {
+            updateOne: async (filter: Filter<Tag>, {_id, ...update}: Filter<Tag>) => {
                 let tags = await this.readData<Tag>('tags.json');
                 const tagIndex = tags.findIndex((tag: any) => Object.keys(filter).every(key => tag[key] === (filter as any)[key]));
-                console.log("found tag at", tagIndex)
                 if (tagIndex !== -1) {
                     tags[tagIndex] = {...tags[tagIndex], ...update};
                     await this.writeData('tags.json', tags);
+                    return tags[tagIndex];
                 }
+                throw new Error("Nothing to update")
             },
 
-            deleteOne: async (filter: Filter<Tag>): Promise<void> => {
+            deleteOne: async (filter: Filter<Tag>) => {
                 let tags = await this.readData<Tag>('tags.json');
-                tags = tags.filter((tag: any) => !Object.keys(filter).every(key => tag[key] === (filter as any)[key]));
-                await this.writeData('tags.json', tags);
+
+                const blogIndex = tags.findIndex((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
+
+                if (blogIndex !== -1) {
+                    const duplicate = JSON.parse(JSON.stringify(tags[blogIndex]));
+                    tags = tags.filter((blog: any, index) => index !== blogIndex);
+                    await this.writeData('tags.json', tags);
+                    return duplicate;
+                }
+                throw new Error("Nothing to update")
             },
         }
     }
@@ -194,19 +220,29 @@ export default class FileDbProvider implements DatabaseProvider {
                 return newAuthor;
             },
 
-            updateOne: async (filter: Filter<Author>, {_id, ...update}: Filter<Author>): Promise<void> => {
+            updateOne: async (filter: Filter<Author>, {_id, ...update}: Filter<Author>) => {
                 let authors = await this.readData<Author>('authors.json');
                 const authorIndex = authors.findIndex((author: any) => Object.keys(filter).every(key => author[key] === (filter as any)[key]));
                 if (authorIndex !== -1) {
                     authors[authorIndex] = {...authors[authorIndex], ...update};
                     await this.writeData('authors.json', authors);
+                    return authors[authorIndex];
                 }
+                throw new Error("Nothing to update")
             },
 
-            deleteOne: async (filter: Filter<Author>): Promise<void> => {
+            deleteOne: async (filter: Filter<Author>) => {
                 let authors = await this.readData<Author>('authors.json');
-                authors = authors.filter((author: any) => !Object.keys(filter).every(key => author[key] === (filter as any)[key]));
-                await this.writeData('authors.json', authors);
+
+                const blogIndex = authors.findIndex((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
+
+                if (blogIndex !== -1) {
+                    const duplicate = JSON.parse(JSON.stringify(authors[blogIndex]));
+                    authors = authors.filter((blog: any, index) => index !== blogIndex);
+                    await this.writeData('authors.json', authors);
+                    return duplicate;
+                }
+                throw new Error("Nothing to update")
             },
         }
     }

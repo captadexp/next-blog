@@ -1,5 +1,5 @@
 import React from "react";
-import {Author, DatabaseProvider} from "./database";
+import {Author, Blog, Category, DatabaseProvider, Tag} from "./database";
 import {NextRequest, NextResponse} from "next/server";
 import {matchPathToFunction, PathObject} from "./utils/parse-path";
 import NotFound from "./components/NotFound";
@@ -26,7 +26,26 @@ import dashboard from "./pages/dashboard";
 import crypto from "./utils/crypto"
 
 
-export type Configuration = { db(): Promise<DatabaseProvider>, byPassSecurity?: boolean }
+export type ConfigurationCallbacks = {
+    on?(event: "createBlog", payload: Blog): void
+    on?(event: "createTag", payload: Tag): void
+    on?(event: "createCategory", payload: Category): void
+    on?(event: "createAuthor", payload: Author): void
+
+    on?(event: "updateBlog", payload: Blog): void
+    on?(event: "updateTag", payload: Tag): void
+    on?(event: "updateCategory", payload: Category): void
+    on?(event: "updateAuthor", payload: Author): void
+
+    on?(event: "deleteBlog", payload: Blog): void
+    on?(event: "deleteTag", payload: Tag): void
+    on?(event: "deleteCategory", payload: Category): void
+    on?(event: "deleteAuthor", payload: Author): void
+}
+export type Configuration = {
+    db(): Promise<DatabaseProvider>, byPassSecurity?: boolean,
+    callbacks?: ConfigurationCallbacks
+}
 
 export type CNextRequest = NextRequest & {
     _params: Record<string, string>,
@@ -70,12 +89,14 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
                         const db = await request.db();
                         const body = await request.json();
                         const extras = {updatedAt: Date.now()}
-                        const updation = db.blogs.updateOne({_id: request._params.id}, {...body, ...extras})
+                        const updation = await db.blogs.updateOne({_id: request._params.id}, {...body, ...extras})
+                        request.configuration.callbacks?.on?.("updateBlog", updation)
                         return JSON.stringify(updation)
                     }),
                     delete: secure(async (request: CNextRequest) => {
                         const db = await request.db();
                         const deletion = await db.blogs.deleteOne({_id: request._params.id})
+                        request.configuration.callbacks?.on?.("deleteBlog", deletion)
                         return JSON.stringify(deletion)
                     })
                 }
@@ -89,6 +110,7 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
                         updatedAt: Date.now()
                     }
                     const creation = await db.blogs.create({...body, ...extras, authorId: request.sessionUser._id})
+                    request.configuration.callbacks?.on?.("createBlog", creation)
                     return JSON.stringify(creation)
                 }),
             },
@@ -97,11 +119,13 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
                     update: secure(async (request: CNextRequest) => {
                         const db = await request.db()
                         const updation = await db.categories.updateOne({_id: request._params.id}, await request.json())
+                        request.configuration.callbacks?.on?.("updateCategory", updation)
                         return JSON.stringify(updation)
                     }),
                     delete: secure(async (request: CNextRequest) => {
                         const db = await request.db()
                         const deletion = await db.categories.deleteOne({_id: request._params.id})
+                        request.configuration.callbacks?.on?.("deleteCategory", deletion)
                         return JSON.stringify(deletion)
                     })
                 }
@@ -109,7 +133,8 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
             categories: {
                 create: secure(async (request: CNextRequest) => {
                     const db = await request.db()
-                    const creation = await db.categories.create(await request.json())
+                    const creation = await db.categories.create(await request.json());
+                    request.configuration.callbacks?.on?.("createCategory", creation)
                     return JSON.stringify(creation)
                 })
             },
@@ -118,11 +143,13 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
                     update: secure(async (request: CNextRequest) => {
                         const db = await request.db()
                         const updation = await db.tags.updateOne({_id: request._params.id}, await request.json())
+                        request.configuration.callbacks?.on?.("updateTag", updation)
                         return JSON.stringify(updation)
                     }),
                     delete: secure(async (request: CNextRequest) => {
                         const db = await request.db();
                         const deletion = await db.tags.deleteOne({_id: request._params.id})
+                        request.configuration.callbacks?.on?.("deleteTag", deletion)
                         return JSON.stringify(deletion)
                     })
                 }
@@ -131,6 +158,7 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
                 create: secure(async (request: CNextRequest) => {
                     const db = await request.db()
                     const creation = await db.tags.create(await request.json())
+                    request.configuration.callbacks?.on?.("createTag", creation)
                     return JSON.stringify(creation)
                 })
             },
@@ -140,11 +168,13 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
                         const db = await request.db()
                         const {password, ...other} = await request.json()
                         const updation = await db.authors.updateOne({_id: request._params.id}, other)
+                        request.configuration.callbacks?.on?.("updateAuthor", updation)
                         return JSON.stringify(updation)
                     }),
                     delete: secure(async (request: CNextRequest) => {
                         const db = await request.db()
                         const deletion = await db.authors.deleteOne({_id: request._params.id})
+                        request.configuration.callbacks?.on?.("deleteAuthor", deletion)
                         return JSON.stringify(deletion)
                     })
                 }
@@ -154,8 +184,7 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
                     const db = await request.db()
                     const {password, ...other} = await request.json();
                     const creation = await db.authors.create({...other, password: crypto.hashPassword(password)})
-
-
+                    request.configuration.callbacks?.on?.("createAuthor", creation)
                     return JSON.stringify(creation)
                 })
             },

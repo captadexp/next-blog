@@ -41,14 +41,22 @@ export default class MongoDBProvider implements DatabaseProvider {
 
         return {
             findOne: (filter: Filter<T>) => collection.findOne(filter),
-            find: async (filter: Filter<T>) => collection.find(filter).toArray(),
+            find: async (filter: Filter<T>, options) => {
+                let query = collection.find(filter)
+                if (options?.skip)
+                    query = query.skip(options?.skip)
+                if (options?.limit)
+                    query = query.skip(options?.limit)
+
+                return query.toArray()
+            },
             findById: (id: string) => collection.findOne({_id: new ObjectId(id)}),
             create: async (data: U) => {
                 const result = await collection.insertOne(data);
                 return {_id: result.insertedId.toString(), ...data} as unknown as T;
             },
-            updateOne: (filter: Filter<T>, update: Omit<Filter<T>, "_id">) => collection.updateOne(filter, {$set: update}).then(() => undefined),
-            deleteOne: (filter: Filter<T>) => collection.deleteOne(filter).then(() => undefined),
+            updateOne: (filter: Filter<T>, update: Omit<Filter<T>, "_id">) => collection.findOneAndUpdate(filter, {$set: update}, {returnDocument: "after"}),
+            deleteOne: (filter: Filter<T>) => collection.findOneAndDelete(filter),
         };
     }
 }

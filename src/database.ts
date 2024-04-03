@@ -16,6 +16,7 @@ export interface BlogData {
     content: string;
     category: string;
     tags: string[];
+    authorId: string;
 }
 
 export interface Category {
@@ -73,14 +74,14 @@ export type Filter<T> = Partial<Record<keyof T, any>>;
 export interface CollectionOperations<T, U> {
     findOne(filter: Filter<T>): Promise<T | null>;
 
-    find(filter: Filter<T>): Promise<T[]>;
+    find(filter: Filter<T>, options?: { skip?: number, limit?: number }): Promise<T[]>;
 
     findById(id: string): Promise<T | null>;
 
     create(data: U): Promise<T>;
 
-    updateOne(filter: Filter<T>, update: Omit<Filter<T>, "_id">): Promise<void>;
+    updateOne(filter: Filter<T>, update: Omit<Filter<T>, "_id">): Promise<T>;
 
-    deleteOne(filter: Filter<T>): Promise<void>;
+    deleteOne(filter: Filter<T>): Promise<T>;
 }
 
