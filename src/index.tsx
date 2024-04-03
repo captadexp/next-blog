@@ -67,8 +67,10 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
             blog: {
                 ':id': {
                     update: secure(async (request: CNextRequest) => {
-                        const db = await request.db()
-                        const updation = db.blogs.updateOne({_id: request._params.id}, await request.json())
+                        const db = await request.db();
+                        const body = await request.json();
+                        const extras = {updatedAt: Date.now()}
+                        const updation = db.blogs.updateOne({_id: request._params.id}, {...body, ...extras})
                         return JSON.stringify(updation)
                     }),
                     delete: secure(async (request: CNextRequest) => {
@@ -82,7 +84,11 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
                 create: secure(async (request: CNextRequest) => {
                     const db = await request.db();
                     const body = await request.json()
-                    const creation = await db.blogs.create({...body, author: request.sessionUser._id})
+                    const extras = {
+                        createdAt: Date.now(),
+                        updatedAt: Date.now()
+                    }
+                    const creation = await db.blogs.create({...body, ...extras, author: request.sessionUser._id})
                     return JSON.stringify(creation)
                 }),
             },
@@ -160,7 +166,7 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
 export default function nextBlog(configuration: Configuration) {
     async function processRequest(pathObject: PathObject, request: NextRequest, _response: NextResponse) {
         const finalPathname = request.nextUrl.pathname.replace("/api/sgai-blog/", "")
-        const {db, byPassSecurity} = configuration
+        const {db} = configuration
         const {
             params,
             handler,
