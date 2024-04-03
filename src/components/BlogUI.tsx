@@ -11,7 +11,7 @@ export default function BlogUI({blog}: { blog: Blog }) {
             <h1 className="text-2xl font-bold mb-2">{blog.title}</h1>
             <p className="mb-4">Posted on <time
                 dateTime={time.toISOString()}>{time.format("MMMM DD, YYYY")}</time></p>
-            <p className="text-sm font-bold">By {blog.author}</p>
+            <p className="text-sm font-bold">By {blog.authorId}</p>
             <div className="[&>p]:py-2 [&>p>strong]:font-extrabold [&>ol]:list-disc"
                  dangerouslySetInnerHTML={{__html: blog.content}}/>
         </article>
