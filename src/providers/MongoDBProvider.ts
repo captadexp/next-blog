@@ -46,7 +46,7 @@ export default class MongoDBProvider implements DatabaseProvider {
                 if (options?.skip)
                     query = query.skip(options?.skip)
                 if (options?.limit)
-                    query = query.skip(options?.limit)
+                    query = query.limit(options?.limit)
 
                 return query.toArray()
             },
