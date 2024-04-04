@@ -1,6 +1,6 @@
 {
   "name": "@supergrowthai/next-blog",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Add blogging to your nextjs project in a jiffy",
   "main": "src/index.tsx",
   "scripts": {
