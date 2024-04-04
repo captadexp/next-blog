@@ -59,6 +59,10 @@ dist
 .pnp.*
 
 
-./*/*.js
-./*/*.d.ts
-./*/*.d.ts.map
+*.js
+*.d.ts
+*.d.ts.map
+
+/**/*.js
+/**/*.d.ts
+/**/*.d.ts.map
