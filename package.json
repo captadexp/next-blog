@@ -1,6 +1,6 @@
 {
   "name": "@supergrowthai/next-blog",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "Add blogging to your nextjs project in a jiffy",
   "repository": "https://github.com/captadexp/next-blog",
   "type": "module",
