@@ -26,23 +26,10 @@ import dashboard from "./pages/dashboard";
 import crypto from "./utils/crypto"
 
 
-type EventPayload =
-    | { event: "createBlog"; payload: Blog }
-    | { event: "createTag"; payload: Tag }
-    | { event: "createCategory"; payload: Category }
-    | { event: "createAuthor"; payload: Author }
-    | { event: "updateBlog"; payload: Blog }
-    | { event: "updateTag"; payload: Tag }
-    | { event: "updateCategory"; payload: Category }
-    | { event: "updateAuthor"; payload: Author }
-    | { event: "deleteBlog"; payload: Blog }
-    | { event: "deleteTag"; payload: Tag }
-    | { event: "deleteCategory"; payload: Category }
-    | { event: "deleteAuthor"; payload: Author };
-
 interface ConfigurationCallbacks {
-    on?<E extends EventPayload>(event: E['event'], payload: E['payload']): void;
+    on?(event: string, payload: any): void;
 }
+
 export type Configuration = {
     db(): Promise<DatabaseProvider>, byPassSecurity?: boolean,
     callbacks?: ConfigurationCallbacks
