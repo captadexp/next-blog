@@ -6,34 +6,34 @@
   "type": "module",
   "scripts": {
     "build": "yarn clean && tsc",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf *.js *.d.ts* adapters components pages utils"
   },
   "keywords": [
     "nextjs",
+    "react",
     "cms",
     "blogging",
     "headless-cms",
     "next-js",
     "secure"
   ],
-  "types": "./dist/index.d.ts",
   "files": [
-    "dist/*.js",
-    "dist/*.d.ts*",
-    "dist/**/*.js",
-    "dist/**/*.d.ts*"
+    "./*.js",
+    "./*.d.ts*",
+    "./**/*.js",
+    "./**/*.d.ts*"
   ],
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./index.d.ts",
+      "import": "./index.js"
     },
     "./adapters/*": {
-      "types": "./dist/adapters/*.d.ts",
-      "import": "./dist/adapters/*.js"
+      "types": "./adapters/*.d.ts",
+      "import": "./adapters/*.js"
     },
     "./types": {
-      "types": "./dist/types.d.ts"
+      "types": "./types.d.ts"
     },
     "./package.json": "./package.json"
   },

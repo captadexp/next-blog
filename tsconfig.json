@@ -23,7 +23,7 @@
       "dom.iterable",
       "esnext"
     ],
-    "outDir": "dist",
+    "outDir": ".",
     "rootDir": "src"
   },
   "include": [

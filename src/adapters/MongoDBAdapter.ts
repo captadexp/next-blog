@@ -13,7 +13,7 @@ import {
 import {MongoClient, Db, Collection, ObjectId} from "mongodb"
 
 
-export default class MongoDBProvider implements DatabaseProvider {
+export default class MongoDBAdapter implements DatabaseProvider {
     private db: Db;
 
     constructor(dbName: string, client: MongoClient) {

@@ -13,7 +13,7 @@ import {
 } from "../types";
 import {v4 as uuidv4} from 'uuid';
 
-export default class FileDbProvider implements DatabaseProvider {
+export default class FileDBAdapter implements DatabaseProvider {
 
     constructor(public dataPath: string) {
         this.ensureFilesExist();
