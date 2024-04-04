@@ -10,7 +10,7 @@ import {
     Filter,
     Tag,
     TagData
-} from "../database";
+} from "../types";
 import {v4 as uuidv4} from 'uuid';
 
 export default class FileDbProvider implements DatabaseProvider {

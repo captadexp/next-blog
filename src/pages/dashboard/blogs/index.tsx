@@ -1,6 +1,5 @@
 import BasePage from "../../../components/utils/BasePage";
-import React from "react";
-import {CNextRequest} from "../../../database";
+import {CNextRequest} from "../../../types";
 import ItemLandingPage from "../../../components/dashboard/ItemLandingPage";
 
 export default async function (request: CNextRequest) {

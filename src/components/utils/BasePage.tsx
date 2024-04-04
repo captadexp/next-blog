@@ -1,5 +1,3 @@
-import React from "react";
-
 export default function BasePage({children, title}: { children: any, title?: string }) {
 
     return <html lang="en">

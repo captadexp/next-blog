@@ -1,5 +1,3 @@
-import NotFound from "../../../components/NotFound";
-import React from "react";
 import DynamicForm, {DynamicFormFieldType} from "../../../components/utils/DynamicForm";
 import BasePage from "../../../components/utils/BasePage";
 

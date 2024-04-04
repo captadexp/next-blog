@@ -1,8 +1,7 @@
-import {CNextRequest} from "../../../database";
+import {CNextRequest} from "../../../types";
 import DynamicForm, {DynamicFormFieldType} from "../../../components/utils/DynamicForm";
 import BasePage from "../../../components/utils/BasePage";
 import NotFound from "../../../components/NotFound";
-import React from "react";
 
 
 export default async function updateAuthor(request: CNextRequest) {

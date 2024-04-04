@@ -1,15 +1,8 @@
-import React from "react";
-import {Author, Blog, Category, CNextRequest, Configuration, DatabaseProvider, Tag} from "./database";
+import {CNextRequest, Configuration} from "./types";
 import {NextRequest, NextResponse} from "next/server";
 import {matchPathToFunction, PathObject} from "./utils/parse-path";
 import NotFound from "./components/NotFound";
 import secure from "./utils/secureInternal";
-import BlogUI from "./components/BlogUI";
-import CategoryUI from "./components/CategoryUI";
-import TagUI from "./components/TagUI";
-import AuthorUI from "./components/AuthorUI";
-import FileDBProvider from "./providers/FileDBProvider"
-import MongoDBProvider from "./providers/MongoDBProvider"
 import blogs from "./pages/dashboard/blogs";
 import createBlog from "./pages/dashboard//blogs/create";
 import updateBlog from "./pages/dashboard//blogs/update";
@@ -24,7 +17,6 @@ import createAuthor from "./pages/dashboard//authors/create";
 import updateAuthor from "./pages/dashboard//authors/update";
 import dashboard from "./pages/dashboard";
 import crypto from "./utils/crypto"
-
 
 const cmsPaths: { GET: PathObject, POST: PathObject } = {
     GET: {
@@ -164,7 +156,7 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
     }
 };
 
-export default function nextBlog(configuration: Configuration) {
+export default function NextBlog(configuration: Configuration) {
     async function processRequest(pathObject: PathObject, request: NextRequest, _response: NextResponse) {
         const finalPathname = request.nextUrl.pathname.replace("/api/sgai-blog/", "")
         const {db} = configuration
@@ -177,7 +169,7 @@ export default function nextBlog(configuration: Configuration) {
         console.log("=>", request.method, params, templatePath, "executing:", !!handler)
 
         if (!handler) {
-            const ReactDOMServer = (await import('react-dom/server')).default;
+            const ReactDOMServer = (await import('preact-render-to-string'));
             const response = ReactDOMServer.renderToString(<NotFound/>)
             return new NextResponse(response, {headers: {"Content-Type": "text/html"}})
         }
@@ -195,7 +187,7 @@ export default function nextBlog(configuration: Configuration) {
             return new NextResponse(response, {headers: {"Content-Type": "text/html"}});
         }
 
-        const ReactDOMServer = (await import('react-dom/server')).default;
+        const ReactDOMServer = (await import('react-dom/server'));
         return new NextResponse(ReactDOMServer.renderToString(response), {headers: {"Content-Type": "text/html"}});
     }
 
@@ -209,7 +201,3 @@ export default function nextBlog(configuration: Configuration) {
 
     return {GET, POST}
 }
-
-export * from "./database"
-export {BlogUI, CategoryUI, TagUI, AuthorUI}
-export {FileDBProvider, MongoDBProvider}

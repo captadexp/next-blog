@@ -1,4 +1,3 @@
-import React from "react";
 import BasePage from "../../components/utils/BasePage";
 
 export default function dashboard() {

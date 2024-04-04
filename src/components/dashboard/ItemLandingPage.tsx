@@ -1,5 +1,4 @@
 import BasePage from "../utils/BasePage";
-import React from "react";
 
 export default function ItemLandingPage<T extends { _id: string, title: string }>(props: {
     createUrl: string,

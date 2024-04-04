@@ -9,7 +9,7 @@ import {
     DatabaseProvider, Filter,
     Tag,
     TagData
-} from "../database";
+} from "../types";
 import {MongoClient, Db, Collection, ObjectId} from "mongodb"
 
 

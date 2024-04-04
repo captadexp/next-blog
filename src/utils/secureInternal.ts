@@ -1,6 +1,6 @@
 import {headers} from "next/headers";
 import {NextResponse} from "next/server";
-import {CNextRequest} from "../database";
+import {CNextRequest} from "../types";
 import crypto from "./crypto"
 
 export default function secure<T>(fn: (request: CNextRequest) => T) {

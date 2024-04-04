@@ -1,4 +1,4 @@
-import {NextRequest} from "next/server";
+import type {NextRequest} from "next/server";
 
 export interface Blog {
     _id: string;
@@ -87,8 +87,22 @@ export interface CollectionOperations<T, U> {
     deleteOne(filter: Filter<T>): Promise<T>;
 }
 
+export type EventPayload =
+    | { event: "createBlog"; payload: Blog }
+    | { event: "createTag"; payload: Tag }
+    | { event: "createCategory"; payload: Category }
+    | { event: "createAuthor"; payload: Author }
+    | { event: "updateBlog"; payload: Blog }
+    | { event: "updateTag"; payload: Tag }
+    | { event: "updateCategory"; payload: Category }
+    | { event: "updateAuthor"; payload: Author }
+    | { event: "deleteBlog"; payload: Blog }
+    | { event: "deleteTag"; payload: Tag }
+    | { event: "deleteCategory"; payload: Category }
+    | { event: "deleteAuthor"; payload: Author };
+
 export interface ConfigurationCallbacks {
-    on(event: string, payload: any): void;
+    on?<E extends EventPayload>(event: E['event'], payload: E['payload']): void;
 }
 
 export type Configuration = {

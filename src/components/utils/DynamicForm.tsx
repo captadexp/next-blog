@@ -1,4 +1,3 @@
-import React from "react";
 
 export type DynamicFormFieldType = { label: string; value?: any, type: string; key: string; disabled?: boolean }
 const FormField = ({field}: { field: DynamicFormFieldType }) => {
