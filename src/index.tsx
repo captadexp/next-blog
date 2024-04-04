@@ -187,7 +187,7 @@ export default function NextBlog(configuration: Configuration) {
             return new NextResponse(response, {headers: {"Content-Type": "text/html"}});
         }
 
-        const ReactDOMServer = (await import('react-dom/server'));
+        const ReactDOMServer = (await import('preact-render-to-string'));
         return new NextResponse(ReactDOMServer.renderToString(response), {headers: {"Content-Type": "text/html"}});
     }
 
