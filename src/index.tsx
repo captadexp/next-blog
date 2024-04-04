@@ -26,21 +26,22 @@ import dashboard from "./pages/dashboard";
 import crypto from "./utils/crypto"
 
 
-export type ConfigurationCallbacks = {
-    on?(event: "createBlog", payload: Blog): void
-    on?(event: "createTag", payload: Tag): void
-    on?(event: "createCategory", payload: Category): void
-    on?(event: "createAuthor", payload: Author): void
+type EventPayload =
+    | { event: "createBlog"; payload: Blog }
+    | { event: "createTag"; payload: Tag }
+    | { event: "createCategory"; payload: Category }
+    | { event: "createAuthor"; payload: Author }
+    | { event: "updateBlog"; payload: Blog }
+    | { event: "updateTag"; payload: Tag }
+    | { event: "updateCategory"; payload: Category }
+    | { event: "updateAuthor"; payload: Author }
+    | { event: "deleteBlog"; payload: Blog }
+    | { event: "deleteTag"; payload: Tag }
+    | { event: "deleteCategory"; payload: Category }
+    | { event: "deleteAuthor"; payload: Author };
 
-    on?(event: "updateBlog", payload: Blog): void
-    on?(event: "updateTag", payload: Tag): void
-    on?(event: "updateCategory", payload: Category): void
-    on?(event: "updateAuthor", payload: Author): void
-
-    on?(event: "deleteBlog", payload: Blog): void
-    on?(event: "deleteTag", payload: Tag): void
-    on?(event: "deleteCategory", payload: Category): void
-    on?(event: "deleteAuthor", payload: Author): void
+interface ConfigurationCallbacks {
+    on?<E extends EventPayload>(event: E['event'], payload: E['payload']): void;
 }
 export type Configuration = {
     db(): Promise<DatabaseProvider>, byPassSecurity?: boolean,
