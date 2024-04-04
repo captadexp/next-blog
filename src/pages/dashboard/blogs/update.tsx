@@ -1,4 +1,4 @@
-import {CNextRequest} from "../../../index";
+import {CNextRequest} from "../../../database";
 import React from "react";
 import BasePage from "../../../components/utils/BasePage";
 import NotFound from "../../../components/NotFound";

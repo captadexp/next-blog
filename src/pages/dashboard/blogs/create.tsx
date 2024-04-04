@@ -1,5 +1,5 @@
 import React from "react";
-import {CNextRequest} from "../../../index";
+import {CNextRequest} from "../../../database";
 import BasePage from "../../../components/utils/BasePage";
 import DynamicForm, {DynamicFormFieldType} from "../../../components/utils/DynamicForm";
 

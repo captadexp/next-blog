@@ -1,4 +1,4 @@
-import {CNextRequest} from "../../../index";
+import {CNextRequest} from "../../../database";
 import DynamicForm, {DynamicFormFieldType} from "../../../components/utils/DynamicForm";
 import BasePage from "../../../components/utils/BasePage";
 import NotFound from "../../../components/NotFound";

@@ -1,3 +1,5 @@
+import {NextRequest} from "next/server";
+
 export interface Blog {
     _id: string;
     title: string;
@@ -85,3 +87,18 @@ export interface CollectionOperations<T, U> {
     deleteOne(filter: Filter<T>): Promise<T>;
 }
 
+export interface ConfigurationCallbacks {
+    on(event: string, payload: any): void;
+}
+
+export type Configuration = {
+    db(): Promise<DatabaseProvider>, byPassSecurity?: boolean,
+    callbacks?: ConfigurationCallbacks
+}
+
+export type CNextRequest = NextRequest & {
+    _params: Record<string, string>,
+    db(): Promise<DatabaseProvider>,
+    configuration: Configuration,
+    sessionUser: Author
+}

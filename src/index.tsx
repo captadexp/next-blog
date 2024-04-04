@@ -1,5 +1,5 @@
 import React from "react";
-import {Author, Blog, Category, DatabaseProvider, Tag} from "./database";
+import {Author, Blog, Category, CNextRequest, Configuration, DatabaseProvider, Tag} from "./database";
 import {NextRequest, NextResponse} from "next/server";
 import {matchPathToFunction, PathObject} from "./utils/parse-path";
 import NotFound from "./components/NotFound";
@@ -25,22 +25,6 @@ import updateAuthor from "./pages/dashboard//authors/update";
 import dashboard from "./pages/dashboard";
 import crypto from "./utils/crypto"
 
-
-interface ConfigurationCallbacks {
-    on?(event: string, payload: any): void;
-}
-
-export type Configuration = {
-    db(): Promise<DatabaseProvider>, byPassSecurity?: boolean,
-    callbacks?: ConfigurationCallbacks
-}
-
-export type CNextRequest = NextRequest & {
-    _params: Record<string, string>,
-    db(): Promise<DatabaseProvider>,
-    configuration: Configuration,
-    sessionUser: Author
-}
 
 const cmsPaths: { GET: PathObject, POST: PathObject } = {
     GET: {
