@@ -9,8 +9,8 @@ export default function CreateCategory() {
 
     return (
         <BasePage>
-            <DynamicForm redirectTo={"/api/sgai-blog/dashboard/tags"} submitLabel={"Create"} id={"createTag"}
-                         postTo={"/api/sgai-blog/api/tags/create"}
+            <DynamicForm redirectTo={"/api/next-blog/dashboard/tags"} submitLabel={"Create"} id={"createTag"}
+                         postTo={"/api/next-blog/api/tags/create"}
                          fields={fields}/>
         </BasePage>
     );

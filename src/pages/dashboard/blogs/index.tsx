@@ -7,8 +7,8 @@ export default async function (request: CNextRequest) {
     const items = await db.blogs.find({})
 
     return <ItemLandingPage items={items}
-                            itemLinkBasePath={"/api/sgai-blog/dashboard/blogs/"}
-                            createUrl={"/api/sgai-blog/dashboard/blogs/create"}
+                            itemLinkBasePath={"/api/next-blog/dashboard/blogs/"}
+                            createUrl={"/api/next-blog/dashboard/blogs/create"}
                             createBtnText={"Create Blog"}/>
 
 }

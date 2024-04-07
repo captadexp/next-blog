@@ -158,7 +158,7 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
 
 export default function NextBlog(configuration: Configuration) {
     async function processRequest(pathObject: PathObject, request: NextRequest, _response: NextResponse) {
-        const finalPathname = request.nextUrl.pathname.replace("/api/sgai-blog/", "")
+        const finalPathname = request.nextUrl.pathname.replace("/api/next-blog/", "")
         const {db} = configuration
         const {
             params,

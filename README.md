@@ -27,7 +27,7 @@ To add Next-Blog to your project, follow these simple steps:
    npm i @supergrowthai/next-blog
    ```
 
-2. Create a new route at `apps/api/sgai-blog/[...page]/route.ts`
+2. Create a new route at `apps/api/next-blog/[...page]/route.ts`
 
 2. **Update Your Route Configuration**
 

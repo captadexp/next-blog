@@ -12,19 +12,19 @@ export default function dashboard() {
         }}>
             <ul style={{listStyleType: "none", padding: "0", margin: "0"}}>
                 <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
-                    <a href={"/api/sgai-blog/dashboard/blogs"}
+                    <a href={"/api/next-blog/dashboard/blogs"}
                        style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Blogs</a>
                 </li>
                 <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
-                    <a href={"/api/sgai-blog/dashboard/tags"}
+                    <a href={"/api/next-blog/dashboard/tags"}
                        style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Tags</a>
                 </li>
                 <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
-                    <a href={"/api/sgai-blog/dashboard/categories"}
+                    <a href={"/api/next-blog/dashboard/categories"}
                        style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Categories</a>
                 </li>
                 <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
-                    <a href={"/api/sgai-blog/dashboard/authors"}
+                    <a href={"/api/next-blog/dashboard/authors"}
                        style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Authors</a>
                 </li>
             </ul>

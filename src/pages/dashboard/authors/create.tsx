@@ -13,8 +13,8 @@ export default function CreateAuthor() {
 
     return (
         <BasePage>
-            <DynamicForm redirectTo={"/api/sgai-blog/dashboard/authors"} submitLabel={"Create"} id={"createAuthor"}
-                         postTo={"/api/sgai-blog/api/authors/create"} fields={fields}/>
+            <DynamicForm redirectTo={"/api/next-blog/dashboard/authors"} submitLabel={"Create"} id={"createAuthor"}
+                         postTo={"/api/next-blog/api/authors/create"} fields={fields}/>
         </BasePage>
     );
 }

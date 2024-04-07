@@ -17,8 +17,8 @@ export default async function updateTag(request: CNextRequest) {
 
     return (
         <BasePage>
-            <DynamicForm redirectTo={"/api/sgai-blog/dashboard/tags"} submitLabel={"Update"} id={"updateTag"}
-                         postTo={`/api/sgai-blog/api/tag/${id}/update`}
+            <DynamicForm redirectTo={"/api/next-blog/dashboard/tags"} submitLabel={"Update"} id={"updateTag"}
+                         postTo={`/api/next-blog/api/tag/${id}/update`}
                          fields={fields}/>
         </BasePage>
     );

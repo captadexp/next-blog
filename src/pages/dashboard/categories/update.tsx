@@ -18,7 +18,7 @@ export default async function updateCategory(request: CNextRequest) {
 
     return (
         <BasePage>
-            <DynamicForm redirectTo={"/api/sgai-blog/dashboard/categories"} submitLabel={"Update"} id={"updateCategory"} postTo={`/api/sgai-blog/api/category/${id}/update`} fields={fields}/>
+            <DynamicForm redirectTo={"/api/next-blog/dashboard/categories"} submitLabel={"Update"} id={"updateCategory"} postTo={`/api/next-blog/api/category/${id}/update`} fields={fields}/>
         </BasePage>
     );
 }

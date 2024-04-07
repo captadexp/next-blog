@@ -14,7 +14,7 @@ export default function createBlog(request: CNextRequest) {
     ];
 
     return <BasePage>
-        <DynamicForm redirectTo={"/api/sgai-blog/dashboard/blogs"} id={"createBlog"}
-                     postTo={"/api/sgai-blog/api/blogs/create"} fields={fields} submitLabel={"Create"}/>
+        <DynamicForm redirectTo={"/api/next-blog/dashboard/blogs"} id={"createBlog"}
+                     postTo={"/api/next-blog/api/blogs/create"} fields={fields} submitLabel={"Create"}/>
     </BasePage>
 }

@@ -22,8 +22,8 @@ export default async function updateAuthor(request: CNextRequest) {
 
     return (
         <BasePage>
-            <DynamicForm redirectTo={"/api/sgai-blog/dashboard/authors"} submitLabel={"Update"} id={"createAuthor"}
-                         postTo={`/api/sgai-blog/api/author/${id}/update`}
+            <DynamicForm redirectTo={"/api/next-blog/dashboard/authors"} submitLabel={"Update"} id={"createAuthor"}
+                         postTo={`/api/next-blog/api/author/${id}/update`}
                          fields={fields}/>
         </BasePage>
     );

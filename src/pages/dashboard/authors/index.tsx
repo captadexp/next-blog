@@ -7,7 +7,7 @@ export default async (request: CNextRequest) => {
     const items = await db.authors.find({})
 
     return <ItemLandingPage items={items.map(item => ({...item, title: item.name}))}
-                            itemLinkBasePath={"/api/sgai-blog/dashboard/authors/"}
-                            createUrl={"/api/sgai-blog/dashboard/authors/create"}
+                            itemLinkBasePath={"/api/next-blog/dashboard/authors/"}
+                            createUrl={"/api/next-blog/dashboard/authors/create"}
                             createBtnText={"Create Author"}/>
 }
