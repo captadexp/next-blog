@@ -32,6 +32,10 @@
       "types": "./adapters/*.d.ts",
       "import": "./adapters/*.js"
     },
+    "./ui": {
+      "types": "./ui/index.d.ts",
+      "import": "./ui/index.js"
+    },
     "./types": {
       "types": "./types.d.ts"
     },
