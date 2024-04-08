@@ -17,10 +17,61 @@ import createAuthor from "./pages/dashboard//authors/create";
 import updateAuthor from "./pages/dashboard//authors/update";
 import dashboard from "./pages/dashboard";
 import crypto from "./utils/crypto"
+import {ObjectId} from "mongodb";
 
 const cmsPaths: { GET: PathObject, POST: PathObject } = {
     GET: {
-        api: {},
+        api: {
+            blogs: secure(async (request: CNextRequest) => {
+                const db = await request.db()
+                const items = await db.blogs.find({})
+                return NextResponse.json(items)
+            }),
+            blog: {
+                ":id": secure(async (request: CNextRequest) => {
+                    const db = await request.db()
+                    const item = await db.blogs.findOne({_id: new ObjectId(request._params.id)})
+                    return NextResponse.json(item)
+                })
+            },
+            tags: secure(async (request: CNextRequest) => {
+                const db = await request.db()
+                const items = await db.tags.find({})
+                return NextResponse.json(items)
+            }),
+            tag: {
+                ":id": secure(async (request: CNextRequest) => {
+                    const db = await request.db()
+                    const item = await db.tags.findOne({_id: new ObjectId(request._params.id)})
+                    return NextResponse.json(item)
+                })
+            },
+            categories: secure(async (request: CNextRequest) => {
+                const db = await request.db()
+                const items = await db.categories.find({})
+                return NextResponse.json(items)
+            }),
+            category: {
+                ":id": secure(async (request: CNextRequest) => {
+                    const db = await request.db()
+                    const item = await db.categories.findOne({_id: new ObjectId(request._params.id)})
+
+                    return NextResponse.json(item)
+                })
+            },
+            authors: secure(async (request: CNextRequest) => {
+                const db = await request.db()
+                const items = await db.blogs.find({})
+                return NextResponse.json(items)
+            }),
+            author: {
+                ":id": secure(async (request: CNextRequest) => {
+                    const db = await request.db()
+                    const item = await db.authors.findOne({_id: new ObjectId(request._params.id)})
+                    return NextResponse.json(item)
+                })
+            },
+        },
         dashboard: {
             '': secure(dashboard),
             blogs: {

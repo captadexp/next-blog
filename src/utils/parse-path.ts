@@ -1,26 +1,3 @@
-export function getParamFromUrl(url: string, template: string, param: string): {
-    params: Record<string, string>,
-    templatePath: string
-} | null {
-    const urlSegments = new URL(url).pathname.split('/').filter(Boolean);
-    const templateSegments = template.split('/').filter(Boolean);
-
-    if (urlSegments.length !== templateSegments.length) {
-        return null;
-    }
-
-    const params = templateSegments.reduce((acc, cur, index) => {
-        if (cur.startsWith(':')) {
-            acc[cur.slice(1)] = urlSegments[index];
-        }
-        return acc;
-    }, {} as Record<string, string>);
-
-    const templatePath = templateSegments.join('/');
-
-    return params[param] ? {params, templatePath} : null;
-}
-
 export interface PathMatchResult {
     handler: Function | null;
     templatePath: string;
