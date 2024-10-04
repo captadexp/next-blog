@@ -19,7 +19,7 @@ Next-Blog robust and user-friendly.
 
 To add Next-Blog to your project, follow these simple steps:
 
-1. **Install Next-Blog 2.0**
+1. **Install Next-Blog**
 
    First, ensure you have Next.js set up.
    Then, install Next-Blog by adding it to your project dependencies.
