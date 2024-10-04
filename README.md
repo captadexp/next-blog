@@ -34,20 +34,20 @@ To add Next-Blog to your project, follow these simple steps:
 
 3.Create a new route at apps/api/sgai-blog/[...page]/route.ts
 
-4.**Update Your Route Configuration**
+4. **Update Your Route Configuration**
 
 In your route.ts, integrate Next-Blog as shown:
 
-import nextBlog from "@supergrowthai/next-blog"
-import FileDBProvider from "@supergrowthai/next-blog/adapters/FileDBAdapter"
+     ```typescript
+   import nextBlog from "@supergrowthai/next-blog"
 
-// To use a database use the builtin MongoDBProvider or create a new Provider.
-// This provider only works locally.    
-const dbProvider = async () => new FileDBProvider("dataPath/")
-const {GET, POST} = nextBlog({db: dbProvider, byPassSecurity: true})
+   //To use a database use the builtin MongoDBProvider or create a new Provider and create a pr?:D
+   //This provider only works locally.    
+   const dbProvider = async () => new FileDBProvider(dataPath)
+   const {GET, POST} = nextBlog({db: dbProvider})
 
-export { GET, POST };
-
+   export { GET, POST };
+   ```
 
 5.**Create a DataPath Folder**
 
