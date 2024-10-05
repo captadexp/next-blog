@@ -15,12 +15,11 @@ Next-Blog robust and user-friendly.
 
 ![Folder Structure](https://github.com/captadexp/next-blog/blob/main/images/apps-router-folder-structure.png?raw=true)
 
-
 ### Quick Start
 
 To add Next-Blog to your project, follow these simple steps:
 
-1. **Install Next-Blog**
+1. **Install Next-Blog 2.0**
 
    First, ensure you have Next.js set up.
    Then, install Next-Blog by adding it to your project dependencies.
@@ -28,32 +27,33 @@ To add Next-Blog to your project, follow these simple steps:
    npm i @supergrowthai/next-blog
    ```
 
-2. **Link Next-Blog to Your Project**
- 
-   Run the following command to link Next-Blog in your project
-   ```shell
-   npm link @supergrowthai/next-blog
-   ```
+2. Create a new route at `apps/api/next-blog/[...page]/route.ts`
 
+2. **Update Your Route Configuration**
 
+<<<<<<< HEAD
 3. Create a new route at ```apps/api/sgai-blog/[...page]/route.ts```
 
 
 4. **Update Your Route Configuration**
 
    In your route.ts, integrate Next-Blog. Initially, bypass security for local development, and later, remove it for production environments:
+=======
+   In your `route.ts`, integrate Next-Blog as shown:
+>>>>>>> parent of 7c3e4d8 (- Updated route configuration to include byPassSecurity for local development)
 
    ```typescript
-   import nextBlog from "@supergrowthai/next-blog";
-   import FileDBProvider from "@supergrowthai/next-blog/adapters/FileDBAdapter";
+   import nextBlog from "@supergrowthai/next-blog"
 
-   // For the first run in local development:
-   const dbProvider = async () => new FileDBProvider("dataPath/");
-   const { GET, POST } = nextBlog({ db: dbProvider, byPassSecurity: true });
+   //To use a database use the builtin MongoDBProvider or create a new Provider and create a pr?:D
+   //This provider only works locally.    
+   const dbProvider = async () => new FileDBProvider(dataPath)
+   const {GET, POST} = nextBlog({db: dbProvider})
 
    export { GET, POST };
    ```
 
+<<<<<<< HEAD
 <<<<<<< HEAD
    **After author creation** : Once your author is created successfully, remove ```byPassSecurity: true``` for a production-ready setup:
 =======
@@ -85,6 +85,8 @@ To add Next-Blog to your project, follow these simple steps:
    ```
 
 
+=======
+>>>>>>> parent of 7c3e4d8 (- Updated route configuration to include byPassSecurity for local development)
 ### Roadmap
 
 Here are the next steps on our journey to enhance Next-Blog:
@@ -107,3 +109,4 @@ from you.
 
 ---
 
+This version aims to be more engaging, inviting, and clear in its instructions and call for collaboration.
