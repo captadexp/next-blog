@@ -15,6 +15,7 @@ Next-Blog robust and user-friendly.
 
 ![Folder Structure](https://github.com/captadexp/next-blog/blob/main/images/apps-router-folder-structure.png?raw=true)
 
+
 ### Quick Start
 
 To add Next-Blog to your project, follow these simple steps:
@@ -27,22 +28,62 @@ To add Next-Blog to your project, follow these simple steps:
    npm i @supergrowthai/next-blog
    ```
 
-2. Create a new route at `apps/api/next-blog/[...page]/route.ts`
+2. **Link Next-Blog to Your Project**
+ 
+   Run the following command to link Next-Blog in your project
+   ```shell
+   npm link @supergrowthai/next-blog
+   ```
 
-2. **Update Your Route Configuration**
 
-   In your `route.ts`, integrate Next-Blog as shown:
+3. Create a new route at ```app/api/sgai-blog/[...page]/route.ts```
+
+
+4. **Update Your Route Configuration**
+
+   In your route.ts, integrate Next-Blog. Initially, bypass security for local development, and later, remove it for production environments:
 
    ```typescript
-   import nextBlog from "@supergrowthai/next-blog"
+   import nextBlog from "@supergrowthai/next-blog";
+   import FileDBProvider from "@supergrowthai/next-blog/adapters/FileDBAdapter";
 
-   //To use a database use the builtin MongoDBProvider or create a new Provider and create a pr?:D
-   //This provider only works locally.    
-   const dbProvider = async () => new FileDBProvider(dataPath)
-   const {GET, POST} = nextBlog({db: dbProvider})
+   // For the first run in local development:
+   const dbProvider = async () => new FileDBProvider("dataPath/");
+   const { GET, POST } = nextBlog({ db: dbProvider, byPassSecurity: true });
 
    export { GET, POST };
    ```
+
+<<<<<<< HEAD
+   **After author creation** : Once your author is created successfully, remove ```byPassSecurity: true``` for a production-ready setup:
+=======
+   -**After author creation** : Once your author is created successfully, remove ```byPassSecurity: true``` for a production-ready setup:
+>>>>>>> 1f8df7f36243aa7947ea55fcc3c894f2b2941a4b
+
+   ```shell
+   const { GET, POST } = nextBlog({ db: dbProvider });
+   ```
+
+
+
+5. **Create a DataPath Folder**
+
+   Create a dataPath folder in the root of your project. The required files authors.json, blogs.json, categories.json, and tags.json will be automatically created when the project runs.
+
+6. **Run the Development Server**
+
+   Now, run the project using following commands
+   
+   ```shell
+   npm run dev
+   ```
+
+   You can access the blogging dashboard at
+   
+   ```shell
+   http://localhost:3000/api/next-blog/dashboard/blogs
+   ```
+
 
 ### Roadmap
 
@@ -66,4 +107,3 @@ from you.
 
 ---
 
-This version aims to be more engaging, inviting, and clear in its instructions and call for collaboration.
