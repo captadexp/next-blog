@@ -36,7 +36,7 @@ To add Next-Blog to your project, follow these simple steps:
    ```
 
 
-3. Create a new route at ```app/api/sgai-blog/[...page]/route.ts```
+3. Create a new route at ```apps/api/sgai-blog/[...page]/route.ts```
 
 
 4. **Update Your Route Configuration**
