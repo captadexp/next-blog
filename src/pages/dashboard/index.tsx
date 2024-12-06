@@ -1,34 +1,18 @@
 import BasePage from "../../components/utils/BasePage";
 
-export default function dashboard() {
-    return <BasePage>
-        <div style={{
-            maxWidth: "600px",
-            margin: "0 auto",
-            padding: "20px",
-            backgroundColor: "#f9f9f9",
-            borderRadius: "8px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-        }}>
-            <ul style={{listStyleType: "none", padding: "0", margin: "0"}}>
-                <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
-                    <a href={"/api/next-blog/dashboard/blogs"}
-                       style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Blogs</a>
-                </li>
-                <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
-                    <a href={"/api/next-blog/dashboard/tags"}
-                       style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Tags</a>
-                </li>
-                <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
-                    <a href={"/api/next-blog/dashboard/categories"}
-                       style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Categories</a>
-                </li>
-                <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
-                    <a href={"/api/next-blog/dashboard/authors"}
-                       style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Authors</a>
-                </li>
-            </ul>
-        </div>
+export default function Dashboard() {
+  return (
+    <BasePage title="Dashboard">
+      <h1 className="text-5xl font-bold text-center mb-12 glitch">Dashboard</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 p-8">
+        {["Blogs", "Tags", "Categories", "Authors"].map((item) => (
+          <a key={item} href={`/api/next-blog/dashboard/${item.toLowerCase()}`} className="w-full">
+            <div className="p-16 bg-[#1e1e1e] text-green-400 rounded-xl shadow-2xl hover:bg-[#00FF00] hover:text-black hover:scale-105 hover:shadow-[0px_20px_50px_rgba(0,255,0,0.3)] transition-all duration-300 ease-in-out transform text-center glitch-box">
+              <h2 className="text-2xl font-bold">{item}</h2>
+            </div>
+          </a>
+        ))}
+      </div>
     </BasePage>
-
+  );
 }

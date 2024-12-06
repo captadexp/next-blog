@@ -12,7 +12,6 @@ import {
 } from "../types";
 import {MongoClient, Db, Collection, ObjectId} from "mongodb"
 
-
 export default class MongoDBAdapter implements DatabaseProvider {
     private db: Db;
 

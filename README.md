@@ -71,6 +71,14 @@ To add Next-Blog to your project, follow these simple steps:
    http://localhost:3000/api/next-blog/dashboard/blogs
    ```
 
+6. ** Enable TypeScript Watch Mode** 
+
+   Add this command on your next-blog project simaltenously on you next-blog project 
+
+   ```shell
+   tsc --watch
+   ```  
+
 
 ### Roadmap
 
@@ -100,7 +108,7 @@ npm link @supergrowthai/next-blog
 ```
 For detailed instructions on how to link the project, refer to this [Medium article](https://medium.com/@jophin.joseph88/npm-link-2f35c7e1ac33)
 
-
+//tsc -watch
 
 **Join me in shaping the future of blogging in Next.js. Together, we can build something amazing.**
 
