@@ -27,22 +27,54 @@ To add Next-Blog to your project, follow these simple steps:
    npm i @supergrowthai/next-blog
    ```
 
-2. Create a new route at `apps/api/next-blog/[...page]/route.ts`
+2. Create a new route at ```apps/api/next-blog/[...page]/route.ts```
 
-2. **Update Your Route Configuration**
+3. **Update Your Route Configuration**
 
-   In your `route.ts`, integrate Next-Blog as shown:
+   In your route.ts, integrate Next-Blog. Initially, bypass security for local development, and later, remove it for production environments:
 
    ```typescript
-   import nextBlog from "@supergrowthai/next-blog"
+   import nextBlog from "@supergrowthai/next-blog";
+   import FileDBProvider from "@supergrowthai/next-blog/adapters/FileDBAdapter";
 
-   //To use a database use the builtin MongoDBProvider or create a new Provider and create a pr?:D
-   //This provider only works locally.    
-   const dbProvider = async () => new FileDBProvider(dataPath)
-   const {GET, POST} = nextBlog({db: dbProvider})
+   // For the first run in local development:
+   const dbProvider = async () => new FileDBProvider("dataPath/");
+   const { GET, POST } = nextBlog({ db: dbProvider, byPassSecurity: true });
 
    export { GET, POST };
    ```
+
+   **After author creation** : Once your author is created successfully, remove ```byPassSecurity: true``` for a production-ready setup:
+
+   ```shell
+   const { GET, POST } = nextBlog({ db: dbProvider });
+   ```
+
+4. **Create a DataPath Folder**
+
+   Create a dataPath folder in the root of your project. The required files authors.json, blogs.json, categories.json, and tags.json will be automatically created when the project runs.
+
+5. **Run the Development Server**
+
+   Now, run the project using following commands
+   
+   ```shell
+   npm run dev
+   ```
+
+   You can access the blogging dashboard at
+   
+   ```shell
+   http://localhost:3000/api/next-blog/dashboard/blogs
+   ```
+
+6. **Enable TypeScript Watch Mode** 
+
+   Add this command on your next-blog project simaltenously
+
+   ```shell
+   tsc --watch
+   ```  
 
 ### Roadmap
 
@@ -62,8 +94,19 @@ I'm looking for contributors to help develop features, write documentation, desi
 you're passionate about making content creation accessible and straightforward for Next.js developers, I'd love to hear
 from you.
 
+***Contributions***
+
+**Link Next-Blog to Your Project**
+Run the following command to link Next-Blog in your project:
+
+```shell
+npm link @supergrowthai/next-blog
+```
+
+For detailed instructions on how to link the project, refer to this [Medium article](https://medium.com/@jophin.joseph88/npm-link-2f35c7e1ac33)
+
 **Join me in shaping the future of blogging in Next.js. Together, we can build something amazing.**
 
 ---
 
-This version aims to be more engaging, inviting, and clear in its instructions and call for collaboration.
+
