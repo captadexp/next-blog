@@ -1,6 +1,5 @@
 import {CNextRequest} from "../../../types";
 import DynamicForm, {DynamicFormFieldType} from "../../../components/utils/DynamicForm";
-import BasePage from "../../../components/utils/BasePage";
 import NotFound from "../../../components/NotFound";
 
 
@@ -21,10 +20,8 @@ export default async function updateAuthor(request: CNextRequest) {
     ];
 
     return (
-        <BasePage>
-            <DynamicForm redirectTo={"/api/next-blog/dashboard/authors"} submitLabel={"Update"} id={"createAuthor"}
-                         postTo={`/api/next-blog/api/author/${id}/update`}
-                         fields={fields}/>
-        </BasePage>
+        <DynamicForm redirectTo={"/api/next-blog/dashboard/authors"} submitLabel={"Update"} id={"createAuthor"}
+                     postTo={`/api/next-blog/api/author/${id}/update`}
+                     fields={fields}/>
     );
 }

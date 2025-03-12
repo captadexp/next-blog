@@ -12,27 +12,29 @@ import {
     TagData
 } from "../types";
 import {v4 as uuidv4} from 'uuid';
+import path from "path";
 
 export default class FileDBAdapter implements DatabaseProvider {
 
     constructor(public dataPath: string) {
-        this.ensureFilesExist();
+        this.ensureFilesExist().catch(console.error);
     }
 
     private async ensureFilesExist() {
         const files = ['blogs.json', 'categories.json', 'tags.json', 'authors.json'];
         await Promise.all(files.map(async (file) => {
             try {
-                await fs.access(this.dataPath + file);
+                await fs.access(path.join(this.dataPath, file));
             } catch {
-                await fs.writeFile(this.dataPath + file, JSON.stringify([], null, 2), {encoding: 'utf8'});
+                await fs.mkdir(this.dataPath, {recursive: true});
+                await fs.writeFile(path.join(this.dataPath, file), JSON.stringify([], null, 2), {encoding: 'utf8'});
             }
         }));
     }
 
     async readData<T>(fileName: string): Promise<T[]> {
         try {
-            const data = await fs.readFile(this.dataPath + fileName, {encoding: 'utf8'});
+            const data = await fs.readFile(path.join(this.dataPath, fileName), {encoding: 'utf8'});
             return JSON.parse(data);
         } catch (error) {
             console.error('Error reading file:', error);
@@ -42,7 +44,7 @@ export default class FileDBAdapter implements DatabaseProvider {
 
     async writeData<T>(fileName: string, data: T[]): Promise<void> {
         try {
-            await fs.writeFile(this.dataPath + fileName, JSON.stringify(data, null, 2), {encoding: 'utf8'});
+            await fs.writeFile(path.join(this.dataPath, fileName), JSON.stringify(data, null, 2), {encoding: 'utf8'});
         } catch (error) {
             console.error('Error writing to file:', error);
         }

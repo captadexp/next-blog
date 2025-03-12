@@ -57,7 +57,7 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-
+dev-app/data
 
 *.js
 *.d.ts
@@ -66,5 +66,4 @@ dist
 /**/*.js
 /**/*.d.ts
 /**/*.d.ts.map
-!webpack.config.js
 .npmrc

@@ -1,4 +1,3 @@
-import BasePage from "../../../components/utils/BasePage";
 import DynamicForm, {DynamicFormFieldType} from "../../../components/utils/DynamicForm";
 
 export default function CreateAuthor() {
@@ -12,9 +11,7 @@ export default function CreateAuthor() {
     ];
 
     return (
-        <BasePage>
-            <DynamicForm redirectTo={"/api/next-blog/dashboard/authors"} submitLabel={"Create"} id={"createAuthor"}
-                         postTo={"/api/next-blog/api/authors/create"} fields={fields}/>
-        </BasePage>
+        <DynamicForm redirectTo={"/api/next-blog/dashboard/authors"} submitLabel={"Create"} id={"createAuthor"}
+                     postTo={"/api/next-blog/api/authors/create"} fields={fields}/>
     );
 }

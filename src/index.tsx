@@ -3,226 +3,227 @@ import {NextRequest, NextResponse} from "next/server";
 import {matchPathToFunction, PathObject} from "./utils/parse-path";
 import NotFound from "./components/NotFound";
 import secure from "./utils/secureInternal";
-import blogs from "./pages/dashboard/blogs";
-import createBlog from "./pages/dashboard//blogs/create";
-import updateBlog from "./pages/dashboard//blogs/update";
-import categories from "./pages/dashboard//categories";
-import createCategory from "./pages/dashboard//categories/create";
-import updateCategory from "./pages/dashboard//categories/update";
-import tags from "./pages/dashboard//tags";
-import createTag from "./pages/dashboard//tags/create";
-import updateTag from "./pages/dashboard//tags/update";
-import authors from "./pages/dashboard//authors";
-import createAuthor from "./pages/dashboard//authors/create";
-import updateAuthor from "./pages/dashboard//authors/update";
-import dashboard from "./pages/dashboard";
-import crypto from "./utils/crypto"
-import {ObjectId} from "mongodb";
 
-const cmsPaths: { GET: PathObject, POST: PathObject } = {
+import blogs from "./pages/dashboard/blogs";
+import createBlog from "./pages/dashboard/blogs/create";
+import updateBlog from "./pages/dashboard/blogs/update";
+
+import categories from "./pages/dashboard/categories";
+import createCategory from "./pages/dashboard/categories/create";
+import updateCategory from "./pages/dashboard/categories/update";
+
+import tags from "./pages/dashboard/tags";
+import createTag from "./pages/dashboard/tags/create";
+import updateTag from "./pages/dashboard/tags/update";
+
+import authors from "./pages/dashboard/authors";
+import createAuthor from "./pages/dashboard/authors/create";
+import updateAuthor from "./pages/dashboard/authors/update";
+
+import dashboard from "./pages/dashboard";
+import crypto from "./utils/crypto";
+import NavigationProvider from "./components/providers/NavigationProvider";
+import BasePage from "./components/utils/BasePage";
+
+const cmsPaths: { GET: PathObject; POST: PathObject } = {
     GET: {
         api: {
             blogs: secure(async (request: CNextRequest) => {
-                const db = await request.db()
-                const items = await db.blogs.find({})
-                return NextResponse.json(items)
+                const db = await request.db();
+                const items = await db.blogs.find({});
+                return NextResponse.json(items);
             }),
             blog: {
                 ":id": secure(async (request: CNextRequest) => {
-                    const db = await request.db()
-                    const item = await db.blogs.findOne({_id: new ObjectId(request._params.id)})
-                    return NextResponse.json(item)
-                })
+                    const db = await request.db();
+                    const item = await db.blogs.findOne({_id: request._params.id});
+                    return NextResponse.json(item);
+                }),
             },
             tags: secure(async (request: CNextRequest) => {
-                const db = await request.db()
-                const items = await db.tags.find({})
-                return NextResponse.json(items)
+                const db = await request.db();
+                const items = await db.tags.find({});
+                return NextResponse.json(items);
             }),
             tag: {
                 ":id": secure(async (request: CNextRequest) => {
-                    const db = await request.db()
-                    const item = await db.tags.findOne({_id: new ObjectId(request._params.id)})
-                    return NextResponse.json(item)
-                })
+                    const db = await request.db();
+                    const item = await db.tags.findOne({_id: request._params.id});
+                    return NextResponse.json(item);
+                }),
             },
             categories: secure(async (request: CNextRequest) => {
-                const db = await request.db()
-                const items = await db.categories.find({})
-                return NextResponse.json(items)
+                const db = await request.db();
+                const items = await db.categories.find({});
+                return NextResponse.json(items);
             }),
             category: {
                 ":id": secure(async (request: CNextRequest) => {
-                    const db = await request.db()
-                    const item = await db.categories.findOne({_id: new ObjectId(request._params.id)})
-
-                    return NextResponse.json(item)
-                })
+                    const db = await request.db();
+                    const item = await db.categories.findOne({_id: request._params.id});
+                    return NextResponse.json(item);
+                }),
             },
             authors: secure(async (request: CNextRequest) => {
-                const db = await request.db()
-                const items = await db.blogs.find({})
-                return NextResponse.json(items)
+                const db = await request.db();
+                const items = await db.authors.find({});
+                return NextResponse.json(items);
             }),
             author: {
                 ":id": secure(async (request: CNextRequest) => {
-                    const db = await request.db()
-                    const item = await db.authors.findOne({_id: new ObjectId(request._params.id)})
-                    return NextResponse.json(item)
-                })
+                    const db = await request.db();
+                    const item = await db.authors.findOne({_id: request._params.id});
+                    return NextResponse.json(item);
+                }),
             },
         },
         dashboard: {
-            '': secure(dashboard),
+            "": secure(dashboard),
             blogs: {
-                '': secure(blogs),
+                "": secure(blogs),
                 create: secure(createBlog),
-                ':id': secure(updateBlog)
+                ":id": secure(updateBlog),
             },
             categories: {
-                '': secure(categories),
+                "": secure(categories),
                 create: secure(createCategory),
-                ':id': secure(updateCategory)
+                ":id": secure(updateCategory),
             },
             tags: {
-                '': secure(tags),
+                "": secure(tags),
                 create: secure(createTag),
-                ':id': secure(updateTag)
+                ":id": secure(updateTag),
             },
             authors: {
-                '': secure(authors),
+                "": secure(authors),
                 create: secure(createAuthor),
-                ':id': secure(updateAuthor)
-            }
-        }
+                ":id": secure(updateAuthor),
+            },
+        },
     },
     POST: {
         api: {
             blog: {
-                ':id': {
+                ":id": {
                     update: secure(async (request: CNextRequest) => {
                         const db = await request.db();
                         const body = await request.json();
-                        const extras = {updatedAt: Date.now()}
-                        const updation = await db.blogs.updateOne({_id: request._params.id}, {...body, ...extras})
-                        request.configuration.callbacks?.on?.("updateBlog", updation)
-                        return JSON.stringify(updation)
+                        const extras = {updatedAt: Date.now()};
+                        const updation = await db.blogs.updateOne({_id: request._params.id}, {...body, ...extras});
+                        request.configuration.callbacks?.on?.("updateBlog", updation);
+                        return JSON.stringify(updation);
                     }),
                     delete: secure(async (request: CNextRequest) => {
                         const db = await request.db();
-                        const deletion = await db.blogs.deleteOne({_id: request._params.id})
-                        request.configuration.callbacks?.on?.("deleteBlog", deletion)
-                        return JSON.stringify(deletion)
-                    })
-                }
+                        const deletion = await db.blogs.deleteOne({_id: request._params.id});
+                        request.configuration.callbacks?.on?.("deleteBlog", deletion);
+                        return JSON.stringify(deletion);
+                    }),
+                },
             },
             blogs: {
                 create: secure(async (request: CNextRequest) => {
                     const db = await request.db();
-                    const body = await request.json()
+                    const body = await request.json();
                     const extras = {
                         createdAt: Date.now(),
-                        updatedAt: Date.now()
-                    }
-                    const creation = await db.blogs.create({...body, ...extras, authorId: request.sessionUser._id})
-                    request.configuration.callbacks?.on?.("createBlog", creation)
-                    return JSON.stringify(creation)
+                        updatedAt: Date.now(),
+                    };
+                    const creation = await db.blogs.create({...body, ...extras, authorId: request.sessionUser._id});
+                    request.configuration.callbacks?.on?.("createBlog", creation);
+                    return JSON.stringify(creation);
                 }),
             },
             category: {
-                ':id': {
+                ":id": {
                     update: secure(async (request: CNextRequest) => {
-                        const db = await request.db()
-                        const updation = await db.categories.updateOne({_id: request._params.id}, await request.json())
-                        request.configuration.callbacks?.on?.("updateCategory", updation)
-                        return JSON.stringify(updation)
-                    }),
-                    delete: secure(async (request: CNextRequest) => {
-                        const db = await request.db()
-                        const deletion = await db.categories.deleteOne({_id: request._params.id})
-                        request.configuration.callbacks?.on?.("deleteCategory", deletion)
-                        return JSON.stringify(deletion)
-                    })
-                }
-            },
-            categories: {
-                create: secure(async (request: CNextRequest) => {
-                    const db = await request.db()
-                    const creation = await db.categories.create(await request.json());
-                    request.configuration.callbacks?.on?.("createCategory", creation)
-                    return JSON.stringify(creation)
-                })
-            },
-            tag: {
-                ':id': {
-                    update: secure(async (request: CNextRequest) => {
-                        const db = await request.db()
-                        const updation = await db.tags.updateOne({_id: request._params.id}, await request.json())
-                        request.configuration.callbacks?.on?.("updateTag", updation)
-                        return JSON.stringify(updation)
+                        const db = await request.db();
+                        const updation = await db.categories.updateOne({_id: request._params.id}, await request.json());
+                        request.configuration.callbacks?.on?.("updateCategory", updation);
+                        return JSON.stringify(updation);
                     }),
                     delete: secure(async (request: CNextRequest) => {
                         const db = await request.db();
-                        const deletion = await db.tags.deleteOne({_id: request._params.id})
-                        request.configuration.callbacks?.on?.("deleteTag", deletion)
-                        return JSON.stringify(deletion)
-                    })
-                }
+                        const deletion = await db.categories.deleteOne({_id: request._params.id});
+                        request.configuration.callbacks?.on?.("deleteCategory", deletion);
+                        return JSON.stringify(deletion);
+                    }),
+                },
+            },
+            categories: {
+                create: secure(async (request: CNextRequest) => {
+                    const db = await request.db();
+                    const creation = await db.categories.create(await request.json());
+                    request.configuration.callbacks?.on?.("createCategory", creation);
+                    return JSON.stringify(creation);
+                }),
+            },
+            tag: {
+                ":id": {
+                    update: secure(async (request: CNextRequest) => {
+                        const db = await request.db();
+                        const updation = await db.tags.updateOne({_id: request._params.id}, await request.json());
+                        request.configuration.callbacks?.on?.("updateTag", updation);
+                        return JSON.stringify(updation);
+                    }),
+                    delete: secure(async (request: CNextRequest) => {
+                        const db = await request.db();
+                        const deletion = await db.tags.deleteOne({_id: request._params.id});
+                        request.configuration.callbacks?.on?.("deleteTag", deletion);
+                        return JSON.stringify(deletion);
+                    }),
+                },
             },
             tags: {
                 create: secure(async (request: CNextRequest) => {
-                    const db = await request.db()
-                    const creation = await db.tags.create(await request.json())
-                    request.configuration.callbacks?.on?.("createTag", creation)
-                    return JSON.stringify(creation)
-                })
+                    const db = await request.db();
+                    const creation = await db.tags.create(await request.json());
+                    request.configuration.callbacks?.on?.("createTag", creation);
+                    return JSON.stringify(creation);
+                }),
             },
             author: {
-                ':id': {
+                ":id": {
                     update: secure(async (request: CNextRequest) => {
-                        const db = await request.db()
-                        const {password, ...other} = await request.json()
-                        const updation = await db.authors.updateOne({_id: request._params.id}, other)
-                        request.configuration.callbacks?.on?.("updateAuthor", updation)
-                        return JSON.stringify(updation)
+                        const db = await request.db();
+                        const {password, ...other} = await request.json();
+                        const updation = await db.authors.updateOne({_id: request._params.id}, other);
+                        request.configuration.callbacks?.on?.("updateAuthor", updation);
+                        return JSON.stringify(updation);
                     }),
                     delete: secure(async (request: CNextRequest) => {
-                        const db = await request.db()
-                        const deletion = await db.authors.deleteOne({_id: request._params.id})
-                        request.configuration.callbacks?.on?.("deleteAuthor", deletion)
-                        return JSON.stringify(deletion)
-                    })
-                }
+                        const db = await request.db();
+                        const deletion = await db.authors.deleteOne({_id: request._params.id});
+                        request.configuration.callbacks?.on?.("deleteAuthor", deletion);
+                        return JSON.stringify(deletion);
+                    }),
+                },
             },
             authors: {
                 create: secure(async (request: CNextRequest) => {
-                    const db = await request.db()
+                    const db = await request.db();
                     const {password, ...other} = await request.json();
-                    const creation = await db.authors.create({...other, password: crypto.hashPassword(password)})
-                    request.configuration.callbacks?.on?.("createAuthor", creation)
-                    return JSON.stringify(creation)
-                })
+                    const creation = await db.authors.create({...other, password: crypto.hashPassword(password)});
+                    request.configuration.callbacks?.on?.("createAuthor", creation);
+                    return JSON.stringify(creation);
+                }),
             },
-        }
-    }
+        },
+    },
 };
 
 export default function NextBlog(configuration: Configuration) {
     async function processRequest(pathObject: PathObject, request: NextRequest, _response: NextResponse) {
-        const finalPathname = request.nextUrl.pathname.replace("/api/next-blog/", "")
-        const {db} = configuration
-        const {
-            params,
-            handler,
-            templatePath
-        } = matchPathToFunction(pathObject, finalPathname)
+        const finalPathname = request.nextUrl.pathname.replace("/api/next-blog/", "");
+        const {db} = configuration;
+        const {params, handler, templatePath} = matchPathToFunction(pathObject, finalPathname);
 
-        console.log("=>", request.method, params, templatePath, "executing:", !!handler)
+        console.log("=>", request.method, templatePath, params, "executing:", !!handler);
 
         if (!handler) {
-            const ReactDOMServer = (await import('preact-render-to-string'));
-            const response = ReactDOMServer.renderToString(<NotFound/>)
-            return new NextResponse(response, {headers: {"Content-Type": "text/html"}})
+            const ReactDOMServer = (await import("preact-render-to-string")).default;
+            const responseContent = ReactDOMServer(<NotFound/>);
+            return new NextResponse(responseContent, {headers: {"Content-Type": "text/html"}});
         }
 
         (request as any)._params = params;
@@ -230,25 +231,22 @@ export default function NextBlog(configuration: Configuration) {
         (request as any).configuration = configuration;
 
         const response = await handler(request);
-
-        if (response instanceof NextResponse || response instanceof Response)
-            return response;
-
+        if (response instanceof NextResponse || response instanceof Response) return response;
         if (typeof response === "string") {
             return new NextResponse(response, {headers: {"Content-Type": "text/html"}});
         }
-
-        const ReactDOMServer = (await import('preact-render-to-string'));
-        return new NextResponse(ReactDOMServer.renderToString(response), {headers: {"Content-Type": "text/html"}});
+        const ReactDOMServer = (await import("preact-render-to-string")).default;
+        const content = ReactDOMServer(<NavigationProvider><BasePage>{response}</BasePage></NavigationProvider>);
+        return new NextResponse(content, {headers: {"Content-Type": "text/html"}});
     }
 
     async function GET(request: NextRequest, response: NextResponse) {
-        return processRequest(cmsPaths.GET, request, response)
+        return processRequest(cmsPaths.GET, request, response);
     }
 
     async function POST(request: NextRequest, response: NextResponse) {
-        return processRequest(cmsPaths.POST, request, response)
+        return processRequest(cmsPaths.POST, request, response);
     }
 
-    return {GET, POST}
+    return {GET, POST};
 }

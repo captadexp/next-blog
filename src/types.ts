@@ -76,7 +76,7 @@ export type Filter<T> = Partial<Record<keyof T, any>>;
 export interface CollectionOperations<T, U> {
     findOne(filter: Filter<T>): Promise<T | null>;
 
-    find(filter: Filter<T>, options?: { skip?: number, limit?: number }): Promise<T[]>;
+    find(filter: Filter<T>, options?: { skip?: number; limit?: number }): Promise<T[]>;
 
     findById(id: string): Promise<T | null>;
 
@@ -102,17 +102,18 @@ export type EventPayload =
     | { event: "deleteAuthor"; payload: Author };
 
 export interface ConfigurationCallbacks {
-    on?<E extends EventPayload>(event: E['event'], payload: E['payload']): void;
+    on?<E extends EventPayload>(event: E["event"], payload: E["payload"]): void;
 }
 
 export type Configuration = {
-    db(): Promise<DatabaseProvider>, byPassSecurity?: boolean,
-    callbacks?: ConfigurationCallbacks
-}
+    db(): Promise<DatabaseProvider>;
+    byPassSecurity?: boolean;
+    callbacks?: ConfigurationCallbacks;
+};
 
 export type CNextRequest = NextRequest & {
-    _params: Record<string, string>,
-    db(): Promise<DatabaseProvider>,
-    configuration: Configuration,
-    sessionUser: Author
-}
+    _params: Record<string, string>;
+    db(): Promise<DatabaseProvider>;
+    configuration: Configuration;
+    sessionUser: Author;
+};

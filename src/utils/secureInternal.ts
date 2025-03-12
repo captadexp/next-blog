@@ -11,6 +11,9 @@ export default function secure<T>(fn: (request: CNextRequest) => T) {
 
         const db = await request.db()
 
+        const usersCount = await db.authors.find({});
+        request.configuration.byPassSecurity = request.configuration.byPassSecurity !== undefined ? request.configuration.byPassSecurity : !usersCount.length;
+
         if (request.configuration.byPassSecurity) {
             console.log("Security bypassed. This should be happening only if you are creating the first author")
             return fn(request)

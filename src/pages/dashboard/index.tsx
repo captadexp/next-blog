@@ -1,34 +1,28 @@
-import BasePage from "../../components/utils/BasePage";
-
-export default function dashboard() {
-    return <BasePage>
-        <div style={{
-            maxWidth: "600px",
-            margin: "0 auto",
-            padding: "20px",
-            backgroundColor: "#f9f9f9",
-            borderRadius: "8px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-        }}>
-            <ul style={{listStyleType: "none", padding: "0", margin: "0"}}>
-                <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
-                    <a href={"/api/next-blog/dashboard/blogs"}
-                       style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Blogs</a>
+export default function Dashboard() {
+    return (
+        <div className="max-w-lg mx-auto p-5 bg-gray-50 rounded-lg shadow-md">
+            <ul className="list-none m-0 p-0">
+                <li className="border-b border-gray-200 p-3">
+                    <a href="/api/next-blog/dashboard/blogs" className="text-blue-500 text-lg hover:underline">
+                        Blogs
+                    </a>
                 </li>
-                <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
-                    <a href={"/api/next-blog/dashboard/tags"}
-                       style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Tags</a>
+                <li className="border-b border-gray-200 p-3">
+                    <a href="/api/next-blog/dashboard/tags" className="text-blue-500 text-lg hover:underline">
+                        Tags
+                    </a>
                 </li>
-                <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
-                    <a href={"/api/next-blog/dashboard/categories"}
-                       style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Categories</a>
+                <li className="border-b border-gray-200 p-3">
+                    <a href="/api/next-blog/dashboard/categories" className="text-blue-500 text-lg hover:underline">
+                        Categories
+                    </a>
                 </li>
-                <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
-                    <a href={"/api/next-blog/dashboard/authors"}
-                       style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Authors</a>
+                <li className="border-b border-gray-200 p-3">
+                    <a href="/api/next-blog/dashboard/authors" className="text-blue-500 text-lg hover:underline">
+                        Authors
+                    </a>
                 </li>
             </ul>
         </div>
-    </BasePage>
-
+    );
 }

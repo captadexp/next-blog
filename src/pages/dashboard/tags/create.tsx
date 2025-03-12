@@ -8,10 +8,8 @@ export default function CreateCategory() {
     ];
 
     return (
-        <BasePage>
-            <DynamicForm redirectTo={"/api/next-blog/dashboard/tags"} submitLabel={"Create"} id={"createTag"}
-                         postTo={"/api/next-blog/api/tags/create"}
-                         fields={fields}/>
-        </BasePage>
+        <DynamicForm redirectTo={"/api/next-blog/dashboard/tags"} submitLabel={"Create"} id={"createTag"}
+                     postTo={"/api/next-blog/api/tags/create"}
+                     fields={fields}/>
     );
 }

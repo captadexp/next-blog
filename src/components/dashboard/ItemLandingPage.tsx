@@ -1,39 +1,29 @@
-import BasePage from "../utils/BasePage";
-
-export default function ItemLandingPage<T extends { _id: string, title: string }>(props: {
-    createUrl: string,
-    createBtnText: string,
-    items: T[],
-    itemLinkBasePath: string
+export default function ItemLandingPage<T extends { _id: string; title: string }>(props: {
+    createUrl: string;
+    createBtnText: string;
+    items: T[];
+    itemLinkBasePath: string;
 }) {
-    const {
-        itemLinkBasePath,
-        createUrl,
-        createBtnText,
-        items
-    } = props;
+    const {itemLinkBasePath, createUrl, createBtnText, items} = props;
 
-    return <BasePage>
-        <div style={{padding: "20px", maxWidth: "600px", margin: "auto"}}>
-            <a href={createUrl} style={{
-                display: "inline-block",
-                marginBottom: "20px",
-                backgroundColor: "#007bff",
-                color: "#ffffff",
-                padding: "10px 15px",
-                borderRadius: "5px",
-                textDecoration: "none"
-            }}>{createBtnText}</a><br/>
-            <ul style={{listStyleType: "none", padding: "0", margin: "0"}}>
-                {items.map((item, index) => (
-                    <li key={index} style={{borderBottom: "1px solid #eee", padding: "10px"}}>
+    return (
+        <div className="p-5 max-w-lg mx-auto">
+            <a
+                href={createUrl}
+                className="inline-block mb-5 bg-blue-500 text-white px-4 py-2 rounded-md text-center hover:bg-blue-600"
+            >
+                {createBtnText}
+            </a>
+            <ul className="list-none p-0 m-0">
+                {items.map((item) => (
+                    <li key={item._id} className="border-b border-gray-200 p-3">
                         <a href={`${itemLinkBasePath}${item._id}`}
-                           style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>
+                           className="text-blue-500 text-lg hover:underline">
                             {item.title}
                         </a>
                     </li>
                 ))}
             </ul>
         </div>
-    </BasePage>
+    );
 }

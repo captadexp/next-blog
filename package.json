@@ -3,11 +3,14 @@
   "version": "1.0.13",
   "description": "Add blogging to your nextjs project in a jiffy",
   "repository": "https://github.com/captadexp/next-blog",
+  "author": "Capt ADExp <tech@developer.toys>",
+  "license": "ISC",
   "scripts": {
-    "start": "webpack-dev-server -d inline-source-map --mode=development",
+    "dev": "webpack serve --mode=development",
+    "build": "yarn clean && yarn tsc && webpack --mode=production",
     "webpack-build": "webpack --mode=production",
-    "build": "yarn clean && tsc",
-    "clean": "rm -rf *.js *.d.ts* adapters components pages utils"
+    "clean": "rm -rf dist",
+    "start": "node dist/render/index.js"
   },
   "keywords": [
     "nextjs",
@@ -19,69 +22,44 @@
     "secure"
   ],
   "files": [
-    "./*.js",
-    "./*.d.ts*",
-    "./**/*.js",
-    "./**/*.d.ts*"
+    "dist/**/*"
   ],
   "exports": {
     ".": {
-      "types": "./index.d.ts",
-      "import": "./index.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./adapters/*": {
-      "types": "./adapters/*.d.ts",
-      "import": "./adapters/*.js"
+      "types": "./dist/adapters/*.d.ts",
+      "import": "./dist/adapters/*.js"
     },
     "./ui": {
-      "types": "./ui/index.d.ts",
-      "import": "./ui/index.js"
+      "types": "./dist/ui/index.d.ts",
+      "import": "./dist/ui/index.js"
     },
     "./types": {
-      "types": "./types.d.ts"
-    },
-    "./render": {
-      "import": "./render/index.js",
-      "types": "./render/index.d.ts"
+      "types": "./dist/types.d.ts"
     },
     "./package.json": "./package.json"
   },
-  "author": "Capt ADExp <tech@developer.toys>",
-  "license": "ISC",
+  "peerDependencies": {
+    "next": "^15.2.2"
+  },
   "dependencies": {
     "moment": "^2.30.1",
-    "preact": "10.11.3",
-    "preact-render-to-string": "5.2.3"
+    "preact": "^10.26.4",
+    "preact-render-to-string": "^6.5.13"
   },
   "optionalDependencies": {
-    "mongodb": "^6.5.0",
-    "uuid": "^9.0.1"
-  },
-  "peerDependencies": {
-    "next": "^15.1.0"
+    "mongodb": "^6.14.2",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "@ckeditor/ckeditor5-build-classic": "^41.2.1",
+    "@ckeditor/ckeditor5-build-classic": "^44.3.0",
     "@types/mongodb": "^4.0.7",
-    "@types/uuid": "^9.0.8",
-    "clean-webpack-plugin": "^4.0.0",
-    "compression-webpack-plugin": "^11.1.0",
-    "copy-webpack-plugin": "^12.0.2",
-    "css-loader": "^6.10.0",
-    "css-minimizer-webpack-plugin": "^6.0.0",
-    "eslint": "^8.57.0",
-    "filemanager-webpack-plugin": "^8.0.0",
-    "html-webpack-plugin": "^5.6.0",
-    "mini-css-extract-plugin": "^2.8.1",
-    "sass": "^1.72.0",
-    "sass-loader": "^14.1.1",
-    "style-loader": "^3.3.4",
-    "terser-webpack-plugin": "^5.3.10",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.4.2",
-    "webpack": "^5.90.3",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.0.3",
-    "@types/next": "^9.0.0"
+    "@types/next": "^9.0.0",
+    "@types/uuid": "^10.0.0",
+    "typescript": "^5.8.2",
+    "@swc/register": "^0.1.10"
   }
 }

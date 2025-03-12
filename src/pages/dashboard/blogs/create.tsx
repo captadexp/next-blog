@@ -1,5 +1,4 @@
 import {CNextRequest} from "../../../types";
-import BasePage from "../../../components/utils/BasePage";
 import DynamicForm, {DynamicFormFieldType} from "../../../components/utils/DynamicForm";
 
 
@@ -10,11 +9,9 @@ export default function createBlog(request: CNextRequest) {
         {key: 'slug', label: 'Slug', type: 'text'},
         {key: 'content', label: 'Content', type: 'richtext'},
         {key: 'category', label: 'Category', type: 'text'},
-        {key: 'tags', label: 'Tags (comma-separated)', type: 'text'}
+        {key: 'tags', label: 'Tags (comma-separated)', type: 'autocomplete'}
     ];
 
-    return <BasePage>
-        <DynamicForm redirectTo={"/api/next-blog/dashboard/blogs"} id={"createBlog"}
-                     postTo={"/api/next-blog/api/blogs/create"} fields={fields} submitLabel={"Create"}/>
-    </BasePage>
+    return <DynamicForm redirectTo={"/api/next-blog/dashboard/blogs"} id={"createBlog"}
+                        postTo={"/api/next-blog/api/blogs/create"} fields={fields} submitLabel={"Create"}/>
 }

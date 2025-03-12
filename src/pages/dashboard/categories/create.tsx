@@ -1,5 +1,4 @@
 import DynamicForm, {DynamicFormFieldType} from "../../../components/utils/DynamicForm";
-import BasePage from "../../../components/utils/BasePage";
 
 export default function CreateCategory() {
     const fields: DynamicFormFieldType[] = [
@@ -9,9 +8,7 @@ export default function CreateCategory() {
     ];
 
     return (
-        <BasePage>
-            <DynamicForm redirectTo={"/api/next-blog/dashboard/categories"} submitLabel={"Create"} id={"createCategory"}
-                         postTo={"/api/next-blog/api/categories/create"} fields={fields}/>
-        </BasePage>
+        <DynamicForm redirectTo={"/api/next-blog/dashboard/categories"} submitLabel={"Create"} id={"createCategory"}
+                     postTo={"/api/next-blog/api/categories/create"} fields={fields}/>
     );
 }

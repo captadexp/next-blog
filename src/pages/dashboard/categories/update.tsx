@@ -1,7 +1,6 @@
 import {CNextRequest} from "../../../types";
 import DynamicForm, {DynamicFormFieldType} from "../../../components/utils/DynamicForm";
 import NotFound from "../../../components/NotFound";
-import BasePage from "../../../components/utils/BasePage";
 
 export default async function updateCategory(request: CNextRequest) {
     const id = request._params.id;
@@ -17,9 +16,8 @@ export default async function updateCategory(request: CNextRequest) {
     ];
 
     return (
-        <BasePage>
-            <DynamicForm redirectTo={"/api/next-blog/dashboard/categories"} submitLabel={"Update"} id={"updateCategory"} postTo={`/api/next-blog/api/category/${id}/update`} fields={fields}/>
-        </BasePage>
+        <DynamicForm redirectTo={"/api/next-blog/dashboard/categories"} submitLabel={"Update"} id={"updateCategory"}
+                     postTo={`/api/next-blog/api/category/${id}/update`} fields={fields}/>
     );
 }
 
