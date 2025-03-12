@@ -67,3 +67,4 @@ dist
 /**/*.d.ts
 /**/*.d.ts.map
 !webpack.config.js
+.npmrc

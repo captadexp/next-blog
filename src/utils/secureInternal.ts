@@ -6,7 +6,7 @@ import crypto from "./crypto"
 export default function secure<T>(fn: (request: CNextRequest) => T) {
 
     return async (request: CNextRequest) => {
-        const headerList = headers()
+        const headerList = await headers()
         const [authMethod, authData] = headerList.get("authorization")?.split(" ") || [];
 
         const db = await request.db()
