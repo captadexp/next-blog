@@ -57,6 +57,7 @@
   },
   "devDependencies": {
     "@types/mongodb": "^4.0.7",
-    "@types/uuid": "^9.0.8"
+    "@types/uuid": "^9.0.8",
+    "@types/next": "^9.0.0"
   }
 }
