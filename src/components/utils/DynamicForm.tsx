@@ -1,4 +1,4 @@
-import {useRef, useState} from "preact/hooks";
+import { useRef, useState, useEffect } from "preact/hooks";
 
 export type DynamicFormFieldType = {
     label: string;
@@ -8,8 +8,7 @@ export type DynamicFormFieldType = {
     disabled?: boolean;
 };
 
-// Text Input Field Component
-const TextField = ({field}: { field: DynamicFormFieldType }) => (
+const TextField = ({ field }: { field: DynamicFormFieldType }) => (
     <div className="w-full mb-4">
         <label htmlFor={field.key} className="block mb-1 text-gray-700 text-sm font-medium">
             {field.label}
@@ -28,8 +27,7 @@ const TextField = ({field}: { field: DynamicFormFieldType }) => (
     </div>
 );
 
-// Textarea Field Component
-const TextareaField = ({field}: { field: DynamicFormFieldType }) => (
+const TextareaField = ({ field }: { field: DynamicFormFieldType }) => (
     <div className="w-full mb-4">
         <label htmlFor={field.key} className="block mb-1 text-gray-700 text-sm font-medium">
             {field.label}
@@ -47,8 +45,7 @@ const TextareaField = ({field}: { field: DynamicFormFieldType }) => (
     </div>
 );
 
-// Rich Text Field Component
-const RichtextField = ({field}: { field: DynamicFormFieldType }) => (
+const RichtextField = ({ field }: { field: DynamicFormFieldType }) => (
     <div className="w-full mb-4">
         <label htmlFor={field.key} className="block mb-1 text-gray-700 text-sm font-medium">
             {field.label}
@@ -58,7 +55,7 @@ const RichtextField = ({field}: { field: DynamicFormFieldType }) => (
             datatype="richtext"
             id={field.key}
             className="border border-gray-300 rounded-md p-3 bg-white shadow-md"
-            dangerouslySetInnerHTML={{__html: field.value}}
+            dangerouslySetInnerHTML={{ __html: field.value }}
         />
         <script
             dangerouslySetInnerHTML={{
@@ -66,7 +63,7 @@ const RichtextField = ({field}: { field: DynamicFormFieldType }) => (
           ClassicEditor.create(document.querySelector('#${field.key}'))
             .then(editor => {
               window.editors = window.editors || {};
-              window.editors[${field.key}.id] = editor;
+              window.editors['${field.key}'] = editor;
             })
             .catch(error => console.error(error));
         `,
@@ -75,131 +72,128 @@ const RichtextField = ({field}: { field: DynamicFormFieldType }) => (
     </div>
 );
 
-// Autocomplete Field Component
 export interface AutocompleteFieldProps extends DynamicFormFieldType {
     apiEndpoint?: string;
     subtype?: string;
 }
 
-function AutocompleteField({apiEndpoint, subtype, ...field}: AutocompleteFieldProps) {
+function AutocompleteField({ apiEndpoint, subtype, ...field }: AutocompleteFieldProps) {
+    const [inputValue, setInputValue] = useState("");
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [selectedItems, setSelectedItems] = useState<string[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (!inputValue) {
+            setSuggestions([]);
+            return;
+        }
+
+        const fetchSuggestions = async () => {
+            setLoading(true);
+            try {
+                const endpoint = apiEndpoint || `/api/next-blog/api/${subtype || ""}`;
+                const res = await fetch(`${endpoint}?q=${encodeURIComponent(inputValue)}`);
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    setSuggestions(data.map((item) => item.name));
+                } else {
+                    setSuggestions([]);
+                }
+            } catch (error) {
+                console.error("Autocomplete error:", error);
+                setSuggestions([]);
+            }
+            setLoading(false);
+        };
+
+        const debounce = setTimeout(fetchSuggestions, 300);
+
+        return () => clearTimeout(debounce);
+    }, [inputValue]);
+
+    const handleSelect = (item: string) => {
+        if (!selectedItems.includes(item)) {
+            setSelectedItems([...selectedItems, item]);
+        }
+        setInputValue("");
+        setSuggestions([]);
+    };
+
+    const handleRemove = (item: string) => {
+        setSelectedItems(selectedItems.filter((i) => i !== item));
+    };
+
     return (
         <div className="w-full mb-4 relative">
             <label htmlFor={field.key} className="block mb-1 text-gray-700 text-sm font-medium">
                 {field.label}
             </label>
 
-            {/* Container for selected chips */}
-            <div id={`${field.key}-chips`} className="flex flex-wrap mb-2"></div>
+            <div className="flex flex-wrap mb-2">
+                {selectedItems.map((item) => (
+                    <div
+                        key={item}
+                        className="flex items-center bg-blue-100 text-blue-800 rounded-full px-2 py-1 mr-2 mb-2 text-sm"
+                    >
+                        <span className="mr-1">{item}</span>
+                        <button
+                            type="button"
+                            onClick={() => handleRemove(item)}
+                            className="text-blue-500 hover:text-blue-700 focus:outline-none"
+                        >
+                            ×
+                        </button>
+                    </div>
+                ))}
+            </div>
 
             <input
+                custom-attribute="df"
+                type="text"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-700 shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 id={field.key}
                 name={field.key}
                 placeholder={field.label}
-                required
+                value={inputValue}
+                onInput={(e) => setInputValue((e.target as HTMLInputElement).value)}
             />
 
-            {/* Loading indicator */}
-            <div id={`${field.key}-loading`} className="text-sm text-gray-500 mt-1" style={{display: "none"}}>
-                Loading...
-            </div>
+            {loading && <div className="text-sm text-gray-500 mt-1">Loading...</div>}
 
-            {/* Suggestions list */}
-            <ul
-                id={`${field.key}-suggestions`}
-                className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-md mt-1 max-h-60 overflow-y-auto"
-            ></ul>
+            {suggestions.length > 0 && (
+                <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-md mt-1 max-h-60 overflow-y-auto">
+                    {suggestions.map((suggestion) => (
+                        <li
+                            key={suggestion}
+                            onClick={() => handleSelect(suggestion)}
+                            className="px-3 py-2 hover:bg-blue-100 cursor-pointer text-sm"
+                        >
+                            {suggestion}
+                        </li>
+                    ))}
+                </ul>
+            )}
 
-            {/* Script to register event listeners and handle autocomplete */}
-            <script
-                dangerouslySetInnerHTML={{
-                    __html: `
-            (function() {
-              var input = document.getElementById('${field.key}');
-              var suggestionList = document.getElementById('${field.key}-suggestions');
-              var chipContainer = document.getElementById('${field.key}-chips');
-              var loadingIndicator = document.getElementById('${field.key}-loading');
-              var timer;
-
-              input.addEventListener('input', function(e) {
-                clearTimeout(timer);
-                timer = window.setTimeout(function() {
-                  var query = input.value;
-                  if (!query) {
-                    suggestionList.innerHTML = '';
-                    return;
-                  }
-                  loadingIndicator.style.display = 'block';
-                  var endpoint = '${apiEndpoint || `/api/next-blog/api/${subtype || ""}`}' + '?q=' + encodeURIComponent(query);
-                  fetch(endpoint)
-                    .then(function(response) { return response.json(); })
-                    .then(function(data) {
-                      loadingIndicator.style.display = 'none';
-                      suggestionList.innerHTML = '';
-                      if (Array.isArray(data)) {
-                        data.forEach(function(suggestion) {
-                          var li = document.createElement('li');
-                          li.textContent = suggestion.name;
-                          li.className = 'px-3 py-2 hover:bg-blue-100 cursor-pointer';
-                          li.addEventListener('click', function() {
-                            // Create a chip for the selected suggestion
-                            var chip = document.createElement('div');
-                            chip.className = 'flex items-center bg-blue-100 text-blue-800 rounded-full px-2 py-1 mr-2 mb-2';
-                            
-                            var span = document.createElement('span');
-                            span.textContent = suggestion._id;
-                            span.className = 'mr-1';
-                            
-                            var btn = document.createElement('button');
-                            btn.type = 'button';
-                            btn.className = 'text-blue-500 hover:text-blue-700 focus:outline-none';
-                            btn.innerHTML = '&times;';
-                            btn.addEventListener('click', function() {
-                              chip.parentNode.removeChild(chip);
-                            });
-                            
-                            chip.appendChild(span);
-                            chip.appendChild(btn);
-                            chipContainer.appendChild(chip);
-                            
-                            input.value = '';
-                            suggestionList.innerHTML = '';
-                          });
-                          suggestionList.appendChild(li);
-                        });
-                      }
-                    })
-                    .catch(function(error) {
-                      loadingIndicator.style.display = 'none';
-                      console.error('Autocomplete error:', error);
-                    });
-                }, 300);
-              });
-            })();
-          `,
-                }}
-            />
+            <input type="hidden" name={field.key} value={selectedItems.join(",")} />
         </div>
     );
 }
 
-
-// Main FormField component that delegates to the above based on the field type.
-const FormField = ({field}: { field: DynamicFormFieldType }) => {
+const FormField = ({ field }: { field: DynamicFormFieldType }) => {
     switch (field.type) {
         case "text":
-            return <TextField field={field}/>;
+            return <TextField field={field} />;
         case "textarea":
-            return <TextareaField field={field}/>;
+            return <TextareaField field={field} />;
         case "richtext":
-            return <RichtextField field={field}/>;
+            return <RichtextField field={field} />;
         case "autocomplete":
-            return <AutocompleteField subtype={"tags"} {...field}/>;
+            return <AutocompleteField subtype={"tags"} {...field} />;
         default:
             return null;
     }
 };
-
 
 const DynamicForm = ({
                          id,
@@ -217,7 +211,7 @@ const DynamicForm = ({
     <>
         <form id={id} className="flex flex-col space-y-4">
             {fields.map((field, index) => (
-                <FormField key={index} field={field}/>
+                <FormField key={index} field={field} />
             ))}
             <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition">
                 {submitLabel}
@@ -232,7 +226,7 @@ const DynamicForm = ({
             const formData = {};
             event.target.querySelectorAll('input, textarea').forEach(input => {
               if(input.attributes.getNamedItem("custom-attribute")?.value === "df") {
-                formData[input.name] = input.name === 'tags' ? input.value.split(',') : input.value;
+                formData[input.name] = input.value;
               }
             });
             event.target.querySelectorAll('div[datatype="richtext"]').forEach(div => {
