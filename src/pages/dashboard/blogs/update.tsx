@@ -14,7 +14,7 @@ export default async function updateBlog(request: CNextRequest) {
         {key: "slug", label: "Slug", type: "text", value: blog.slug},
         {key: "content", label: "Content", type: "richtext", value: blog.content},
         {key: "category", label: "Category", type: "text", value: blog.category},
-        {key: "tags", label: "Tags (comma-separated)", type: "autocomplete", value: blog.tags.join(", ")},
+        {key: "tags", label: "Tags (comma-separated)", type: "autocomplete", value: Array.isArray(blog.tags) ? blog.tags.join(", ") : "" },
     ];
 
     return (

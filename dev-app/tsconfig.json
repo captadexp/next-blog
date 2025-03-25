@@ -13,10 +13,20 @@
     "strict": true,
     "skipLibCheck": true,
     "incremental": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "module": "NodeNext", //recently added
+    "esModuleInterop": true //recently added 
+    ,
+    "target": "ES2017",
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
   "include": [
-    "."
+    ".",
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
