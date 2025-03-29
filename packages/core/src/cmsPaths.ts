@@ -1,128 +1,90 @@
 import {CNextRequest} from "./types";
 import {PathObject} from "./utils/parse-path";
 import secure from "./utils/secureInternal";
-import dashboard from "./pages/dashboard";
-import crypto from "./utils/crypto";
 import {handleStaticFileRequest} from "./utils/staticFileHandler";
+import {DashboardPage} from "@supergrowthai/next-blog-dashboard/server"
+import {
+    getBlogs, getBlogById, createBlog, updateBlog, deleteBlog,
+    getCategories, getCategoryById, createCategory, updateCategory, deleteCategory,
+    getTags, getTagById, createTag, updateTag, deleteTag,
+    getConfig, getCurrentUser,
+    listUsers, getUser, createUser, updateUser, deleteUser
+} from "./api";
 
 const cmsPaths: { GET: PathObject, POST: PathObject } = {
     GET: {
-        api: {},
-        static: {
-            '': async (request: CNextRequest) => {
-                return handleStaticFileRequest(request, '*');
+        api: {
+            blogs: {
+                '*': getBlogs,
+                ':id': getBlogById
+            },
+            // authors routes removed - using users instead
+            categories: {
+                '*': getCategories,
+                ':id': getCategoryById
+            },
+            tags: {
+                '*': getTags,
+                ':id': getTagById
+            },
+            users: {
+                '*': listUsers,
+                ':id': getUser
+            },
+            config: {
+                '*': getConfig
+            },
+            me: {
+                '*': getCurrentUser
             }
         },
         dashboard: {
-            '': secure(dashboard),
+            '*': secure(DashboardPage.toString),
+            static: {
+                '*': async (request: CNextRequest) => {
+                    return handleStaticFileRequest(request, '*');
+                }
+            },
         }
     },
     POST: {
         api: {
             blog: {
                 ':id': {
-                    update: secure(async (request: CNextRequest) => {
-                        const db = await request.db();
-                        const body = await request.json();
-                        const extras = {updatedAt: Date.now()}
-                        const updation = await db.blogs.updateOne({_id: request._params.id}, {...body, ...extras})
-                        request.configuration.callbacks?.on?.("updateBlog", updation)
-                        return JSON.stringify(updation)
-                    }),
-                    delete: secure(async (request: CNextRequest) => {
-                        const db = await request.db();
-                        const deletion = await db.blogs.deleteOne({_id: request._params.id})
-                        request.configuration.callbacks?.on?.("deleteBlog", deletion)
-                        return JSON.stringify(deletion)
-                    })
+                    update: updateBlog,
+                    delete: deleteBlog
                 }
             },
             blogs: {
-                create: secure(async (request: CNextRequest) => {
-                    const db = await request.db();
-                    const body = await request.json()
-                    const extras = {
-                        createdAt: Date.now(),
-                        updatedAt: Date.now()
-                    }
-                    const creation = await db.blogs.create({...body, ...extras, authorId: request.sessionUser._id})
-                    request.configuration.callbacks?.on?.("createBlog", creation)
-                    return JSON.stringify(creation)
-                }),
+                create: createBlog
             },
             category: {
                 ':id': {
-                    update: secure(async (request: CNextRequest) => {
-                        const db = await request.db()
-                        const updation = await db.categories.updateOne({_id: request._params.id}, await request.json())
-                        request.configuration.callbacks?.on?.("updateCategory", updation)
-                        return JSON.stringify(updation)
-                    }),
-                    delete: secure(async (request: CNextRequest) => {
-                        const db = await request.db()
-                        const deletion = await db.categories.deleteOne({_id: request._params.id})
-                        request.configuration.callbacks?.on?.("deleteCategory", deletion)
-                        return JSON.stringify(deletion)
-                    })
+                    update: updateCategory,
+                    delete: deleteCategory
                 }
             },
             categories: {
-                create: secure(async (request: CNextRequest) => {
-                    const db = await request.db()
-                    const creation = await db.categories.create(await request.json());
-                    request.configuration.callbacks?.on?.("createCategory", creation)
-                    return JSON.stringify(creation)
-                })
+                create: createCategory
             },
             tag: {
                 ':id': {
-                    update: secure(async (request: CNextRequest) => {
-                        const db = await request.db()
-                        const updation = await db.tags.updateOne({_id: request._params.id}, await request.json())
-                        request.configuration.callbacks?.on?.("updateTag", updation)
-                        return JSON.stringify(updation)
-                    }),
-                    delete: secure(async (request: CNextRequest) => {
-                        const db = await request.db();
-                        const deletion = await db.tags.deleteOne({_id: request._params.id})
-                        request.configuration.callbacks?.on?.("deleteTag", deletion)
-                        return JSON.stringify(deletion)
-                    })
+                    update: updateTag,
+                    delete: deleteTag
                 }
             },
             tags: {
-                create: secure(async (request: CNextRequest) => {
-                    const db = await request.db()
-                    const creation = await db.tags.create(await request.json())
-                    request.configuration.callbacks?.on?.("createTag", creation)
-                    return JSON.stringify(creation)
-                })
+                create: createTag
             },
-            author: {
+            // author routes removed - using users instead
+            user: {
                 ':id': {
-                    update: secure(async (request: CNextRequest) => {
-                        const db = await request.db()
-                        const {password, ...other} = await request.json()
-                        const updation = await db.authors.updateOne({_id: request._params.id}, other)
-                        request.configuration.callbacks?.on?.("updateAuthor", updation)
-                        return JSON.stringify(updation)
-                    }),
-                    delete: secure(async (request: CNextRequest) => {
-                        const db = await request.db()
-                        const deletion = await db.authors.deleteOne({_id: request._params.id})
-                        request.configuration.callbacks?.on?.("deleteAuthor", deletion)
-                        return JSON.stringify(deletion)
-                    })
+                    update: updateUser,
+                    delete: deleteUser
                 }
             },
-            authors: {
-                create: secure(async (request: CNextRequest) => {
-                    const db = await request.db()
-                    const {password, ...other} = await request.json();
-                    const creation = await db.authors.create({...other, password: crypto.hashPassword(password)})
-                    request.configuration.callbacks?.on?.("createAuthor", creation)
-                    return JSON.stringify(creation)
-                })
+            users: {
+                create: createUser
             },
         }
     }

@@ -1,0 +1,44 @@
+{
+  "name": "@supergrowthai/next-blog-ui",
+  "version": "1.0.0",
+  "description": "UI components for next-blog",
+  "repository": "https://github.com/captadexp/next-blog",
+  "type": "module",
+  "scripts": {
+    "clean": "rm -rf dist && mkdir -p dist",
+    "dev": "npm run clean && vite build --watch",
+    "build": "npm run clean && vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "nextjs",
+    "react",
+    "cms",
+    "blogging",
+    "ui"
+  ],
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "author": "Capt ADExp <tech@developer.toys>",
+  "license": "ISC",
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.14",
+    "@types/react": "^19.0.12",
+    "@types/react-dom": "^19.0.4",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.3",
+    "vite-plugin-dts": "^4.5.3"
+  }
+}

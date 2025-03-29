@@ -19,29 +19,35 @@ bun run build
 
 ## Usage
 
-This package is intended to be used with Next.js applications. See the main project README for detailed usage instructions.
+This package is intended to be used with Next.js applications. See the main project README for detailed usage
+instructions.
 
 ## Package Exports
 
 The package exports the following modules:
 
 ### Main module
+
 ```js
-import nextBlog, { FileDBAdapter, MongoDBAdapter } from '@supergrowthai/next-blog';
+import nextBlog, {FileDBAdapter, MongoDBAdapter} from '@supergrowthai/next-blog';
 ```
 
 ### Adapters (alternative import path)
+
 ```js
-import { FileDBAdapter, MongoDBAdapter } from '@supergrowthai/next-blog/adapters';
+import {FileDBAdapter, MongoDBAdapter} from '@supergrowthai/next-blog/adapters';
 ```
 
 ### Types
+
 ```js
-import type { Configuration } from '@supergrowthai/next-blog/types';
+import type {Configuration} from '@supergrowthai/next-blog/types';
 ```
 
 ### UI (future use)
+
 The UI module is reserved for future customizable components.
+
 ```js
 // Reserved for future use
 // import { ... } from '@supergrowthai/next-blog/ui';

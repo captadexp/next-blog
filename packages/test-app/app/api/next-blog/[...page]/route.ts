@@ -16,7 +16,13 @@ const dbProvider = async () => new FileDBAdapter(`${dataPath}/`);
 
 // Initialize Next-Blog
 const {GET, POST} = nextBlog({
-    db: dbProvider
+    db: dbProvider,
+    ui: {
+        branding: {
+            name: "Amazing 1oh1",
+            description: "The best directory website"
+        }
+    }
 });
 
 // Export the route handlers

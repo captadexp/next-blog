@@ -1,6 +1,4 @@
 import {
-    Author,
-    AuthorData,
     Blog,
     BlogData,
     Category,
@@ -8,7 +6,9 @@ import {
     CollectionOperations,
     DatabaseProvider, Filter,
     Tag,
-    TagData
+    TagData,
+    User,
+    UserData
 } from "../types";
 import {MongoClient, Db, Collection, ObjectId} from "mongodb"
 
@@ -32,8 +32,41 @@ export default class MongoDBAdapter implements DatabaseProvider {
         return this.getCollectionOperations<Tag, TagData>('tags');
     }
 
-    get authors(): CollectionOperations<Author, AuthorData> {
-        return this.getCollectionOperations<Author, AuthorData>('authors');
+    // Authors functionality moved to users
+
+    get users(): CollectionOperations<User, UserData> {
+        const collection: Collection<any> = this.db.collection('users');
+        const standardOps = this.getCollectionOperations<User, UserData>('users');
+        
+        return {
+            ...standardOps,
+            create: async (data: UserData) => {
+                const users = await collection.find({}).toArray();
+                const isFirstUser = users.length === 0;
+                
+                // Set default permissions for the first user (admin access)
+                const permissions = isFirstUser 
+                    ? ['all:all'] 
+                    : data.permissions || [];
+                
+                const userData = {
+                    ...data,
+                    permissions,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                };
+                
+                const result = await collection.insertOne(userData);
+                return { _id: result.insertedId.toString(), ...userData } as unknown as User;
+            },
+            updateOne: (filter: Filter<User>, update: Omit<Filter<User>, "_id">) => {
+                const updatedData = {
+                    ...update,
+                    updatedAt: Date.now()
+                };
+                return collection.findOneAndUpdate(filter, { $set: updatedData }, { returnDocument: "after" });
+            }
+        };
     }
 
     private getCollectionOperations<T, U>(collectionName: string): CollectionOperations<T, U> {

@@ -1,15 +1,15 @@
 import {promises as fs} from "fs";
 import {
-    Author,
-    AuthorData,
     Blog,
     BlogData,
     Category,
     CategoryData,
     DatabaseProvider,
-    Filter,
+    Filter, Permission,
     Tag,
-    TagData
+    TagData,
+    User,
+    UserData
 } from "../types";
 import {v4 as uuidv4} from 'uuid';
 
@@ -20,7 +20,7 @@ export default class FileDBAdapter implements DatabaseProvider {
     }
 
     private async ensureFilesExist() {
-        const files = ['blogs.json', 'categories.json', 'tags.json', 'authors.json'];
+        const files = ['blogs.json', 'categories.json', 'tags.json', 'users.json'];
         await Promise.all(files.map(async (file) => {
             try {
                 await fs.access(this.dataPath + file);
@@ -197,49 +197,64 @@ export default class FileDBAdapter implements DatabaseProvider {
         }
     }
 
-    get authors() {
+    // Authors functionality moved to users
+
+    get users() {
         return {
-            findOne: async (filter: Filter<Author>): Promise<Author> => {
-                const blogs = await this.readData<Author>('authors.json');
-                return blogs.find((blog: any) => Object.keys(filter).every((key: any) => blog[key] === (filter as any)[key]))!;
+            findOne: async (filter: Filter<User>): Promise<User> => {
+                const users = await this.readData<User>('users.json');
+                return users.find((user: any) => Object.keys(filter).every((key: any) => user[key] === (filter as any)[key]))!;
             },
-            find: async (filter: Filter<Author>): Promise<Author[]> => {
-                const blogs = await this.readData<Author>('authors.json');
-                return blogs.filter((author: any) => Object.keys(filter).every(key => author[key] === (filter as any)[key]));
+            find: async (filter: Filter<User>): Promise<User[]> => {
+                const users = await this.readData<User>('users.json');
+                return users.filter((user: any) => Object.keys(filter).every(key => user[key] === (filter as any)[key]));
             },
-            findById: async (id: string): Promise<Author> => {
-                const authors = await this.readData<Author>('authors.json');
-                return authors.find(author => author._id === id)!;
-            },
-
-            create: async (data: AuthorData): Promise<Author> => {
-                const authors = await this.readData<Author>('authors.json');
-                const newAuthor: Author = {...data, _id: uuidv4()};
-                authors.push(newAuthor);
-                await this.writeData('authors.json', authors);
-                return newAuthor;
+            findById: async (id: string): Promise<User> => {
+                const users = await this.readData<User>('users.json');
+                return users.find(user => user._id === id)!;
             },
 
-            updateOne: async (filter: Filter<Author>, {_id, ...update}: Filter<Author>) => {
-                let authors = await this.readData<Author>('authors.json');
-                const authorIndex = authors.findIndex((author: any) => Object.keys(filter).every(key => author[key] === (filter as any)[key]));
-                if (authorIndex !== -1) {
-                    authors[authorIndex] = {...authors[authorIndex], ...update};
-                    await this.writeData('authors.json', authors);
-                    return authors[authorIndex];
+            create: async (data: UserData): Promise<User> => {
+                const users = await this.readData<User>('users.json');
+                const isFirstUser = users.length === 0;
+
+                // Set default permissions for the first user (admin access)
+                const permissions: Permission[] = isFirstUser
+                    ? ['all:all']
+                    : data.permissions || [];
+
+                const newUser: User = {
+                    ...data,
+                    _id: uuidv4(),
+                    permissions,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                };
+
+                users.push(newUser);
+                await this.writeData('users.json', users);
+                return newUser;
+            },
+
+            updateOne: async (filter: Filter<User>, {_id, ...update}: Filter<User>) => {
+                let users = await this.readData<User>('users.json');
+                const userIndex = users.findIndex((user: any) => Object.keys(filter).every(key => user[key] === (filter as any)[key]));
+                if (userIndex !== -1) {
+                    users[userIndex] = {...users[userIndex], ...update, updatedAt: Date.now()};
+                    await this.writeData('users.json', users);
+                    return users[userIndex];
                 }
                 throw new Error("Nothing to update")
             },
 
-            deleteOne: async (filter: Filter<Author>) => {
-                let authors = await this.readData<Author>('authors.json');
+            deleteOne: async (filter: Filter<User>) => {
+                let users = await this.readData<User>('users.json');
+                const userIndex = users.findIndex((user: any) => Object.keys(filter).every(key => user[key] === (filter as any)[key]));
 
-                const blogIndex = authors.findIndex((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
-
-                if (blogIndex !== -1) {
-                    const duplicate = JSON.parse(JSON.stringify(authors[blogIndex]));
-                    authors = authors.filter((blog: any, index) => index !== blogIndex);
-                    await this.writeData('authors.json', authors);
+                if (userIndex !== -1) {
+                    const duplicate = JSON.parse(JSON.stringify(users[userIndex]));
+                    users = users.filter((user: any, index) => index !== userIndex);
+                    await this.writeData('users.json', users);
                     return duplicate;
                 }
                 throw new Error("Nothing to update")

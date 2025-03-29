@@ -5,13 +5,9 @@
   "repository": "https://github.com/captadexp/next-blog",
   "type": "module",
   "scripts": {
-    "clean": "rm -rf dist && mkdir -p dist/core dist/static",
-    "dev": "npm run clean && npm run dev:server & npm run dev:client",
-    "dev:server": "vite build --watch",
-    "dev:client": "vite build --config vite.client.config.ts --watch",
-    "build": "npm run clean && npm run build:server && npm run build:client",
-    "build:server": "vite build",
-    "build:client": "vite build --config vite.client.config.ts",
+    "clean": "rm -rf dist && mkdir -p dist/core",
+    "dev": "npm run clean && vite build --watch",
+    "build": "npm run clean && vite build",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
@@ -24,8 +20,7 @@
     "secure"
   ],
   "files": [
-    "dist",
-    "dist/static"
+    "dist"
   ],
   "exports": {
     ".": {
@@ -35,10 +30,6 @@
     "./adapters": {
       "types": "./dist/core/adapters/index.d.ts",
       "default": "./dist/core/adapters/index.js"
-    },
-    "./ui": {
-      "types": "./dist/core/ui/index.d.ts",
-      "default": "./dist/core/ui/index.js"
     },
     "./types": {
       "types": "./dist/core/types.d.ts",
@@ -50,9 +41,7 @@
   "license": "ISC",
   "dependencies": {
     "moment": "^2.30.1",
-    "preact": "^10.26.4",
-    "preact-render-to-string": "^6.5.13",
-    "preact-iso": "^2.9.1"
+    "@supergrowthai/next-blog-dashboard": "workspace:*"
   },
   "optionalDependencies": {
     "mongodb": "^6.15.0",
@@ -63,10 +52,8 @@
   },
   "devDependencies": {
     "@types/mongodb": "^4.0.7",
-    "@types/uuid": "^9.0.8",
     "@types/node": "^22.13.14",
-    "@types/react": "^19.0.12",
-    "@types/react-dom": "^19.0.4",
+    "@types/uuid": "^9.0.8",
     "typescript": "^5.8.2",
     "vite": "^6.2.3",
     "vite-plugin-dts": "^4.5.3"

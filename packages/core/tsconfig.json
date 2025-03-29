@@ -17,11 +17,7 @@
     "stripInternal": true,
     "target": "es2020",
     "noEmit": true,
-    "jsx": "react-jsx",
-    "jsxImportSource": "preact",
     "lib": [
-      "dom",
-      "dom.iterable",
       "esnext"
     ],
     "outDir": "dist",
@@ -33,6 +29,7 @@
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "vite.config.ts"
   ]
 }

@@ -70,3 +70,4 @@ dist
 
 packages/*/dist
 .idea
+**/CLAUDE.local.md

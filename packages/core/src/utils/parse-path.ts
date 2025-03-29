@@ -39,8 +39,8 @@ export function matchPathToFunction(pathObject: PathObject, url: string): PathMa
         if (index >= segments.length) {
             if (typeof obj === 'function') {
                 return {handler: obj, templatePath: pathAccumulator.join('/'), params: {}};
-            } else if (isPathObject(obj) && typeof obj[""] === 'function') {
-                return {handler: obj[""] as Function, templatePath: pathAccumulator.join('/'), params: {}};
+            } else if (isPathObject(obj) && typeof obj["*"] === 'function') {
+                return {handler: obj["*"] as Function, templatePath: pathAccumulator.join('/'), params: {}};
             }
             return {templatePath: pathAccumulator.join('/'), handler: null, params: {}};
         }
@@ -62,8 +62,8 @@ export function matchPathToFunction(pathObject: PathObject, url: string): PathMa
                     }
                 }
             }
-            if (obj.hasOwnProperty("")) {
-                return traverse(obj[""], index + 1, [...pathAccumulator, ""]);
+            if (obj.hasOwnProperty("*")) {
+                return traverse(obj["*"], index + 1, [...pathAccumulator, "*"]);
             }
         }
 

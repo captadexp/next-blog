@@ -2,17 +2,15 @@ import dts from "vite-plugin-dts";
 import {defineConfig} from "vite";
 
 import * as path from "path";
-
+import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig(({mode}) => {
 
     return {
-        ssr: {noExternal: true},
         build: {
             lib: {
                 entry: {
                     index: path.resolve(__dirname, 'src/index.tsx'),
-                    'ui/index': path.resolve(__dirname, 'src/ui/index.tsx'),
                     types: path.resolve(__dirname, 'src/types.ts'),
                     'adapters/index': path.resolve(__dirname, 'src/adapters/index.ts'),
                 },
@@ -26,6 +24,9 @@ export default defineConfig(({mode}) => {
                     'next/server',
                     'mongodb',
                     'uuid',
+
+                    '@supergrowthai/next-blog-dashboard',
+
                     // Node.js builtin modules
                     'fs',
                     'crypto',
@@ -33,12 +34,7 @@ export default defineConfig(({mode}) => {
 
                     // Next.js specific imports
                     /^next\/.*/
-                ],
-                output: {
-                    entryFileNames({name}) {
-                        return `${name}.js`;
-                    },
-                },
+                ]
             },
             outDir: 'dist/core',
             emptyOutDir: true,
@@ -47,19 +43,13 @@ export default defineConfig(({mode}) => {
             minify: false,
         },
         plugins: [
+            tailwindcss(),
             dts({
                 outDir: 'dist/core',
                 include: ['src'],
                 exclude: ['node_modules', 'src/**/*.test.ts', 'src/**/*.spec.ts', 'src/client/**/*'],
                 rollupTypes: false,
             }),
-        ],
-        resolve: {
-            alias: {
-                'react': 'preact/compat',
-                'react-dom': 'preact/compat',
-                'react/jsx-runtime': 'preact/jsx-runtime',
-            },
-        },
+        ]
     }
 })
