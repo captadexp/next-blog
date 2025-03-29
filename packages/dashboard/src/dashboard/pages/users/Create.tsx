@@ -1,6 +1,6 @@
-import {h, FunctionComponent} from 'preact';
+import {FunctionComponent, h} from 'preact';
 import {useState} from 'preact/hooks';
-import {Permission, CreateUserInput} from '../../../types/api';
+import {Permission} from '../../../types/api';
 import {useLocation} from 'preact-iso/router';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {useUser} from '../../../context/UserContext';
@@ -87,7 +87,7 @@ const CreateUser: FunctionComponent<CreateUserProps> = () => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-6">
+        <div className="max-w-4xl mx-auto p-2 md:p-6">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold">Create New User</h2>
                 <button

@@ -1,4 +1,4 @@
-import {h, FunctionComponent} from 'preact';
+import {FunctionComponent, h} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
 import {useLocation} from 'preact-iso';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
@@ -67,7 +67,7 @@ const UpdateCategory: FunctionComponent<UpdateCategoryProps> = ({id}) => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-6">
+        <div className="max-w-4xl mx-auto p-2 md:p-6">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold">Update Category</h2>
                 <button

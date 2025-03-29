@@ -1,6 +1,6 @@
-import {h, FunctionComponent} from 'preact';
-import {useState, useEffect} from 'preact/hooks';
-import {User, UpdateUserInput, Permission} from '../../../types/api';
+import {FunctionComponent, h} from 'preact';
+import {useEffect, useState} from 'preact/hooks';
+import {Permission, User} from '../../../types/api';
 import {useLocation} from 'preact-iso/router';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {useUser} from '../../../context/UserContext';
@@ -139,7 +139,7 @@ const UpdateUser: FunctionComponent<UpdateUserProps> = ({id: propId}) => {
     // The permissions are now handled within the DynamicForm via the PermissionsField component
 
     return (
-        <div className="max-w-4xl mx-auto p-6">
+        <div className="max-w-4xl mx-auto p-2 md:p-6">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold">Update User</h2>
                 <button

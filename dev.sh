@@ -32,7 +32,7 @@ concurrently \
   --names "UI,DASHBOARD,CORE,TEST" \
   --prefix-colors "cyan,magenta,blue,green" \
   --kill-others \
-  "cd packages/ui && npm run dev" \
-  "cd packages/dashboard && npm run dev" \
-  "cd packages/core && npm run dev" \
-  "cd packages/test-app && npm run dev"
+  "cd packages/ui && sleep 2 && npm run dev" \
+  "cd packages/dashboard && sleep 4 && npm run dev" \
+  "cd packages/core && sleep 6 && npm run dev" \
+  "cd packages/test-app && sleep 8 && npm run dev"

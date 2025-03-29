@@ -20,7 +20,10 @@
     "dev:core": "cd packages/core && npm run dev",
     "dev:test": "cd packages/test-app && npm run dev",
     "build:test": "cd packages/test-app && npm run build",
-    "start:test": "cd packages/test-app && npm run start"
+    "start:test": "cd packages/test-app && npm run start",
+    "typecheck:ui": "cd packages/ui && npm run typecheck",
+    "typecheck:dashboard": "cd packages/dashboard && npm run typecheck",
+    "typecheck:core": "cd packages/core && npm run typecheck"
   },
   "keywords": [
     "vite",

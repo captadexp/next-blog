@@ -1,7 +1,8 @@
-import {h, FunctionComponent} from 'preact';
+import {FunctionComponent, h} from 'preact';
 import {useLocation} from 'preact-iso';
 import {useUser} from '../../context/UserContext';
 import {Permission} from '../../types/api';
+import packageJson from '../../../package.json';
 
 interface LayoutProps {
     children: any;
@@ -60,27 +61,21 @@ export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) 
     };
 
     return (
-        <div className={`max-w-6xl mx-auto p-5 rounded-lg shadow-md ${themeClass}`}>
+        <div className={`w-full min-h-screen max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-4 sm:py-6 ${themeClass}`}>
             <header className={`mb-6 border-b pb-4 ${headerClass}`}>
-                <div className="flex justify-between items-center mb-4">
-                    <h1 className="text-2xl font-bold">{brandName}</h1>
+                <div className="flex flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                    <h1 className="text-xl sm:text-2xl font-bold">{brandName}</h1>
                     {user && (
-                        <div className="flex items-center gap-4">
-                            <span className="text-sm">
+                        <div className="flex items-center gap-3 self-end sm:self-auto">
+                            <span className="text-sm hidden sm:inline">
                                 {user.name}
                                 {user.permissions.includes('all:all') && <span className="ml-1">(Admin)</span>}
                             </span>
-                            <button
-                                onClick={handleLogout}
-                                className="px-3 py-1 rounded bg-red-500 text-white text-sm hover:bg-red-600"
-                            >
-                                Logout
-                            </button>
                         </div>
                     )}
                 </div>
-                <nav>
-                    <ul className="flex flex-wrap gap-6 list-none p-0 m-0">
+                <nav className="overflow-x-auto pb-2">
+                    <ul className="flex flex-nowrap sm:flex-wrap gap-4 sm:gap-6 list-none p-0 m-0 min-w-max">
                         {navItems.map(item => (
                             <li key={item.path}>
                                 <a
@@ -89,7 +84,7 @@ export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) 
                                         e.preventDefault();
                                         location.route(item.path);
                                     }}
-                                    className={`no-underline ${
+                                    className={`no-underline whitespace-nowrap py-1 px-1 ${
                                         currentPath === item.path
                                             ? `font-bold`
                                             : `hover:opacity-80`
@@ -106,7 +101,7 @@ export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) 
                 </nav>
             </header>
 
-            <main className="min-h-[60vh]">
+            <main className="min-h-[calc(100vh-220px)]">
                 {loading ? (
                     <div className="flex justify-center items-center h-32">
                         <p>Loading...</p>
@@ -117,7 +112,10 @@ export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) 
             </main>
 
             <footer className={`mt-8 pt-4 border-t text-sm ${footerClass}`}>
-                <p>{brandDescription}</p>
+                <div className="flex flex-row justify-between items-start sm:items-center gap-2">
+                    <p>{brandDescription}</p>
+                    <p className="text-xs opacity-75">v{packageJson.version}</p>
+                </div>
             </footer>
         </div>
     );

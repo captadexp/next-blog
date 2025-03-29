@@ -1,6 +1,6 @@
 import {h, render} from 'preact';
-import {useState, useEffect} from 'preact/hooks';
-import {Router, Route, LocationProvider} from 'preact-iso';
+import {useEffect, useState} from 'preact/hooks';
+import {LocationProvider, Route, Router} from 'preact-iso';
 import '../styles/styles.css';
 import {UserProvider} from '../context/UserContext';
 
@@ -28,9 +28,6 @@ import TagsList from './pages/tags/List';
 import CreateTag from './pages/tags/Create';
 import UpdateTag from './pages/tags/Update';
 
-// Login page component
-import Login from './pages/Login';
-
 // Main Dashboard App
 function DashboardApp() {
     const [currentPath, setCurrentPath] = useState<string>('');
@@ -53,8 +50,6 @@ function DashboardApp() {
             <UserProvider>
                 <Layout currentPath={currentPath}>
                     <Router onRouteChange={handleRouteChange}>
-                        {/* Login route */}
-                        <Route path="/api/next-blog/dashboard/login" component={Login}/>
 
                         {/* Home route */}
                         <Route path="/api/next-blog/dashboard" component={Home}/>
