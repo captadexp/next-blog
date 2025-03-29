@@ -1,6 +1,18 @@
+import {h} from "preact"
 import BasePage from "../../components/utils/BasePage";
+import {useEffect} from "preact/compat";
 
 export default function dashboard() {
+
+    function eff() {
+        alert("magix")
+        console.log("test")
+    }
+
+    useEffect(() => {
+        console.log("wow")
+    }, [])
+
     return <BasePage>
         <div style={{
             maxWidth: "600px",
@@ -10,6 +22,7 @@ export default function dashboard() {
             borderRadius: "8px",
             boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
         }}>
+            <button type={"submit"} onClick={eff}>hello</button>
             <ul style={{listStyleType: "none", padding: "0", margin: "0"}}>
                 <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
                     <a href={"/api/next-blog/dashboard/blogs"}

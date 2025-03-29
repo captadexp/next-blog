@@ -1,20 +1,18 @@
-import {CNextRequest, Configuration} from "./types";
-import {NextRequest, NextResponse} from "next/server";
-import {matchPathToFunction, PathObject} from "./utils/parse-path";
-import NotFound from "./components/NotFound";
+import {CNextRequest} from "./types";
+import {PathObject} from "./utils/parse-path";
 import secure from "./utils/secureInternal";
 import blogs from "./pages/dashboard/blogs";
-import createBlog from "./pages/dashboard//blogs/create";
-import updateBlog from "./pages/dashboard//blogs/update";
-import categories from "./pages/dashboard//categories";
-import createCategory from "./pages/dashboard//categories/create";
-import updateCategory from "./pages/dashboard//categories/update";
-import tags from "./pages/dashboard//tags";
-import createTag from "./pages/dashboard//tags/create";
-import updateTag from "./pages/dashboard//tags/update";
-import authors from "./pages/dashboard//authors";
-import createAuthor from "./pages/dashboard//authors/create";
-import updateAuthor from "./pages/dashboard//authors/update";
+import createBlog from "./pages/dashboard/blogs/create";
+import updateBlog from "./pages/dashboard/blogs/update";
+import categories from "./pages/dashboard/categories";
+import createCategory from "./pages/dashboard/categories/create";
+import updateCategory from "./pages/dashboard/categories/update";
+import tags from "./pages/dashboard/tags";
+import createTag from "./pages/dashboard/tags/create";
+import updateTag from "./pages/dashboard/tags/update";
+import authors from "./pages/dashboard/authors";
+import createAuthor from "./pages/dashboard/authors/create";
+import updateAuthor from "./pages/dashboard/authors/update";
 import dashboard from "./pages/dashboard";
 import crypto from "./utils/crypto"
 
@@ -155,49 +153,4 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
         }
     }
 };
-
-export default function NextBlog(configuration: Configuration) {
-    async function processRequest(pathObject: PathObject, request: NextRequest, _response: NextResponse) {
-        const finalPathname = request.nextUrl.pathname.replace("/api/next-blog/", "")
-        const {db} = configuration
-        const {
-            params,
-            handler,
-            templatePath
-        } = matchPathToFunction(pathObject, finalPathname)
-
-        console.log("=>", request.method, params, templatePath, "executing:", !!handler)
-
-        if (!handler) {
-            const ReactDOMServer = (await import('preact-render-to-string'));
-            const response = ReactDOMServer.renderToString(<NotFound/>)
-            return new NextResponse(response, {headers: {"Content-Type": "text/html"}})
-        }
-
-        (request as any)._params = params;
-        (request as any).db = db;
-        (request as any).configuration = configuration;
-
-        const response = await handler(request);
-
-        if (response instanceof NextResponse || response instanceof Response)
-            return response;
-
-        if (typeof response === "string") {
-            return new NextResponse(response, {headers: {"Content-Type": "text/html"}});
-        }
-
-        const ReactDOMServer = (await import('preact-render-to-string'));
-        return new NextResponse(ReactDOMServer.renderToString(response), {headers: {"Content-Type": "text/html"}});
-    }
-
-    async function GET(request: NextRequest, response: NextResponse) {
-        return processRequest(cmsPaths.GET, request, response)
-    }
-
-    async function POST(request: NextRequest, response: NextResponse) {
-        return processRequest(cmsPaths.POST, request, response)
-    }
-
-    return {GET, POST}
-}
+export default cmsPaths

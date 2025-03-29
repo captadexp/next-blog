@@ -21,7 +21,7 @@ export function getParamFromUrl(url: string, template: string, param: string): {
     return params[param] ? {params, templatePath} : null;
 }
 
-export interface PathMatchResult {
+export type PathMatchResult = {
     handler: Function | null;
     templatePath: string;
     params: Record<string, string>;

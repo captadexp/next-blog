@@ -67,3 +67,6 @@ dist
 /**/*.d.ts
 /**/*.d.ts.map
 .npmrc
+
+packages/*/dist
+.idea

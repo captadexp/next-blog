@@ -9,14 +9,14 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "module": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "skipDefaultLibCheck": true,
     "skipLibCheck": true,
     "strict": true,
     "strictNullChecks": true,
     "stripInternal": true,
-    "noEmit": true,
     "target": "es2020",
+    "noEmit": true,
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
     "lib": [
@@ -24,14 +24,15 @@
       "dom.iterable",
       "esnext"
     ],
-    "outDir": ".",
-    "rootDir": "src"
+    "outDir": "dist",
+    "paths": {
+    }
   },
   "include": [
     "src/**/*"
   ],
   "exclude": [
-    "*.js",
-    "*.d.ts"
+    "node_modules",
+    "dist"
   ]
 }
