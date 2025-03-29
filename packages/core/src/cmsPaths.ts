@@ -1,46 +1,20 @@
 import {CNextRequest} from "./types";
 import {PathObject} from "./utils/parse-path";
 import secure from "./utils/secureInternal";
-import blogs from "./pages/dashboard/blogs";
-import createBlog from "./pages/dashboard/blogs/create";
-import updateBlog from "./pages/dashboard/blogs/update";
-import categories from "./pages/dashboard/categories";
-import createCategory from "./pages/dashboard/categories/create";
-import updateCategory from "./pages/dashboard/categories/update";
-import tags from "./pages/dashboard/tags";
-import createTag from "./pages/dashboard/tags/create";
-import updateTag from "./pages/dashboard/tags/update";
-import authors from "./pages/dashboard/authors";
-import createAuthor from "./pages/dashboard/authors/create";
-import updateAuthor from "./pages/dashboard/authors/update";
 import dashboard from "./pages/dashboard";
-import crypto from "./utils/crypto"
+import crypto from "./utils/crypto";
+import {handleStaticFileRequest} from "./utils/staticFileHandler";
 
 const cmsPaths: { GET: PathObject, POST: PathObject } = {
     GET: {
         api: {},
+        static: {
+            '': async (request: CNextRequest) => {
+                return handleStaticFileRequest(request, '*');
+            }
+        },
         dashboard: {
             '': secure(dashboard),
-            blogs: {
-                '': secure(blogs),
-                create: secure(createBlog),
-                ':id': secure(updateBlog)
-            },
-            categories: {
-                '': secure(categories),
-                create: secure(createCategory),
-                ':id': secure(updateCategory)
-            },
-            tags: {
-                '': secure(tags),
-                create: secure(createTag),
-                ':id': secure(updateTag)
-            },
-            authors: {
-                '': secure(authors),
-                create: secure(createAuthor),
-                ':id': secure(updateAuthor)
-            }
         }
     },
     POST: {

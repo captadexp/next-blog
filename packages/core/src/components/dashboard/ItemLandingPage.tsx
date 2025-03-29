@@ -14,21 +14,16 @@ export default function ItemLandingPage<T extends { _id: string, title: string }
     } = props;
 
     return <BasePage>
-        <div style={{padding: "20px", maxWidth: "600px", margin: "auto"}}>
-            <a href={createUrl} style={{
-                display: "inline-block",
-                marginBottom: "20px",
-                backgroundColor: "#007bff",
-                color: "#ffffff",
-                padding: "10px 15px",
-                borderRadius: "5px",
-                textDecoration: "none"
-            }}>{createBtnText}</a><br/>
-            <ul style={{listStyleType: "none", padding: "0", margin: "0"}}>
+        <div className="p-5 max-w-2xl mx-auto">
+            <a href={createUrl} className="inline-block mb-5 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded no-underline">
+                {createBtnText}
+            </a>
+            <br/>
+            <ul className="list-none p-0 m-0 bg-white rounded shadow-sm">
                 {items.map((item, index) => (
-                    <li key={index} style={{borderBottom: "1px solid #eee", padding: "10px"}}>
+                    <li key={index} className="border-b border-gray-100 p-3 hover:bg-gray-50">
                         <a href={`${itemLinkBasePath}${item._id}`}
-                           style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>
+                           className="no-underline text-blue-500 hover:text-blue-700 text-base">
                             {item.title}
                         </a>
                     </li>

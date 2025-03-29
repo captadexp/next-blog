@@ -10,6 +10,7 @@
       "dependencies": {
         "moment": "^2.30.1",
         "preact": "^10.26.4",
+        "preact-iso": "^2.9.1",
         "preact-render-to-string": "^6.5.13",
       },
       "devDependencies": {
@@ -393,6 +394,8 @@
     "postcss": ["postcss@8.4.31", "", { "dependencies": { "nanoid": "^3.3.6", "picocolors": "^1.0.0", "source-map-js": "^1.0.2" } }, "sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ=="],
 
     "preact": ["preact@10.26.4", "", {}, "sha512-KJhO7LBFTjP71d83trW+Ilnjbo+ySsaAgCfXOXUlmGzJ4ygYPWmysm77yg4emwfmoz3b22yvH5IsVFHbhUaH5w=="],
+
+    "preact-iso": ["preact-iso@2.9.1", "", { "peerDependencies": { "preact": ">=10", "preact-render-to-string": ">=6.4.0" } }, "sha512-65+oY5FHeSC3mjq2Dg6v72HYjsTYTqI9hXl1BK6vtUkxwfCqDJ5aqk33zjOH3aSuCY7duWiulyqMQ53GXpPIIQ=="],
 
     "preact-render-to-string": ["preact-render-to-string@6.5.13", "", { "peerDependencies": { "preact": ">=10" } }, "sha512-iGPd+hKPMFKsfpR2vL4kJ6ZPcFIoWZEcBf0Dpm3zOpdVvj77aY8RlLiQji5OMrngEyaxGogeakTb54uS2FvA6w=="],
 

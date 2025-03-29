@@ -1,47 +1,67 @@
 import {h} from "preact"
 import BasePage from "../../components/utils/BasePage";
-import {useEffect} from "preact/compat";
 
+/**
+ * Server-side shell for the dashboard client application
+ * This renders the initial HTML structure and loads the client-side JavaScript
+ */
 export default function dashboard() {
+    return (
+        <BasePage title="Next-Blog Dashboard">
+            {/* App container for client-side rendering */}
+            <div id="app">
+                {/* Loading indicator while client-side JavaScript loads */}
+                <div style={{
+                    padding: "20px",
+                    textAlign: "center"
+                }}>
+                    <div style={{
+                        fontSize: "1.2rem",
+                        color: "#666",
+                        marginBottom: "10px"
+                    }}>
+                        Loading dashboard...
+                    </div>
+                    <div style={{
+                        width: "40px",
+                        height: "40px",
+                        margin: "0 auto",
+                        border: "4px solid #f3f3f3",
+                        borderTop: "4px solid #3498db",
+                        borderRadius: "50%",
+                    }}></div>
+                </div>
 
-    function eff() {
-        alert("magix")
-        console.log("test")
-    }
+                {/* Fallback for users with JavaScript disabled */}
+                <noscript>
+                    <div style={{
+                        padding: "20px",
+                        textAlign: "center",
+                        backgroundColor: "#f8d7da",
+                        color: "#721c24",
+                        borderRadius: "5px",
+                        marginTop: "20px"
+                    }}>
+                        JavaScript is required for the dashboard to function.
+                    </div>
+                </noscript>
+            </div>
 
-    useEffect(() => {
-        console.log("wow")
-    }, [])
+            {/* Client-side scripts */}
+            <script type="module" src="/api/next-blog/static/dashboard.js"></script>
 
-    return <BasePage>
-        <div style={{
-            maxWidth: "600px",
-            margin: "0 auto",
-            padding: "20px",
-            backgroundColor: "#f9f9f9",
-            borderRadius: "8px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
-        }}>
-            <button type={"submit"} onClick={eff}>hello</button>
-            <ul style={{listStyleType: "none", padding: "0", margin: "0"}}>
-                <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
-                    <a href={"/api/next-blog/dashboard/blogs"}
-                       style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Blogs</a>
-                </li>
-                <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
-                    <a href={"/api/next-blog/dashboard/tags"}
-                       style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Tags</a>
-                </li>
-                <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
-                    <a href={"/api/next-blog/dashboard/categories"}
-                       style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Categories</a>
-                </li>
-                <li style={{borderBottom: "1px solid #eee", padding: "10px"}}>
-                    <a href={"/api/next-blog/dashboard/authors"}
-                       style={{textDecoration: "none", color: "#007bff", fontSize: "16px"}}>Authors</a>
-                </li>
-            </ul>
-        </div>
-    </BasePage>
-
+            {/* Add minimal CSS animations for loading spinner */}
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+                #app > div > div:last-child {
+                    animation: spin 1s linear infinite;
+                }
+                `
+            }}/>
+        </BasePage>
+    );
 }

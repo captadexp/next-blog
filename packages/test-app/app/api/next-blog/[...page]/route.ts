@@ -16,8 +16,7 @@ const dbProvider = async () => new FileDBAdapter(`${dataPath}/`);
 
 // Initialize Next-Blog
 const {GET, POST} = nextBlog({
-    db: dbProvider,
-    byPassSecurity: process.env.NODE_ENV === "development"
+    db: dbProvider
 });
 
 // Export the route handlers

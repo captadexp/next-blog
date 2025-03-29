@@ -40,7 +40,7 @@ export default defineConfig(({mode}) => {
                     },
                 },
             },
-            outDir: 'dist',
+            outDir: 'dist/core',
             emptyOutDir: true,
             target: 'node18',
             sourcemap: true,
@@ -48,9 +48,9 @@ export default defineConfig(({mode}) => {
         },
         plugins: [
             dts({
-                outDir: 'dist',
+                outDir: 'dist/core',
                 include: ['src'],
-                exclude: ['node_modules', 'src/**/*.test.ts', 'src/**/*.spec.ts'],
+                exclude: ['node_modules', 'src/**/*.test.ts', 'src/**/*.spec.ts', 'src/client/**/*'],
                 rollupTypes: false,
             }),
         ],

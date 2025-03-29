@@ -5,8 +5,13 @@
   "repository": "https://github.com/captadexp/next-blog",
   "type": "module",
   "scripts": {
-    "dev": "vite build --watch",
-    "build": "vite build",
+    "clean": "rm -rf dist && mkdir -p dist/core dist/static",
+    "dev": "npm run clean && npm run dev:server & npm run dev:client",
+    "dev:server": "vite build --watch",
+    "dev:client": "vite build --config vite.client.config.ts --watch",
+    "build": "npm run clean && npm run build:server && npm run build:client",
+    "build:server": "vite build",
+    "build:client": "vite build --config vite.client.config.ts",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
@@ -19,23 +24,24 @@
     "secure"
   ],
   "files": [
-    "dist"
+    "dist",
+    "dist/static"
   ],
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "types": "./dist/core/index.d.ts",
+      "default": "./dist/core/index.js"
     },
     "./adapters": {
-      "types": "./dist/adapters/index.d.ts",
-      "default": "./dist/adapters/index.js"
+      "types": "./dist/core/adapters/index.d.ts",
+      "default": "./dist/core/adapters/index.js"
     },
     "./ui": {
-      "types": "./dist/ui/index.d.ts",
-      "default": "./dist/ui/index.js"
+      "types": "./dist/core/ui/index.d.ts",
+      "default": "./dist/core/ui/index.js"
     },
     "./types": {
-      "types": "./dist/types.d.ts",
+      "types": "./dist/core/types.d.ts",
       "default": null
     },
     "./package.json": "./package.json"
@@ -45,7 +51,8 @@
   "dependencies": {
     "moment": "^2.30.1",
     "preact": "^10.26.4",
-    "preact-render-to-string": "^6.5.13"
+    "preact-render-to-string": "^6.5.13",
+    "preact-iso": "^2.9.1"
   },
   "optionalDependencies": {
     "mongodb": "^6.15.0",

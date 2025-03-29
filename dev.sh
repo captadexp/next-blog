@@ -3,24 +3,31 @@
 # Make the script exit if any command fails
 set -e
 
-# Change to the project directory (adjust if needed)
+# Change to the project directory
 cd "$(dirname "$0")"
 
-# Start both processes in parallel
-echo "Starting development environment..."
-echo "Core package in watch mode (terminal 1)"
-echo "Test app (terminal 2)"
+# Clean build directories first 
+echo "🧹 Cleaning build directories..."
+npm run -w packages/core clean
+echo "✅ Build directories prepared!"
 
-# This requires the 'concurrently' package, which we'll install if not present
+# Start development processes in parallel
+echo "🚀 Starting development environment..."
+echo "📦 Core package (server) in watch mode"
+echo "🖥️  Core package (client) in watch mode"
+echo "🌐 Test app running on http://localhost:3248"
+
+# Check for concurrently and install if needed
 if ! command -v concurrently &> /dev/null; then
-  echo "Installing concurrently..."
+  echo "📥 Installing concurrently..."
   npm install -g concurrently
 fi
 
-# Run both processes
+# Run all processes
 concurrently \
-  --names "CORE,TEST" \
-  --prefix-colors "blue,green" \
+  --names "SERVER,CLIENT,TEST" \
+  --prefix-colors "blue,magenta,green" \
   --kill-others \
-  "npm run dev" \
-  "npm run dev:test"
+  "npm run -w packages/core dev:server" \
+  "npm run -w packages/core dev:client" \
+  "npm run -w packages/test-app dev"
