@@ -7,7 +7,6 @@ import {
     DatabaseError,
     BadRequest
 } from "../utils/errors";
-import {CreateBlogInput} from "@supergrowthai/next-blog-dashboard";
 
 // List all blogs - requires 'blogs:list' permission
 export const getBlogs = secure(
@@ -56,7 +55,7 @@ export const createBlog = secure(
         const db = await request.db();
 
         try {
-            const body: CreateBlogInput = await request.json();
+            const body: any = await request.json();
 
             // Validate required fields
             if (!body.title) {
@@ -96,7 +95,7 @@ export const updateBlog = secure(
         const db = await request.db();
 
         try {
-            const body = await request.json();
+            const body: any = await request.json();
             const extras = {updatedAt: Date.now()};
 
             // Check if blog exists first
