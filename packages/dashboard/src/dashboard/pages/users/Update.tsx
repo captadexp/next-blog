@@ -165,7 +165,7 @@ const UpdateUser: FunctionComponent<UpdateUserProps> = ({id: propId}) => {
                     <DynamicForm
                         id="updateUser"
                         submitLabel="Update User"
-                        postTo={`/api/next-blog/api/users/${userId}/update`}
+                        postTo={`/api/next-blog/api/user/${userId}/update`}
                         redirectTo={"api/next-blog/dashboard/users"}
                         fields={getFormFields()}
                         apiMethod={handleUpdateUser}

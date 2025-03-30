@@ -37,7 +37,7 @@ export default defineConfig(({mode}) => {
                 ]
             },
             outDir: 'dist/core',
-            emptyOutDir: true,
+            emptyOutDir: false,
             target: 'node18',
             sourcemap: true,
             minify: false,

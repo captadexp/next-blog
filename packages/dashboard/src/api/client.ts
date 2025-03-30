@@ -128,11 +128,11 @@ class ApiClient {
     }
 
     async updateUser(id: string, data: UpdateUserInput): Promise<StandardResponse<User>> {
-        return this.request<User>(`/users/${id}/update`, 'POST', data);
+        return this.request<User>(`/user/${id}/update`, 'POST', data);
     }
 
     async deleteUser(id: string): Promise<StandardResponse<null>> {
-        return this.request<null>(`/users/${id}/delete`, 'POST');
+        return this.request<null>(`/user/${id}/delete`, 'POST');
     }
 
     // Permissions
