@@ -15,6 +15,47 @@ Next-Blog robust and user-friendly.
 
 ![Folder Structure](https://github.com/captadexp/next-blog/blob/main/images/apps-router-folder-structure.png?raw=true)
 
+## Project Structure
+
+This project has been migrated to use Vite for building and Bun as the package manager. It's now organized as a monorepo with workspaces:
+
+```
+next-blog/
+├── packages/
+│   ├── core/           # Main package (@supergrowthai/next-blog)
+│   └── test-app/       # Test Next.js application
+├── package.json        # Workspace root package.json
+└── bunfig.toml         # Bun configuration
+```
+
+### Development
+
+```bash
+# Install dependencies
+bun install
+
+# Build the core package
+npm run build
+
+# Watch core package for changes
+npm run dev
+
+# Run the test application
+npm run dev:test
+```
+
+### Test Application
+
+A test Next.js application is included in the `packages/test-app` directory. This app demonstrates how to integrate Next-Blog into a Next.js project and can be used for development and testing.
+
+To run the test app:
+
+```bash
+npm run dev:test
+```
+
+Then visit http://localhost:3000 and click "Go to Blog Dashboard" to access the blog management interface.
+
 ### Quick Start
 
 To add Next-Blog to your project, follow these simple steps:
@@ -27,18 +68,63 @@ To add Next-Blog to your project, follow these simple steps:
    npm i @supergrowthai/next-blog
    ```
 
-2. Create a new route at `apps/api/next-blog/[...page]/route.ts`
+2. Create a new route at `app/api/next-blog/[...page]/route.ts`
 
-2. **Update Your Route Configuration**
+### Available Modules
+
+Next-Blog provides the following modules:
+
+```typescript
+// Core functionality
+import nextBlog, { FileDBAdapter, MongoDBAdapter } from '@supergrowthai/next-blog';
+
+// Alternative adapter import paths
+import { FileDBAdapter, MongoDBAdapter } from '@supergrowthai/next-blog/adapters';
+
+// Types (if needed)
+import type { Configuration } from '@supergrowthai/next-blog/types';
+```
+
+The UI module is reserved for future customizable components.
+
+3. **Update Your Route Configuration**
 
    In your `route.ts`, integrate Next-Blog as shown:
 
    ```typescript
-   import nextBlog from "@supergrowthai/next-blog"
+   import nextBlog, { FileDBAdapter } from "@supergrowthai/next-blog"
+   import path from 'path';
+   import fs from 'fs';
 
-   //To use a database use the builtin MongoDBProvider or create a new Provider and create a pr?:D
-   //This provider only works locally.    
-   const dbProvider = async () => new FileDBProvider(dataPath)
+   // Create path for file db
+   const dataPath = path.join(process.cwd(), "blog-data");
+   
+   // Ensure directory exists
+   if (!fs.existsSync(dataPath)) {
+     fs.mkdirSync(dataPath, { recursive: true });
+   }
+   
+   // Initialize the database provider
+   const dbProvider = async () => new FileDBAdapter(dataPath)
+   
+   // Initialize Next-Blog
+   const {GET, POST} = nextBlog({db: dbProvider})
+
+   export { GET, POST };
+   ```
+
+   For MongoDB support:
+   
+   ```typescript
+   import nextBlog, { MongoDBAdapter } from "@supergrowthai/next-blog"
+   
+   // Initialize the MongoDB database provider
+   const dbProvider = async () => new MongoDBAdapter({
+     url: process.env.MONGODB_URI,
+     dbName: "your-blog-db"
+   })
+   
+   // Initialize Next-Blog
    const {GET, POST} = nextBlog({db: dbProvider})
 
    export { GET, POST };
@@ -51,6 +137,8 @@ Here are the next steps on our journey to enhance Next-Blog:
 - [x] Project initialization.
 - [x] Added a simple database adapter (JSONFile + MongoDB).
 - [x] Implement internal dashboard pages for managing posts, complete with an editor.
+- [x] Migrate to Vite build system with Bun
+- [x] Create test application for development and testing
 - [ ] Create hooks for accessing the blog content by slug
 - [ ] Introduce configuration options for managing pages, tags, and filters.
 - [ ] Create a sample theme to kickstart your blog aesthetics.
@@ -63,7 +151,3 @@ you're passionate about making content creation accessible and straightforward f
 from you.
 
 **Join me in shaping the future of blogging in Next.js. Together, we can build something amazing.**
-
----
-
-This version aims to be more engaging, inviting, and clear in its instructions and call for collaboration.

@@ -15,23 +15,21 @@
     "strict": true,
     "strictNullChecks": true,
     "stripInternal": true,
-    "noEmit": true,
     "target": "es2020",
-    "jsx": "react-jsx",
-    "jsxImportSource": "preact",
+    "noEmit": true,
     "lib": [
-      "dom",
-      "dom.iterable",
       "esnext"
     ],
-    "outDir": ".",
-    "rootDir": "src"
+    "outDir": "dist",
+    "paths": {
+    }
   },
   "include": [
     "src/**/*"
   ],
   "exclude": [
-    "*.js",
-    "*.d.ts"
+    "node_modules",
+    "dist",
+    "vite.config.ts"
   ]
 }

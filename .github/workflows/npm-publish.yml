@@ -1,0 +1,69 @@
+name: Publish to NPM
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'packages/**'
+      - '.github/workflows/npm-publish.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run typecheck
+        run: |
+          npm run typecheck:ui
+          npm run typecheck:dashboard
+          npm run typecheck:core
+
+      - name: Build packages
+        run: npm run build:all
+
+      - name: Version and publish UI
+        working-directory: packages/ui
+        if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'ui:') }}
+        run: |
+          npm version patch -m "Bump ui package to %s [skip ci]"
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Version and publish Dashboard
+        working-directory: packages/dashboard
+        if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'dashboard:') }}
+        run: |
+          npm version patch -m "Bump dashboard package to %s [skip ci]"
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Version and publish Core
+        working-directory: packages/core
+        if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'core:') }}
+        run: |
+          npm version patch -m "Bump core package to %s [skip ci]"
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Push version changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git push origin main

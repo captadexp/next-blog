@@ -1,0 +1,61 @@
+{
+  "name": "@supergrowthai/next-blog",
+  "version": "1.0.13",
+  "description": "Add blogging to your nextjs project in a jiffy",
+  "repository": "https://github.com/captadexp/next-blog",
+  "type": "module",
+  "scripts": {
+    "clean": "rm -rf dist && mkdir -p dist/core",
+    "dev": "npm run clean && vite build --watch",
+    "build": "npm run clean && vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "nextjs",
+    "react",
+    "cms",
+    "blogging",
+    "headless-cms",
+    "next-js",
+    "secure"
+  ],
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/core/index.d.ts",
+      "default": "./dist/core/index.js"
+    },
+    "./adapters": {
+      "types": "./dist/core/adapters/index.d.ts",
+      "default": "./dist/core/adapters/index.js"
+    },
+    "./types": {
+      "types": "./dist/core/types.d.ts",
+      "default": null
+    },
+    "./package.json": "./package.json"
+  },
+  "author": "Capt ADExp <tech@developer.toys>",
+  "license": "ISC",
+  "dependencies": {
+    "moment": "^2.30.1",
+    "@supergrowthai/next-blog-dashboard": "workspace:*"
+  },
+  "optionalDependencies": {
+    "mongodb": "^6.15.0",
+    "uuid": "^11.1.0"
+  },
+  "peerDependencies": {
+    "next": "^15.2.4"
+  },
+  "devDependencies": {
+    "@types/mongodb": "^4.0.7",
+    "@types/node": "^22.13.14",
+    "@types/uuid": "^9.0.8",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.3",
+    "vite-plugin-dts": "^4.5.3"
+  }
+}

@@ -1,14 +1,32 @@
 {
-  "name": "@supergrowthai/next-blog",
-  "version": "1.0.13",
-  "description": "Add blogging to your nextjs project in a jiffy",
-  "repository": "https://github.com/captadexp/next-blog",
+  "name": "next-blog-workspace",
+  "version": "1.0.0",
+  "description": "Workspace for next-blog packages",
   "type": "module",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "yarn clean && tsc",
-    "clean": "rm -rf *.js *.d.ts* adapters components pages utils"
+    "build": "npm run build:all",
+    "dev": "npm run dev:all",
+    "build:all": "npm run build:ui && npm run build:dashboard && npm run build:core",
+    "dev:all": "./dev.sh",
+    "build:ui": "cd packages/ui && npm run build",
+    "build:dashboard": "cd packages/dashboard && npm run build",
+    "build:core": "cd packages/core && npm run build",
+    "dev:ui": "cd packages/ui && npm run dev",
+    "dev:dashboard": "cd packages/dashboard && npm run dev",
+    "dev:core": "cd packages/core && npm run dev",
+    "dev:test": "cd packages/test-app && npm run dev",
+    "build:test": "cd packages/test-app && npm run build",
+    "start:test": "cd packages/test-app && npm run start",
+    "typecheck:ui": "cd packages/ui && npm run typecheck",
+    "typecheck:dashboard": "cd packages/dashboard && npm run typecheck",
+    "typecheck:core": "cd packages/core && npm run typecheck"
   },
   "keywords": [
+    "vite",
     "nextjs",
     "react",
     "cms",
@@ -17,47 +35,7 @@
     "next-js",
     "secure"
   ],
-  "files": [
-    "./*.js",
-    "./*.d.ts*",
-    "./**/*.js",
-    "./**/*.d.ts*"
-  ],
-  "exports": {
-    ".": {
-      "types": "./index.d.ts",
-      "import": "./index.js"
-    },
-    "./adapters/*": {
-      "types": "./adapters/*.d.ts",
-      "import": "./adapters/*.js"
-    },
-    "./ui": {
-      "types": "./ui/index.d.ts",
-      "import": "./ui/index.js"
-    },
-    "./types": {
-      "types": "./types.d.ts"
-    },
-    "./package.json": "./package.json"
-  },
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "ISC",
-  "dependencies": {
-    "moment": "^2.30.1",
-    "preact": "10.11.3",
-    "preact-render-to-string": "5.2.3"
-  },
-  "optionalDependencies": {
-    "mongodb": "^6.5.0",
-    "uuid": "^9.0.1"
-  },
-  "peerDependencies": {
-    "next": "^15.1.0"
-  },
-  "devDependencies": {
-    "@types/mongodb": "^4.0.7",
-    "@types/uuid": "^9.0.8",
-    "@types/next": "^9.0.0"
-  }
+  "packageManager": "bun@1.2.7"
 }
