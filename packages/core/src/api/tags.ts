@@ -51,7 +51,7 @@ export const createTag = secure(
         const db = await request.db();
 
         try {
-            const data = await request.json();
+            const data: any = await request.json();
 
             if (!data.name) {
                 throw new ValidationError("Tag name is required");
@@ -79,7 +79,7 @@ export const updateTag = secure(
         const db = await request.db();
 
         try {
-            const data = await request.json();
+            const data: any = await request.json();
 
             // Check if tag exists first
             const existingTag = await db.tags.findOne({_id: request._params.id});
@@ -88,7 +88,7 @@ export const updateTag = secure(
             }
 
             const updation = await db.tags.updateOne(
-                {_id: request._params.id}, 
+                {_id: request._params.id},
                 {
                     ...data,
                     updatedAt: Date.now()

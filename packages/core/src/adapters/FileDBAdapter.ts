@@ -116,7 +116,7 @@ export default class FileDBAdapter implements DatabaseProvider {
 
             create: async (data: CategoryData): Promise<Category> => {
                 const categories = await this.readData<Category>('categories.json');
-                const newCategory: Category = {...data, _id: uuidv4()};
+                const newCategory: Category = {...data, _id: uuidv4()} as any;
                 categories.push(newCategory);
                 await this.writeData('categories.json', categories);
                 return newCategory;
@@ -164,7 +164,7 @@ export default class FileDBAdapter implements DatabaseProvider {
 
             create: async (data: TagData): Promise<Tag> => {
                 const tags = await this.readData<Tag>('tags.json');
-                const newTag: Tag = {...data, _id: uuidv4()};
+                const newTag: Tag = {...data, _id: uuidv4()} as any;
                 tags.push(newTag);
                 await this.writeData('tags.json', tags);
                 return newTag;

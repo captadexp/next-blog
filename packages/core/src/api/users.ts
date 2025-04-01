@@ -93,7 +93,7 @@ export const getUser = requirePermission('users:read')(async (request: CNextRequ
  */
 export const createUser = requirePermission('users:create')(async (request: CNextRequest) => {
     try {
-        const body = await request.json();
+        const body = await request.json() as any;
 
         if (!body.username || !body.email || !body.password || !body.name) {
             throw new BadRequest("Username, email, password, and name are required");
@@ -156,7 +156,7 @@ export const updateUser = requirePermission('users:update')(async (request: CNex
         const {id} = request._params;
         if (!id) throw new BadRequest("User ID is required");
 
-        const body = await request.json();
+        const body = await request.json() as any;
 
         const db = await request.db();
         const existingUser = await db.users.findById(id);

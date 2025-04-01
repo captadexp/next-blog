@@ -20,7 +20,7 @@ export default defineConfig({
         },
         copyPublicDir: true,
         sourcemap: true,
-        emptyOutDir: true,
+        emptyOutDir: false,
         rollupOptions: {
             external: [],
             output: {

@@ -44,7 +44,7 @@ export const createCategory = secure(async (request: CNextRequest) => {
     const db = await request.db();
 
     try {
-        const data = await request.json();
+        const data: any = await request.json();
 
         if (!data.name) {
             throw new ValidationError("Category name is required");
@@ -69,7 +69,7 @@ export const updateCategory = secure(async (request: CNextRequest) => {
     const db = await request.db();
 
     try {
-        const data = await request.json();
+        const data: any = await request.json();
 
         // Check if category exists first
         const existingCategory = await db.categories.findOne({_id: request._params.id});
@@ -78,7 +78,7 @@ export const updateCategory = secure(async (request: CNextRequest) => {
         }
 
         const updation = await db.categories.updateOne(
-            {_id: request._params.id}, 
+            {_id: request._params.id},
             {
                 ...data,
                 updatedAt: Date.now()
