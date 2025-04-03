@@ -89,6 +89,10 @@ export default class MongoDBAdapter implements DatabaseProvider {
                 return {_id: result.insertedId.toString(), ...data} as unknown as T;
             },
             updateOne: (filter: Filter<T>, update: Omit<Filter<T>, "_id">) => collection.findOneAndUpdate(filter, {$set: update}, {returnDocument: "after"}),
+            updateMany: async (filter: Filter<T>, update: Omit<Filter<T>, "_id">) => {
+                await collection.updateMany(filter, {$set: update});
+                return collection.find(filter).toArray();
+            },
             deleteOne: (filter: Filter<T>) => collection.findOneAndDelete(filter),
         };
     }

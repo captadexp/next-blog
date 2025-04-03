@@ -128,6 +128,8 @@ export interface CollectionOperations<T, U> {
 
     updateOne(filter: Filter<T>, update: Omit<Filter<T>, "_id">): Promise<T>;
 
+    updateMany(filter: Filter<T>, update: Omit<Filter<T>, "_id">): Promise<T[]>;
+
     deleteOne(filter: Filter<T>): Promise<T>;
 }
 
