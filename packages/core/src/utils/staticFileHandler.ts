@@ -1,6 +1,7 @@
 import {CNextRequest} from "../types";
 import path from "path";
 import fs from "fs";
+import {fileURLToPath} from "url";
 
 // Map of allowed file extensions and their MIME types
 const ALLOWED_EXTENSIONS: Record<string, string> = {
@@ -53,8 +54,9 @@ export async function handleStaticFileRequest(request: CNextRequest, filePath: s
         // Get the MIME type for this extension
         const contentType = ALLOWED_EXTENSIONS[ext] || 'application/octet-stream';
 
+        const __dirname = path.dirname(fileURLToPath(import.meta.url));
         // Path to this package
-        const pkgPath = path.dirname(require.resolve('@supergrowthai/next-blog-dashboard/package.json'));
+        const pkgPath = path.join(__dirname, 'assets', '@supergrowthai', 'next-blog-dashboard');
 
         // Full path to the static file
         const fullPath = path.join(pkgPath, 'dist', 'static', sanitizedPath);

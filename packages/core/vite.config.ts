@@ -3,6 +3,7 @@ import {defineConfig} from "vite";
 
 import * as path from "path";
 import tailwindcss from "@tailwindcss/vite";
+import {viteStaticCopy} from 'vite-plugin-static-copy';
 
 export default defineConfig(({mode}) => {
 
@@ -29,6 +30,7 @@ export default defineConfig(({mode}) => {
                     'fs',
                     'crypto',
                     'path',
+                    'url',
 
                     // Next.js specific imports
                     /^next\/.*/
@@ -47,6 +49,14 @@ export default defineConfig(({mode}) => {
                 include: ['src'],
                 exclude: ['node_modules', 'src/**/*.test.ts', 'src/**/*.spec.ts', 'src/client/**/*'],
                 rollupTypes: false,
+            }),
+            viteStaticCopy({
+                targets: [
+                    {
+                        src: path.resolve(__dirname, './../dashboard/dist/'), // Path to the other package's dist
+                        dest: 'assets/@supergrowthai/next-blog-dashboard',
+                    }
+                ],
             }),
         ]
     }

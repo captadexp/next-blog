@@ -51,6 +51,7 @@
     "next": "^15.2.4"
   },
   "devDependencies": {
+    "vite-plugin-static-copy": "^2.3.0",
     "@supergrowthai/next-blog-dashboard": "workspace:*",
     "@types/mongodb": "^4.0.7",
     "@types/node": "^22.13.14",
