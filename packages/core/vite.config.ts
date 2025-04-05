@@ -25,8 +25,6 @@ export default defineConfig(({mode}) => {
                     'mongodb',
                     'uuid',
 
-                    '@supergrowthai/next-blog-dashboard',
-
                     // Node.js builtin modules
                     'fs',
                     'crypto',
@@ -36,7 +34,7 @@ export default defineConfig(({mode}) => {
                     /^next\/.*/
                 ]
             },
-            outDir: 'dist/core',
+            outDir: 'dist',
             emptyOutDir: false,
             target: 'node18',
             sourcemap: true,
@@ -45,7 +43,7 @@ export default defineConfig(({mode}) => {
         plugins: [
             tailwindcss(),
             dts({
-                outDir: 'dist/core',
+                outDir: 'dist',
                 include: ['src'],
                 exclude: ['node_modules', 'src/**/*.test.ts', 'src/**/*.spec.ts', 'src/client/**/*'],
                 rollupTypes: false,
