@@ -84,6 +84,23 @@ export default class FileDBAdapter implements DatabaseProvider {
                 throw new Error("Nothing to update")
             },
 
+            updateMany: async (filter: Filter<Blog>, {_id, ...update}: Filter<Blog>) => {
+                let blogs = await this.readData<Blog>('blogs.json');
+                const updatedBlogs: Blog[] = [];
+                
+                blogs = blogs.map((blog: any) => {
+                    if (Object.keys(filter).every(key => blog[key] === (filter as any)[key])) {
+                        const updatedBlog = {...blog, ...update, updatedAt: Date.now()};
+                        updatedBlogs.push(updatedBlog);
+                        return updatedBlog;
+                    }
+                    return blog;
+                });
+                
+                await this.writeData('blogs.json', blogs);
+                return updatedBlogs;
+            },
+
             deleteOne: async (filter: Filter<Blog>) => {
                 let blogs = await this.readData<Blog>('blogs.json');
                 const blogIndex = blogs.findIndex((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
@@ -132,6 +149,24 @@ export default class FileDBAdapter implements DatabaseProvider {
                 }
                 throw new Error("Nothing to update")
             },
+            
+            updateMany: async (filter: Filter<Category>, {_id, ...update}: Filter<Category>) => {
+                let categories = await this.readData<Category>('categories.json');
+                const updatedCategories: Category[] = [];
+                
+                categories = categories.map((category: any) => {
+                    if (Object.keys(filter).every(key => category[key] === (filter as any)[key])) {
+                        const updatedCategory = {...category, ...update};
+                        updatedCategories.push(updatedCategory);
+                        return updatedCategory;
+                    }
+                    return category;
+                });
+                
+                await this.writeData('categories.json', categories);
+                return updatedCategories;
+            },
+            
             deleteOne: async (filter: Filter<Category>) => {
                 let categories = await this.readData<Category>('categories.json');
                 const blogIndex = categories.findIndex((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
@@ -179,6 +214,23 @@ export default class FileDBAdapter implements DatabaseProvider {
                     return tags[tagIndex];
                 }
                 throw new Error("Nothing to update")
+            },
+            
+            updateMany: async (filter: Filter<Tag>, {_id, ...update}: Filter<Tag>) => {
+                let tags = await this.readData<Tag>('tags.json');
+                const updatedTags: Tag[] = [];
+                
+                tags = tags.map((tag: any) => {
+                    if (Object.keys(filter).every(key => tag[key] === (filter as any)[key])) {
+                        const updatedTag = {...tag, ...update};
+                        updatedTags.push(updatedTag);
+                        return updatedTag;
+                    }
+                    return tag;
+                });
+                
+                await this.writeData('tags.json', tags);
+                return updatedTags;
             },
 
             deleteOne: async (filter: Filter<Tag>) => {
@@ -245,6 +297,23 @@ export default class FileDBAdapter implements DatabaseProvider {
                     return users[userIndex];
                 }
                 throw new Error("Nothing to update")
+            },
+            
+            updateMany: async (filter: Filter<User>, {_id, ...update}: Filter<User>) => {
+                let users = await this.readData<User>('users.json');
+                const updatedUsers: User[] = [];
+                
+                users = users.map((user: any) => {
+                    if (Object.keys(filter).every(key => user[key] === (filter as any)[key])) {
+                        const updatedUser = {...user, ...update, updatedAt: Date.now()};
+                        updatedUsers.push(updatedUser);
+                        return updatedUser;
+                    }
+                    return user;
+                });
+                
+                await this.writeData('users.json', users);
+                return updatedUsers;
             },
 
             deleteOne: async (filter: Filter<User>) => {
