@@ -5,7 +5,7 @@
   "repository": "https://github.com/captadexp/next-blog",
   "type": "module",
   "scripts": {
-    "clean": "rm -rf dist && mkdir -p dist",
+    "clean": "rimraf dist && mkdir -p dist",
     "dev": "npm run clean && vite build --watch",
     "build": "npm run clean && vite build",
     "typecheck": "tsc --noEmit"

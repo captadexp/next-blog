@@ -35,7 +35,10 @@
     "next-js",
     "secure"
   ],
+  "dependencies": {
+    "rimraf": "^6.0.1"
+  },
   "author": "Capt ADExp <tech@developer.toys>",
-  "license": "ISC",
-  "packageManager": "bun@1.2.7"
+  "license": "MIT",
+  "packageManager": "bun@1.2.8"
 }
