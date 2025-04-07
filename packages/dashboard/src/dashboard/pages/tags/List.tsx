@@ -105,7 +105,17 @@ const TagsList: FunctionComponent<TagsListProps> = () => {
                                         Edit
                                     </a>
                                     <button
-                                        onClick={() => alert(`Delete tag: ${tag._id}`)}
+                                        onClick={async () => {
+                                            if (confirm(`Delete tag: ${tag.name}?`)) {
+                                                try {
+                                                    await apis.deleteTag(tag._id);
+                                                    setTags(tags.filter(t => t._id !== tag._id));
+                                                } catch (error) {
+                                                    console.error("Error deleting tag:", error);
+                                                    alert("Failed to delete tag.");
+                                                }
+                                            }
+                                        }}
                                         className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit"
                                     >
                                         Delete

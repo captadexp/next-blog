@@ -70,6 +70,23 @@ export default class FileDBAdapter implements DatabaseProvider {
                 const newBlog: Blog = {...data, _id: uuidv4(), createdAt: Date.now(), updatedAt: Date.now()};
                 blogs.push(newBlog);
                 await this.writeData('blogs.json', blogs);
+                
+                // Update tags with the blog's ID
+                if (newBlog.tags && newBlog.tags.length > 0) {
+                    const tags = await this.readData<Tag>('tags.json');
+                    const updatedTags = tags.map(tag => {
+                        if (newBlog.tags.includes(tag._id)) {
+                            return {
+                                ...tag,
+                                blogs: [...(tag.blogs || []), newBlog._id],
+                                updatedAt: Date.now()
+                            };
+                        }
+                        return tag;
+                    });
+                    await this.writeData('tags.json', updatedTags);
+                }
+                
                 return newBlog;
             },
 
@@ -77,8 +94,35 @@ export default class FileDBAdapter implements DatabaseProvider {
                 let blogs = await this.readData<Blog>('blogs.json');
                 const blogIndex = blogs.findIndex((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
                 if (blogIndex !== -1) {
+                    const oldBlog = blogs[blogIndex];
                     blogs[blogIndex] = {...blogs[blogIndex], ...update, updatedAt: Date.now()};
                     await this.writeData('blogs.json', blogs);
+                    
+                    // Update tags if the blog's tags have changed
+                    if (update.tags && JSON.stringify(oldBlog.tags) !== JSON.stringify(update.tags)) {
+                        const tags = await this.readData<Tag>('tags.json');
+                        const updatedTags = tags.map(tag => {
+                            // If tag was removed: remove blog ID from tag's blogs array
+                            if (oldBlog.tags.includes(tag._id) && !update.tags.includes(tag._id)) {
+                                return {
+                                    ...tag,
+                                    blogs: (tag.blogs || []).filter(blogId => blogId !== oldBlog._id),
+                                    updatedAt: Date.now()
+                                };
+                            }
+                            // If tag was added: add blog ID to tag's blogs array
+                            else if (!oldBlog.tags.includes(tag._id) && update.tags.includes(tag._id)) {
+                                return {
+                                    ...tag,
+                                    blogs: [...(tag.blogs || []), oldBlog._id],
+                                    updatedAt: Date.now()
+                                };
+                            }
+                            return tag;
+                        });
+                        await this.writeData('tags.json', updatedTags);
+                    }
+                    
                     return blogs[blogIndex];
                 }
                 throw new Error("Nothing to update")
@@ -106,7 +150,25 @@ export default class FileDBAdapter implements DatabaseProvider {
                 const blogIndex = blogs.findIndex((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
 
                 if (blogIndex !== -1) {
-                    const duplicate = JSON.parse(JSON.stringify(blogs[blogIndex]));
+                    const blogToDelete = blogs[blogIndex];
+                    const duplicate = JSON.parse(JSON.stringify(blogToDelete));
+                    
+                    // Remove blog from all associated tags
+                    if (blogToDelete.tags && blogToDelete.tags.length > 0) {
+                        const tags = await this.readData<Tag>('tags.json');
+                        const updatedTags = tags.map(tag => {
+                            if (blogToDelete.tags.includes(tag._id)) {
+                                return {
+                                    ...tag,
+                                    blogs: (tag.blogs || []).filter(blogId => blogId !== blogToDelete._id),
+                                    updatedAt: Date.now()
+                                };
+                            }
+                            return tag;
+                        });
+                        await this.writeData('tags.json', updatedTags);
+                    }
+                    
                     blogs = blogs.filter((blog: any, index) => index !== blogIndex);
                     await this.writeData('blogs.json', blogs);
                     return duplicate;
@@ -199,7 +261,14 @@ export default class FileDBAdapter implements DatabaseProvider {
 
             create: async (data: TagData): Promise<Tag> => {
                 const tags = await this.readData<Tag>('tags.json');
-                const newTag: Tag = {...data, _id: uuidv4()} as any;
+                // Ensure blogs array is initialized and timestamp fields are set
+                const newTag: Tag = {
+                    ...data, 
+                    _id: uuidv4(),
+                    blogs: data.blogs || [],
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                };
                 tags.push(newTag);
                 await this.writeData('tags.json', tags);
                 return newTag;
@@ -234,18 +303,26 @@ export default class FileDBAdapter implements DatabaseProvider {
             },
 
             deleteOne: async (filter: Filter<Tag>) => {
-                let tags = await this.readData<Tag>('tags.json');
+                const tags = await this.readData<Tag>('tags.json');
+                const tagToDelete = tags.find(tag =>
+                    Object.keys(filter).every(key =>
+                        tag[key as keyof Tag] === (filter as any)[key]
+                    )
+                );
 
-                const blogIndex = tags.findIndex((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
+                if (!tagToDelete) throw new Error("Tag not found");
 
-                if (blogIndex !== -1) {
-                    const duplicate = JSON.parse(JSON.stringify(tags[blogIndex]));
-                    tags = tags.filter((blog: any, index) => index !== blogIndex);
-                    await this.writeData('tags.json', tags);
-                    return duplicate;
-                }
-                throw new Error("Nothing to update")
-            },
+                const updatedTags = tags.filter(tag => tag._id !== tagToDelete._id);
+                await this.writeData('tags.json', updatedTags);
+
+                const updatedBlogs = (await this.blogs.find({})).map(blog => ({
+                    ...blog,
+                    tags: blog.tags?.filter(tid => tid !== tagToDelete._id) || []
+                }));
+                await this.writeData('blogs.json', updatedBlogs);
+
+                return tagToDelete;
+            }
         }
     }
 

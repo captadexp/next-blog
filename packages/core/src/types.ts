@@ -43,6 +43,7 @@ export interface Tag {
     _id: string;
     name: string;
     slug: string;
+    blogs: string[];
     createdAt: number;
     updatedAt: number;
 }
@@ -50,6 +51,7 @@ export interface Tag {
 export interface TagData {
     name: string;
     slug: string;
+    blogs: string[];
     // Optional timestamps - will be set automatically on create
     createdAt?: number;
     updatedAt?: number;
