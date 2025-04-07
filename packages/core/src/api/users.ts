@@ -185,7 +185,7 @@ export const updateUser = requirePermission('users:update')(async (request: CNex
         });
 
         // Remove password from response
-        const {password, ...userWithoutPassword} = updatedUser;
+        const {password, ...userWithoutPassword} = updatedUser!;
 
         // Trigger the event callback if configured
         if (request.configuration.callbacks?.on) {
@@ -217,7 +217,7 @@ export const deleteUser = requirePermission('users:delete')(async (request: CNex
         const deletedUser = await db.users.deleteOne({_id: id});
 
         // Remove password from response
-        const {password, ...userWithoutPassword} = deletedUser;
+        const {password, ...userWithoutPassword} = deletedUser!;
 
         // Trigger the event callback if configured
         if (request.configuration.callbacks?.on) {

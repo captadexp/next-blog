@@ -59,7 +59,7 @@ export async function handleStaticFileRequest(request: CNextRequest, filePath: s
         const pkgPath = path.join(__dirname, 'assets', '@supergrowthai', 'next-blog-dashboard');
 
         // Full path to the static file
-        const fullPath = path.join(pkgPath, 'dist', 'static', sanitizedPath);
+        const fullPath = path.join(pkgPath, 'static', sanitizedPath);
 
         // Check if the file exists
         if (!fs.existsSync(fullPath)) {

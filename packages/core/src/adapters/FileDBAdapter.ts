@@ -4,7 +4,7 @@ import {
     BlogData,
     Category,
     CategoryData,
-    DatabaseProvider,
+    DatabaseAdapter,
     Filter, Permission,
     Tag,
     TagData,
@@ -13,7 +13,7 @@ import {
 } from "../types.js";
 import {v4 as uuidv4} from 'uuid';
 
-export default class FileDBAdapter implements DatabaseProvider {
+export default class FileDBAdapter implements DatabaseAdapter {
 
     constructor(public dataPath: string) {
         this.ensureFilesExist();

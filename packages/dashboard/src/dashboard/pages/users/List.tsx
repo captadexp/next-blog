@@ -114,7 +114,7 @@ const UserList = () => {
                                     <div className="flex space-x-2">
                                         {hasPermission('users:update') && (
                                             <a
-                                                href={`/api/next-blog/dashboard/users/update?id=${user._id}`}
+                                                href={`/api/next-blog/dashboard/users/${user._id}`}
                                                 className="text-blue-500 hover:text-blue-700"
                                             >
                                                 Edit

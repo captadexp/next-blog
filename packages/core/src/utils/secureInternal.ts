@@ -1,6 +1,6 @@
 import {headers} from "next/headers.js";
 import {type NextRequest, NextResponse} from "next/server.js";
-import {Configuration, DatabaseProvider, Permission, User, UserData} from "../types.js";
+import {Configuration, DatabaseAdapter, Permission, User, UserData} from "../types.js";
 import crypto from "./crypto.js";
 import {hasPermission, hasAnyPermission} from "./permissions.js";
 
@@ -11,7 +11,7 @@ type SecureOptions = {
 
 export type CNextRequest = NextRequest & {
     _params: Record<string, string>,
-    db(): Promise<DatabaseProvider>,
+    db(): Promise<DatabaseAdapter>,
     configuration: Configuration,
     sessionUser: User
 }
@@ -19,7 +19,7 @@ export type CNextRequest = NextRequest & {
 /**
  * Create a default admin user with all permissions
  */
-async function createDefaultAdminUser(db: DatabaseProvider, password: string) {
+async function createDefaultAdminUser(db: DatabaseAdapter, password: string) {
     // Default admin credentials
     const username = "admin";
     const email = "admin@nextblog.local";

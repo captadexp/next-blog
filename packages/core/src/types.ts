@@ -10,7 +10,7 @@ export interface Blog {
     updatedAt: number;
 }
 
-export interface BlogData {
+export interface BlogData extends Partial<Blog> {
     title: string;
     slug: string;
     content: string;
@@ -106,7 +106,7 @@ export interface UserData {
 
 // Author interfaces removed - User interface now handles all author functionality
 
-export interface DatabaseProvider {
+export interface DatabaseAdapter {
     blogs: CollectionOperations<Blog, BlogData>;
     categories: CollectionOperations<Category, CategoryData>;
     tags: CollectionOperations<Tag, TagData>;
@@ -124,9 +124,9 @@ export interface CollectionOperations<T, U> {
 
     create(data: U): Promise<T>;
 
-    updateOne(filter: Filter<T>, update: Omit<Filter<T>, "_id">): Promise<T>;
+    updateOne(filter: Filter<T>, update: Omit<Filter<T>, "_id">): Promise<T | null>;
 
-    deleteOne(filter: Filter<T>): Promise<T>;
+    deleteOne(filter: Filter<T>): Promise<T | null>;
 }
 
 export type EventPayload =
@@ -144,7 +144,7 @@ export type EventPayload =
     | { event: "deleteUser"; payload: User };
 
 export interface ConfigurationCallbacks {
-    on?<E extends EventPayload>(event: E['event'], payload: E['payload']): void;
+    on?<E extends EventPayload>(event: E['event'], payload: E['payload'] | null): void;
 }
 
 export interface UIConfiguration {
@@ -173,7 +173,7 @@ export interface UIConfiguration {
 }
 
 export type Configuration = {
-    db(): Promise<DatabaseProvider>,
+    db(): Promise<DatabaseAdapter>,
     byPassSecurity?: boolean,
     callbacks?: ConfigurationCallbacks,
     ui?: UIConfiguration

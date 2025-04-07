@@ -63,7 +63,7 @@ function DashboardApp() {
                         {/* User routes */}
                         <Route path="/api/next-blog/dashboard/users" component={UsersList}/>
                         <Route path="/api/next-blog/dashboard/users/create" component={CreateUser}/>
-                        <Route path="/api/next-blog/dashboard/users/update" component={UpdateUser}/>
+                        <Route path="/api/next-blog/dashboard/users/:id" component={UpdateUser}/>
 
                         {/* Category routes */}
                         <Route path="/api/next-blog/dashboard/categories" component={CategoriesList}/>
