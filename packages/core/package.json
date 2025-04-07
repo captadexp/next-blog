@@ -4,11 +4,14 @@
   "description": "Add blogging to your nextjs project in a jiffy",
   "repository": "https://github.com/captadexp/next-blog",
   "type": "module",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
   "scripts": {
     "clean": "rimraf dist && mkdir -p dist/core",
     "dev": "npm run clean && vite build --watch",
     "build": "npm run clean && vite build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "nextjs",
@@ -26,18 +29,40 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
       "default": "./dist/index.js"
     },
     "./adapters": {
       "types": "./dist/adapters/index.d.ts",
+      "import": {
+        "types": "./dist/adapters/index.d.ts",
+        "default": "./dist/adapters/index.js"
+      },
+      "require": {
+        "types": "./dist/adapters/index.d.ts",
+        "default": "./dist/adapters/index.js"
+      },
       "default": "./dist/adapters/index.js"
     },
     "./types": {
       "types": "./dist/types.d.ts",
-      "default": null
+      "import": {
+        "types": "./dist/types.d.ts"
+      },
+      "require": {
+        "types": "./dist/types.d.ts"
+      }
     },
     "./package.json": "./package.json"
   },
+  "module": "./dist/index.js",
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "ISC",
   "dependencies": {

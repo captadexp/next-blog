@@ -12,20 +12,19 @@ import {
     Success
 } from "./utils/errors";
 
-//hello
 /**
  * Return type for the nextBlog function containing route handlers
  */
 export interface NextBlogHandlers {
-    GET: (request: NextRequest, response: NextResponse) => Promise<NextResponse | Response>;
-    POST: (request: NextRequest, response: NextResponse) => Promise<NextResponse | Response>;
+    GET: (request: NextRequest) => Promise<NextResponse | Response>;
+    POST: (request: NextRequest) => Promise<NextResponse | Response>;
 }
 
 /**
  * Main CMS function that creates the API route handlers
  */
 const nextBlog = function (configuration: Configuration): NextBlogHandlers {
-    async function processRequest(pathObject: PathObject, request: NextRequest, _response: NextResponse) {
+    async function processRequest(pathObject: PathObject, request: NextRequest) {
         try {
             const finalPathname = request.nextUrl.pathname.replace("/api/next-blog/", "")
             const {db} = configuration
@@ -132,18 +131,15 @@ const nextBlog = function (configuration: Configuration): NextBlogHandlers {
         }
     }
 
-    async function GET(request: NextRequest, response: NextResponse) {
-        return processRequest(cmsPaths.GET, request, response)
+    async function GET(request: NextRequest) {
+        return processRequest(cmsPaths.GET, request)
     }
 
-    async function POST(request: NextRequest, response: NextResponse) {
-        return processRequest(cmsPaths.POST, request, response)
+    async function POST(request: NextRequest) {
+        return processRequest(cmsPaths.POST, request)
     }
 
     return {GET, POST}
 };
 
 export default nextBlog;
-
-// Export types, utilities, and components for external use
-export * from './exports';

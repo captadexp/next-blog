@@ -2,7 +2,6 @@
   "name": "test-app",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "PORT=3248 next dev",
     "build": "next build",

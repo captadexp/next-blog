@@ -47,7 +47,7 @@ export default defineConfig(({mode}) => {
             dts({
                 outDir: 'dist',
                 include: ['src'],
-                exclude: ['node_modules', 'src/**/*.test.ts', 'src/**/*.spec.ts', 'src/client/**/*'],
+                exclude: ['node_modules', 'src/**/*.test.ts', 'src/**/*.spec.ts'],
                 rollupTypes: false,
             }),
             viteStaticCopy({
