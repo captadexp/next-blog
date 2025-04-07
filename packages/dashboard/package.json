@@ -4,6 +4,9 @@
   "description": "Dashboard components for next-blog",
   "repository": "https://github.com/captadexp/next-blog",
   "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "clean": "rimraf dist && mkdir -p dist",
     "dev": "npm run clean && vite build --watch",
@@ -24,10 +27,6 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./server": {
-      "types": "./dist/server/index.d.ts",
-      "default": "./dist/server/index.js"
     },
     "./package.json": "./package.json"
   },

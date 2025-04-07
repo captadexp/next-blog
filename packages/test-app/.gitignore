@@ -37,3 +37,5 @@ next-env.d.ts
 
 # blog data
 /blog-data
+
+!next.config.js

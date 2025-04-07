@@ -11,7 +11,7 @@ export default defineConfig(({mode}) => {
         build: {
             lib: {
                 entry: {
-                    index: path.resolve(__dirname, 'src/index.tsx'),
+                    index: path.resolve(__dirname, 'src/index.ts'),
                     types: path.resolve(__dirname, 'src/types.ts'),
                     'adapters/index': path.resolve(__dirname, 'src/adapters/index.ts'),
                 },
@@ -38,7 +38,6 @@ export default defineConfig(({mode}) => {
             },
             outDir: 'dist',
             emptyOutDir: false,
-            target: 'node18',
             sourcemap: true,
             minify: false,
         },

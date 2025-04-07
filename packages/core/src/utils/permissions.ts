@@ -1,4 +1,4 @@
-import {Permission, PermissionType, EntityType, User, PERMISSION_WEIGHTS} from '../types';
+import {Permission, PermissionType, EntityType, User, PERMISSION_WEIGHTS} from '../types.js';
 
 /**
  * Calculate the weight of a permission

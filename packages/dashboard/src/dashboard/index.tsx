@@ -1,8 +1,9 @@
 import {h, render} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
 import {LocationProvider, Route, Router} from 'preact-iso';
-import '../styles/styles.css';
 import {UserProvider} from '../context/UserContext';
+
+import '../styles/styles.css';
 
 // Import pages
 import {Layout} from './components/Layout';

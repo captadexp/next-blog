@@ -8,8 +8,8 @@
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "skipDefaultLibCheck": true,
     "skipLibCheck": true,
     "strict": true,
@@ -17,19 +17,18 @@
     "stripInternal": true,
     "target": "es2020",
     "noEmit": true,
+    "outDir": "dist",
+    "paths": {
+    },
     "lib": [
       "esnext"
     ],
-    "outDir": "dist",
-    "paths": {
-    }
+    "rootDir": "src"
   },
   "include": [
     "src/**/*"
   ],
   "exclude": [
-    "node_modules",
-    "dist",
-    "vite.config.ts"
+    "dist"
   ]
 }

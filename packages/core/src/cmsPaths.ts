@@ -1,15 +1,15 @@
-import {CNextRequest} from "./types";
-import {PathObject} from "./utils/parse-path";
-import secure from "./utils/secureInternal";
-import {handleStaticFileRequest} from "./utils/staticFileHandler";
-import {DashboardPage} from "@supergrowthai/next-blog-dashboard/server"
+import {CNextRequest} from "./utils/secureInternal.js";
+import {PathObject} from "./utils/parse-path.js";
+import secure from "./utils/secureInternal.js";
+import {handleStaticFileRequest} from "./utils/staticFileHandler.js";
+import {DashboardPage} from "@supergrowthai/next-blog-dashboard"
 import {
     getBlogs, getBlogById, createBlog, updateBlog, deleteBlog,
     getCategories, getCategoryById, createCategory, updateCategory, deleteCategory,
     getTags, getTagById, createTag, updateTag, deleteTag,
     getConfig, getCurrentUser,
     listUsers, getUser, createUser, updateUser, deleteUser
-} from "./api";
+} from "./api/index.js";
 
 const cmsPaths: { GET: PathObject, POST: PathObject } = {
     GET: {

@@ -27,18 +27,6 @@
     "package.json"
   ],
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "default": "./dist/index.js"
-    },
     "./adapters": {
       "types": "./dist/adapters/index.d.ts",
       "import": {
@@ -51,16 +39,22 @@
       },
       "default": "./dist/adapters/index.js"
     },
-    "./types": {
-      "types": "./dist/types.d.ts",
+    ".": {
+      "types": "./dist/index.d.ts",
       "import": {
-        "types": "./dist/types.d.ts"
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
       },
       "require": {
-        "types": "./dist/types.d.ts"
-      }
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "default": "./dist/index.js"
     },
     "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "module": "./dist/index.js",
   "author": "Capt ADExp <tech@developer.toys>",

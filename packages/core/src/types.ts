@@ -1,5 +1,3 @@
-import type {NextRequest} from "next/server";
-
 export interface Blog {
     _id: string;
     title: string;
@@ -181,9 +179,3 @@ export type Configuration = {
     ui?: UIConfiguration
 }
 
-export type CNextRequest = NextRequest & {
-    _params: Record<string, string>,
-    db(): Promise<DatabaseProvider>,
-    configuration: Configuration,
-    sessionUser: User
-}

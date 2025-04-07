@@ -9,7 +9,7 @@ import {
     TagData,
     User,
     UserData
-} from "../types";
+} from "../types.js";
 import {MongoClient, Db, Collection, ObjectId} from "mongodb"
 
 

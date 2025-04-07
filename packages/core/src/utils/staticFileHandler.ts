@@ -1,4 +1,4 @@
-import {CNextRequest} from "../types";
+import {CNextRequest} from "./secureInternal.js";
 import path from "path";
 import fs from "fs";
 import {fileURLToPath} from "url";

@@ -1,6 +1,6 @@
-import {CNextRequest} from "../types";
-import secure from "../utils/secureInternal";
-import {Success} from "../utils/errors";
+import {CNextRequest} from "../utils/secureInternal.js";
+import secure from "../utils/secureInternal.js";
+import {Success} from "../utils/errors.js";
 
 /**
  * Get the UI configuration

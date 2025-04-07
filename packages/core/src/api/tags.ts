@@ -1,11 +1,11 @@
-import {CNextRequest} from "../types";
-import secure from "../utils/secureInternal";
+import {CNextRequest} from "../utils/secureInternal.js";
+import secure from "../utils/secureInternal.js";
 import {
     NotFound,
     Success,
     ValidationError,
     DatabaseError
-} from "../utils/errors";
+} from "../utils/errors.js";
 
 export const getTags = secure(
     async (request: CNextRequest) => {

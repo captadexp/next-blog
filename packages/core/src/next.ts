@@ -1,8 +1,9 @@
-import {Configuration} from "./types";
+// @ts-expect-error Next.js does not yet correctly use the `package.json#exports` field
 import {NextRequest, NextResponse} from "next/server";
-import {matchPathToFunction, PathObject} from "./utils/parse-path";
-import cmsPaths from "./cmsPaths";
-import {NotFoundPage} from "@supergrowthai/next-blog-dashboard/server"
+import {Configuration} from "./types.js";
+import {matchPathToFunction, PathObject} from "./utils/parse-path.js";
+import cmsPaths from "./cmsPaths.js";
+import {NotFoundPage} from "@supergrowthai/next-blog-dashboard"
 import {
     Exception,
     BadRequest,
@@ -10,7 +11,7 @@ import {
     Unauthorized,
     Forbidden,
     Success
-} from "./utils/errors";
+} from "./utils/errors.js";
 
 /**
  * Return type for the nextBlog function containing route handlers

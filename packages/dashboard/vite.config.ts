@@ -8,19 +8,13 @@ export default defineConfig({
     base: "/static/",
     publicDir: "public",
     build: {
-        outDir: "dist",
-        minify: false,
-        cssCodeSplit: false, // Bundle CSS into a single file
         lib: {
             entry: {
-                'server/index': resolve(__dirname, 'src/server/index.ts'),
+                'index': resolve(__dirname, 'src/index.ts'),
                 'static/dashboard': resolve(__dirname, 'src/dashboard/index.tsx'),
             },
             formats: ['es']
         },
-        copyPublicDir: true,
-        sourcemap: true,
-        emptyOutDir: false,
         rollupOptions: {
             external: [],
             output: {
@@ -29,15 +23,22 @@ export default defineConfig({
                 entryFileNames: '[name].js'
             }
         },
+        copyPublicDir: true,
+        cssCodeSplit: false,
+        outDir: "dist",
+        emptyOutDir: false,
+        sourcemap: true,
+        minify: false,
     },
     plugins: [
+        tailwindcss(),
+        cssInjectedByJs(),
         dts({
+            outDir: "dist",
             include: ['src'],
-            exclude: ['node_modules'],
+            exclude: ['node_modules', 'src/**/*.test.ts', 'src/**/*.spec.ts'],
             rollupTypes: false,
         }),
-        tailwindcss(),
-        cssInjectedByJs()
     ],
     resolve: {
         alias: {

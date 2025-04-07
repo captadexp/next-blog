@@ -1,13 +1,20 @@
-import {headers} from "next/headers";
-import {NextResponse} from "next/server";
-import {CNextRequest, DatabaseProvider, Permission, User, UserData} from "../types";
-import crypto from "./crypto";
-import {hasPermission, hasAnyPermission} from "./permissions";
+import {headers} from "next/headers.js";
+import {type NextRequest, NextResponse} from "next/server.js";
+import {Configuration, DatabaseProvider, Permission, User, UserData} from "../types.js";
+import crypto from "./crypto.js";
+import {hasPermission, hasAnyPermission} from "./permissions.js";
 
 type SecureOptions = {
     requirePermission?: Permission;
     requireAnyPermission?: Permission[];
 };
+
+export type CNextRequest = NextRequest & {
+    _params: Record<string, string>,
+    db(): Promise<DatabaseProvider>,
+    configuration: Configuration,
+    sessionUser: User
+}
 
 /**
  * Create a default admin user with all permissions
@@ -66,16 +73,16 @@ export default function secure<T>(
         const db = await request.db()
 
         // Check if there are any users
-        const hasUser = await db.users.findOne({}).then(u => !!u);
+        const hasUser = await db.users.findOne({});
 
-        if (!hasUser) {
+        if (!hasUser || hasUser.email === "admin@nextblog.local") {
             const adminUser = await createDefaultAdminUser(db, "password");
 
             console.log("\n" + "=".repeat(80));
             console.log("=".repeat(20) + " DEFAULT ADMIN USER CREATED " + "=".repeat(20));
             console.log("=".repeat(80));
             console.log(`Username: ${adminUser.username}`);
-            console.log(`Password: ${adminUser.password}`);
+            console.log(`Password: password`);
             console.log(`Email: ${adminUser.email}`);
             console.log("IMPORTANT: Please change these credentials immediately after first login!");
             console.log("=".repeat(80) + "\n");

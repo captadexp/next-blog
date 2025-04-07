@@ -1,12 +1,12 @@
-import {CNextRequest, Permission} from "../types";
-import secure from "../utils/secureInternal";
+import {Permission} from "../types.js";
+import secure, {type CNextRequest} from "../utils/secureInternal.js";
 import {
     NotFound,
     Success,
     ValidationError,
     DatabaseError,
     BadRequest
-} from "../utils/errors";
+} from "../utils/errors.js";
 
 // List all blogs - requires 'blogs:list' permission
 export const getBlogs = secure(
@@ -106,7 +106,7 @@ export const updateBlog = secure(
 
             // Check if user is trying to update someone else's blog
             // Users with 'all:all' or 'blogs:all' can update any blog
-            const canUpdateAnyBlog = request.sessionUser.permissions.some(p => p === 'all:all' || p === 'blogs:all');
+            const canUpdateAnyBlog = request.sessionUser.permissions.some((p: Permission) => p === 'all:all' || p === 'blogs:all');
 
             if (!canUpdateAnyBlog && existingBlog.userId !== request.sessionUser._id) {
                 throw new BadRequest("You can only update your own blogs");
@@ -143,7 +143,7 @@ export const deleteBlog = secure(
 
             // Check if user is trying to delete someone else's blog
             // Users with 'all:all' or 'blogs:all' can delete any blog
-            const canDeleteAnyBlog = request.sessionUser.permissions.some(p =>
+            const canDeleteAnyBlog = request.sessionUser.permissions.some((p: Permission) =>
                 p === 'all:all' || p === 'blogs:all'
             );
 

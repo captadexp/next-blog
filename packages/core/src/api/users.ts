@@ -1,7 +1,7 @@
-import {CNextRequest, Permission, User, UserData} from "../types";
-import secure from "../utils/secureInternal";
-import {Success, NotFound, BadRequest, Forbidden} from "../utils/errors";
-import crypto from "../utils/crypto";
+import {Permission, User, UserData} from "../types.js";
+import secure, {type CNextRequest} from "../utils/secureInternal.js";
+import {Success, NotFound, BadRequest, Forbidden} from "../utils/errors.js";
+import crypto from "../utils/crypto.js";
 
 /**
  * Get the currently logged in user
@@ -123,7 +123,7 @@ export const createUser = requirePermission('users:create')(async (request: CNex
             password: hashedPassword,
             permissions: body.permissions || []
         };
-        
+
         // Add timestamp fields
         const userDataWithTimestamps = {
             ...userData,
