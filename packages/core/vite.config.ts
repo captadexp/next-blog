@@ -52,7 +52,7 @@ export default defineConfig(({mode}) => {
             viteStaticCopy({
                 targets: [
                     {
-                        src: path.resolve(__dirname, './../dashboard/dist/'), // Path to the other package's dist
+                        src: path.resolve(__dirname, './../dashboard/dist/static/'),
                         dest: 'assets/@supergrowthai/next-blog-dashboard',
                     }
                 ],
