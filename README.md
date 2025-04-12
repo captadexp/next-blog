@@ -1,19 +1,33 @@
 # Next-Blog
 
-****
+***
 
 ### Currently supports nextjs apps router only
 
-**Elevate your Next.js project with seamless blogging functionality.**
+### Elevate your Next.js project with seamless blogging functionality.
 
-Next-Blog is designed to integrate a blogging platform into your Next.js application effortlessly, akin to the
-simplicity of integrating NextAuth today.
+Next-Blog is designed to integrate a blogging platform into your Next.js application effortlessly, akin to the simplicity of integrating NextAuth today.
 
-**Currently, Next-Blog is a work in progress and I'm excited to invite collaborators to join me in this journey.**
-Whether you're interested in coding, documentation, design, or testing, I welcome contributions of all kinds to make
-Next-Blog robust and user-friendly.
+<div align="center">
+  <img src="images/dashboard.png" alt="Next-Blog Dashboard" width="1200" style="border-radius: 4px; margin: 24px 0;"/>
 
-![Folder Structure](https://github.com/captadexp/next-blog/blob/main/images/apps-router-folder-structure.png?raw=true)
+  <h3 style="margin-top: 2px; color: #ffffff; font-weight: 500;">
+    <em>Blogging Dashboard Page for Next.js Applications</em>
+  </h3>
+</div>
+
+****
+
+### Modern Blogging Solution for Next.js
+
+Next-Blog provides everything you need to add a complete blogging system to your Next.js application:
+
+- **Effortless setup** - Get started in minutes
+- **Built-in rich editor** - Markdown and WYSIWYG support
+- **Instant Rendering** - View formatted content
+
+
+****
 
 ## Project Structure
 
@@ -54,7 +68,7 @@ To run the test app:
 npm run dev:test
 ```
 
-Then visit http://localhost:3000 and click "Go to Blog Dashboard" to access the blog management interface.
+Then visit `http://localhost:3248` and click on `Go to Blog Dashboard` to access the blog management interface.
 
 ### Quick Start
 
@@ -68,24 +82,13 @@ To add Next-Blog to your project, follow these simple steps:
    npm i @supergrowthai/next-blog
    ```
 
-2. Create a new route at `app/api/next-blog/[...page]/route.ts`
+2. **Create a New Route at** `app/api/next-blog/[...page]/route.ts`
 
-### Available Modules
-
-Next-Blog provides the following modules:
-
-```typescript
-// Core functionality
-import nextBlog, { FileDBAdapter, MongoDBAdapter } from '@supergrowthai/next-blog';
-
-// Alternative adapter import paths
-import { FileDBAdapter, MongoDBAdapter } from '@supergrowthai/next-blog/adapters';
-
-// Types (if needed)
-import type { Configuration } from '@supergrowthai/next-blog/types';
-```
-
-The UI module is reserved for future customizable components.
+<div align="center" style="margin: 20px 0;">
+  <img src="images/apps-router-folder-structure.png" 
+       alt="Next.js App Router Folder Structure" 
+       style="max-width: 600px"/>
+</div>
 
 3. **Update Your Route Configuration**
 
@@ -114,7 +117,7 @@ The UI module is reserved for future customizable components.
    ```
 
    For MongoDB support:
-   
+
    ```typescript
    import nextBlog, { MongoDBAdapter } from "@supergrowthai/next-blog"
    
@@ -130,12 +133,21 @@ The UI module is reserved for future customizable components.
    export { GET, POST };
    ```
 
+### Type Safety
+* Strict typing throughout all operations
+* Automatic transformation between:
+    * MongoDB ObjectId ↔ API string IDs
+    * Database models ↔ API responses
+* Proper null handling for update/delete operations
+
+
+
 ### Roadmap
 
 Here are the next steps on our journey to enhance Next-Blog:
 
 - [x] Project initialization.
-- [x] Added a simple database adapter (JSONFile + MongoDB).
+- [x] Added database adapters (FileDB + MongoDB)
 - [x] Implement internal dashboard pages for managing posts, complete with an editor.
 - [x] Migrate to Vite build system with Bun
 - [x] Create test application for development and testing
@@ -151,3 +163,5 @@ you're passionate about making content creation accessible and straightforward f
 from you.
 
 **Join me in shaping the future of blogging in Next.js. Together, we can build something amazing.**
+
+***
