@@ -42,34 +42,6 @@ next-blog/
 └── bunfig.toml         # Bun configuration
 ```
 
-### Development
-
-```bash
-# Install dependencies
-bun install
-
-# Build the core package
-npm run build
-
-# Watch core package for changes
-npm run dev
-
-# Run the test application
-npm run dev:test
-```
-
-### Test Application
-
-A test Next.js application is included in the `packages/test-app` directory. This app demonstrates how to integrate Next-Blog into a Next.js project and can be used for development and testing.
-
-To run the test app:
-
-```bash
-npm run dev:test
-```
-
-Then visit `http://localhost:3248` and click on `Go to Blog Dashboard` to access the blog management interface.
-
 ### Quick Start
 
 To add Next-Blog to your project, follow these simple steps:
@@ -132,6 +104,35 @@ To add Next-Blog to your project, follow these simple steps:
 
    export { GET, POST };
    ```
+
+### Development
+
+```bash
+# Install dependencies
+bun install
+
+# Build the core package
+npm run build
+
+# Watch core package for changes
+npm run dev
+
+# Run the test application
+npm run dev:test
+```
+
+### Test Application
+
+A test Next.js application is included in the `packages/test-app` directory. This app demonstrates how to integrate Next-Blog into a Next.js project and can be used for development and testing.
+
+To run the test app:
+
+```bash
+npm run dev:test
+```
+
+Then visit `http://localhost:3248` and click on `Go to Blog Dashboard` to access the blog management interface.
+
 
 ### Type Safety
 * Strict typing throughout all operations
