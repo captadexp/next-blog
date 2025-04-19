@@ -36,7 +36,8 @@
     "secure"
   ],
   "dependencies": {
-    "rimraf": "^6.0.1"
+    "rimraf": "^6.0.1",
+    "text-readability": "^1.1.1"
   },
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "MIT",
