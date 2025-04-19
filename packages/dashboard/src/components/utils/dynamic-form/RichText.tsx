@@ -1,7 +1,8 @@
 import {h} from 'preact';
 import {useState, useEffect, useRef, useCallback} from 'preact/hooks';
 import {DynamicFormFieldType} from './types';
-import {memo} from "preact/compat"
+import {memo} from "preact/compat";
+import ReadabilityScore from './ReadabilityScore';
 
 interface RichTextProps {
     field: DynamicFormFieldType;
@@ -125,6 +126,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
             {!editorLoaded && (
                 <div className="text-sm text-gray-500 mt-1">Loading editor...</div>
             )}
+            <ReadabilityScore content={value} />
         </div>
     );
 }, (prevProps, nextProps) => {
