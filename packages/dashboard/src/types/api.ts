@@ -28,6 +28,7 @@ export interface UIConfig {
             icon?: string;
         }[];
     };
+    blogBasePath?: string;
 }
 
 export interface Blog {

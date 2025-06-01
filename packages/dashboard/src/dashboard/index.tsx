@@ -28,6 +28,7 @@ import UpdateCategory from './pages/categories/Update';
 import TagsList from './pages/tags/List';
 import CreateTag from './pages/tags/Create';
 import UpdateTag from './pages/tags/Update';
+import Settings from './pages/settings';
 
 // Main Dashboard App
 function DashboardApp() {
@@ -74,6 +75,7 @@ function DashboardApp() {
                         <Route path="/api/next-blog/dashboard/tags" component={TagsList}/>
                         <Route path="/api/next-blog/dashboard/tags/create" component={CreateTag}/>
                         <Route path="/api/next-blog/dashboard/tags/:id" component={UpdateTag}/>
+                        <Route path="/api/next-blog/dashboard/settings" component={Settings}/>
 
                         {/* 404 route */}
                         <Route default component={() => <div>Not Found</div>}/>

@@ -75,29 +75,57 @@ export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) 
                     )}
                 </div>
                 <nav className="overflow-x-auto pb-2">
-                    <ul className="flex flex-nowrap sm:flex-wrap gap-4 sm:gap-6 list-none p-0 m-0 min-w-max">
-                        {navItems.map(item => (
-                            <li key={item.path}>
-                                <a
-                                    href={item.path}
-                                    onClick={e => {
-                                        e.preventDefault();
-                                        location.route(item.path);
-                                    }}
-                                    className={`no-underline whitespace-nowrap py-1 px-1 ${
-                                        currentPath === item.path
-                                            ? `font-bold`
-                                            : `hover:opacity-80`
-                                    }`}
-                                    style={{
-                                        color: currentPath === item.path ? primaryColor : undefined
-                                    }}
-                                >
-                                    {item.label}
-                                </a>
-                            </li>
-                        ))}
-                    </ul>
+                    <div className="flex justify-between items-center flex-wrap">
+                        {/* Left side nav items */}
+                        <ul className="flex flex-nowrap sm:flex-wrap gap-4 sm:gap-6 list-none p-0 m-0 min-w-max">
+                            {navItems.map(item => (
+                                <li key={item.path}>
+                                    <a
+                                        href={item.path}
+                                        onClick={e => {
+                                            e.preventDefault();
+                                            location.route(item.path);
+                                        }}
+                                        className={`no-underline whitespace-nowrap py-1 px-1 ${
+                                            currentPath === item.path
+                                                ? `font-bold`
+                                                : `hover:opacity-80`
+                                        }`}
+                                        style={{
+                                            color: currentPath === item.path ? primaryColor : undefined
+                                        }}
+                                    >
+                        <span className="flex items-center">
+                            {item.icon && <i className={`mr-1 icon-${item.icon}`} />}
+                            {item.label}
+                        </span>
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                        <div className="ml-auto">
+                            <a
+                                href="/api/next-blog/dashboard/settings"
+                                onClick={e => {
+                                    e.preventDefault();
+                                    location.route('/api/next-blog/dashboard/settings');
+                                }}
+                                className={`no-underline whitespace-nowrap py-1 px-1 ${
+                                    currentPath === '/api/next-blog/dashboard/settings'
+                                        ? `font-bold`
+                                        : `hover:opacity-80`
+                                }`}
+                                style={{
+                                    color: currentPath === '/api/next-blog/dashboard/settings' ? primaryColor : undefined
+                                }}
+                            >
+                <span className="flex items-center">
+                    <i className="mr-1 icon-settings" />
+                    Settings
+                </span>
+                            </a>
+                        </div>
+                    </div>
                 </nav>
             </header>
 
