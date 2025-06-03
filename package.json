@@ -23,7 +23,8 @@
     "start:test": "cd packages/test-app && npm run start",
     "typecheck:ui": "cd packages/ui && npm run typecheck",
     "typecheck:dashboard": "cd packages/dashboard && npm run typecheck",
-    "typecheck:core": "cd packages/core && npm run typecheck"
+    "typecheck:core": "cd packages/core && npm run typecheck",
+    "postinstall": "bun i && bun run build"
   },
   "keywords": [
     "vite",
