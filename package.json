@@ -24,7 +24,7 @@
     "typecheck:ui": "cd packages/ui && npm run typecheck",
     "typecheck:dashboard": "cd packages/dashboard && npm run typecheck",
     "typecheck:core": "cd packages/core && npm run typecheck",
-    "postinstall": "bun i && bun run build"
+    "postinstall": "bun i && npm run build"
   },
   "keywords": [
     "vite",
