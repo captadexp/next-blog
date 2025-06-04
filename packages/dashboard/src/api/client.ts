@@ -37,7 +37,8 @@ class ApiClient {
         method: 'GET' | 'POST' = 'GET',
         body?: any
     ): Promise<StandardResponse<T>> {
-        const url = `${this.baseUrl}${endpoint}`;
+        const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+        const url = `${this.baseUrl}${normalizedEndpoint}`;
 
         const headers: HeadersInit = {
             'Content-Type': 'application/json',
@@ -59,11 +60,24 @@ class ApiClient {
 
         try {
             const response = await fetch(url, options);
-            const data: StandardResponse<T> = await response.json();
 
+            if (!response.ok) {
+                if (response.status === 404) {
+                    return {
+                        code: 404,
+                        message: `Resource not found. Please check the URL: ${url}`
+                    };
+                }
+
+                return {
+                    code: response.status,
+                    message: `HTTP error: ${response.statusText}`
+                };
+            }
+
+            const data: StandardResponse<T> = await response.json();
             return data;
         } catch (error) {
-            console.error('API request failed:', error);
             return {
                 code: 500,
                 message: 'API request failed'
@@ -72,113 +86,200 @@ class ApiClient {
     }
 
     // Auth APIs
-    async login(username: string, password: string): Promise<StandardResponse<User>> {
-        return this.request<User>('/login', 'POST', {username, password});
+    async login(username: string, password: string) {
+        return this.request<User>('/login', 'POST', { username, password });
     }
 
-    async logout(): Promise<StandardResponse<null>> {
+    async logout() {
         return this.request<null>('/logout', 'POST');
     }
 
-    async getCurrentUser(): Promise<StandardResponse<User>> {
+    async getCurrentUser() {
         return this.request<User>('/me');
     }
 
-    async checkPermission(permission: Permission): Promise<StandardResponse<boolean>> {
-        return this.request<boolean>('/check-permission', 'POST', {permission});
+    async checkPermission(permission: Permission) {
+        return this.request<boolean>('/check-permission', 'POST', { permission });
     }
 
     // Config API
-    async getConfig(): Promise<StandardResponse<UIConfig>> {
+    async getConfig() {
         return this.request<UIConfig>('/config');
     }
 
+    async updateConfig(data: Partial<UIConfig>) {
+        return this.request<UIConfig>('/config', 'POST', data);
+    }
+
     // Blog APIs
-    async getBlogs(): Promise<StandardResponse<Blog[]>> {
+    async getBlogs() {
         return this.request<Blog[]>('/blogs');
     }
 
-    async getBlog(id: string): Promise<StandardResponse<Blog>> {
+    async getBlog(id: string) {
         return this.request<Blog>(`/blogs/${id}`);
     }
 
-    async createBlog(data: CreateBlogInput): Promise<StandardResponse<Blog>> {
+    async createBlog(data: CreateBlogInput) {
         return this.request<Blog>('/blogs/create', 'POST', data);
     }
 
-    async updateBlog(id: string, data: UpdateBlogInput): Promise<StandardResponse<Blog>> {
+    async updateBlog(id: string, data: UpdateBlogInput) {
         return this.request<Blog>(`/blog/${id}/update`, 'POST', data);
     }
 
-    async deleteBlog(id: string): Promise<StandardResponse<null>> {
+    async deleteBlog(id: string) {
         return this.request<null>(`/blog/${id}/delete`, 'POST');
     }
 
+    /**
+     * Gets the preview URL for a blog post
+     * Uses the current domain and blogBasePath from config to generate the URL
+     *
+     * @param slug The blog post slug
+     * @returns The preview URL for the blog post
+     */
+    async getBlogPreviewUrl(slug: string) {
+        // First try to get from API if it exists
+        try {
+            const response = await this.request<string>(`/blogs/preview-url`, 'POST', { slug });
+            if (response.code === 0 && response.payload) {
+                return response;
+            }
+        } catch (error) {
+            // API endpoint not available, falling back to client-side generation
+        }
+
+        // Fallback: Get the config to determine the blog base path
+        const configResponse = await this.getConfig();
+        const blogBasePath = configResponse.payload?.blogBasePath || '/blog';
+
+        // Generate the URL using the current origin and the configured blog path
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        const normalizedSlug = slug.startsWith('/') ? slug.slice(1) : slug;
+
+        // Use the actual configured path from settings for the preview URL
+        // Ensure proper path formatting to avoid accumulating segments
+        const path = blogBasePath.startsWith('/') ? blogBasePath : `/${blogBasePath}`;
+        const cleanPath = path.endsWith('/') ? path.slice(0, -1) : path;
+
+        // Make sure we're not adding additional path segments when the slug contains them
+        const url = `${origin}${cleanPath}/${normalizedSlug}`;
+
+        return {
+            code: 0,
+            message: 'Preview URL generated successfully',
+            payload: url
+        };
+
+    }
+
+    /**
+     * Gets the public URL for a blog post
+     * Uses the current domain and blogBasePath from config to generate the URL
+     *
+     * @param slug The blog post slug
+     * @returns The public URL for the blog post
+     */
+    async getBlogUrl(slug: string) {
+        // First try to get from API if it exists
+        try {
+            const response = await this.request<string>(`/blogs/url`, 'POST', { slug });
+            if (response.code === 0 && response.payload) {
+                return response;
+            }
+        } catch (error) {
+            // API endpoint not available, falling back to client-side generation
+        }
+
+        // Fallback: Get the config to determine the blog base path
+        const configResponse = await this.getConfig();
+        const blogBasePath = configResponse.payload?.blogBasePath || '/blog';
+
+        // Generate the URL using the current origin and the configured blog path
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        const normalizedSlug = slug.startsWith('/') ? slug.slice(1) : slug;
+
+        // Use the actual configured path from settings for the preview URL
+        // Ensure proper path formatting to avoid accumulating segments
+        const path = blogBasePath.startsWith('/') ? blogBasePath : `/${blogBasePath}`;
+        const cleanPath = path.endsWith('/') ? path.slice(0, -1) : path;
+
+        // Make sure we're not adding additional path segments when the slug contains them
+        const url = `${origin}${cleanPath}/${normalizedSlug}`;
+
+        return {
+            code: 0,
+            message: 'Blog URL generated successfully',
+            payload: url
+        };
+    }
+
     // User APIs
-    async getUsers(): Promise<StandardResponse<User[]>> {
+    async getUsers() {
         return this.request<User[]>('/users');
     }
 
-    async getUser(id: string): Promise<StandardResponse<User>> {
+    async getUser(id: string) {
         return this.request<User>(`/users/${id}`);
     }
 
-    async createUser(data: CreateUserInput): Promise<StandardResponse<User>> {
+    async createUser(data: CreateUserInput) {
         return this.request<User>('/users/create', 'POST', data);
     }
 
-    async updateUser(id: string, data: UpdateUserInput): Promise<StandardResponse<User>> {
+    async updateUser(id: string, data: UpdateUserInput) {
         return this.request<User>(`/user/${id}/update`, 'POST', data);
     }
 
-    async deleteUser(id: string): Promise<StandardResponse<null>> {
+    async deleteUser(id: string) {
         return this.request<null>(`/user/${id}/delete`, 'POST');
     }
 
     // Permissions
-    async getAllPermissions(): Promise<StandardResponse<Permission[]>> {
+    async getAllPermissions() {
         return this.request<Permission[]>('/permissions');
     }
 
     // Category APIs
-    async getCategories(): Promise<StandardResponse<Category[]>> {
+    async getCategories() {
         return this.request<Category[]>('/categories');
     }
 
-    async getCategory(id: string): Promise<StandardResponse<Category>> {
+    async getCategory(id: string) {
         return this.request<Category>(`/categories/${id}`);
     }
 
-    async createCategory(data: CreateCategoryInput): Promise<StandardResponse<Category>> {
+    async createCategory(data: CreateCategoryInput) {
         return this.request<Category>('/categories/create', 'POST', data);
     }
 
-    async updateCategory(id: string, data: UpdateCategoryInput): Promise<StandardResponse<Category>> {
+    async updateCategory(id: string, data: UpdateCategoryInput) {
         return this.request<Category>(`/category/${id}/update`, 'POST', data);
     }
 
-    async deleteCategory(id: string): Promise<StandardResponse<null>> {
+    async deleteCategory(id: string) {
         return this.request<null>(`/category/${id}/delete`, 'POST');
     }
 
     // Tag APIs
-    async getTags(): Promise<StandardResponse<Tag[]>> {
+    async getTags() {
         return this.request<Tag[]>('/tags');
     }
 
-    async getTag(id: string): Promise<StandardResponse<Tag>> {
+    async getTag(id: string) {
         return this.request<Tag>(`/tags/${id}`);
     }
 
-    async createTag(data: CreateTagInput): Promise<StandardResponse<Tag>> {
+    async createTag(data: CreateTagInput) {
         return this.request<Tag>('/tags/create', 'POST', data);
     }
 
-    async updateTag(id: string, data: UpdateTagInput): Promise<StandardResponse<Tag>> {
+    async updateTag(id: string, data: UpdateTagInput) {
         return this.request<Tag>(`/tag/${id}/update`, 'POST', data);
     }
 
-    async deleteTag(id: string): Promise<StandardResponse<null>> {
+    async deleteTag(id: string) {
         return this.request<null>(`/tag/${id}/delete`, 'POST');
     }
 }

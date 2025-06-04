@@ -4,6 +4,7 @@ import {useLocation} from 'preact-iso';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {useUser} from "../../../context/UserContext.tsx";
 import {Blog, Category, Tag} from "../../../types/api.ts";
+// import {BlogPreviewLink} from "../../components/BlogPreviewLink";
 
 const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
     const location = useLocation();
@@ -170,12 +171,24 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
         <div className="max-w-4xl mx-auto p-2 md:p-6">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold">Update Blog</h2>
-                <button
-                    onClick={() => location.route('/api/next-blog/dashboard/blogs')}
-                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
-                >
-                    Back to List
-                </button>
+                <div className="flex gap-2">
+                    <a
+                        href="/api/next-blog/dashboard/settings"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            location.route('/api/next-blog/dashboard/settings');
+                        }}
+                        className="px-4 py-2 text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50"
+                    >
+                        Blog Settings
+                    </a>
+                    <button
+                        onClick={() => location.route('/api/next-blog/dashboard/blogs')}
+                        className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
+                    >
+                        Back to List
+                    </button>
+                </div>
             </div>
 
             {loading ? (
@@ -190,12 +203,27 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                 </div>
             ) : (
                 <div className="bg-white p-6 rounded-lg shadow-md">
+                    {/* Display blog preview link if we have a valid slug*/}
+                    {/*{blog.slug && (*/}
+                    {/*    <div className="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50 dark:bg-gray-700 dark:border-gray-600">*/}
+                    {/*        <BlogPreviewLink blog={blog} />*/}
+                    {/*    </div>*/}
+                    {/*)}*/}
                     <DynamicForm
                         id="updateBlog"
                         submitLabel="Update Blog"
                         postTo={`/api/next-blog/api/blog/${blog._id}/update`}
                         redirectTo={"/api/next-blog/dashboard/blogs"}
                         fields={getFormFields()}
+                        // onChange={(data) => {
+                        //     // Update blog data as user types to show live preview URL
+                        //     if (data.slug && data.slug !== blog.slug) {
+                        //         setBlog({
+                        //             ...blog,
+                        //             ...data
+                        //         });
+                        //     }
+                        // }}
                     />
                 </div>
             )}

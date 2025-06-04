@@ -17,7 +17,8 @@ interface UserContextType {
     apis: ApiClient; // API client instance
 }
 
-const defaultApiClient = new ApiClient("/api/next-blog/api/");
+const API_BASE_URL = "/api/next-blog/api";
+const defaultApiClient = new ApiClient(API_BASE_URL);
 
 const UserContext = createContext<UserContextType>({
     user: null,
@@ -35,8 +36,8 @@ const UserContext = createContext<UserContextType>({
 });
 
 export const UserProvider = ({children}: { children: any }) => {
-    // Initialize the API client
-    const apiClient = useMemo(() => new ApiClient("/api/next-blog/api"), []);
+    // Initialize the API client with the same consistent base URL
+    const apiClient = useMemo(() => new ApiClient(API_BASE_URL), []);
 
     const [user, setUser] = useState<User | null>(null);
     const [config, setConfig] = useState<UIConfig | null>(null);

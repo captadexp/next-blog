@@ -3,7 +3,8 @@ import {useEffect, useState} from 'preact/hooks';
 import {useLocation} from 'preact-iso';
 import {useUser} from '../../../context/UserContext';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
-import {Category, Tag} from '../../../types/api';
+import {Blog, Category, Tag} from '../../../types/api';
+// import {BlogPreviewLink} from '../../components/BlogPreviewLink';
 
 interface CreateBlogProps {
     path?: string;
@@ -16,6 +17,7 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
     const [tags, setTags] = useState<Tag[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [formData, setFormData] = useState<Partial<Blog>>({});
 
     // Redirect to login if not authenticated
     // useEffect(() => {

@@ -9,9 +9,9 @@ export const metadata: Metadata = {
     description: 'Test application for Next-Blog package',
 }
 
-export default function RootLayout({
-                                       children,
-                                   }: {
+export default function RootLayout(
+    {children,}
+    : {
     children: React.ReactNode
 }) {
     return (
