@@ -5,6 +5,8 @@ import {
     CategoryData,
     CollectionOperations,
     DatabaseAdapter, Filter, Permission,
+    SettingsEntry,
+    SettingsEntryData,
     Tag,
     TagData,
     User,
@@ -166,12 +168,40 @@ class UserTransformer implements DbEntityTransformer<User, UserData> {
     }
 }
 
+class SettingsTransformer implements DbEntityTransformer<SettingsEntry, SettingsEntryData> {
+    fromDb(dbEntity: any): SettingsEntry {
+        if (!dbEntity) return dbEntity;
+
+        const result = {...dbEntity};
+
+        // Convert _id from ObjectId to string
+        if (result._id instanceof ObjectId) {
+            result._id = result._id.toString();
+        }
+
+        return result as SettingsEntry;
+    }
+
+    toDb(entity: Partial<SettingsEntry> | SettingsEntryData): any {
+        if (!entity) return entity;
+
+        const result: any = {...entity};
+
+        if (result._id) {
+            result._id = oid(result._id);
+        }
+
+        return result;
+    }
+}
+
 export default class MongoDBAdapter implements DatabaseAdapter {
     private db: Db;
     private readonly blogTransformer: BlogTransformer;
     private readonly categoryTransformer: CategoryTransformer;
     private readonly tagTransformer: TagTransformer;
     private readonly userTransformer: UserTransformer;
+    private readonly settingsTransformer: SettingsTransformer;
 
     constructor(dbName: string, client: MongoClient) {
         this.db = client.db(dbName);
@@ -179,6 +209,7 @@ export default class MongoDBAdapter implements DatabaseAdapter {
         this.categoryTransformer = new CategoryTransformer();
         this.tagTransformer = new TagTransformer();
         this.userTransformer = new UserTransformer();
+        this.settingsTransformer = new SettingsTransformer();
     }
 
     get blogs(): CollectionOperations<Blog, BlogData> {
@@ -262,6 +293,10 @@ export default class MongoDBAdapter implements DatabaseAdapter {
                 return result ? transformer.fromDb(result) : null;
             }
         };
+    }
+
+    get settings(): CollectionOperations<SettingsEntry, SettingsEntryData> {
+        return this.getCollectionOperations<SettingsEntry, SettingsEntryData>('settings', this.settingsTransformer);
     }
 
     private getCollectionOperations<T extends U, U>(

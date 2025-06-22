@@ -28,13 +28,10 @@ export interface Category {
     updatedAt: number;
 }
 
-export interface CategoryData {
+export interface CategoryData extends Partial<Category> {
     name: string;
     description: string;
     slug: string;
-    // Optional timestamps - will be set automatically on create
-    createdAt?: number;
-    updatedAt?: number;
 }
 
 export interface Tag {
@@ -45,16 +42,13 @@ export interface Tag {
     updatedAt: number;
 }
 
-export interface TagData {
+export interface TagData extends Partial<Tag> {
     name: string;
     slug: string;
-    // Optional timestamps - will be set automatically on create
-    createdAt?: number;
-    updatedAt?: number;
 }
 
 export type PermissionType = 'list' | 'read' | 'create' | 'update' | 'delete' | 'all';
-export type EntityType = 'all' | 'blogs' | 'categories' | 'tags' | 'users';
+export type EntityType = 'all' | 'blogs' | 'categories' | 'tags' | 'users' | 'settings';
 export type Permission = `${EntityType}:${PermissionType}`;
 
 // Permission weight constants
@@ -74,6 +68,7 @@ export const PERMISSION_WEIGHTS = {
         'categories': 20,
         'tags': 30,
         'users': 40,
+        'settings': 50,
         'all': 100
     }
 };
@@ -91,7 +86,7 @@ export interface User {
     updatedAt: number;
 }
 
-export interface UserData {
+export interface UserData extends Partial<User> {
     username: string;
     email: string;
     password: string;
@@ -99,18 +94,29 @@ export interface UserData {
     slug: string;
     bio: string;
     permissions?: Permission[];
-    // Optional timestamps - will be set automatically on create
-    createdAt?: number;
-    updatedAt?: number;
 }
 
-// Author interfaces removed - User interface now handles all author functionality
+export interface SettingsEntry {
+    _id: string;
+    key: string;
+    value: string | boolean | number | boolean[] | string[] | number[];
+    owner: string;
+    createdAt: number;
+    updatedAt: number;
+}
+
+export interface SettingsEntryData extends Partial<SettingsEntry> {
+    key: string;
+    value: string | boolean | number | boolean[] | string[] | number[];
+    owner: string;
+}
 
 export interface DatabaseAdapter {
     blogs: CollectionOperations<Blog, BlogData>;
     categories: CollectionOperations<Category, CategoryData>;
     tags: CollectionOperations<Tag, TagData>;
     users: CollectionOperations<User, UserData>;
+    settings: CollectionOperations<SettingsEntry, SettingsEntryData>
 }
 
 export type Filter<T> = Partial<Record<keyof T, any>>;
@@ -131,17 +137,24 @@ export interface CollectionOperations<T, U> {
 
 export type EventPayload =
     | { event: "createBlog"; payload: Blog }
-    | { event: "createTag"; payload: Tag }
-    | { event: "createCategory"; payload: Category }
-    | { event: "createUser"; payload: User }
     | { event: "updateBlog"; payload: Blog }
-    | { event: "updateTag"; payload: Tag }
-    | { event: "updateCategory"; payload: Category }
-    | { event: "updateUser"; payload: User }
     | { event: "deleteBlog"; payload: Blog }
+
+    | { event: "createTag"; payload: Tag }
+    | { event: "updateTag"; payload: Tag }
     | { event: "deleteTag"; payload: Tag }
+
+    | { event: "createCategory"; payload: Category }
+    | { event: "updateCategory"; payload: Category }
     | { event: "deleteCategory"; payload: Category }
-    | { event: "deleteUser"; payload: User };
+
+    | { event: "createUser"; payload: User }
+    | { event: "updateUser"; payload: User }
+    | { event: "deleteUser"; payload: User }
+
+    | { event: "createSettingsEntry"; payload: SettingsEntry }
+    | { event: "updateSettingsEntry"; payload: SettingsEntry }
+    | { event: "deleteSettingsEntry"; payload: SettingsEntry };
 
 export interface ConfigurationCallbacks {
     on?<E extends EventPayload>(event: E['event'], payload: E['payload'] | null): void;
@@ -178,4 +191,3 @@ export type Configuration = {
     callbacks?: ConfigurationCallbacks,
     ui?: UIConfiguration
 }
-

@@ -32,6 +32,7 @@ export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) 
             requiredPermission: 'categories:list'
         },
         {path: '/api/next-blog/dashboard/users', label: 'Users', icon: 'users', requiredPermission: 'users:list'},
+        {path: '/api/next-blog/dashboard/settings', label: 'Settings', icon: 'settings', requiredPermission: 'settings:list'},
     ];
 
     // Filter navigation items based on user permissions

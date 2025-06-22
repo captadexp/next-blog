@@ -13,6 +13,9 @@ import {
     UpdateCategoryInput,
     CreateTagInput,
     UpdateTagInput,
+    Settings,
+    CreateSettingsInput,
+    UpdateSettingsInput,
     Permission
 } from '../types/api';
 
@@ -180,6 +183,27 @@ class ApiClient {
 
     async deleteTag(id: string): Promise<StandardResponse<null>> {
         return this.request<null>(`/tag/${id}/delete`, 'POST');
+    }
+
+    // Settings APIs
+    async getSettings(): Promise<StandardResponse<Settings[]>> {
+        return this.request<Settings[]>('/settings');
+    }
+
+    async getSetting(id: string): Promise<StandardResponse<Settings>> {
+        return this.request<Settings>(`/settings/${id}`);
+    }
+
+    async createSetting(data: CreateSettingsInput): Promise<StandardResponse<Settings>> {
+        return this.request<Settings>('/settings/create', 'POST', data);
+    }
+
+    async updateSetting(id: string, data: UpdateSettingsInput): Promise<StandardResponse<Settings>> {
+        return this.request<Settings>(`/setting/${id}/update`, 'POST', data);
+    }
+
+    async deleteSetting(id: string): Promise<StandardResponse<null>> {
+        return this.request<null>(`/setting/${id}/delete`, 'POST');
     }
 }
 
