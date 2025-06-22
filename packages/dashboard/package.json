@@ -39,12 +39,13 @@
   },
   "peerDependencies": {},
   "devDependencies": {
-    "@tailwindcss/vite": "^4.0.17",
+    "@tailwindcss/vite": "^4.1.10",
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
-    "tailwindcss": "^4.0.17",
+    "tailwindcss": "^4.1.10",
     "typescript": "^5.8.2",
-    "vite": "^6.2.3",
+    "vite": "^6.3.5",
+    "daisyui": "^5.0.43",
     "vite-plugin-css-injected-by-js": "^3.5.2",
     "vite-plugin-dts": "^4.5.3"
   }

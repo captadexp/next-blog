@@ -45,7 +45,7 @@ export interface Blog {
 }
 
 export type PermissionType = 'list' | 'read' | 'create' | 'update' | 'delete' | 'all';
-export type EntityType = 'all' | 'blogs' | 'categories' | 'tags' | 'users' | 'settings';
+export type EntityType = 'all' | 'blogs' | 'categories' | 'tags' | 'users' | 'settings' | 'plugins';
 export type Permission = `${EntityType}:${PermissionType}`;
 
 export interface User {
@@ -155,4 +155,57 @@ export interface UpdateSettingsInput {
     key?: string;
     value?: string | boolean | number | boolean[] | string[] | number[];
     owner?: string;
+}
+
+export type PluginType = 'external' | 'lite' | 'browser';
+
+export interface Plugin {
+    _id: string;
+    name: string;
+    description: string;
+    version: string;
+    type: PluginType;
+    entryPoint: string;
+    author: string;
+    createdAt: number;
+    updatedAt: number;
+}
+
+export interface CreatePluginInput {
+    name: string;
+    description: string;
+    version: string;
+    type: PluginType;
+    entryPoint: string;
+    author: string;
+}
+
+export interface UpdatePluginInput {
+    name?: string;
+    description?: string;
+    version?: string;
+    type?: PluginType;
+    entryPoint?: string;
+    author?: string;
+}
+
+export interface PluginHookMapping {
+    _id: string;
+    pluginId: string;
+    hookName: string;
+    priority: number;
+    createdAt: number;
+    updatedAt: number;
+}
+
+export interface CreatePluginHookMappingInput {
+    pluginId: string;
+    hookName: string;
+    priority: number;
+}
+
+export interface UpdatePluginHookMappingInput {
+    pluginId?: string;
+    hookName?: string;
+    priority?: number;
 }

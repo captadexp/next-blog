@@ -6,6 +6,10 @@ import {
     CategoryData,
     DatabaseAdapter,
     Filter, Permission,
+    Plugin,
+    PluginData,
+    PluginHookMapping,
+    PluginHookMappingData,
     SettingsEntry,
     SettingsEntryData,
     Tag,
@@ -22,7 +26,7 @@ export default class FileDBAdapter implements DatabaseAdapter {
     }
 
     private async ensureFilesExist() {
-        const files = ['blogs.json', 'categories.json', 'tags.json', 'users.json', 'settings.json'];
+        const files = ['blogs.json', 'categories.json', 'tags.json', 'users.json', 'settings.json', 'plugins.json', 'plugin-hook-mappings.json'];
         await Promise.all(files.map(async (file) => {
             try {
                 await fs.access(this.dataPath + file);
@@ -311,6 +315,113 @@ export default class FileDBAdapter implements DatabaseAdapter {
                     const duplicate = JSON.parse(JSON.stringify(settings[settingIndex]));
                     settings = settings.filter((setting: any, index) => index !== settingIndex);
                     await this.writeData('settings.json', settings);
+                    return duplicate;
+                }
+                throw new Error("Nothing to update")
+            },
+        }
+    }
+    get plugins() {
+        return {
+            findOne: async (filter: Filter<Plugin>): Promise<Plugin> => {
+                const plugins = await this.readData<Plugin>('plugins.json');
+                return plugins.find((plugin: any) => Object.keys(filter).every((key: any) => plugin[key] === (filter as any)[key]))!;
+            },
+            find: async (filter: Filter<Plugin>): Promise<Plugin[]> => {
+                const plugins = await this.readData<Plugin>('plugins.json');
+                return plugins.filter((plugin: any) => Object.keys(filter).every(key => plugin[key] === (filter as any)[key]));
+            },
+            findById: async (id: string): Promise<Plugin> => {
+                const plugins = await this.readData<Plugin>('plugins.json');
+                return plugins.find(plugin => plugin._id === id)!;
+            },
+
+            create: async (data: PluginData): Promise<Plugin> => {
+                const plugins = await this.readData<Plugin>('plugins.json');
+                const newPlugin: Plugin = {
+                    ...data,
+                    _id: uuidv4(),
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                } as any;
+                plugins.push(newPlugin);
+                await this.writeData('plugins.json', plugins);
+                return newPlugin;
+            },
+
+            updateOne: async (filter: Filter<Plugin>, {_id, ...update}: Filter<Plugin>) => {
+                let plugins = await this.readData<Plugin>('plugins.json');
+                const pluginIndex = plugins.findIndex((plugin: any) => Object.keys(filter).every(key => plugin[key] === (filter as any)[key]));
+                if (pluginIndex !== -1) {
+                    plugins[pluginIndex] = {...plugins[pluginIndex], ...update, updatedAt: Date.now()};
+                    await this.writeData('plugins.json', plugins);
+                    return plugins[pluginIndex];
+                }
+                throw new Error("Nothing to update")
+            },
+
+            deleteOne: async (filter: Filter<Plugin>) => {
+                let plugins = await this.readData<Plugin>('plugins.json');
+                const pluginIndex = plugins.findIndex((plugin: any) => Object.keys(filter).every(key => plugin[key] === (filter as any)[key]));
+
+                if (pluginIndex !== -1) {
+                    const duplicate = JSON.parse(JSON.stringify(plugins[pluginIndex]));
+                    plugins = plugins.filter((plugin: any, index) => index !== pluginIndex);
+                    await this.writeData('plugins.json', plugins);
+                    return duplicate;
+                }
+                throw new Error("Nothing to update")
+            },
+        }
+    }
+
+    get pluginHookMappings() {
+        return {
+            findOne: async (filter: Filter<PluginHookMapping>): Promise<PluginHookMapping> => {
+                const mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
+                return mappings.find((mapping: any) => Object.keys(filter).every((key: any) => mapping[key] === (filter as any)[key]))!;
+            },
+            find: async (filter: Filter<PluginHookMapping>): Promise<PluginHookMapping[]> => {
+                const mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
+                return mappings.filter((mapping: any) => Object.keys(filter).every(key => mapping[key] === (filter as any)[key]));
+            },
+            findById: async (id: string): Promise<PluginHookMapping> => {
+                const mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
+                return mappings.find(mapping => mapping._id === id)!;
+            },
+
+            create: async (data: PluginHookMappingData): Promise<PluginHookMapping> => {
+                const mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
+                const newMapping: PluginHookMapping = {
+                    ...data,
+                    _id: uuidv4(),
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                } as any;
+                mappings.push(newMapping);
+                await this.writeData('plugin-hook-mappings.json', mappings);
+                return newMapping;
+            },
+
+            updateOne: async (filter: Filter<PluginHookMapping>, {_id, ...update}: Filter<PluginHookMapping>) => {
+                let mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
+                const mappingIndex = mappings.findIndex((mapping: any) => Object.keys(filter).every(key => mapping[key] === (filter as any)[key]));
+                if (mappingIndex !== -1) {
+                    mappings[mappingIndex] = {...mappings[mappingIndex], ...update, updatedAt: Date.now()};
+                    await this.writeData('plugin-hook-mappings.json', mappings);
+                    return mappings[mappingIndex];
+                }
+                throw new Error("Nothing to update")
+            },
+
+            deleteOne: async (filter: Filter<PluginHookMapping>) => {
+                let mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
+                const mappingIndex = mappings.findIndex((mapping: any) => Object.keys(filter).every(key => mapping[key] === (filter as any)[key]));
+
+                if (mappingIndex !== -1) {
+                    const duplicate = JSON.parse(JSON.stringify(mappings[mappingIndex]));
+                    mappings = mappings.filter((mapping: any, index) => index !== mappingIndex);
+                    await this.writeData('plugin-hook-mappings.json', mappings);
                     return duplicate;
                 }
                 throw new Error("Nothing to update")

@@ -16,7 +16,13 @@ import {
     Settings,
     CreateSettingsInput,
     UpdateSettingsInput,
-    Permission
+    Permission,
+    Plugin,
+    CreatePluginInput,
+    UpdatePluginInput,
+    PluginHookMapping,
+    CreatePluginHookMappingInput,
+    UpdatePluginHookMappingInput
 } from '../types/api';
 
 class ApiClient {
@@ -204,6 +210,49 @@ class ApiClient {
 
     async deleteSetting(id: string): Promise<StandardResponse<null>> {
         return this.request<null>(`/setting/${id}/delete`, 'POST');
+    }
+
+    // Plugin APIs
+    async getPlugins(): Promise<StandardResponse<Plugin[]>> {
+        return this.request<Plugin[]>('/plugins');
+    }
+
+    async getPlugin(id: string): Promise<StandardResponse<Plugin>> {
+        return this.request<Plugin>(`/plugins/${id}`);
+    }
+
+    async createPlugin(data: CreatePluginInput): Promise<StandardResponse<Plugin>> {
+        return this.request<Plugin>('/plugins/create', 'POST', data);
+    }
+
+    async updatePlugin(id: string, data: UpdatePluginInput): Promise<StandardResponse<Plugin>> {
+        return this.request<Plugin>(`/plugin/${id}/update`, 'POST', data);
+    }
+
+    async deletePlugin(id: string): Promise<StandardResponse<null>> {
+        return this.request<null>(`/plugin/${id}/delete`, 'POST');
+    }
+
+    // Plugin Hook Mapping APIs
+    async getPluginHookMappings(pluginId?: string): Promise<StandardResponse<PluginHookMapping[]>> {
+        const endpoint = pluginId ? `/plugins/${pluginId}/hooks` : '/plugin-hooks';
+        return this.request<PluginHookMapping[]>(endpoint);
+    }
+
+    async getPluginHookMapping(id: string): Promise<StandardResponse<PluginHookMapping>> {
+        return this.request<PluginHookMapping>(`/plugin-hooks/${id}`);
+    }
+
+    async createPluginHookMapping(data: CreatePluginHookMappingInput): Promise<StandardResponse<PluginHookMapping>> {
+        return this.request<PluginHookMapping>('/plugin-hooks/create', 'POST', data);
+    }
+
+    async updatePluginHookMapping(id: string, data: UpdatePluginHookMappingInput): Promise<StandardResponse<PluginHookMapping>> {
+        return this.request<PluginHookMapping>(`/plugin-hook/${id}/update`, 'POST', data);
+    }
+
+    async deletePluginHookMapping(id: string): Promise<StandardResponse<null>> {
+        return this.request<null>(`/plugin-hook/${id}/delete`, 'POST');
     }
 }
 

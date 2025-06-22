@@ -34,6 +34,11 @@ import SettingsList from './pages/settings/List';
 import CreateSetting from './pages/settings/Create';
 import UpdateSetting from './pages/settings/Update';
 
+// Import plugins pages
+import PluginsList from './pages/plugins/List';
+import CreatePlugin from './pages/plugins/Create';
+import UpdatePlugin from './pages/plugins/Update';
+
 // Main Dashboard App
 function DashboardApp() {
     const [currentPath, setCurrentPath] = useState<string>('');
@@ -84,6 +89,11 @@ function DashboardApp() {
                         <Route path="/api/next-blog/dashboard/settings" component={SettingsList}/>
                         <Route path="/api/next-blog/dashboard/settings/create" component={CreateSetting}/>
                         <Route path="/api/next-blog/dashboard/settings/:id" component={UpdateSetting}/>
+
+                        {/* Plugin routes */}
+                        <Route path="/api/next-blog/dashboard/plugins" component={PluginsList}/>
+                        <Route path="/api/next-blog/dashboard/plugins/create" component={CreatePlugin}/>
+                        <Route path="/api/next-blog/dashboard/plugins/:id" component={UpdatePlugin}/>
 
                         {/* 404 route */}
                         <Route default component={() => <div>Not Found</div>}/>

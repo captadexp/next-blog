@@ -48,7 +48,7 @@ export interface TagData extends Partial<Tag> {
 }
 
 export type PermissionType = 'list' | 'read' | 'create' | 'update' | 'delete' | 'all';
-export type EntityType = 'all' | 'blogs' | 'categories' | 'tags' | 'users' | 'settings';
+export type EntityType = 'all' | 'blogs' | 'categories' | 'tags' | 'users' | 'settings' | 'plugins';
 export type Permission = `${EntityType}:${PermissionType}`;
 
 // Permission weight constants
@@ -69,6 +69,7 @@ export const PERMISSION_WEIGHTS = {
         'tags': 30,
         'users': 40,
         'settings': 50,
+        'plugins': 60,
         'all': 100
     }
 };
@@ -111,12 +112,52 @@ export interface SettingsEntryData extends Partial<SettingsEntry> {
     owner: string;
 }
 
+export type PluginType = 'external' | 'lite' | 'browser';
+
+export interface Plugin {
+    _id: string;
+    name: string;
+    description: string;
+    version: string;
+    type: PluginType;
+    entryPoint: string;
+    author: string;
+    createdAt: number;
+    updatedAt: number;
+}
+
+export interface PluginData extends Partial<Plugin> {
+    name: string;
+    description: string;
+    version: string;
+    type: PluginType;
+    entryPoint: string;
+    author: string;
+}
+
+export interface PluginHookMapping {
+    _id: string;
+    pluginId: string;
+    hookName: string;
+    priority: number;
+    createdAt: number;
+    updatedAt: number;
+}
+
+export interface PluginHookMappingData extends Partial<PluginHookMapping> {
+    pluginId: string;
+    hookName: string;
+    priority: number;
+}
+
 export interface DatabaseAdapter {
     blogs: CollectionOperations<Blog, BlogData>;
     categories: CollectionOperations<Category, CategoryData>;
     tags: CollectionOperations<Tag, TagData>;
     users: CollectionOperations<User, UserData>;
-    settings: CollectionOperations<SettingsEntry, SettingsEntryData>
+    settings: CollectionOperations<SettingsEntry, SettingsEntryData>;
+    plugins: CollectionOperations<Plugin, PluginData>;
+    pluginHookMappings: CollectionOperations<PluginHookMapping, PluginHookMappingData>;
 }
 
 export type Filter<T> = Partial<Record<keyof T, any>>;
@@ -154,7 +195,15 @@ export type EventPayload =
 
     | { event: "createSettingsEntry"; payload: SettingsEntry }
     | { event: "updateSettingsEntry"; payload: SettingsEntry }
-    | { event: "deleteSettingsEntry"; payload: SettingsEntry };
+    | { event: "deleteSettingsEntry"; payload: SettingsEntry }
+
+    | { event: "createPlugin"; payload: Plugin }
+    | { event: "updatePlugin"; payload: Plugin }
+    | { event: "deletePlugin"; payload: Plugin }
+
+    | { event: "createPluginHookMapping"; payload: PluginHookMapping }
+    | { event: "updatePluginHookMapping"; payload: PluginHookMapping }
+    | { event: "deletePluginHookMapping"; payload: PluginHookMapping };
 
 export interface ConfigurationCallbacks {
     on?<E extends EventPayload>(event: E['event'], payload: E['payload'] | null): void;

@@ -9,7 +9,9 @@ import {
     getTags, getTagById, createTag, updateTag, deleteTag,
     getConfig, getCurrentUser,
     listUsers, getUser, createUser, updateUser, deleteUser,
-    getSettings, getSettingById, createSetting, updateSetting, deleteSetting
+    getSettings, getSettingById, createSetting, updateSetting, deleteSetting,
+    getPlugins, getPluginById, createPlugin, updatePlugin, deletePlugin,
+    getPluginHookMappings, getPluginHookMappingById, createPluginHookMapping, updatePluginHookMapping, deletePluginHookMapping
 } from "./api/index.js";
 
 const cmsPaths: { GET: PathObject, POST: PathObject } = {
@@ -41,6 +43,17 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
             settings: {
                 '*': getSettings,
                 ':id': getSettingById
+            },
+            plugins: {
+                '*': getPlugins,
+                ':id': getPluginById,
+                ':pluginId': {
+                    'hooks': getPluginHookMappings
+                }
+            },
+            'plugin-hooks': {
+                '*': getPluginHookMappings,
+                ':id': getPluginHookMappingById
             }
         },
         dashboard: {
@@ -99,6 +112,24 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
             },
             settings: {
                 create: createSetting
+            },
+            plugin: {
+                ':id': {
+                    update: updatePlugin,
+                    delete: deletePlugin
+                }
+            },
+            plugins: {
+                create: createPlugin
+            },
+            'plugin-hook': {
+                ':id': {
+                    update: updatePluginHookMapping,
+                    delete: deletePluginHookMapping
+                }
+            },
+            'plugin-hooks': {
+                create: createPluginHookMapping
             },
         }
     }
