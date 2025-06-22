@@ -6,6 +6,8 @@ import {
     CategoryData,
     DatabaseAdapter,
     Filter, Permission,
+    SettingsEntry,
+    SettingsEntryData,
     Tag,
     TagData,
     User,
@@ -20,7 +22,7 @@ export default class FileDBAdapter implements DatabaseAdapter {
     }
 
     private async ensureFilesExist() {
-        const files = ['blogs.json', 'categories.json', 'tags.json', 'users.json'];
+        const files = ['blogs.json', 'categories.json', 'tags.json', 'users.json', 'settings.json'];
         await Promise.all(files.map(async (file) => {
             try {
                 await fs.access(this.dataPath + file);
@@ -261,5 +263,58 @@ export default class FileDBAdapter implements DatabaseAdapter {
             },
         }
     }
-}
 
+    get settings() {
+        return {
+            findOne: async (filter: Filter<SettingsEntry>): Promise<SettingsEntry> => {
+                const settings = await this.readData<SettingsEntry>('settings.json');
+                return settings.find((setting: any) => Object.keys(filter).every((key: any) => setting[key] === (filter as any)[key]))!;
+            },
+            find: async (filter: Filter<SettingsEntry>): Promise<SettingsEntry[]> => {
+                const settings = await this.readData<SettingsEntry>('settings.json');
+                return settings.filter((setting: any) => Object.keys(filter).every(key => setting[key] === (filter as any)[key]));
+            },
+            findById: async (id: string): Promise<SettingsEntry> => {
+                const settings = await this.readData<SettingsEntry>('settings.json');
+                return settings.find(setting => setting._id === id)!;
+            },
+
+            create: async (data: SettingsEntryData): Promise<SettingsEntry> => {
+                const settings = await this.readData<SettingsEntry>('settings.json');
+                const newSetting: SettingsEntry = {
+                    ...data,
+                    _id: uuidv4(),
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                } as any;
+                settings.push(newSetting);
+                await this.writeData('settings.json', settings);
+                return newSetting;
+            },
+
+            updateOne: async (filter: Filter<SettingsEntry>, {_id, ...update}: Filter<SettingsEntry>) => {
+                let settings = await this.readData<SettingsEntry>('settings.json');
+                const settingIndex = settings.findIndex((setting: any) => Object.keys(filter).every(key => setting[key] === (filter as any)[key]));
+                if (settingIndex !== -1) {
+                    settings[settingIndex] = {...settings[settingIndex], ...update, updatedAt: Date.now()};
+                    await this.writeData('settings.json', settings);
+                    return settings[settingIndex];
+                }
+                throw new Error("Nothing to update")
+            },
+
+            deleteOne: async (filter: Filter<SettingsEntry>) => {
+                let settings = await this.readData<SettingsEntry>('settings.json');
+                const settingIndex = settings.findIndex((setting: any) => Object.keys(filter).every(key => setting[key] === (filter as any)[key]));
+
+                if (settingIndex !== -1) {
+                    const duplicate = JSON.parse(JSON.stringify(settings[settingIndex]));
+                    settings = settings.filter((setting: any, index) => index !== settingIndex);
+                    await this.writeData('settings.json', settings);
+                    return duplicate;
+                }
+                throw new Error("Nothing to update")
+            },
+        }
+    }
+}

@@ -45,7 +45,7 @@ export interface Blog {
 }
 
 export type PermissionType = 'list' | 'read' | 'create' | 'update' | 'delete' | 'all';
-export type EntityType = 'all' | 'blogs' | 'categories' | 'tags' | 'users';
+export type EntityType = 'all' | 'blogs' | 'categories' | 'tags' | 'users' | 'settings';
 export type Permission = `${EntityType}:${PermissionType}`;
 
 export interface User {
@@ -134,4 +134,25 @@ export interface CreateTagInput {
 export interface UpdateTagInput {
     name?: string;
     slug?: string;
+}
+
+export interface Settings {
+    _id: string;
+    key: string;
+    value: string | boolean | number | boolean[] | string[] | number[];
+    owner: string;
+    createdAt: number;
+    updatedAt: number;
+}
+
+export interface CreateSettingsInput {
+    key: string;
+    value: string | boolean | number | boolean[] | string[] | number[];
+    owner: string;
+}
+
+export interface UpdateSettingsInput {
+    key?: string;
+    value?: string | boolean | number | boolean[] | string[] | number[];
+    owner?: string;
 }

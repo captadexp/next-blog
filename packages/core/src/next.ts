@@ -12,6 +12,7 @@ import {
     Forbidden,
     Success
 } from "./utils/errors.js";
+import {initializeDefaultSettings} from "./utils/defaultSettings.js";
 
 /**
  * Return type for the nextBlog function containing route handlers
@@ -29,6 +30,10 @@ const nextBlog = function (configuration: Configuration): NextBlogHandlers {
         try {
             const finalPathname = request.nextUrl.pathname.replace("/api/next-blog/", "")
             const {db} = configuration
+            const dbObj = await db();
+
+            await initializeDefaultSettings(dbObj);
+
             const {
                 params,
                 handler,

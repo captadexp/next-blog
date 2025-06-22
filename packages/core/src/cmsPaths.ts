@@ -8,7 +8,8 @@ import {
     getCategories, getCategoryById, createCategory, updateCategory, deleteCategory,
     getTags, getTagById, createTag, updateTag, deleteTag,
     getConfig, getCurrentUser,
-    listUsers, getUser, createUser, updateUser, deleteUser
+    listUsers, getUser, createUser, updateUser, deleteUser,
+    getSettings, getSettingById, createSetting, updateSetting, deleteSetting
 } from "./api/index.js";
 
 const cmsPaths: { GET: PathObject, POST: PathObject } = {
@@ -36,6 +37,10 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
             },
             me: {
                 '*': getCurrentUser
+            },
+            settings: {
+                '*': getSettings,
+                ':id': getSettingById
             }
         },
         dashboard: {
@@ -85,6 +90,15 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
             },
             users: {
                 create: createUser
+            },
+            setting: {
+                ':id': {
+                    update: updateSetting,
+                    delete: deleteSetting
+                }
+            },
+            settings: {
+                create: createSetting
             },
         }
     }

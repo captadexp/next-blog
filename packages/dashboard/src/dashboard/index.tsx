@@ -29,6 +29,11 @@ import TagsList from './pages/tags/List';
 import CreateTag from './pages/tags/Create';
 import UpdateTag from './pages/tags/Update';
 
+// Import settings pages
+import SettingsList from './pages/settings/List';
+import CreateSetting from './pages/settings/Create';
+import UpdateSetting from './pages/settings/Update';
+
 // Main Dashboard App
 function DashboardApp() {
     const [currentPath, setCurrentPath] = useState<string>('');
@@ -74,6 +79,11 @@ function DashboardApp() {
                         <Route path="/api/next-blog/dashboard/tags" component={TagsList}/>
                         <Route path="/api/next-blog/dashboard/tags/create" component={CreateTag}/>
                         <Route path="/api/next-blog/dashboard/tags/:id" component={UpdateTag}/>
+
+                        {/* Settings routes */}
+                        <Route path="/api/next-blog/dashboard/settings" component={SettingsList}/>
+                        <Route path="/api/next-blog/dashboard/settings/create" component={CreateSetting}/>
+                        <Route path="/api/next-blog/dashboard/settings/:id" component={UpdateSetting}/>
 
                         {/* 404 route */}
                         <Route default component={() => <div>Not Found</div>}/>
