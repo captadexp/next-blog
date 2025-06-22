@@ -29,14 +29,14 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
             label: 'Value', 
             type: 'textarea', 
             required: true,
-            helpText: 'For arrays or objects, enter valid JSON'
+            placeholder: 'For arrays or objects, enter valid JSON'
         },
         {
             key: 'owner',
             label: 'Owner',
             type: 'text',
             required: true,
-            helpText: 'Enter "system" for system settings or the name of the plugin/package'
+            placeholder: 'Enter "system" for system settings or the name of the plugin/package'
         }
     ];
 

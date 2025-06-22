@@ -60,7 +60,7 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
                 type: 'textarea', 
                 value: displayValue,
                 required: true,
-                helpText: 'For arrays or objects, enter valid JSON'
+                placeholder: 'For arrays or objects, enter valid JSON'
             },
             {
                 key: 'owner',
@@ -68,7 +68,7 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
                 type: 'text',
                 value: setting.owner,
                 required: true,
-                helpText: 'Enter "system" for system settings or the name of the plugin/package'
+                placeholder: 'Enter "system" for system settings or the name of the plugin/package'
             }
         ];
     };
