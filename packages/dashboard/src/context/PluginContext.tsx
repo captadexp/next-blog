@@ -3,12 +3,37 @@ import {useCallback, useContext, useEffect, useMemo, useState} from 'preact/hook
 import {useUser} from "./UserContext.tsx";
 import {PluginHookMapping} from "../types/api.ts";
 import {pluginCache} from "../utils/pluginCache.ts";
-import {Plugin, PluginModule} from "@supergrowthai/next-blog"
 import {UIHookFn} from "../dashboard/components/plugins/types.ts";
 
 interface PluginContextType {
     status: 'idle' | 'initializing' | 'ready' | 'error';
     getHookFunctions: (hookName: string) => { pluginId: string, hookFn: UIHookFn }[];
+}
+
+export interface PluginModule {
+    // Plugin metadata
+    name: string;
+    version: string;
+    description?: string;
+
+    // Hooks implementation
+    hooks?: {
+        [hookName: string]: (context: any) => Promise<any> | any;
+    };
+}
+
+export type PluginType = 'external' | 'lite' | 'browser';
+
+export interface Plugin {
+    _id: string;
+    name: string;
+    description: string;
+    version: string;
+    type: PluginType;
+    entryPoint: string;
+    author: string;
+    createdAt: number;
+    updatedAt: number;
 }
 
 const PluginContext = createContext<PluginContextType | undefined>(undefined);

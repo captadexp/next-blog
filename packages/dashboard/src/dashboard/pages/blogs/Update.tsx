@@ -1,18 +1,27 @@
 import {FunctionComponent, h} from 'preact';
-import {useEffect, useState} from 'preact/hooks';
+import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import {useLocation} from 'preact-iso';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {useUser} from "../../../context/UserContext.tsx";
 import {Blog, Category, Tag} from "../../../types/api.ts";
+import {PluginSlot} from "../../components/plugins/PluginSlot.tsx";
 
 const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
     const location = useLocation();
     const [blog, setBlog] = useState<Blog | null>(null);
+
+
+    // --- STATE HOISTING: The form data is now managed by this page component ---
+    //fixme??
+    const [formData, setFormData] = useState<Record<string, any> | null>(null);
+
+
     const [categories, setCategories] = useState<Category[]>([]);
     const [tags, setTags] = useState<Tag[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const {apis} = useUser();
+    const editorRef = useRef<any>(null);
 
     useEffect(() => {
         // Function to fetch blog from the API
@@ -47,18 +56,34 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                 ]);
 
                 setBlog(blogData);
+                // --- STATE HOISTING: Initialize our formData state ---
+                setFormData(blogData);
                 setCategories(Array.isArray(categoriesData) ? categoriesData : []);
                 setTags(Array.isArray(tagsData) ? tagsData : []);
-                setLoading(false);
             } catch (err) {
                 console.error('Error fetching data:', err);
                 setError(err instanceof Error ? err.message : 'Unknown error');
+            } finally {
                 setLoading(false);
             }
         };
 
         fetchData();
-    }, [id]);
+    }, [id, apis]);
+
+    // --- PLUGIN INTEGRATION: Create the context for the plugins ---
+    const pluginContext = useMemo(() => {
+        if (!formData) return {};
+        return {
+            blogId: id,
+            contentOwnerId: blog?.userId,
+            editor: {
+                editorRef,
+                getTitle: () => formData.title || '',
+                getContent: () => formData.content || '',
+            }
+        };
+    }, [id, blog, formData]);
 
     // Functions for handling search and adding new items
     const searchCategories = async (query: string): Promise<{ value: string; label: string }[]> => {
@@ -136,7 +161,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
             {key: 'title', label: 'Title', type: 'text', value: blog.title, required: true},
             {key: 'slug', label: 'Slug', type: 'text', value: blog.slug, required: true},
             {key: 'excerpt', label: 'Excerpt', type: 'textarea', value: blog.excerpt},
-            {key: 'content', label: 'Content', type: 'richtext', value: blog.content, required: true},
+            {key: 'content', label: 'Content', type: 'richtext', value: blog.content, required: true, ref: editorRef},
             {
                 key: 'status',
                 label: 'Status',
@@ -167,7 +192,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-2 md:p-6">
+        <div className="max-w-7xl mx-auto p-2 md:p-6">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold">Update Blog</h2>
                 <button
@@ -184,19 +209,36 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                 <div className="p-4 bg-red-100 text-red-800 rounded">
                     Error: {error}
                 </div>
-            ) : !blog ? (
+            ) : !blog || !formData ? (
                 <div className="p-4 bg-yellow-100 text-yellow-800 rounded">
                     Blog not found
                 </div>
             ) : (
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <DynamicForm
-                        id="updateBlog"
-                        submitLabel="Update Blog"
-                        postTo={`/api/next-blog/api/blog/${blog._id}/update`}
-                        redirectTo={"/api/next-blog/dashboard/blogs"}
-                        fields={getFormFields()}
-                    />
+                // --- NEW TWO-COLUMN LAYOUT ---
+                <div className="flex flex-col md:flex-row gap-8">
+                    {/* Main Content Column (Form) */}
+                    <div className="flex-grow bg-white p-6 rounded-lg shadow-md">
+                        <DynamicForm
+                            id="updateBlog"
+                            submitLabel="Update Blog"
+                            postTo={`/api/next-blog/api/blog/${blog._id}/update`}
+                            redirectTo={"/api/next-blog/dashboard/blogs"}
+                            fields={getFormFields()}
+                            // --- STATE HOISTING: Pass values and the update handler ---
+                            // values={formData}
+                            // onUpdate={setFormData}
+                        />
+                    </div>
+                    {/* Sidebar Column (Plugins) */}
+                    <div className="w-full md:w-1/3 lg:w-1/4 flex-shrink-0">
+                        <div className="sticky top-6">
+                            {/* --- PLUGIN SLOT: This is where our SEO Analyzer will appear --- */}
+                            <PluginSlot
+                                hookName="editor-sidebar-widget"
+                                context={pluginContext}
+                            />
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

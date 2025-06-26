@@ -1,8 +1,11 @@
+import {RefObject} from "preact";
+
 export type DynamicFormFieldType = {
     label?: string;
     value?: any;
     type: string;
     key: string;
+    ref?: RefObject<any>;
     disabled?: boolean;
     placeholder?: string;
     required?: boolean;
