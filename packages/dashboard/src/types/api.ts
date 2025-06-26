@@ -81,6 +81,7 @@ export interface CreateBlogInput {
     title: string;
     slug: string;
     content: string;
+    status: "draft" | "published";
     category: string;
     tags: string[];
 }

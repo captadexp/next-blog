@@ -1,8 +1,8 @@
 import {h} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
-import {Plugin, UpdatePluginInput, PluginType} from '../../../types/api';
+import {Plugin, PluginType, UpdatePluginInput} from '../../../types/api';
 import {useUser} from "../../../context/UserContext.tsx";
-import {useLocation, useRoute} from "preact-iso";
+import {useLocation} from "preact-iso";
 
 const UpdatePlugin = ({id}: { id: string }) => {
     const {apis: api} = useUser();
@@ -203,7 +203,7 @@ const UpdatePlugin = ({id}: { id: string }) => {
                         />
                         <p className="text-gray-500 text-xs mt-1">
                             For external plugins: URL to the plugin. For lite plugins: path to the plugin file. For
-                            browser plugins: JavaScript function name.
+                            browser plugins: filename of the plugin file (e.g., hello-dolly.dashboard.client.ts).
                         </p>
                     </div>
 

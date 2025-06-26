@@ -150,6 +150,26 @@ export interface PluginHookMappingData extends Partial<PluginHookMapping> {
     priority: number;
 }
 
+/**
+ * Interface for a plugin module
+ * This defines the expected structure of a plugin module
+ */
+export interface PluginModule {
+    // Plugin metadata
+    name: string;
+    version: string;
+    description?: string;
+
+    // Hooks implementation
+    hooks?: {
+        [hookName: string]: (context: any) => Promise<any> | any;
+    };
+
+    // Lifecycle methods
+    postInstall?: (db: DatabaseAdapter, pluginId: string) => Promise<boolean>;
+    onDelete?: (db: DatabaseAdapter, pluginId: string) => Promise<boolean>;
+}
+
 export interface DatabaseAdapter {
     blogs: CollectionOperations<Blog, BlogData>;
     categories: CollectionOperations<Category, CategoryData>;

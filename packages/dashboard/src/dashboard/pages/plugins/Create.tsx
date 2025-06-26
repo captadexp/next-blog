@@ -143,7 +143,7 @@ const CreatePlugin = () => {
                         />
                         <p className="text-gray-500 text-xs mt-1">
                             For external plugins: URL to the plugin. For lite plugins: path to the plugin file. For
-                            browser plugins: JavaScript function name.
+                            browser plugins: filename of the plugin file (e.g., hello-dolly.dashboard.client.ts).
                         </p>
                     </div>
 

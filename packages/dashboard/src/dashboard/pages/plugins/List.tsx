@@ -52,13 +52,13 @@ const PluginsList = () => {
     const getPluginTypeLabel = (type: string) => {
         switch (type) {
             case 'external':
-                return <span className="badge bg-blue-500 text-white">External</span>;
+                return <span className="badge p-1 bg-blue-500 text-white">External</span>;
             case 'lite':
-                return <span className="badge bg-green-500 text-white">Lite</span>;
+                return <span className="badge p-1 bg-green-500 text-white">Lite</span>;
             case 'browser':
-                return <span className="badge bg-purple-500 text-white">Browser</span>;
+                return <span className="badge p-1 bg-purple-500 text-white">Browser</span>;
             default:
-                return <span className="badge bg-gray-500 text-white">{type}</span>;
+                return <span className="badge p-1 bg-gray-500 text-white">{type}</span>;
         }
     };
 
@@ -104,11 +104,6 @@ const PluginsList = () => {
                             Delete
                         </button>
                     )}
-                    <a href={`/api/next-blog/dashboard/plugins/${plugin._id}/hooks`}>
-                        <button className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600">
-                            Hooks
-                        </button>
-                    </a>
                 </div>
             ),
         },

@@ -1,10 +1,6 @@
 import secure, {type CNextRequest} from "../utils/secureInternal.js";
-import {
-    NotFound,
-    Success,
-    ValidationError,
-    DatabaseError,
-} from "../utils/errors.js";
+import {DatabaseError, NotFound, Success, ValidationError,} from "../utils/errors.js";
+import pluginExecutor from "../plugins/plugin-executor.server.js";
 
 // List all plugins - requires 'plugins:list' permission
 export const getPlugins = secure(
@@ -79,6 +75,9 @@ export const createPlugin = secure(
             });
 
             request.configuration.callbacks?.on?.("createPlugin", creation);
+
+            await pluginExecutor.postInstall(creation._id);
+
             throw new Success("Plugin created successfully", creation);
         } catch (error) {
             if (error instanceof Success || error instanceof ValidationError) throw error;
@@ -133,6 +132,8 @@ export const deletePlugin = secure(
             if (!existingPlugin) {
                 throw new NotFound(`Plugin with id ${request._params.id} not found`);
             }
+
+            await pluginExecutor.onDelete(request._params.id);
 
             // Also delete all hook mappings for this plugin
             const hookMappings = await db.pluginHookMappings.find({pluginId: request._params.id});

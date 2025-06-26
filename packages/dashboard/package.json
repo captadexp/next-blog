@@ -47,6 +47,7 @@
     "vite": "^6.3.5",
     "daisyui": "^5.0.43",
     "vite-plugin-css-injected-by-js": "^3.5.2",
-    "vite-plugin-dts": "^4.5.3"
+    "vite-plugin-dts": "^4.5.3",
+    "idb": "^8.0.3"
   }
 }
