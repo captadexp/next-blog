@@ -16,8 +16,9 @@
                     sdk.refresh(); // Refresh immediately to show "Loading..."
 
                     try {
-                        const response = await sdk.api.getBlogs();
+                        const response = await sdk.apis.getBlogs();
                         if (response.code === 0 && response.payload.length > 0) {
+                            sdk.notify("Latest blog loaded");
                             cachedData = response.payload[0];
                         } else {
                             cachedData = {title: "Could not fetch latest blog."};
@@ -53,11 +54,11 @@
                         'Refresh Data'
                     ]
                 ];
-            }
+            },
         },
 
         postInstall: async function (db, pluginId) {
-            console.log("Installing Hello Dolly plugin...");
+            console.log("Installing API Widget plugin...");
 
             try {
                 // Register hooks for both server and client components
@@ -76,12 +77,15 @@
                     console.log(`Registered hook: ${hook.hookName}`);
                 }
 
-                console.log("Hello Dolly plugin installed successfully!");
+                console.log("API Widget plugin installed successfully!");
                 return true;
             } catch (error) {
-                console.error("Error installing Hello Dolly plugin:", error);
+                console.error("Error installing API Widget plugin:", error);
                 return false;
             }
+        },
+        onDelete: async function (db, pluginId) {
+            console.log("Uninstalling API Widget plugin...");
         }
     })
 })()

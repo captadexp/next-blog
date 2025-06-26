@@ -5,10 +5,10 @@ import {User} from "../../../types/api.ts";
  * The SDK provided to every plugin function, providing sandboxed access to app functionality.
  */
 export interface PluginSDK {
-    api: ApiClient;
+    apis: ApiClient;
     user: User | null;
     settings: any;
-    notify: (message: string, status?: 'success' | 'error' | 'info') => void;
+    notify: (message: string, status?: 'success' | 'error') => void;
     /** Triggers the host component to re-render the plugin's UI. */
     refresh: () => void;
 }

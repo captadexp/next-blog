@@ -4,6 +4,7 @@ import {useState} from "preact/hooks";
 import {useUser} from "../../../context/UserContext.tsx";
 import {useMemo} from "react";
 import {PluginSDK, UITree} from "./types.ts";
+import toast from 'react-hot-toast';
 
 /**
  * A single, stateful host for one plugin's UI. It manages the refresh
@@ -19,10 +20,10 @@ const PluginHost: FunctionComponent<{ pluginId: string; hookFn: (sdk: PluginSDK)
 
     // Craft the secure, sandboxed SDK for the plugin.
     const sdk: PluginSDK = useMemo(() => ({
-        api: apis,
+        apis: apis,
         user,
-        notify(...args) {
-            console.log("notify", ...args)
+        notify(message, status) {
+            (status ? (toast[status] || toast) : toast)(message);
         },
         settings: config || {},
         refresh: () => setRefreshKey(Date.now()),
