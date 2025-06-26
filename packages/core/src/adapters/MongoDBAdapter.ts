@@ -5,6 +5,10 @@ import {
     CategoryData,
     CollectionOperations,
     DatabaseAdapter, Filter, Permission,
+    Plugin,
+    PluginData,
+    PluginHookMapping,
+    PluginHookMappingData,
     SettingsEntry,
     SettingsEntryData,
     Tag,
@@ -195,6 +199,69 @@ class SettingsTransformer implements DbEntityTransformer<SettingsEntry, Settings
     }
 }
 
+class PluginTransformer implements DbEntityTransformer<Plugin, PluginData> {
+    fromDb(dbEntity: any): Plugin {
+        if (!dbEntity) return dbEntity;
+
+        const result = {...dbEntity};
+
+        // Convert _id from ObjectId to string
+        if (result._id instanceof ObjectId) {
+            result._id = result._id.toString();
+        }
+
+        return result as Plugin;
+    }
+
+    toDb(entity: Partial<Plugin> | PluginData): any {
+        if (!entity) return entity;
+
+        const result: any = {...entity};
+
+        if (result._id) {
+            result._id = oid(result._id);
+        }
+
+        return result;
+    }
+}
+
+class PluginHookMappingTransformer implements DbEntityTransformer<PluginHookMapping, PluginHookMappingData> {
+    fromDb(dbEntity: any): PluginHookMapping {
+        if (!dbEntity) return dbEntity;
+
+        const result = {...dbEntity};
+
+        // Convert _id from ObjectId to string
+        if (result._id instanceof ObjectId) {
+            result._id = result._id.toString();
+        }
+
+        // Convert pluginId if exists
+        if (result.pluginId instanceof ObjectId) {
+            result.pluginId = result.pluginId.toString();
+        }
+
+        return result as PluginHookMapping;
+    }
+
+    toDb(entity: Partial<PluginHookMapping> | PluginHookMappingData): any {
+        if (!entity) return entity;
+
+        const result: any = {...entity};
+
+        if (result._id) {
+            result._id = oid(result._id);
+        }
+
+        if (result.pluginId) {
+            result.pluginId = oid(result.pluginId);
+        }
+
+        return result;
+    }
+}
+
 export default class MongoDBAdapter implements DatabaseAdapter {
     private db: Db;
     private readonly blogTransformer: BlogTransformer;
@@ -202,6 +269,8 @@ export default class MongoDBAdapter implements DatabaseAdapter {
     private readonly tagTransformer: TagTransformer;
     private readonly userTransformer: UserTransformer;
     private readonly settingsTransformer: SettingsTransformer;
+    private readonly pluginTransformer: PluginTransformer;
+    private readonly pluginHookMappingTransformer: PluginHookMappingTransformer;
 
     constructor(dbName: string, client: MongoClient) {
         this.db = client.db(dbName);
@@ -210,6 +279,8 @@ export default class MongoDBAdapter implements DatabaseAdapter {
         this.tagTransformer = new TagTransformer();
         this.userTransformer = new UserTransformer();
         this.settingsTransformer = new SettingsTransformer();
+        this.pluginTransformer = new PluginTransformer();
+        this.pluginHookMappingTransformer = new PluginHookMappingTransformer();
     }
 
     get blogs(): CollectionOperations<Blog, BlogData> {
@@ -297,6 +368,14 @@ export default class MongoDBAdapter implements DatabaseAdapter {
 
     get settings(): CollectionOperations<SettingsEntry, SettingsEntryData> {
         return this.getCollectionOperations<SettingsEntry, SettingsEntryData>('settings', this.settingsTransformer);
+    }
+
+    get plugins(): CollectionOperations<Plugin, PluginData> {
+        return this.getCollectionOperations<Plugin, PluginData>('plugins', this.pluginTransformer);
+    }
+
+    get pluginHookMappings(): CollectionOperations<PluginHookMapping, PluginHookMappingData> {
+        return this.getCollectionOperations<PluginHookMapping, PluginHookMappingData>('plugin-hook-mappings', this.pluginHookMappingTransformer);
     }
 
     private getCollectionOperations<T extends U, U>(

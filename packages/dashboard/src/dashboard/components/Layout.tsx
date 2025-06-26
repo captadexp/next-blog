@@ -3,6 +3,8 @@ import {useLocation} from 'preact-iso';
 import {useUser} from '../../context/UserContext';
 import {Permission} from '../../types/api';
 import packageJson from '../../../package.json';
+import {PluginProvider} from "../../context/PluginContext.tsx";
+import {PluginSlot} from "./plugins/PluginSlot.tsx";
 
 interface LayoutProps {
     children: any;
@@ -32,7 +34,18 @@ export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) 
             requiredPermission: 'categories:list'
         },
         {path: '/api/next-blog/dashboard/users', label: 'Users', icon: 'users', requiredPermission: 'users:list'},
-        {path: '/api/next-blog/dashboard/settings', label: 'Settings', icon: 'settings', requiredPermission: 'settings:list'},
+        {
+            path: '/api/next-blog/dashboard/settings',
+            label: 'Settings',
+            icon: 'settings',
+            requiredPermission: 'settings:list'
+        },
+        {
+            path: '/api/next-blog/dashboard/plugins',
+            label: 'Plugins',
+            icon: 'package',
+            requiredPermission: 'plugins:list'
+        },
     ];
 
     // Filter navigation items based on user permissions
@@ -62,62 +75,71 @@ export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) 
     };
 
     return (
-        <div className={`w-full min-h-screen max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-4 sm:py-6 ${themeClass}`}>
-            <header className={`mb-6 border-b pb-4 ${headerClass}`}>
-                <div className="flex flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                    <h1 className="text-xl sm:text-2xl font-bold">{brandName}</h1>
-                    {user && (
-                        <div className="flex items-center gap-3 self-end sm:self-auto">
+        <PluginProvider>
+            <div className={`w-full min-h-screen max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-4 sm:py-6 ${themeClass}`}>
+                <header className={`mb-6 border-b pb-4 ${headerClass}`}>
+                    <div className="flex flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                        <h1 className="text-xl sm:text-2xl font-bold">{brandName}</h1>
+                        {user && (
+                            <div className="flex items-center gap-3 self-end sm:self-auto">
                             <span className="text-sm hidden sm:inline">
                                 {user.name}
                                 {user.permissions.includes('all:all') && <span className="ml-1">(Admin)</span>}
                             </span>
-                        </div>
-                    )}
-                </div>
-                <nav className="overflow-x-auto pb-2">
-                    <ul className="flex flex-nowrap sm:flex-wrap gap-4 sm:gap-6 list-none p-0 m-0 min-w-max">
-                        {navItems.map(item => (
-                            <li key={item.path}>
-                                <a
-                                    href={item.path}
-                                    onClick={e => {
-                                        e.preventDefault();
-                                        location.route(item.path);
-                                    }}
-                                    className={`no-underline whitespace-nowrap py-1 px-1 ${
-                                        currentPath === item.path
-                                            ? `font-bold`
-                                            : `hover:opacity-80`
-                                    }`}
-                                    style={{
-                                        color: currentPath === item.path ? primaryColor : undefined
-                                    }}
-                                >
-                                    {item.label}
-                                </a>
-                            </li>
-                        ))}
-                    </ul>
-                </nav>
-            </header>
-
-            <main className="min-h-[calc(100vh-220px)]">
-                {loading ? (
-                    <div className="flex justify-center items-center h-32">
-                        <p>Loading...</p>
+                            </div>
+                        )}
                     </div>
-                ) : (
-                    children
-                )}
-            </main>
+                    <div className="plugin-header-slot">
+                        <PluginSlot hookName="dashboard-header"/>
+                    </div>
+                    <nav className="overflow-x-auto pb-2">
+                        <ul className="flex flex-nowrap sm:flex-wrap gap-4 sm:gap-6 list-none p-0 m-0 min-w-max">
+                            {navItems.map(item => (
+                                <li key={item.path}>
+                                    <a
+                                        href={item.path}
+                                        onClick={e => {
+                                            e.preventDefault();
+                                            location.route(item.path);
+                                        }}
+                                        className={`no-underline whitespace-nowrap py-1 px-1 ${
+                                            currentPath === item.path
+                                                ? `font-bold`
+                                                : `hover:opacity-80`
+                                        }`}
+                                        style={{
+                                            color: currentPath === item.path ? primaryColor : undefined
+                                        }}
+                                    >
+                                        {item.label}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    </nav>
+                </header>
 
-            <footer className={`mt-8 pt-4 border-t text-sm ${footerClass}`}>
-                <div className="flex flex-row justify-between items-start sm:items-center gap-2">
-                    <p>{brandDescription}</p>
-                    <p className="text-xs opacity-75">v{packageJson.version}</p>
-                </div>
-            </footer>
-        </div>
+                <main className="min-h-[calc(100vh-220px)]">
+                    {loading ? (
+                        <div className="flex justify-center items-center h-32">
+                            <p>Loading...</p>
+                        </div>
+                    ) : (
+                        children
+                    )}
+
+                    <div className="plugin-widget-slot">
+                        <PluginSlot hookName="dashboard-widget"/>
+                    </div>
+                </main>
+
+                <footer className={`mt-8 pt-4 border-t text-sm ${footerClass}`}>
+                    <div className="flex flex-row justify-between items-start sm:items-center gap-2">
+                        <p>{brandDescription}</p>
+                        <p className="text-xs opacity-75">v{packageJson.version}</p>
+                    </div>
+                </footer>
+            </div>
+        </PluginProvider>
     );
 };
