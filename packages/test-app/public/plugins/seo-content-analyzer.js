@@ -1,12 +1,16 @@
 (function () {
     // === MODULE-LEVEL STATE ===
     // This state persists between re-renders triggered by sdk.refresh()
-    // but is reset if the user navigates away and comes back.
     const pluginState = {
         initiated: false, // Have we run the initial setup?
         isLoading: true, // Are we fetching initial data?
+        isTyping: false,  // Is the user currently typing (debounce is pending)?
+        latestSdk: null,      // Always store the latest SDK object here.
+        latestContext: null,  // Always store the latest context object here.
+
         focusKeyword: '',
         analysisResults: null,
+        blogId: null,
     };
 
     // === UTILITY FUNCTIONS ===
@@ -31,9 +35,11 @@
      * The main analysis function. It runs all checks and updates the state.
      */
     async function runAnalysis(sdk, context) {
-        console.log("Running analysis...");
-        const content = sdk.editor.getContent();
-        const title = sdk.editor.getTitle();
+        pluginState.isTyping = false;
+
+        console.log("Running analysis with latest context...", context);
+        const content = context.editor.getContent();
+        const title = context.editor.getTitle();
         const keyword = pluginState.focusKeyword.trim().toLowerCase();
 
         const wordCount = getWordCount(content);
@@ -68,7 +74,7 @@
                 results.keywordInTitle = {status: 'good', label: "Keyword in Title", advice: "Great job!"};
             }
             // Keyword in First Paragraph (first 10% of content)
-            const firstParagraph = content.substring(0, content.length * 0.1).toLowerCase();
+            const firstParagraph = content.split("\n\n")[0].toLowerCase();
             if (firstParagraph.includes(keyword)) {
                 results.keywordInFirstP = {status: 'good', label: "Keyword in First Paragraph", advice: "Well done!"};
             }
@@ -142,6 +148,7 @@
                 advice: `Error fetching score: ${err.message}`
             };
         }
+        results.readability = {status: 'ok', label: 'Readability Score', advice: 'Feature Unavailable'};
 
         pluginState.analysisResults = results;
         sdk.refresh(); // Refresh again with the final async result.
@@ -151,36 +158,43 @@
      * Fetches the saved focus keyword and sets up the event listener.
      */
     async function initializePlugin(sdk, context) {
+        const editor = context?.editor?.editorRef?.current;
+        if (!editor) return;
 
-        await new Promise((r) => setTimeout(r, 10000));
+        if (pluginState.blogId !== context.blogId) {
+            pluginState.blogId = context.blogId;
+            pluginState.initiated = false;
+            pluginState.isLoading = true;
+        }
 
-        if (!sdk?.editor?.editorRef?.current) {
-            console.log("====> no editor")
+        if (pluginState.initiated || !pluginState.isLoading) {
             return;
         }
 
         try {
-            pluginState.debouncedRunAnalysis = sdk.utils.debounce(runAnalysis, 2000);
+            console.log("Setting up listeners for the editor for the first time.");
+            const blog = await sdk.apis.getBlog(context.blogId).then(a => a.payload);
+            blog.metadata = blog.metadata || {};
+            blog.metadata.seoAnalyzer = blog.metadata.seoAnalyzer || {};
 
-            // Ensure editor is initialized before proceeding
-            sdk.editor.editorRef?.current?.on('init', async () => {
-                // 1. Fetch saved data for this blog post
-                const metadata = await sdk.apis.getBlog(context.blogId).then(a => a.payload);
-                if (metadata && metadata.seoAnalyzer) {
-                    pluginState.focusKeyword = metadata.seoAnalyzer.focusKeyword || '';
-                }
+            if (blog.metadata.seoAnalyzer) {
+                pluginState.focusKeyword = blog.metadata.seoAnalyzer.focusKeyword || '';
+            }
 
-                // 2. Run the first analysis
-                await runAnalysis(sdk, context);
+            // Run initial analysis
+            await runAnalysis(sdk, context).catch(console.error);
 
-                // 3. Set up the listener for future changes, calling the debounced function
-                sdk.editor.editorRef?.current?.on('change', () => pluginState.debouncedRunAnalysis(sdk, context));
+            editor.model.document.on('change:data', () => {
+                // Set typing state to true and refresh UI to show the loader immediately.
+                pluginState.isTyping = true;
+                pluginState.latestSdk.refresh();
 
-                pluginState.isLoading = false;
-                pluginState.initiated = true;
-                sdk.refresh();
+                // Trigger the debounced analysis.
+                pluginState.debouncedRunAnalysis();
             });
-
+            pluginState.isLoading = false;
+            pluginState.initiated = true;
+            sdk.refresh();
         } catch (err) {
             console.error("Failed to initialize SEO Analyzer:", err);
             pluginState.analysisResults = {error: {label: "Initialization Failed", status: 'bad', advice: err.message}};
@@ -203,7 +217,7 @@
             data: {seoAnalyzer: {focusKeyword: newKeyword}}
         });
 
-        // Re-run the analysis with the new keyword
+        // Re-run the analysis immediately, not debounced.
         await runAnalysis(sdk, context);
     }
 
@@ -229,10 +243,33 @@
         ];
     }
 
+    function renderTypingIndicator() {
+        return ['div', {class: 'flex items-center text-xs text-gray-500 p-2 italic'},
+            // Simple spinner using borders
+            ['div', {
+                class: 'w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mr-2'
+            }],
+            'Analyzing as you type...'
+        ];
+    }
+
     /**
      * The main function for the 'editor-sidebar-widget' hook.
      */
     function editorSidebarWidget(sdk, prev, context) {
+
+        pluginState.latestSdk = sdk;
+        pluginState.latestContext = context;
+
+        if (!pluginState.debouncedRunAnalysis) {
+            pluginState.debouncedRunAnalysis = sdk.utils.debounce(() => {
+                // Ensure we have the latest context before running.
+                if (pluginState.latestSdk && pluginState.latestContext) {
+                    runAnalysis(pluginState.latestSdk, pluginState.latestContext);
+                }
+            }, 2000);
+        }
+
         // Always attempt to initialize, it will handle its own state and timing
         initializePlugin(sdk, context);
 
@@ -251,7 +288,9 @@
                     value: pluginState.focusKeyword,
                     placeholder: 'Enter your main keyword',
                     class: 'w-full p-2 border rounded',
-                    onInput: (e) => handleKeywordChange(e.target.value, sdk, context),
+                    onInput: (sdk, context, value) => {
+                        return handleKeywordChange(value, sdk, context);
+                    },
                 }],
             ],
 
@@ -261,7 +300,8 @@
                 ...(pluginState.analysisResults
                         ? Object.values(pluginState.analysisResults).map(renderChecklistItem)
                         : [['p', {}, 'No analysis results yet.']]
-                )
+                ),
+                ...(pluginState.isTyping ? [renderTypingIndicator()] : []),
             ]
         ];
     }

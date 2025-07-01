@@ -60,6 +60,8 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                     }
 
                     editorInstanceRef.current = editor;
+                    if (ref)
+                        ref.current = editor;
 
                     // Listen for changes
                     editor.model.document.on('change:data', () => {
@@ -84,6 +86,9 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                     editorInstanceRef.current.destroy().catch(console.error);
                     editorInstanceRef.current = null;
                 }
+
+                if (ref)
+                    ref.current = null;
             };
         }
     }, [editorLoaded]); // Only run when editor loads
@@ -110,11 +115,6 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
         }
     }, [value, disabled]);
 
-    useEffect(() => {
-        if (!ref) return;
-        ref.current = editorInstanceRef.current;
-    }, [ref, editorLoaded]);
-
     return (
         <div className="w-full mb-4">
             <label
@@ -138,7 +138,8 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
         prevProps.field.key === nextProps.field.key &&
         prevProps.field.value === nextProps.field.value &&
         prevProps.field.disabled === nextProps.field.disabled &&
-        prevProps.onChange === nextProps.onChange
+        prevProps.onChange === nextProps.onChange &&
+        prevProps.field.ref === nextProps.field.ref
     );
 });
 

@@ -69,7 +69,8 @@ function PluginHost({pluginId, hookFn, context}: {
                 if (key.startsWith('on') && typeof props[key] === 'function') {
                     finalProps[key] = (e: Event) => {
                         e.preventDefault();
-                        props[key](sdk);
+                        //fixme maybe extract the value and pass it forward
+                        props[key](sdk, context, JSON.parse(JSON.stringify(e.target?.value || null)));
                     }
                 } else if (allowedProps.includes(key.toLowerCase())) {
                     finalProps[key] = props[key];

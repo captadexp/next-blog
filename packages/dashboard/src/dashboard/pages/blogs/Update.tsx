@@ -12,7 +12,6 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
 
 
     // --- STATE HOISTING: The form data is now managed by this page component ---
-    //fixme??
     const [formData, setFormData] = useState<Record<string, any> | null>(null);
 
     const [categories, setCategories] = useState<Category[]>([]);
@@ -21,6 +20,8 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
     const [error, setError] = useState<string | null>(null);
     const {apis} = useUser();
     const editorRef = useRef<any>(null);
+
+    const [tempRefresher, setTempRefresher] = useState(Date.now());
 
     useEffect(() => {
         // Function to fetch blog from the API
@@ -82,7 +83,15 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                 getContent: () => formData.content || '',
             }
         };
-    }, [id, blog, formData, editorRef.current]);
+    }, [id, blog, formData]);
+
+    useEffect(() => {
+        if (!!editorRef.current) return
+        const i = setInterval(() => setTempRefresher(Date.now()), 500)
+        return () => {
+            clearInterval(i);
+        }
+    }, [tempRefresher]);
 
     // Functions for handling search and adding new items
     const searchCategories = async (query: string): Promise<{ value: string; label: string }[]> => {
@@ -190,6 +199,11 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
         ];
     };
 
+    const handleFieldChange = (key: string, value: any, formData: any) => {
+        setFormData(oFD => ({...oFD, [key]: value}));
+        return formData;
+    };
+
     return (
         <div className="max-w-7xl mx-auto p-2 md:p-6">
             <div className="flex justify-between items-center mb-6">
@@ -223,9 +237,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                             postTo={`/api/next-blog/api/blog/${blog._id}/update`}
                             redirectTo={"/api/next-blog/dashboard/blogs"}
                             fields={getFormFields()}
-                            // --- STATE HOISTING: Pass values and the update handler ---
-                            // values={formData}
-                            // onUpdate={setFormData}
+                            onFieldChange={handleFieldChange}
                         />
                     </div>
                     {/* Sidebar Column (Plugins) */}
