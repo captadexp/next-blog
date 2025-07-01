@@ -2,6 +2,7 @@ import {h} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
 import {useUser} from '../../../context/UserContext';
 import {Plugin} from '../../../types/api';
+import {pluginCache} from "../../../utils/pluginCache.ts";
 
 const PluginsList = () => {
     const {hasPermission, apis: api} = useUser();
@@ -31,6 +32,29 @@ const PluginsList = () => {
         fetchPlugins();
     }, []);
 
+    const handleReinstall = async (id: string) => {
+        if (!window.confirm('Are you sure you want to reinstall this plugin? This will re-run its installation script.')) {
+            return;
+        }
+
+        try {
+            const response = await api.reinstallPlugin(id);
+            if (response.code === 0) {
+                if (response.payload?.clearCache) {
+                    // Clear IndexedDB cache in dev mode or on reinstall
+
+                    await pluginCache.clear();
+                }
+                await fetchPlugins();
+            } else {
+                setError(response.message || 'Failed to reinstall plugin');
+            }
+        } catch (err) {
+            setError('An error occurred while reinstalling the plugin');
+            console.error(err);
+        }
+    };
+
     const handleDelete = async (id: string) => {
         if (!window.confirm('Are you sure you want to delete this plugin? This will also delete all hook mappings for this plugin.')) {
             return;
@@ -39,7 +63,7 @@ const PluginsList = () => {
         try {
             const response = await api.deletePlugin(id);
             if (response.code === 0) {
-                fetchPlugins();
+                await fetchPlugins();
             } else {
                 setError(response.message || 'Failed to delete plugin');
             }
@@ -96,6 +120,14 @@ const PluginsList = () => {
                             Edit
                         </button>
                     </a>
+                    {hasPermission('plugins:reinstall') && (
+                        <button
+                            className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
+                            onClick={() => handleReinstall(plugin._id)}
+                        >
+                            Reinstall
+                        </button>
+                    )}
                     {hasPermission('plugins:delete') && (
                         <button
                             className="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700"

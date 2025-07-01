@@ -1,93 +1,86 @@
 import {DatabaseAdapter, Plugin, PluginHookMapping, PluginModule} from '../types.js';
 
+
 /**
  * Server-side plugin executor
- * Handles loading and executing plugins on the server
+ * Handles loading and executing server-side plugins.
  */
 class PluginExecutor {
     private plugins: Map<string, PluginModule> = new Map();
     private hookMappings: Map<string, PluginHookMapping[]> = new Map();
+    private pluginCodeCache: Map<string, string> = new Map(); // Cache for lite plugin code
     private db: DatabaseAdapter | null = null;
 
-    /**
-     * Initialize the plugin executor with a database adapter
-     * @param db Database adapter
-     */
+
     async initialize(db: DatabaseAdapter) {
         this.db = db;
         await this.loadPlugins();
     }
 
-    /**
-     * Execute plugins for a specific hook
-     * @param hookName Name of the hook to execute
-     * @param context Context object to pass to the plugin
-     * @returns Modified context object
-     */
     async executeHook(hookName: string, context: any = {}): Promise<any> {
         if (!this.hookMappings.has(hookName)) {
             return context;
         }
 
         const mappings = this.hookMappings.get(hookName) || [];
+        let currentContext = context;
 
         for (const mapping of mappings) {
             try {
-                const plugin = this.plugins.get(mapping.pluginId);
-
-                if (!plugin) {
-                    console.warn(`Plugin ${mapping.pluginId} not found for hook ${hookName}`);
+                const pluginDbEntry = await this.db!.plugins.findById(mapping.pluginId); // Get the Plugin from DB
+                if (!pluginDbEntry) {
+                    console.warn(`Plugin ${mapping.pluginId} not found in DB for hook ${hookName}`);
                     continue;
                 }
 
-                // Execute the plugin's hook function if it exists
-                if (plugin.hooks && typeof plugin.hooks[hookName] === 'function') {
-                    context = await plugin.hooks[hookName](context);
+                if (pluginDbEntry.type === 'external') {
+                    // Handle external plugin via webhook
+                    try {
+                        const response = await fetch(pluginDbEntry.entryPoint, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({hookName, context: currentContext}), // Pass actual hookName
+                        });
+                        if (!response.ok) throw new Error(`External plugin webhook failed: ${response.statusText}`);
+                        currentContext = await response.json();
+                    } catch (error) {
+                        console.error(`Error calling external plugin webhook ${pluginDbEntry.name} for hook ${hookName}:`, error);
+                        // Continue with currentContext on error
+                    }
+                } else { // This handles 'lite' plugins
+                    const pluginModule = this.plugins.get(mapping.pluginId);
+                    if (!pluginModule) {
+                        console.warn(`Plugin module ${mapping.pluginId} not loaded for hook ${hookName}`);
+                        continue;
+                    }
+
+                    if (pluginModule.hooks && typeof pluginModule.hooks[hookName] === 'function') {
+                        currentContext = await pluginModule.hooks[hookName](currentContext);
+                    }
                 }
             } catch (error) {
                 console.error(`Error executing plugin for hook ${hookName}:`, error);
             }
         }
-
-        return context;
+        return currentContext;
     }
 
-    /**
-     * Register a plugin hook mapping
-     * @param pluginId ID of the plugin
-     * @param hookName Name of the hook
-     * @param priority Priority of the hook (lower numbers execute first)
-     */
     async registerHook(pluginId: string, hookName: string, priority: number = 10) {
         if (!this.db) return;
 
         try {
-            // Check if plugin exists
             const plugin = await this.db.plugins.findById(pluginId);
-            if (!plugin) {
-                throw new Error(`Plugin ${pluginId} not found`);
-            }
+            if (!plugin) throw new Error(`Plugin ${pluginId} not found`);
 
-            // Create hook mapping
             const hookMapping = await this.db.pluginHookMappings.create({
                 pluginId,
                 hookName,
                 priority
             });
 
-            // Update in-memory hook mappings
-            if (!this.hookMappings.has(hookName)) {
-                this.hookMappings.set(hookName, []);
-            }
-
             const mappings = this.hookMappings.get(hookName) || [];
             mappings.push(hookMapping);
-
-            // Re-sort by priority
-            this.hookMappings.set(
-                hookName,
-                mappings.sort((a, b) => a.priority - b.priority)
-            );
+            this.hookMappings.set(hookName, mappings.sort((a, b) => a.priority - b.priority));
 
             console.log(`Registered hook ${hookName} for plugin ${pluginId} with priority ${priority}`);
         } catch (error) {
@@ -95,183 +88,165 @@ class PluginExecutor {
         }
     }
 
-    /**
-     * Post-install function for plugins
-     * @param pluginId ID of the plugin
-     */
     async postInstall(pluginId: string) {
-        if (!this.db) {
-            console.log("db undefined")
-            return;
-        }
+        if (!this.db) return;
 
         try {
-            // Load the plugin if not already loaded
             const plugin = await this.db.plugins.findById(pluginId);
-            if (!plugin) {
-                throw new Error(`Plugin ${pluginId} not found`);
+            if (!plugin) throw new Error(`Plugin ${pluginId} not found`);
+
+            if (plugin.type === 'external') {
+                console.log(`Skipping server-side post-install for external plugin: ${plugin.name}`);
+                return;
             }
 
-            if (!this.plugins.has(pluginId)) {
+            let pluginModule: PluginModule | undefined = this.plugins.get(pluginId);
+
+            if (!pluginModule) {
+                // If plugin not already loaded (e.g., new plugin install), load it now.
                 await this.loadPlugin(plugin);
+                pluginModule = this.plugins.get(pluginId);
             }
 
-            const pluginModule = this.plugins.get(pluginId);
+            if (!pluginModule) {
+                console.error(`Failed to get module for plugin ${pluginId} during post-install.`);
+                return;
+            }
 
-            // Call the plugin's postInstall function if it exists
-            if (pluginModule && typeof pluginModule.postInstall === 'function') {
-                // Pass the database adapter and pluginId to the postInstall function
-                const success = await pluginModule.postInstall(this.db, pluginId);
-
-                if (success) {
-                    console.log(`Post-install completed successfully for plugin ${plugin.name}`);
-                } else {
-                    console.warn(`Post-install completed with errors for plugin ${plugin.name}`);
+            // Register hooks for both lite and browser plugins
+            if (pluginModule.hooks && typeof pluginModule.hooks === 'object') {
+                for (const hookName of Object.keys(pluginModule.hooks)) {
+                    await this.registerHook(pluginId, hookName);
                 }
-            } else {
-                console.log(pluginModule)
-                console.log(`No postInstall function found for plugin ${plugin.name}`);
             }
+
+            // Only call postInstall for lite plugins (server-side execution)
+            if (plugin.type === 'lite' && typeof pluginModule.postInstall === 'function') {
+                const success = await pluginModule.postInstall(this.db, pluginId);
+                if (success) {
+                    console.log(`Post-install setup completed successfully for lite plugin ${plugin.name}`);
+                } else {
+                    console.warn(`Post-install setup completed with errors for lite plugin ${plugin.name}`);
+                }
+            }
+
         } catch (error) {
             console.error(`Error in post-install for plugin ${pluginId}:`, error);
         }
     }
 
-    /**
-     * Called when a plugin is deleted
-     * Executes the plugin's onDelete callback if it exists
-     * @param pluginId ID of the plugin
-     */
     async onDelete(pluginId: string) {
         if (!this.db) return;
 
         try {
-            // Get the plugin from the database
             const plugin = await this.db.plugins.findById(pluginId);
-            if (!plugin) {
-                throw new Error(`Plugin ${pluginId} not found`);
+            if (!plugin) throw new Error(`Plugin ${pluginId} not found`);
+
+            // Server-side executor should not handle external plugins for post-install
+            if (plugin.type === 'external') {
+                console.log(`Skipping server-side post-install for ${plugin.type} plugin: ${plugin.name}`);
+                return;
             }
 
-            // Get the plugin module
             let pluginModule = this.plugins.get(pluginId);
             if (!pluginModule) {
-                // If the plugin module isn't loaded, try to load it
+                // Plugin might not be loaded if it failed previously.
+                // We load it JIT to ensure its onDelete hook can be called.
                 await this.loadPlugin(plugin);
                 pluginModule = this.plugins.get(pluginId);
             }
 
-            // Call the plugin's onDelete function if it exists
             if (pluginModule && typeof pluginModule.onDelete === 'function') {
-                // Pass the database adapter and pluginId to the onDelete function
-                const success = await pluginModule.onDelete(this.db, pluginId);
-
-                if (success) {
-                    console.log(`Delete cleanup completed successfully for plugin ${plugin.name}`);
-                } else {
-                    console.warn(`Delete cleanup completed with errors for plugin ${plugin.name}`);
-                }
-            } else {
-                console.log(`No onDelete function found for plugin ${plugin.name}`);
+                await pluginModule.onDelete(this.db, pluginId);
             }
 
-            // Remove the plugin from the in-memory maps
+            // Clean up memory
             this.plugins.delete(pluginId);
-
-            // Remove all hook mappings for this plugin
             for (const [hookName, mappings] of this.hookMappings.entries()) {
-                const filteredMappings = mappings.filter(mapping => mapping.pluginId !== pluginId);
-                if (filteredMappings.length !== mappings.length) {
-                    this.hookMappings.set(hookName, filteredMappings);
-                }
+                const filtered = mappings.filter(m => m.pluginId !== pluginId);
+                this.hookMappings.set(hookName, filtered);
             }
 
-            console.log(`Plugin ${plugin.name} removed from memory`);
+            console.log(`Plugin ${plugin.name} uninstalled and removed from server-side memory.`);
         } catch (error) {
             console.error(`Error in onDelete for plugin ${pluginId}:`, error);
         }
     }
 
-    /**
-     * Load all plugins from the database
-     */
     private async loadPlugins() {
         if (!this.db) return;
-
         try {
-            // Load all plugins
-            const plugins = await this.db.plugins.find({});
-
-            // Load all hook mappings
-            const hookMappings = await this.db.pluginHookMappings.find({});
-
-            // Group hook mappings by hook name
-            this.hookMappings.clear();
-            for (const mapping of hookMappings) {
-                if (!this.hookMappings.has(mapping.hookName)) {
-                    this.hookMappings.set(mapping.hookName, []);
-                }
-                this.hookMappings.get(mapping.hookName)?.push(mapping);
-            }
-
-            // Sort hook mappings by priority (lower numbers execute first)
-            for (const [hookName, mappings] of this.hookMappings.entries()) {
-                this.hookMappings.set(
-                    hookName,
-                    mappings.sort((a, b) => a.priority - b.priority)
-                );
-            }
-
-            // Load each plugin
-            for (const plugin of plugins) {
+            const allPlugins = await this.db.plugins.find({});
+            // Load all plugins (lite, browser, external) into memory for hook registration and execution
+            for (const plugin of allPlugins) {
                 await this.loadPlugin(plugin);
             }
-
-            console.log(`Loaded ${plugins.length} plugins with ${hookMappings.length} hook mappings`);
+            console.log(`Loaded ${this.plugins.size} server-side plugins.`);
         } catch (error) {
             console.error('Error loading plugins:', error);
         }
     }
 
-    /**
-     * Load a single plugin
-     * @param plugin Plugin to load
-     */
     private async loadPlugin(plugin: Plugin) {
         try {
-            if (plugin.type === 'lite') {
-                // For lite plugins, load from a local file
-                try {
-                    // Dynamic import for the plugin file
-                    const pluginModule = await import(plugin.entryPoint);
-                    this.plugins.set(plugin._id, pluginModule);
-                } catch (error) {
-                    console.error(`Error loading lite plugin ${plugin.name}:`, error);
+            let code: string;
+            if (plugin.type === 'lite' || plugin.type === 'browser') {
+                if (this.pluginCodeCache.has(plugin.entryPoint)) {
+                    code = this.pluginCodeCache.get(plugin.entryPoint)!;
+                } else {
+                    const response = await fetch(plugin.entryPoint);
+                    if (!response.ok) throw new Error(`Fetch failed for plugin ${plugin.name}: ${response.statusText}`);
+                    code = await response.text();
+                    this.pluginCodeCache.set(plugin.entryPoint, code);
                 }
             } else if (plugin.type === 'external') {
-                // For external plugins, we would fetch from URL
-                // This is a placeholder for external plugin loading
-                console.log(`External plugin ${plugin.name} would be loaded from ${plugin.entryPoint}`);
-            } else if (plugin.type === "browser") {
-
-                //todo cache this locally
-                const response = await fetch(plugin.entryPoint);
-                if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
-                const code = await response.text();
-
-                const blob = new Blob([`return ${code}`], {type: 'text/javascript'});
-                const objectUrl = URL.createObjectURL(blob);
-                const module = new Function(await (await fetch(objectUrl)).text())();
-                URL.revokeObjectURL(objectUrl);
-                if (!module || typeof module !== 'object') throw new Error(`Plugin ${plugin.name} did not return a valid module object.`);
-
-                this.plugins.set(plugin._id, module);
+                // For external plugins, we don't load code, but create a proxy module
+                // The actual execution will happen in executeHook via a webhook call.
+                const externalModule: PluginModule = {
+                    name: plugin.name,
+                    version: plugin.version,
+                    description: plugin.description,
+                    hooks: {
+                        // A generic hook handler for external plugins
+                        [plugin.entryPoint]: async (context: any) => {
+                            try {
+                                const response = await fetch(plugin.entryPoint, {
+                                    method: 'POST',
+                                    headers: {'Content-Type': 'application/json'},
+                                    body: JSON.stringify({hookName: plugin.entryPoint, context}),
+                                });
+                                if (!response.ok) throw new Error(`External plugin webhook failed: ${response.statusText}`);
+                                return await response.json();
+                            } catch (error) {
+                                console.error(`Error calling external plugin webhook ${plugin.name}:`, error);
+                                return context; // Return original context on error
+                            }
+                        },
+                    },
+                };
+                this.plugins.set(plugin._id, externalModule);
+                return;
+            } else {
+                console.warn(`Unknown server-side plugin type: ${plugin.type} for plugin ${plugin.name}`);
+                return;
             }
-            // Browser plugins are loaded on the client side
+
+            const blob = new Blob([`return ${code}`], {type: 'text/javascript'});
+            const objectUrl = URL.createObjectURL(blob);
+            const module = new Function(await (await fetch(objectUrl)).text())();
+            URL.revokeObjectURL(objectUrl);
+
+            if (typeof module !== 'object') {
+                throw new Error(`Plugin ${plugin.name} did not return a valid module object.`);
+            }
+            this.plugins.set(plugin._id, module);
+
         } catch (error) {
-            console.error(`Error loading plugin ${plugin.name}:`, error);
+            console.error(`Error loading plugin ${plugin.name} (${plugin._id}):`, error);
         }
     }
 }
 
 const pluginExecutor = new PluginExecutor();
 export default pluginExecutor;
+''

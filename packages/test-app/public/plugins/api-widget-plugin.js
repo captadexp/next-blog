@@ -13,7 +13,7 @@
                 const response = await sdk.apis.getBlogs();
                 if (response.code === 0 && response.payload.length > 0) {
                     sdk.notify("Latest blog loaded");
-                    cachedData = response.payload[0];
+                    cachedData = response.payload.at(-1);
                 } else {
                     cachedData = {title: "Could not fetch latest blog."};
                 }
@@ -59,33 +59,18 @@
         },
 
         postInstall: async function (db, pluginId) {
-            console.log("Installing API Widget plugin...");
-
-            try {
-                // Register hooks for both server and client components
-                const hooks = [
-                    {hookName: 'dashboard-widget', priority: 10},
-                ];
-
-                // Create hook mappings in the database
-                for (const hook of hooks) {
-                    await db.pluginHookMappings.create({
-                        pluginId: pluginId,
-                        hookName: hook.hookName,
-                        priority: hook.priority
-                    });
-                    console.log(`Registered hook: ${hook.hookName}`);
-                }
-
-                console.log("API Widget plugin installed successfully!");
-                return true;
-            } catch (error) {
-                console.error("Error installing API Widget plugin:", error);
-                return false;
-            }
+            console.log("Running post-install setup for API Widget plugin...");
+            // The core system now handles hook registration.
+            // You can add any other plugin-specific setup logic here.
+            console.log("API Widget plugin post-install setup complete.");
+            return true;
         },
         onDelete: async function (db, pluginId) {
-            console.log("Uninstalling API Widget plugin...");
+            console.log("Running on-delete cleanup for API Widget plugin...");
+            // The core system now handles hook un-registration.
+            // You can add any other plugin-specific cleanup logic here.
+            console.log("API Widget plugin on-delete cleanup complete.");
+            return true;
         }
     })
 })()

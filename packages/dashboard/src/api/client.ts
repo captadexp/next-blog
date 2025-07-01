@@ -1,28 +1,28 @@
 import {
-    StandardResponse,
     Blog,
     Category,
-    Tag,
-    UIConfig,
-    User,
     CreateBlogInput,
-    UpdateBlogInput,
-    CreateUserInput,
-    UpdateUserInput,
     CreateCategoryInput,
-    UpdateCategoryInput,
-    CreateTagInput,
-    UpdateTagInput,
-    Settings,
+    CreatePluginHookMappingInput,
+    CreatePluginInput,
     CreateSettingsInput,
-    UpdateSettingsInput,
+    CreateTagInput,
+    CreateUserInput,
     Permission,
     Plugin,
-    CreatePluginInput,
-    UpdatePluginInput,
     PluginHookMapping,
-    CreatePluginHookMappingInput,
-    UpdatePluginHookMappingInput
+    Settings,
+    StandardResponse,
+    Tag,
+    UIConfig,
+    UpdateBlogInput,
+    UpdateCategoryInput,
+    UpdatePluginHookMappingInput,
+    UpdatePluginInput,
+    UpdateSettingsInput,
+    UpdateTagInput,
+    UpdateUserInput,
+    User
 } from '../types/api';
 
 class ApiClient {
@@ -231,6 +231,10 @@ class ApiClient {
 
     async deletePlugin(id: string): Promise<StandardResponse<null>> {
         return this.request<null>(`/plugin/${id}/delete`, 'POST');
+    }
+
+    async reinstallPlugin(id: string): Promise<StandardResponse<{ clearCache: boolean }>> {
+        return this.request<{ clearCache: boolean }>(`/plugin/${id}/reinstall`, 'POST');
     }
 
     // Plugin Hook Mapping APIs

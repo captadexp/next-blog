@@ -1,4 +1,4 @@
-import { Permission } from './types.js';
+import {Permission} from './types.js';
 
 /**
  * Predefined permissions for common operations
@@ -42,6 +42,15 @@ export const Permissions = {
     ALL_CREATE: 'all:create' as Permission,
     ALL_UPDATE: 'all:update' as Permission,
     ALL_DELETE: 'all:delete' as Permission,
+
+    // Plugin permissions
+    PLUGINS_LIST: 'plugins:list' as Permission,
+    PLUGINS_READ: 'plugins:read' as Permission,
+    PLUGINS_CREATE: 'plugins:create' as Permission,
+    PLUGINS_UPDATE: 'plugins:update' as Permission,
+    PLUGINS_DELETE: 'plugins:delete' as Permission,
+    PLUGINS_REINSTALL: 'plugins:reinstall' as Permission,
+    PLUGINS_ALL: 'plugins:all' as Permission,
     
     // Super admin permission
     ALL: 'all:all' as Permission
@@ -52,7 +61,7 @@ export const Permissions = {
  */
 export const PermissionSets = {
     // Super admin - full access to everything
-    ADMIN: [Permissions.ALL],
+    ADMIN: [Permissions.ALL, Permissions.PLUGINS_ALL],
     
     // Editor - can manage content but not users
     EDITOR: [

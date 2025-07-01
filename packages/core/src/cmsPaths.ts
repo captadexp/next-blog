@@ -1,17 +1,46 @@
-import {CNextRequest} from "./utils/secureInternal.js";
+import secure, {CNextRequest} from "./utils/secureInternal.js";
 import {PathObject} from "./utils/parse-path.js";
-import secure from "./utils/secureInternal.js";
 import {handleStaticFileRequest} from "./utils/staticFileHandler.js";
 import {DashboardPage} from "@supergrowthai/next-blog-dashboard"
 import {
-    getBlogs, getBlogById, createBlog, updateBlog, deleteBlog,
-    getCategories, getCategoryById, createCategory, updateCategory, deleteCategory,
-    getTags, getTagById, createTag, updateTag, deleteTag,
-    getConfig, getCurrentUser,
-    listUsers, getUser, createUser, updateUser, deleteUser,
-    getSettings, getSettingById, createSetting, updateSetting, deleteSetting,
-    getPlugins, getPluginById, createPlugin, updatePlugin, deletePlugin,
-    getPluginHookMappings, getPluginHookMappingById, createPluginHookMapping, updatePluginHookMapping, deletePluginHookMapping
+    createBlog,
+    createCategory,
+    createPlugin,
+    createPluginHookMapping,
+    createSetting,
+    createTag,
+    createUser,
+    deleteBlog,
+    deleteCategory,
+    deletePlugin,
+    deletePluginHookMapping,
+    deleteSetting,
+    deleteTag,
+    deleteUser,
+    getBlogById,
+    getBlogs,
+    getCategories,
+    getCategoryById,
+    getConfig,
+    getCurrentUser,
+    getPluginById,
+    getPluginHookMappingById,
+    getPluginHookMappings,
+    getPlugins,
+    getSettingById,
+    getSettings,
+    getTagById,
+    getTags,
+    getUser,
+    listUsers,
+    reinstallPlugin,
+    updateBlog,
+    updateCategory,
+    updatePlugin,
+    updatePluginHookMapping,
+    updateSetting,
+    updateTag,
+    updateUser
 } from "./api/index.js";
 
 const cmsPaths: { GET: PathObject, POST: PathObject } = {
@@ -116,7 +145,8 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
             plugin: {
                 ':id': {
                     update: updatePlugin,
-                    delete: deletePlugin
+                    delete: deletePlugin,
+                    reinstall: reinstallPlugin
                 }
             },
             plugins: {

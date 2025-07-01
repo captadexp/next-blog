@@ -5,6 +5,7 @@ import {PluginHookMapping} from "../types/api.ts";
 import {pluginCache} from "../utils/pluginCache.ts";
 import {UIHookFn} from "../dashboard/components/plugins/types.ts";
 
+
 interface PluginContextType {
     status: 'idle' | 'initializing' | 'ready' | 'error';
     getHookFunctions: (hookName: string) => { pluginId: string, hookFn: UIHookFn }[];
@@ -45,6 +46,7 @@ export const PluginProvider: FunctionComponent = ({children}) => {
     const [loadedPlugins, setLoadedPlugins] = useState<Map<string, PluginModule>>(new Map());
     const [hookMappings, setHookMappings] = useState<Map<string, PluginHookMapping[]>>(new Map());
 
+
     const loadPluginModule = useCallback(async (plugin: Plugin): Promise<[string, PluginModule] | null> => {
         try {
             const url = plugin.entryPoint;
@@ -55,6 +57,7 @@ export const PluginProvider: FunctionComponent = ({children}) => {
                 code = await response.text();
                 await pluginCache.set(url, code);
             }
+
             const blob = new Blob([`return ${code}`], {type: 'text/javascript'});
             const objectUrl = URL.createObjectURL(blob);
             const module = new Function(await (await fetch(objectUrl)).text())();
@@ -65,7 +68,7 @@ export const PluginProvider: FunctionComponent = ({children}) => {
             console.error(`[PluginSystem] Failed to load plugin ${plugin.name}:`, error);
             return null;
         }
-    }, []);
+    }, [apis]);
 
     useEffect(() => {
         const initialize = async () => {

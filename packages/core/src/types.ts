@@ -49,7 +49,7 @@ export interface TagData extends Partial<Tag> {
 
 export type PermissionType = 'list' | 'read' | 'create' | 'update' | 'delete' | 'all';
 export type EntityType = 'all' | 'blogs' | 'categories' | 'tags' | 'users' | 'settings' | 'plugins';
-export type Permission = `${EntityType}:${PermissionType}`;
+export type Permission = `${EntityType}:${PermissionType}` | 'plugins:reinstall';
 
 // Permission weight constants
 export const PERMISSION_WEIGHTS = {

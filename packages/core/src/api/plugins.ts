@@ -154,6 +154,33 @@ export const deletePlugin = secure(
     {requirePermission: 'plugins:delete'}
 );
 
+// Reinstall a plugin - requires 'plugins:reinstall' permission
+export const reinstallPlugin = secure(
+    async (request: CNextRequest) => {
+        const db = await request.db();
+
+        try {
+            // Check if plugin exists first
+            const existingPlugin = await db.plugins.findOne({_id: request._params.id});
+            if (!existingPlugin) {
+                throw new NotFound(`Plugin with id ${request._params.id} not found`);
+            }
+
+            // Call onDelete and then postInstall
+            await pluginExecutor.onDelete(request._params.id);
+            await pluginExecutor.postInstall(request._params.id);
+
+            throw new Success("Plugin reinstalled successfully", {clearCache: true});
+        } catch (error) {
+            if (error instanceof Success || error instanceof NotFound) throw error;
+
+            console.error(`Error reinstalling plugin ${request._params.id}:`, error);
+            throw new DatabaseError("Failed to reinstall plugin: " + (error instanceof Error ? error.message : String(error)));
+        }
+    },
+    {requirePermission: 'plugins:reinstall'}
+);
+
 // List all plugin hook mappings - requires 'plugins:list' permission
 export const getPluginHookMappings = secure(
     async (request: CNextRequest) => {

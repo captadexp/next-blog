@@ -266,24 +266,19 @@
         },
 
         postInstall: async function (db, pluginId) {
-            console.log("Installing Content SEO Analyzer...");
-            await db.pluginHookMappings.create({
-                pluginId: pluginId,
-                hookName: 'editor-sidebar-widget',
-                priority: 10
-            });
-            console.log("Content SEO Analyzer installed successfully!");
+            console.log("Running post-install setup for Content SEO Analyzer...");
+            // The core system now handles hook registration.
+            // You can add any other plugin-specific setup logic here.
+            console.log("Content SEO Analyzer post-install setup complete.");
             return true;
         },
 
         onDelete: async function (db, pluginId) {
-            console.log("Uninstalling Content SEO Analyzer...");
-            // In a real system, you might want to clean up the metadata from blogs.
-            // For now, we just unregister the hook.
-            await db.pluginHookMappings.delete({
-                where: {pluginId: pluginId, hookName: 'editor-sidebar-widget'}
-            });
-            console.log("Content SEO Analyzer uninstalled.");
+            console.log("Running on-delete cleanup for Content SEO Analyzer...");
+            // The core system now handles hook un-registration.
+            // You could add logic here to clean up metadata from blogs, for example.
+            console.log("Content SEO Analyzer on-delete cleanup complete.");
+            return true;
         }
     });
 })();
