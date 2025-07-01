@@ -1,7 +1,8 @@
 import {h} from 'preact';
-import {useState, useEffect, useRef, useCallback} from 'preact/hooks';
+import {useCallback, useRef, useState} from 'preact/hooks';
 import {DynamicFormFieldType} from './types';
 import {memo} from "preact/compat"
+import {useEffect} from "react";
 
 interface RichTextProps {
     field: DynamicFormFieldType;
@@ -13,7 +14,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
     const [editorLoaded, setEditorLoaded] = useState(false);
     const editorInstanceRef = useRef<any>(null);
     const prevValueRef = useRef<string>(field.value);
-    const {key, value, disabled, label} = field;
+    const {key, value, disabled, label, ref} = field;
 
     // Memoize the onChange handler to prevent recreation on each render
     const handleChange = useCallback((data: string) => {
@@ -108,6 +109,11 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
             editorInstanceRef.current.isReadOnly = !!disabled;
         }
     }, [value, disabled]);
+
+    useEffect(() => {
+        if (!ref) return;
+        ref.current = editorInstanceRef.current;
+    }, [ref, editorLoaded]);
 
     return (
         <div className="w-full mb-4">

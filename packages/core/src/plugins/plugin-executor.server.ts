@@ -160,6 +160,9 @@ class PluginExecutor {
                 await pluginModule.onDelete(this.db, pluginId);
             }
 
+            // Remove hook mappings from the database
+            await this.db.pluginHookMappings.delete({pluginId});
+
             // Clean up memory
             this.plugins.delete(pluginId);
             for (const [hookName, mappings] of this.hookMappings.entries()) {

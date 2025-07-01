@@ -4,11 +4,19 @@ import {
     Category,
     CategoryData,
     CollectionOperations,
-    DatabaseAdapter, Filter, Permission,
+    Comment,
+    CommentData,
+    DatabaseAdapter,
+    Filter,
+    Media,
+    MediaData,
+    Permission,
     Plugin,
     PluginData,
     PluginHookMapping,
     PluginHookMappingData,
+    Revision,
+    RevisionData,
     SettingsEntry,
     SettingsEntryData,
     Tag,
@@ -16,7 +24,7 @@ import {
     User,
     UserData
 } from "../types.js";
-import {MongoClient, Db, Collection, ObjectId} from "mongodb"
+import {Collection, Db, MongoClient, ObjectId} from "mongodb"
 
 export function oid(obj: ObjectId | string) {
     if (obj instanceof ObjectId) {
@@ -262,6 +270,102 @@ class PluginHookMappingTransformer implements DbEntityTransformer<PluginHookMapp
     }
 }
 
+class CommentTransformer implements DbEntityTransformer<Comment, CommentData> {
+    fromDb(dbEntity: any): Comment {
+        if (!dbEntity) return dbEntity;
+        const result = {...dbEntity};
+        if (result._id instanceof ObjectId) {
+            result._id = result._id.toString();
+        }
+        if (result.blogId instanceof ObjectId) {
+            result.blogId = result.blogId.toString();
+        }
+        if (result.userId && result.userId instanceof ObjectId) {
+            result.userId = result.userId.toString();
+        }
+        if (result.parentCommentId && result.parentCommentId instanceof ObjectId) {
+            result.parentCommentId = result.parentCommentId.toString();
+        }
+        return result as Comment;
+    }
+
+    toDb(entity: Partial<Comment> | CommentData): any {
+        if (!entity) return entity;
+        const result: any = {...entity};
+        if (result._id) {
+            result._id = oid(result._id);
+        }
+        if (result.blogId) {
+            result.blogId = oid(result.blogId);
+        }
+        if (result.userId) {
+            result.userId = oid(result.userId);
+        }
+        if (result.parentCommentId) {
+            result.parentCommentId = oid(result.parentCommentId);
+        }
+        return result;
+    }
+}
+
+class RevisionTransformer implements DbEntityTransformer<Revision, RevisionData> {
+    fromDb(dbEntity: any): Revision {
+        if (!dbEntity) return dbEntity;
+        const result = {...dbEntity};
+        if (result._id instanceof ObjectId) {
+            result._id = result._id.toString();
+        }
+        if (result.blogId instanceof ObjectId) {
+            result.blogId = result.blogId.toString();
+        }
+        if (result.userId instanceof ObjectId) {
+            result.userId = result.userId.toString();
+        }
+        return result as Revision;
+    }
+
+    toDb(entity: Partial<Revision> | RevisionData): any {
+        if (!entity) return entity;
+        const result: any = {...entity};
+        if (result._id) {
+            result._id = oid(result._id);
+        }
+        if (result.blogId) {
+            result.blogId = oid(result.blogId);
+        }
+        if (result.userId) {
+            result.userId = oid(result.userId);
+        }
+        return result;
+    }
+}
+
+class MediaTransformer implements DbEntityTransformer<Media, MediaData> {
+    fromDb(dbEntity: any): Media {
+        if (!dbEntity) return dbEntity;
+        const result = {...dbEntity};
+        if (result._id instanceof ObjectId) {
+            result._id = result._id.toString();
+        }
+        if (result.userId instanceof ObjectId) {
+            result.userId = result.userId.toString();
+        }
+        return result as Media;
+    }
+
+    toDb(entity: Partial<Media> | MediaData): any {
+        if (!entity) return entity;
+        const result: any = {...entity};
+        if (result._id) {
+            result._id = oid(result._id);
+        }
+        if (result.userId) {
+            result.userId = oid(result.userId);
+        }
+        return result;
+    }
+}
+
 export default class MongoDBAdapter implements DatabaseAdapter {
     private db: Db;
     private readonly blogTransformer: BlogTransformer;
@@ -271,6 +375,9 @@ export default class MongoDBAdapter implements DatabaseAdapter {
     private readonly settingsTransformer: SettingsTransformer;
     private readonly pluginTransformer: PluginTransformer;
     private readonly pluginHookMappingTransformer: PluginHookMappingTransformer;
+    private readonly commentTransformer: CommentTransformer;
+    private readonly revisionTransformer: RevisionTransformer;
+    private readonly mediaTransformer: MediaTransformer;
 
     constructor(dbName: string, client: MongoClient) {
         this.db = client.db(dbName);
@@ -281,6 +388,9 @@ export default class MongoDBAdapter implements DatabaseAdapter {
         this.settingsTransformer = new SettingsTransformer();
         this.pluginTransformer = new PluginTransformer();
         this.pluginHookMappingTransformer = new PluginHookMappingTransformer();
+        this.commentTransformer = new CommentTransformer();
+        this.revisionTransformer = new RevisionTransformer();
+        this.mediaTransformer = new MediaTransformer();
     }
 
     get blogs(): CollectionOperations<Blog, BlogData> {
@@ -362,7 +472,12 @@ export default class MongoDBAdapter implements DatabaseAdapter {
                 const dbFilter = transformer.toDb(filter);
                 const result = await collection.findOneAndDelete(dbFilter);
                 return result ? transformer.fromDb(result) : null;
-            }
+            },
+            delete: async (filter: Filter<User>): Promise<number> => {
+                const dbFilter = transformer.toDb(filter);
+                const result = await collection.deleteMany(dbFilter);
+                return result.deletedCount || 0;
+            },
         };
     }
 
@@ -376,6 +491,18 @@ export default class MongoDBAdapter implements DatabaseAdapter {
 
     get pluginHookMappings(): CollectionOperations<PluginHookMapping, PluginHookMappingData> {
         return this.getCollectionOperations<PluginHookMapping, PluginHookMappingData>('plugin-hook-mappings', this.pluginHookMappingTransformer);
+    }
+
+    get comments(): CollectionOperations<Comment, CommentData> {
+        return this.getCollectionOperations<Comment, CommentData>('comments', this.commentTransformer);
+    }
+
+    get revisions(): CollectionOperations<Revision, RevisionData> {
+        return this.getCollectionOperations<Revision, RevisionData>('revisions', this.revisionTransformer);
+    }
+
+    get media(): CollectionOperations<Media, MediaData> {
+        return this.getCollectionOperations<Media, MediaData>('media', this.mediaTransformer);
     }
 
     private getCollectionOperations<T extends U, U>(
@@ -444,6 +571,12 @@ export default class MongoDBAdapter implements DatabaseAdapter {
                 const dbFilter = transformer.toDb(filter);
                 const result = await collection.findOneAndDelete(dbFilter);
                 return result ? transformer.fromDb(result) : null;
+            },
+
+            delete: async (filter: Filter<T>): Promise<number> => {
+                const dbFilter = transformer.toDb(filter);
+                const result = await collection.deleteMany(dbFilter);
+                return result.deletedCount || 0;
             },
         };
     }

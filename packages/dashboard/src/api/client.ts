@@ -119,6 +119,10 @@ class ApiClient {
         return this.request<Blog>(`/blog/${id}/update`, 'POST', data);
     }
 
+    async updateBlogMetadata(data: { blogId: string, data: any }): Promise<StandardResponse<Blog>> {
+        return this.request<Blog>(`/blog/update-metadata`, 'POST', data);
+    }
+
     async deleteBlog(id: string): Promise<StandardResponse<null>> {
         return this.request<null>(`/blog/${id}/delete`, 'POST');
     }

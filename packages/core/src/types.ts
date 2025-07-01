@@ -8,6 +8,13 @@ export interface Blog {
     userId: string;
     createdAt: number;
     updatedAt: number;
+    metadata?: Record<string, any>;
+    type?: 'post' | 'page' | string;
+    status?: 'draft' | 'pending' | 'private' | 'published' | 'trash';
+    featuredImage?: string;
+    excerpt?: string;
+    password?: string;
+    parent?: string;
 }
 
 export interface BlogData extends Partial<Blog> {
@@ -150,6 +157,66 @@ export interface PluginHookMappingData extends Partial<PluginHookMapping> {
     priority: number;
 }
 
+export interface Comment {
+    _id: string;
+    blogId: string;
+    userId?: string;
+    authorName?: string;
+    authorEmail?: string;
+    authorUrl?: string;
+    content: string;
+    status: 'pending' | 'approved' | 'spam' | 'trash';
+    parentCommentId?: string;
+    createdAt: number;
+    updatedAt: number;
+    metadata?: Record<string, any>;
+}
+
+export interface CommentData extends Partial<Comment> {
+    blogId: string;
+    content: string;
+}
+
+export interface Revision {
+    _id: string;
+    blogId: string;
+    userId: string;
+    title: string;
+    content: string;
+    createdAt: number;
+    metadata?: Record<string, any>;
+}
+
+export interface RevisionData extends Partial<Revision> {
+    blogId: string;
+    userId: string;
+    title: string;
+    content: string;
+}
+
+export interface Media {
+    _id: string;
+    filename: string;
+    url: string;
+    mimeType: string;
+    altText?: string;
+    caption?: string;
+    description?: string;
+    width?: number;
+    height?: number;
+    userId: string;
+    createdAt: number;
+    updatedAt: number;
+    metadata?: Record<string, any>;
+}
+
+export interface MediaData extends Partial<Media> {
+    filename: string;
+    url: string;
+    mimeType: string;
+    userId: string;
+}
+
 /**
  * Interface for a plugin module
  * This defines the expected structure of a plugin module
@@ -178,6 +245,9 @@ export interface DatabaseAdapter {
     settings: CollectionOperations<SettingsEntry, SettingsEntryData>;
     plugins: CollectionOperations<Plugin, PluginData>;
     pluginHookMappings: CollectionOperations<PluginHookMapping, PluginHookMappingData>;
+    comments: CollectionOperations<Comment, CommentData>;
+    revisions: CollectionOperations<Revision, RevisionData>;
+    media: CollectionOperations<Media, MediaData>;
 }
 
 export type Filter<T> = Partial<Record<keyof T, any>>;
@@ -194,12 +264,15 @@ export interface CollectionOperations<T, U> {
     updateOne(filter: Filter<T>, update: Omit<Filter<T>, "_id">): Promise<T | null>;
 
     deleteOne(filter: Filter<T>): Promise<T | null>;
+
+    delete(filter: Filter<T>): Promise<number>;
 }
 
 export type EventPayload =
     | { event: "createBlog"; payload: Blog }
     | { event: "updateBlog"; payload: Blog }
     | { event: "deleteBlog"; payload: Blog }
+    | { event: "updateBlogMetadata"; payload: Blog }
 
     | { event: "createTag"; payload: Tag }
     | { event: "updateTag"; payload: Tag }
@@ -223,7 +296,19 @@ export type EventPayload =
 
     | { event: "createPluginHookMapping"; payload: PluginHookMapping }
     | { event: "updatePluginHookMapping"; payload: PluginHookMapping }
-    | { event: "deletePluginHookMapping"; payload: PluginHookMapping };
+    | { event: "deletePluginHookMapping"; payload: PluginHookMapping }
+
+    | { event: "createComment"; payload: Comment }
+    | { event: "updateComment"; payload: Comment }
+    | { event: "deleteComment"; payload: Comment }
+
+    | { event: "createRevision"; payload: Revision }
+    | { event: "updateRevision"; payload: Revision }
+    | { event: "deleteRevision"; payload: Revision }
+
+    | { event: "createMedia"; payload: Media }
+    | { event: "updateMedia"; payload: Media }
+    | { event: "deleteMedia"; payload: Media };
 
 export interface ConfigurationCallbacks {
     on?<E extends EventPayload>(event: E['event'], payload: E['payload'] | null): void;

@@ -15,7 +15,6 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
     //fixme??
     const [formData, setFormData] = useState<Record<string, any> | null>(null);
 
-
     const [categories, setCategories] = useState<Category[]>([]);
     const [tags, setTags] = useState<Tag[]>([]);
     const [loading, setLoading] = useState(true);
@@ -83,7 +82,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                 getContent: () => formData.content || '',
             }
         };
-    }, [id, blog, formData]);
+    }, [id, blog, formData, editorRef.current]);
 
     // Functions for handling search and adding new items
     const searchCategories = async (query: string): Promise<{ value: string; label: string }[]> => {

@@ -1,7 +1,8 @@
 import secure, {CNextRequest} from "./utils/secureInternal.js";
 import {PathObject} from "./utils/parse-path.js";
 import {handleStaticFileRequest} from "./utils/staticFileHandler.js";
-import {DashboardPage} from "@supergrowthai/next-blog-dashboard"
+import {DashboardPage} from "@supergrowthai/next-blog-dashboard";
+
 import {
     createBlog,
     createCategory,
@@ -35,6 +36,7 @@ import {
     listUsers,
     reinstallPlugin,
     updateBlog,
+    updateBlogMetadata,
     updateCategory,
     updatePlugin,
     updatePluginHookMapping,
@@ -99,8 +101,9 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
             blog: {
                 ':id': {
                     update: updateBlog,
-                    delete: deleteBlog
-                }
+                    delete: deleteBlog,
+                    'update-metadata': updateBlogMetadata
+                },
             },
             blogs: {
                 create: createBlog

@@ -1,12 +1,6 @@
 import {Permission} from "../types.js";
 import secure, {type CNextRequest} from "../utils/secureInternal.js";
-import {
-    NotFound,
-    Success,
-    ValidationError,
-    DatabaseError,
-    BadRequest
-} from "../utils/errors.js";
+import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
 
 // List all blogs - requires 'blogs:list' permission
 export const getBlogs = secure(
@@ -124,6 +118,52 @@ export const updateBlog = secure(
 
             console.error(`Error updating blog ${request._params.id}:`, error);
             throw new DatabaseError("Failed to update blog: " + (error instanceof Error ? error.message : String(error)));
+        }
+    },
+    {requirePermission: 'blogs:update'}
+);
+
+// Update blog metadata - requires 'blogs:update-metadata' permission
+export const updateBlogMetadata = secure(
+    async (request: CNextRequest) => {
+        const db = await request.db();
+
+        try {
+            const body: any = await request.json();
+            const blogId = body.blogId;
+            const metadata = body.data;
+
+            if (!blogId) {
+                throw new ValidationError("Blog ID is required");
+            }
+            if (!metadata) {
+                throw new ValidationError("Metadata is required");
+            }
+
+            //fixme type fix remove any
+            const existingBlog: any = await db.blogs.findOne({_id: blogId});
+            if (!existingBlog) {
+                throw new NotFound(`Blog with id ${blogId} not found`);
+            }
+
+            // Merge existing metadata with new metadata
+            const updatedMetadata = {
+                ...existingBlog.metadata,
+                ...metadata
+            };
+
+            const updation = await db.blogs.updateOne(
+                {_id: blogId},
+                {metadata: updatedMetadata, updatedAt: Date.now()}
+            );
+
+            request.configuration.callbacks?.on?.("updateBlog", updation);
+            throw new Success("Blog metadata updated successfully", updation);
+        } catch (error) {
+            if (error instanceof Success || error instanceof NotFound || error instanceof ValidationError) throw error;
+
+            console.error(`Error updating blog metadata for blog ${request._params.id}:`, error);
+            throw new DatabaseError("Failed to update blog metadata: " + (error instanceof Error ? error.message : String(error)));
         }
     },
     {requirePermission: 'blogs:update'}

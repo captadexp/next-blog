@@ -151,25 +151,39 @@
      * Fetches the saved focus keyword and sets up the event listener.
      */
     async function initializePlugin(sdk, context) {
+
+        await new Promise((r) => setTimeout(r, 10000));
+
+        if (!sdk?.editor?.editorRef?.current) {
+            console.log("====> no editor")
+            return;
+        }
+
         try {
-
             pluginState.debouncedRunAnalysis = sdk.utils.debounce(runAnalysis, 2000);
-            // 1. Fetch saved data for this blog post
-            const metadata = await sdk.apis.getBlog(context.blogId).then(a => a.payload);
-            if (metadata && metadata.seoAnalyzer) {
-                pluginState.focusKeyword = metadata.seoAnalyzer.focusKeyword || '';
-            }
 
-            // 2. Run the first analysis
-            await runAnalysis(sdk, context);
+            // Ensure editor is initialized before proceeding
+            sdk.editor.editorRef?.current?.on('init', async () => {
+                // 1. Fetch saved data for this blog post
+                const metadata = await sdk.apis.getBlog(context.blogId).then(a => a.payload);
+                if (metadata && metadata.seoAnalyzer) {
+                    pluginState.focusKeyword = metadata.seoAnalyzer.focusKeyword || '';
+                }
 
-            // 3. Set up the listener for future changes, calling the debounced function
-            sdk.editor.editorRef.current?.on('change', () => pluginState.debouncedRunAnalysis(sdk, context));
+                // 2. Run the first analysis
+                await runAnalysis(sdk, context);
+
+                // 3. Set up the listener for future changes, calling the debounced function
+                sdk.editor.editorRef?.current?.on('change', () => pluginState.debouncedRunAnalysis(sdk, context));
+
+                pluginState.isLoading = false;
+                pluginState.initiated = true;
+                sdk.refresh();
+            });
 
         } catch (err) {
             console.error("Failed to initialize SEO Analyzer:", err);
             pluginState.analysisResults = {error: {label: "Initialization Failed", status: 'bad', advice: err.message}};
-        } finally {
             pluginState.isLoading = false;
             pluginState.initiated = true;
             sdk.refresh();
@@ -219,14 +233,10 @@
      * The main function for the 'editor-sidebar-widget' hook.
      */
     function editorSidebarWidget(sdk, prev, context) {
-        // Run initialization logic only once.
-        if (!pluginState.initiated) {
-            // Use setTimeout to avoid synchronous state update loops during initial render.
-            setTimeout(() => initializePlugin(sdk, context), 0);
-            return ['div', {class: 'p-4'}, 'Initializing SEO Analyzer...'];
-        }
+        // Always attempt to initialize, it will handle its own state and timing
+        initializePlugin(sdk, context);
 
-        if (pluginState.isLoading) {
+        if (pluginState.isLoading || !pluginState.initiated) {
             return ['div', {class: 'p-4'}, 'Loading analysis...'];
         }
 
@@ -265,20 +275,5 @@
             'editor-sidebar-widget': editorSidebarWidget,
         },
 
-        postInstall: async function (db, pluginId) {
-            console.log("Running post-install setup for Content SEO Analyzer...");
-            // The core system now handles hook registration.
-            // You can add any other plugin-specific setup logic here.
-            console.log("Content SEO Analyzer post-install setup complete.");
-            return true;
-        },
-
-        onDelete: async function (db, pluginId) {
-            console.log("Running on-delete cleanup for Content SEO Analyzer...");
-            // The core system now handles hook un-registration.
-            // You could add logic here to clean up metadata from blogs, for example.
-            console.log("Content SEO Analyzer on-delete cleanup complete.");
-            return true;
-        }
     });
 })();

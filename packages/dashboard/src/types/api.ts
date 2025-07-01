@@ -38,10 +38,15 @@ export interface Blog {
     category: string;
     tags: string[];
     userId: string;
-    excerpt?: string;
-    status: "draft" | "published";
     createdAt: number;
     updatedAt: number;
+    metadata?: Record<string, any>;
+    type?: 'post' | 'page' | string;
+    status?: 'draft' | 'pending' | 'private' | 'published' | 'trash';
+    featuredImage?: string;
+    excerpt?: string;
+    password?: string;
+    parent?: string;
 }
 
 export type PermissionType = 'list' | 'read' | 'create' | 'update' | 'delete' | 'all';
@@ -58,6 +63,7 @@ export interface User {
     permissions: Permission[];
     createdAt: number;
     updatedAt: number;
+    metadata?: Record<string, any>;
 }
 
 export interface Category {
@@ -209,4 +215,84 @@ export interface UpdatePluginHookMappingInput {
     pluginId?: string;
     hookName?: string;
     priority?: number;
+}
+
+export interface Comment {
+    _id: string;
+    blogId: string;
+    userId?: string;
+    authorName?: string;
+    authorEmail?: string;
+    authorUrl?: string;
+    content: string;
+    status: 'pending' | 'approved' | 'spam' | 'trash';
+    parentCommentId?: string;
+    createdAt: number;
+    updatedAt: number;
+    metadata?: Record<string, any>;
+}
+
+export interface CreateCommentInput {
+    blogId: string;
+    authorName?: string;
+    authorEmail?: string;
+    authorUrl?: string;
+    content: string;
+    parentCommentId?: string;
+}
+
+export interface UpdateCommentInput {
+    authorName?: string;
+    authorEmail?: string;
+    authorUrl?: string;
+    content?: string;
+    status?: 'pending' | 'approved' | 'spam' | 'trash';
+}
+
+export interface Revision {
+    _id: string;
+    blogId: string;
+    userId: string;
+    title: string;
+    content: string;
+    createdAt: number;
+    metadata?: Record<string, any>;
+}
+
+export interface Media {
+    _id: string;
+    filename: string;
+    url: string;
+    mimeType: string;
+    altText?: string;
+    caption?: string;
+    description?: string;
+    width?: number;
+    height?: number;
+    userId: string;
+    createdAt: number;
+    updatedAt: number;
+    metadata?: Record<string, any>;
+}
+
+export interface CreateMediaInput {
+    filename: string;
+    url: string;
+    mimeType: string;
+    altText?: string;
+    caption?: string;
+    description?: string;
+    width?: number;
+    height?: number;
+}
+
+export interface UpdateMediaInput {
+    filename?: string;
+    url?: string;
+    mimeType?: string;
+    altText?: string;
+    caption?: string;
+    description?: string;
+    width?: number;
+    height?: number;
 }
