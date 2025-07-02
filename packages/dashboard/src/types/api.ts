@@ -51,7 +51,7 @@ export interface Blog {
 
 export type PermissionType = 'list' | 'read' | 'create' | 'update' | 'delete' | 'all';
 export type EntityType = 'all' | 'blogs' | 'categories' | 'tags' | 'users' | 'settings' | 'plugins';
-export type Permission = `${EntityType}:${PermissionType}` | 'plugins:reinstall';
+export type Permission = `${EntityType}:${PermissionType}`;
 
 export interface User {
     _id: string;
@@ -203,18 +203,6 @@ export interface PluginHookMapping {
     priority: number;
     createdAt: number;
     updatedAt: number;
-}
-
-export interface CreatePluginHookMappingInput {
-    pluginId: string;
-    hookName: string;
-    priority: number;
-}
-
-export interface UpdatePluginHookMappingInput {
-    pluginId?: string;
-    hookName?: string;
-    priority?: number;
 }
 
 export interface Comment {

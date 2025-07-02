@@ -3,7 +3,6 @@ import {
     Category,
     CreateBlogInput,
     CreateCategoryInput,
-    CreatePluginHookMappingInput,
     CreatePluginInput,
     CreateSettingsInput,
     CreateTagInput,
@@ -17,7 +16,6 @@ import {
     UIConfig,
     UpdateBlogInput,
     UpdateCategoryInput,
-    UpdatePluginHookMappingInput,
     UpdatePluginInput,
     UpdateSettingsInput,
     UpdateTagInput,
@@ -242,25 +240,8 @@ class ApiClient {
     }
 
     // Plugin Hook Mapping APIs
-    async getPluginHookMappings(pluginId?: string): Promise<StandardResponse<PluginHookMapping[]>> {
-        const endpoint = pluginId ? `/plugins/${pluginId}/hooks` : '/plugin-hooks';
-        return this.request<PluginHookMapping[]>(endpoint);
-    }
-
-    async getPluginHookMapping(id: string): Promise<StandardResponse<PluginHookMapping>> {
-        return this.request<PluginHookMapping>(`/plugin-hooks/${id}`);
-    }
-
-    async createPluginHookMapping(data: CreatePluginHookMappingInput): Promise<StandardResponse<PluginHookMapping>> {
-        return this.request<PluginHookMapping>('/plugin-hooks/create', 'POST', data);
-    }
-
-    async updatePluginHookMapping(id: string, data: UpdatePluginHookMappingInput): Promise<StandardResponse<PluginHookMapping>> {
-        return this.request<PluginHookMapping>(`/plugin-hook/${id}/update`, 'POST', data);
-    }
-
-    async deletePluginHookMapping(id: string): Promise<StandardResponse<null>> {
-        return this.request<null>(`/plugin-hook/${id}/delete`, 'POST');
+    async getPluginHookMappings(): Promise<StandardResponse<PluginHookMapping[]>> {
+        return this.request<PluginHookMapping[]>('/plugin-hooks');
     }
 }
 

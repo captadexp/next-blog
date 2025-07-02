@@ -5,7 +5,7 @@ import {Plugin} from '../../../types/api';
 import {pluginCache} from "../../../utils/pluginCache.ts";
 
 const PluginsList = () => {
-    const {hasPermission, apis: api} = useUser();
+    const {hasPermission, hasAllPermissions, apis: api} = useUser();
     const [plugins, setPlugins] = useState<Plugin[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -120,7 +120,7 @@ const PluginsList = () => {
                             Edit
                         </button>
                     </a>
-                    {hasPermission('plugins:reinstall') && (
+                    {hasAllPermissions(['plugins:create', 'plugins:delete']) && (
                         <button
                             className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
                             onClick={() => handleReinstall(plugin._id)}

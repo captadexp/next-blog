@@ -13,7 +13,6 @@ export interface Blog {
     status?: 'draft' | 'pending' | 'private' | 'published' | 'trash';
     featuredImage?: string;
     excerpt?: string;
-    password?: string;
     parent?: string;
 }
 
@@ -56,7 +55,7 @@ export interface TagData extends Partial<Tag> {
 
 export type PermissionType = 'list' | 'read' | 'create' | 'update' | 'delete' | 'all';
 export type EntityType = 'all' | 'blogs' | 'categories' | 'tags' | 'users' | 'settings' | 'plugins';
-export type Permission = `${EntityType}:${PermissionType}` | 'plugins:reinstall';
+export type Permission = `${EntityType}:${PermissionType}`;
 
 // Permission weight constants
 export const PERMISSION_WEIGHTS = {

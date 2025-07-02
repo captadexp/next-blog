@@ -7,14 +7,12 @@ import {
     createBlog,
     createCategory,
     createPlugin,
-    createPluginHookMapping,
     createSetting,
     createTag,
     createUser,
     deleteBlog,
     deleteCategory,
     deletePlugin,
-    deletePluginHookMapping,
     deleteSetting,
     deleteTag,
     deleteUser,
@@ -25,7 +23,6 @@ import {
     getConfig,
     getCurrentUser,
     getPluginById,
-    getPluginHookMappingById,
     getPluginHookMappings,
     getPlugins,
     getSettingById,
@@ -39,7 +36,6 @@ import {
     updateBlogMetadata,
     updateCategory,
     updatePlugin,
-    updatePluginHookMapping,
     updateSetting,
     updateTag,
     updateUser
@@ -52,7 +48,6 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
                 '*': getBlogs,
                 ':id': getBlogById
             },
-            // authors routes removed - using users instead
             categories: {
                 '*': getCategories,
                 ':id': getCategoryById
@@ -77,14 +72,10 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
             },
             plugins: {
                 '*': getPlugins,
-                ':id': getPluginById,
-                ':pluginId': {
-                    'hooks': getPluginHookMappings
-                }
+                ':id': getPluginById
             },
             'plugin-hooks': {
-                '*': getPluginHookMappings,
-                ':id': getPluginHookMappingById
+                '*': getPluginHookMappings
             }
         },
         dashboard: {
@@ -126,7 +117,6 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
             tags: {
                 create: createTag
             },
-            // author routes removed - using users instead
             user: {
                 ':id': {
                     update: updateUser,
@@ -154,16 +144,7 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
             },
             plugins: {
                 create: createPlugin
-            },
-            'plugin-hook': {
-                ':id': {
-                    update: updatePluginHookMapping,
-                    delete: deletePluginHookMapping
-                }
-            },
-            'plugin-hooks': {
-                create: createPluginHookMapping
-            },
+            }
         }
     }
 };

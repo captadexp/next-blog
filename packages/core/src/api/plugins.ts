@@ -154,7 +154,7 @@ export const deletePlugin = secure(
     {requirePermission: 'plugins:delete'}
 );
 
-// Reinstall a plugin - requires 'plugins:reinstall' permission
+// Reinstall a plugin - requires both 'plugins:create' and 'plugins:delete' permission
 export const reinstallPlugin = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
@@ -178,7 +178,7 @@ export const reinstallPlugin = secure(
             throw new DatabaseError("Failed to reinstall plugin: " + (error instanceof Error ? error.message : String(error)));
         }
     },
-    {requirePermission: 'plugins:reinstall'}
+    {requireAllPermissions: ['plugins:create', 'plugins:delete']}
 );
 
 // List all plugin hook mappings - requires 'plugins:list' permission
@@ -199,138 +199,4 @@ export const getPluginHookMappings = secure(
         }
     },
     {requirePermission: 'plugins:list'}
-);
-
-// Get a single plugin hook mapping by ID - requires 'plugins:read' permission
-export const getPluginHookMappingById = secure(
-    async (request: CNextRequest) => {
-        const db = await request.db();
-
-        try {
-            const mapping = await db.pluginHookMappings.findOne({_id: request._params.id});
-
-            if (!mapping) {
-                throw new NotFound(`Plugin hook mapping with id ${request._params.id} not found`);
-            }
-
-            throw new Success("Plugin hook mapping retrieved successfully", mapping);
-        } catch (error) {
-            if (error instanceof Success || error instanceof NotFound) throw error;
-
-            console.error(`Error fetching plugin hook mapping ${request._params.id}:`, error);
-            throw new DatabaseError("Failed to retrieve plugin hook mapping: " + (error instanceof Error ? error.message : String(error)));
-        }
-    },
-    {requirePermission: 'plugins:read'}
-);
-
-// Create a new plugin hook mapping - requires 'plugins:create' permission
-export const createPluginHookMapping = secure(
-    async (request: CNextRequest) => {
-        const db = await request.db();
-
-        try {
-            const body: any = await request.json();
-
-            // Validate required fields
-            if (!body.pluginId) {
-                throw new ValidationError("Plugin ID is required");
-            }
-
-            if (!body.hookName) {
-                throw new ValidationError("Hook name is required");
-            }
-
-            // Check if plugin exists
-            const plugin = await db.plugins.findOne({_id: body.pluginId});
-            if (!plugin) {
-                throw new NotFound(`Plugin with id ${body.pluginId} not found`);
-            }
-
-            const extras = {
-                createdAt: Date.now(),
-                updatedAt: Date.now(),
-                priority: body.priority || 0
-            };
-
-            const creation = await db.pluginHookMappings.create({
-                ...body,
-                ...extras
-            });
-
-            request.configuration.callbacks?.on?.("createPluginHookMapping", creation);
-            throw new Success("Plugin hook mapping created successfully", creation);
-        } catch (error) {
-            if (error instanceof Success || error instanceof ValidationError || error instanceof NotFound) throw error;
-
-            console.error("Error creating plugin hook mapping:", error);
-            throw new DatabaseError("Failed to create plugin hook mapping: " + (error instanceof Error ? error.message : String(error)));
-        }
-    },
-    {requirePermission: 'plugins:create'}
-);
-
-// Update a plugin hook mapping - requires 'plugins:update' permission
-export const updatePluginHookMapping = secure(
-    async (request: CNextRequest) => {
-        const db = await request.db();
-
-        try {
-            const body: any = await request.json();
-            const extras = {updatedAt: Date.now()};
-
-            // Check if mapping exists first
-            const existingMapping = await db.pluginHookMappings.findOne({_id: request._params.id});
-            if (!existingMapping) {
-                throw new NotFound(`Plugin hook mapping with id ${request._params.id} not found`);
-            }
-
-            // If pluginId is being changed, check if the new plugin exists
-            if (body.pluginId && body.pluginId !== existingMapping.pluginId) {
-                const plugin = await db.plugins.findOne({_id: body.pluginId});
-                if (!plugin) {
-                    throw new NotFound(`Plugin with id ${body.pluginId} not found`);
-                }
-            }
-
-            const updation = await db.pluginHookMappings.updateOne(
-                {_id: request._params.id},
-                {...body, ...extras}
-            );
-
-            request.configuration.callbacks?.on?.("updatePluginHookMapping", updation);
-            throw new Success("Plugin hook mapping updated successfully", updation);
-        } catch (error) {
-            if (error instanceof Success || error instanceof NotFound || error instanceof ValidationError) throw error;
-
-            console.error(`Error updating plugin hook mapping ${request._params.id}:`, error);
-            throw new DatabaseError("Failed to update plugin hook mapping: " + (error instanceof Error ? error.message : String(error)));
-        }
-    },
-    {requirePermission: 'plugins:update'}
-);
-
-// Delete a plugin hook mapping - requires 'plugins:delete' permission
-export const deletePluginHookMapping = secure(
-    async (request: CNextRequest) => {
-        const db = await request.db();
-
-        try {
-            // Check if mapping exists first
-            const existingMapping = await db.pluginHookMappings.findOne({_id: request._params.id});
-            if (!existingMapping) {
-                throw new NotFound(`Plugin hook mapping with id ${request._params.id} not found`);
-            }
-
-            const deletion = await db.pluginHookMappings.deleteOne({_id: request._params.id});
-            request.configuration.callbacks?.on?.("deletePluginHookMapping", deletion);
-            throw new Success("Plugin hook mapping deleted successfully", deletion);
-        } catch (error) {
-            if (error instanceof Success || error instanceof NotFound) throw error;
-
-            console.error(`Error deleting plugin hook mapping ${request._params.id}:`, error);
-            throw new DatabaseError("Failed to delete plugin hook mapping: " + (error instanceof Error ? error.message : String(error)));
-        }
-    },
-    {requirePermission: 'plugins:delete'}
 );
