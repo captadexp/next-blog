@@ -1,7 +1,8 @@
 import {h} from 'preact';
-import {useState, useEffect, useRef, useCallback} from 'preact/hooks';
+import {useCallback, useRef, useState} from 'preact/hooks';
 import {DynamicFormFieldType} from './types';
 import {memo} from "preact/compat"
+import {useEffect} from "react";
 
 interface RichTextProps {
     field: DynamicFormFieldType;
@@ -13,7 +14,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
     const [editorLoaded, setEditorLoaded] = useState(false);
     const editorInstanceRef = useRef<any>(null);
     const prevValueRef = useRef<string>(field.value);
-    const {key, value, disabled, label} = field;
+    const {key, value, disabled, label, ref} = field;
 
     // Memoize the onChange handler to prevent recreation on each render
     const handleChange = useCallback((data: string) => {
@@ -59,6 +60,8 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                     }
 
                     editorInstanceRef.current = editor;
+                    if (ref)
+                        ref.current = editor;
 
                     // Listen for changes
                     editor.model.document.on('change:data', () => {
@@ -83,6 +86,9 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                     editorInstanceRef.current.destroy().catch(console.error);
                     editorInstanceRef.current = null;
                 }
+
+                if (ref)
+                    ref.current = null;
             };
         }
     }, [editorLoaded]); // Only run when editor loads
@@ -132,7 +138,8 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
         prevProps.field.key === nextProps.field.key &&
         prevProps.field.value === nextProps.field.value &&
         prevProps.field.disabled === nextProps.field.disabled &&
-        prevProps.onChange === nextProps.onChange
+        prevProps.onChange === nextProps.onChange &&
+        prevProps.field.ref === nextProps.field.ref
     );
 });
 

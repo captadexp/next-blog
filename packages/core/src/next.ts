@@ -4,15 +4,9 @@ import {Configuration} from "./types.js";
 import {matchPathToFunction, PathObject} from "./utils/parse-path.js";
 import cmsPaths from "./cmsPaths.js";
 import {NotFoundPage} from "@supergrowthai/next-blog-dashboard"
-import {
-    Exception,
-    BadRequest,
-    NotFound,
-    Unauthorized,
-    Forbidden,
-    Success
-} from "./utils/errors.js";
+import {BadRequest, Exception, Forbidden, NotFound, Success, Unauthorized} from "./utils/errors.js";
 import {initializeDefaultSettings} from "./utils/defaultSettings.js";
+import pluginExecutor from "./plugins/plugin-executor.server.js";
 
 /**
  * Return type for the nextBlog function containing route handlers
@@ -33,6 +27,8 @@ const nextBlog = function (configuration: Configuration): NextBlogHandlers {
             const dbObj = await db();
 
             await initializeDefaultSettings(dbObj);
+
+            await pluginExecutor.initialize(dbObj);
 
             const {
                 params,
