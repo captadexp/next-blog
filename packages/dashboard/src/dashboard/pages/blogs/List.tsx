@@ -3,6 +3,7 @@ import {useLocation} from 'preact-iso';
 import {useEffect, useState} from 'preact/hooks';
 import {useUser} from '../../../context/UserContext';
 import {Blog} from '../../../types/api';
+import {generateBlogPreviewUrl} from '../../../utils/urlHelpers';
 
 interface BlogsListProps {
     path?: string;
@@ -10,7 +11,7 @@ interface BlogsListProps {
 
 const BlogsList: FunctionComponent<BlogsListProps> = () => {
     const location = useLocation();
-    const {apis, user, hasPermission} = useUser();
+    const {apis, user, hasPermission, config} = useUser();
     const [blogs, setBlogs] = useState<Blog[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -52,18 +53,30 @@ const BlogsList: FunctionComponent<BlogsListProps> = () => {
         <div>
             <div className="flex justify-between items-center mb-5">
                 <h2 className="text-xl font-semibold m-0">Blogs</h2>
-                {hasPermission('blogs:create') && (
+                <div className="flex gap-2">
                     <a
-                        href="/api/next-blog/dashboard/blogs/create"
+                        href="/api/next-blog/dashboard/settings"
                         onClick={(e) => {
                             e.preventDefault();
-                            location.route('/api/next-blog/dashboard/blogs/create');
+                            location.route('/api/next-blog/dashboard/settings');
                         }}
-                        className="inline-block bg-blue-500 hover:bg-blue-600 text-white no-underline px-4 py-2 rounded"
+                        className="inline-block text-blue-600 border border-blue-300 no-underline px-4 py-2 rounded hover:bg-blue-50"
                     >
-                        Create New Blog
+                        Blog Settings
                     </a>
-                )}
+                    {hasPermission('blogs:create') && (
+                        <a
+                            href="/api/next-blog/dashboard/blogs/create"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                location.route('/api/next-blog/dashboard/blogs/create');
+                            }}
+                            className="inline-block bg-blue-500 hover:bg-blue-600 text-white no-underline px-4 py-2 rounded"
+                        >
+                            Create New Blog
+                        </a>
+                    )}
+                </div>
             </div>
 
             {loading ? (
@@ -104,6 +117,17 @@ const BlogsList: FunctionComponent<BlogsListProps> = () => {
                                             className="text-blue-500 hover:text-blue-700 no-underline mr-3"
                                         >
                                             Edit
+                                        </a>
+                                    )}
+                                    {blog.slug && (
+                                        <a
+                                            href={generateBlogPreviewUrl(blog.slug, config?.blogBasePath)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-green-600 hover:text-green-800 no-underline mr-3"
+                                            title="Preview blog post"
+                                        >
+                                            Preview
                                         </a>
                                     )}
                                     {hasPermission('blogs:delete') && (

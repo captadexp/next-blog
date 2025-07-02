@@ -28,6 +28,7 @@ import UpdateCategory from './pages/categories/Update';
 import TagsList from './pages/tags/List';
 import CreateTag from './pages/tags/Create';
 import UpdateTag from './pages/tags/Update';
+import Settings from './pages/settings';
 
 // Import settings pages
 import SettingsList from './pages/settings/List';
@@ -79,6 +80,7 @@ function DashboardApp() {
                         <Route path="/api/next-blog/dashboard/tags" component={TagsList}/>
                         <Route path="/api/next-blog/dashboard/tags/create" component={CreateTag}/>
                         <Route path="/api/next-blog/dashboard/tags/:id" component={UpdateTag}/>
+                        <Route path="/api/next-blog/dashboard/settings" component={Settings}/>
 
                         {/* Settings routes */}
                         <Route path="/api/next-blog/dashboard/settings" component={SettingsList}/>
