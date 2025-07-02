@@ -70,7 +70,7 @@ function PluginHost({pluginId, hookFn, context}: {
                     finalProps[key] = (e: Event) => {
                         e.preventDefault();
                         //fixme maybe extract the value and pass it forward
-                        props[key](sdk, context, JSON.parse(JSON.stringify(e.target?.value || null)));
+                        props[key](sdk, context, JSON.parse(JSON.stringify((e.target as any)?.value || null)));
                     }
                 } else if (allowedProps.includes(key.toLowerCase())) {
                     finalProps[key] = props[key];
