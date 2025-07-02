@@ -79,9 +79,9 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
             }
         },
         dashboard: {
-            '*': secure(DashboardPage.toString),
+            '[...]': secure(DashboardPage.toString),
             static: {
-                '*': async (request: CNextRequest) => {
+                '[...]': async (request: CNextRequest) => {
                     return handleStaticFileRequest(request, '*');
                 }
             },

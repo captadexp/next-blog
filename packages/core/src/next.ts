@@ -1,7 +1,7 @@
 // @ts-expect-error Next.js does not yet correctly use the `package.json#exports` field
 import {NextRequest, NextResponse} from "next/server";
 import {Configuration} from "./types.js";
-import {matchPathToFunction, PathObject} from "./utils/parse-path.js";
+import {getCachedMatch, PathObject} from "./utils/parse-path.js";
 import cmsPaths from "./cmsPaths.js";
 import {NotFoundPage} from "@supergrowthai/next-blog-dashboard"
 import {BadRequest, Exception, Forbidden, NotFound, Success, Unauthorized} from "./utils/errors.js";
@@ -34,7 +34,7 @@ const nextBlog = function (configuration: Configuration): NextBlogHandlers {
                 params,
                 handler,
                 templatePath
-            } = matchPathToFunction(pathObject, finalPathname)
+            } = getCachedMatch(pathObject, finalPathname)
 
             console.log("=>", request.method, templatePath, params, "executing:", !!handler)
 
