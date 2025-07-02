@@ -1,205 +1,327 @@
 (function () {
-    // === MODULE-LEVEL STATE ===
+    'use strict';
+
+    // =================================================================
+    // === MODULE: State Management
+    // =================================================================
     // This state persists between re-renders triggered by sdk.refresh()
     const pluginState = {
-        initiated: false, // Have we run the initial setup?
-        isLoading: true, // Are we fetching initial data?
-        isTyping: false,  // Is the user currently typing (debounce is pending)?
-        latestSdk: null,      // Always store the latest SDK object here.
-        latestContext: null,  // Always store the latest context object here.
+        initiated: false,       // Has the initial setup for the current blogId completed?
+        isLoading: true,        // Are we fetching initial data?
+        isTyping: false,        // Is the user currently typing (debounce is pending)?
+        isSaving: false,        // Is a save operation in progress?
+        latestSdk: null,        // Always store the latest SDK object here.
+        latestContext: null,    // Always store the latest context object here.
 
-        focusKeyword: '',
-        analysisResults: null,
-        blogId: null,
+        blogId: null,           // The ID of the current blog being edited.
+        focusKeyword: '',       // The main keyword for SEO analysis.
+        analysisResults: [],    // An array of analysis result objects.
+        debouncedRunAnalysis: null, // Holds the debounced analysis function.
+        debouncedPersistMetadata: null, // Holds the debounced metadata persistence function.
     };
 
-    // === UTILITY FUNCTIONS ===
+    // =================================================================
+    // === MODULE: Utilities
+    // =================================================================
+    const utils = {
+        /**
+         * Safely strips HTML tags from a string to get plain text.
+         * @param {string} html The HTML string from the editor.
+         * @returns {string} The plain text content.
+         */
+        stripHtml(html) {
+            if (!html) return '';
+            // In a browser environment, DOMParser is the safest and most effective way.
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            return doc.body.textContent || '';
+        },
 
-    function getWordCount(text) {
-        if (!text) return 0;
-        // Simple regex to count words
-        return text.match(/\b(\w+)\b/g)?.length || 0;
-    }
+        /**
+         * Counts the words in a plain text string.
+         * @param {string} text The plain text to analyze.
+         * @returns {number} The total number of words.
+         */
+        getWordCount(text) {
+            if (!text) return 0;
+            // Matches sequences of word characters. More reliable than splitting by space.
+            return text.trim().match(/\b\w+\b/g)?.length || 0;
+        },
 
-    function calculateKeywordDensity(text, keyword) {
-        if (!text || !keyword) return 0;
-        const keywordCount = (text.toLowerCase().match(new RegExp(keyword.toLowerCase(), 'g')) || []).length;
-        const totalWords = getWordCount(text);
-        if (totalWords === 0) return 0;
-        return ((keywordCount / totalWords) * 100).toFixed(2);
-    }
+        /**
+         * Calculates the density of a keyword in the text.
+         * @param {string} text The plain text content.
+         * @param {string} keyword The keyword to search for.
+         * @param {number} wordCount The total word count of the text.
+         * @returns {number} The keyword density percentage, fixed to 2 decimal places.
+         */
+        calculateKeywordDensity(text, keyword, wordCount) {
+            if (!text || !keyword || wordCount === 0) return 0;
+            const keywordCount = (text.toLowerCase().match(new RegExp(`\\b${keyword.toLowerCase()}\\b`, 'g')) || []).length;
+            return ((keywordCount / wordCount) * 100);
+        },
+    };
 
-    // === CORE LOGIC & LIFECYCLE ===
+    // =================================================================
+    // === MODULE: SEO Analysis Checks
+    // =================================================================
+    // Each check is a self-contained function that returns a result object.
+    // This makes the system highly extensible.
+    const CHECKS = {
+        /**
+         * Checks if the focus keyword is present in the post title.
+         * @param {{ title: string, keyword: string }} data
+         * @returns {{label: string, status: string, advice: string}}
+         */
+        keywordInTitle: (data) => {
+            const result = {label: "Keyword in Title", status: 'bad', advice: 'Add your keyword to the post title.'};
+            if (!data.keyword) {
+                result.advice = 'Set a focus keyword to check this.';
+                return result;
+            }
+            if (data.title.toLowerCase().includes(data.keyword)) {
+                result.status = 'good';
+                result.advice = 'Great job! The keyword is in the title.';
+            }
+            return result;
+        },
 
-    /**
-     * The main analysis function. It runs all checks and updates the state.
-     */
-    async function runAnalysis(sdk, context) {
-        pluginState.isTyping = false;
-
-        console.log("Running analysis with latest context...", context);
-        const content = context.editor.getContent();
-        const title = context.editor.getTitle();
-        const keyword = pluginState.focusKeyword.trim().toLowerCase();
-
-        const wordCount = getWordCount(content);
-
-        // --- Start building the results object ---
-        const results = {
-            // Keyword Analysis
-            keywordInTitle: {label: "Keyword in Title", status: 'bad', advice: 'Add your keyword to the post title.'},
-            keywordInFirstP: {
+        /**
+         * Checks if the focus keyword is in the first paragraph.
+         * We approximate the first paragraph as the first 10% of the content.
+         * @param {{ text: string, keyword: string }} data
+         * @returns {{label: string, status: string, advice: string}}
+         */
+        keywordInFirstParagraph: (data) => {
+            const result = {
                 label: "Keyword in First Paragraph",
                 status: 'bad',
                 advice: 'Add your keyword near the beginning of your content.'
-            },
-            keywordDensity: {
-                label: "Keyword Density",
-                status: 'bad',
-                advice: `Current density is 0%. Aim for 0.5% to 2%.`
-            },
-            // Content Analysis
-            contentLength: {
+            };
+            if (!data.keyword) {
+                result.advice = 'Set a focus keyword to check this.';
+                return result;
+            }
+            const first10Percent = data.text.substring(0, Math.floor(data.text.length * 0.1)).toLowerCase();
+            if (first10Percent.includes(data.keyword)) {
+                result.status = 'good';
+                result.advice = 'Well done! The keyword appears early on.';
+            }
+            return result;
+        },
+
+        /**
+         * Checks the density of the keyword throughout the content.
+         * @param {{ text: string, keyword: string, wordCount: number }} data
+         * @returns {{label: string, status: string, advice: string}}
+         */
+        keywordDensity: (data) => {
+            const result = {label: "Keyword Density", status: 'bad', advice: 'Set a focus keyword to check this.'};
+            if (!data.keyword) return result;
+
+            const density = utils.calculateKeywordDensity(data.text, data.keyword, data.wordCount);
+            const densityStr = density.toFixed(2);
+
+            if (density > 0.5 && density < 2.5) {
+                result.status = 'good';
+                result.advice = `Density is ${densityStr}%. Perfect!`;
+            } else if (density > 0) {
+                result.status = 'ok';
+                result.advice = `Density is ${densityStr}%. Aim for a value between 0.5% and 2.5%.`;
+            } else {
+                result.advice = `Current density is 0%. Add the keyword a few times in the content.`;
+            }
+            return result;
+        },
+
+        /**
+         * Checks the total word count of the content.
+         * @param {{ wordCount: number }} data
+         * @returns {{label: string, status: string, advice: string}}
+         */
+        contentLength: (data) => {
+            const {wordCount} = data;
+            const result = {
                 label: "Content Length",
                 status: 'bad',
-                advice: `Your content is ${wordCount} words. Aim for 300+ words.`
-            },
-            readability: {label: "Readability Score", status: 'loading', advice: 'Analyzing...'},
-        };
+                advice: `Your content is ${wordCount} words. Aim for at least 300 words.`
+            };
+            if (wordCount >= 600) {
+                result.status = 'good';
+                result.advice = `Content is ${wordCount} words long. Fantastic!`;
+            } else if (wordCount >= 300) {
+                result.status = 'ok';
+                result.advice = `Content is ${wordCount} words long. This is a good length.`;
+            }
+            return result;
+        },
+
+        /**
+         * Asynchronously checks the readability score via an API.
+         * @param {{ text: string }} data
+         * @param {object} sdk The SDK object to make API calls.
+         * @returns {Promise<{label: string, status: string, advice: string}>}
+         */
+        readability: async (data, sdk) => {
+            const result = {label: "Readability Score", status: 'loading', advice: 'Analyzing...'};
+            if (!data.text) {
+                return {...result, status: 'bad', advice: 'Not enough content to analyze readability.'};
+            }
+            try {
+                // This API call is a placeholder for your actual API
+                // const response = await sdk.apis.getFleschScore({ text: data.text });
+                // const score = response.score;
+                // if (score >= 60) {
+                //     result.status = 'good';
+                //     result.advice = `Score is ${score}. Easy to read!`;
+                // } else if (score >= 30) {
+                //     result.status = 'ok';
+                //     result.advice = `Score is ${score}. A bit difficult to read.`;
+                // } else {
+                //     result.status = 'bad';
+                //     result.advice = `Score is ${score}. Very difficult to read.`;
+                // }
+
+                // Mocking the result as the API might not exist.
+                await new Promise(resolve => setTimeout(resolve, 1000)); // simulate network delay
+                result.status = 'ok';
+                result.advice = 'Readability check is currently unavailable.';
+            } catch (err) {
+                console.error("Readability check failed:", err);
+                result.status = 'bad';
+                result.advice = 'Could not fetch readability score.';
+            }
+            return result;
+        },
+
+        keywordLength: (data) => {
+            const result = {
+                label: "Focus Keyword Length",
+                status: 'bad', // Default to bad
+                advice: 'Your focus keyword is too short. Aim for at least 3 characters.'
+            };
+
+            if (!data.keyword) {
+                result.advice = 'Set a focus keyword to check its quality.';
+                return result;
+            }
+
+            // We consider keywords of 3 or more characters to be good.
+            if (data.keyword.length >= 3) {
+                result.status = 'good';
+                result.advice = 'The keyword has a suitable length.';
+            }
+            // Optional: You could add an 'ok' status for 2-character keywords if you want.
+            // else if (data.keyword.length === 2) {
+            //     result.status = 'ok';
+            //     result.advice = 'The keyword is very short. Longer, more specific keywords often perform better.';
+            // }
+
+            return result;
+        },
+    };
+
+
+    // =================================================================
+    // === MODULE: Core Logic & Lifecycle
+    // =================================================================
+
+    /**
+     * The main analysis runner. It orchestrates all checks.
+     */
+    async function runAnalysis() {
+        pluginState.isTyping = false;
+        const {latestSdk: sdk, latestContext: context, focusKeyword} = pluginState;
+
+        if (!sdk || !context) return;
+
+        console.log("Running analysis...");
+        const htmlContent = context.editor.getContent();
+        const textContent = utils.stripHtml(htmlContent);
+        const title = context.editor.getTitle();
+        const wordCount = utils.getWordCount(textContent);
+        const keyword = focusKeyword.trim().toLowerCase();
+
+        const analysisData = {text: textContent, title, keyword, wordCount, html: htmlContent};
 
         // --- Run Synchronous Checks ---
-        if (keyword) {
-            // Keyword in Title
-            if (title.toLowerCase().includes(keyword)) {
-                results.keywordInTitle = {status: 'good', label: "Keyword in Title", advice: "Great job!"};
-            }
-            // Keyword in First Paragraph (first 10% of content)
-            const firstParagraph = content.split("\n\n")[0].toLowerCase();
-            if (firstParagraph.includes(keyword)) {
-                results.keywordInFirstP = {status: 'good', label: "Keyword in First Paragraph", advice: "Well done!"};
-            }
-            // Keyword Density
-            const density = calculateKeywordDensity(content, keyword);
-            if (density > 0.5 && density < 2.5) {
-                results.keywordDensity = {
-                    status: 'good',
-                    label: "Keyword Density",
-                    advice: `Density is ${density}%. Perfect!`
-                };
-            } else if (density > 0) {
-                results.keywordDensity = {
-                    status: 'ok',
-                    label: "Keyword Density",
-                    advice: `Density is ${density}%. It's a bit low or high.`
-                };
-            } else {
-                results.keywordDensity.advice = `Current density is 0%. Add the keyword a few times.`
-            }
-        } else {
-            results.keywordInTitle.advice = 'Set a focus keyword to check this.';
-            results.keywordInFirstP.advice = 'Set a focus keyword to check this.';
-            results.keywordDensity.advice = 'Set a focus keyword to check this.';
-        }
+        const syncResults = [
+            CHECKS.keywordLength(analysisData),
+            CHECKS.contentLength(analysisData),
+            CHECKS.keywordInTitle(analysisData),
+            CHECKS.keywordInFirstParagraph(analysisData),
+            CHECKS.keywordDensity(analysisData),
+        ];
 
-        // Content Length
-        if (wordCount >= 600) {
-            results.contentLength = {
-                status: 'good',
-                label: "Content Length",
-                advice: `Content is ${wordCount} words long. Fantastic!`
-            };
-        } else if (wordCount >= 300) {
-            results.contentLength = {
-                status: 'ok',
-                label: "Content Length",
-                advice: `Content is ${wordCount} words long. Good.`
-            };
-        }
+        // --- Prepare for Asynchronous Checks ---
+        const asyncChecks = [
+            CHECKS.readability(analysisData, sdk),
+        ];
 
-        pluginState.analysisResults = results;
-        sdk.refresh(); // Refresh immediately with sync results.
+        // Update UI immediately with sync results and loading state for async ones
+        pluginState.analysisResults = [...syncResults, ...asyncChecks.map(() => ({
+            label: "Readability Score", status: 'loading', advice: 'Analyzing...'
+        }))];
+        sdk.refresh();
 
-        // --- Run Asynchronous Checks (API calls) ---
-        try {
-            const response = await sdk.apis.getFleschScore({text: content});
-            if (response.score >= 60) {
-                results.readability = {
-                    status: 'good',
-                    label: 'Readability Score',
-                    advice: `Score is ${response.score}. Easy to read!`
-                };
-            } else if (response.score >= 30) {
-                results.readability = {
-                    status: 'ok',
-                    label: 'Readability Score',
-                    advice: `Score is ${response.score}. A bit difficult to read.`
-                };
-            } else {
-                results.readability = {
-                    status: 'bad',
-                    label: 'Readability Score',
-                    advice: `Score is ${response.score}. Very difficult to read.`
-                };
-            }
-        } catch (err) {
-            results.readability = {
-                status: 'bad',
-                label: 'Readability Score',
-                advice: `Error fetching score: ${err.message}`
-            };
-        }
-        results.readability = {status: 'ok', label: 'Readability Score', advice: 'Feature Unavailable'};
+        // --- Await Asynchronous Checks ---
+        const asyncResults = await Promise.all(asyncChecks);
 
-        pluginState.analysisResults = results;
-        sdk.refresh(); // Refresh again with the final async result.
+        // --- Combine and Finalize ---
+        pluginState.analysisResults = [...syncResults, ...asyncResults];
+        sdk.refresh();
     }
 
     /**
-     * Fetches the saved focus keyword and sets up the event listener.
+     * Fetches metadata and sets up editor event listeners.
      */
     async function initializePlugin(sdk, context) {
-        const editor = context?.editor?.editorRef?.current;
-        if (!editor) return;
-
+        // Reset if the blog context has changed
         if (pluginState.blogId !== context.blogId) {
             pluginState.blogId = context.blogId;
             pluginState.initiated = false;
             pluginState.isLoading = true;
+            pluginState.analysisResults = [];
         }
 
-        if (pluginState.initiated || !pluginState.isLoading) {
-            return;
-        }
+        // Prevent re-initialization
+        if (pluginState.initiated) return;
 
         try {
-            console.log("Setting up listeners for the editor for the first time.");
-            const blog = await sdk.apis.getBlog(context.blogId).then(a => a.payload);
-            blog.metadata = blog.metadata || {};
-            blog.metadata.seoAnalyzer = blog.metadata.seoAnalyzer || {};
+            console.log("Initializing SEO Analyzer for blog:", context.blogId);
 
-            if (blog.metadata.seoAnalyzer) {
-                pluginState.focusKeyword = blog.metadata.seoAnalyzer.focusKeyword || '';
+            // Fetch initial metadata
+            const blog = await sdk.apis.getBlog(context.blogId).then(a => a.payload);
+            const seoMetadata = blog.metadata?.seoAnalyzer || {};
+            pluginState.focusKeyword = seoMetadata.focusKeyword || '';
+
+            // Set up debounces
+            pluginState.debouncedRunAnalysis = sdk.utils.debounce(runAnalysis, 1500);
+
+            pluginState.debouncedPersistMetadata = sdk.utils.debounce(persistMetadata, 1500);
+
+            // Add the event listener to the editor
+            const editor = context?.editor?.editorRef?.current;
+            if (editor) {
+                editor.model.document.on('change:data', () => {
+                    pluginState.isTyping = true;
+                    sdk.refresh(); // Show typing indicator immediately
+                    pluginState.debouncedRunAnalysis();
+                });
+            } else {
+                throw new Error("Editor reference not found.");
             }
 
-            // Run initial analysis
-            await runAnalysis(sdk, context).catch(console.error);
-
-            editor.model.document.on('change:data', () => {
-                // Set typing state to true and refresh UI to show the loader immediately.
-                pluginState.isTyping = true;
-                pluginState.latestSdk.refresh();
-
-                // Trigger the debounced analysis.
-                pluginState.debouncedRunAnalysis();
-            });
             pluginState.isLoading = false;
             pluginState.initiated = true;
-            sdk.refresh();
+
+            // Run the first analysis
+            await runAnalysis();
+
         } catch (err) {
             console.error("Failed to initialize SEO Analyzer:", err);
-            pluginState.analysisResults = {error: {label: "Initialization Failed", status: 'bad', advice: err.message}};
+            pluginState.analysisResults = [{label: "Initialization Failed", status: 'bad', advice: err.message}];
             pluginState.isLoading = false;
-            pluginState.initiated = true;
+            pluginState.initiated = true; // Mark as initiated to prevent retries
             sdk.refresh();
         }
     }
@@ -211,21 +333,63 @@
         pluginState.focusKeyword = newKeyword;
         sdk.refresh(); // Update the UI immediately to show the new keyword in the input
 
-        // Save the keyword to the backend
-        await sdk.apis.updateBlogMetadata({
-            blogId: context.blogId,
-            data: {seoAnalyzer: {focusKeyword: newKeyword}}
-        });
-
-        // Re-run the analysis immediately, not debounced.
-        await runAnalysis(sdk, context);
+        // Persist the change and re-run analysis
+        pluginState.debouncedRunAnalysis();
+        pluginState.debouncedPersistMetadata(sdk, context);
     }
 
-    // === UI RENDERING ===
+    /**
+     * A configurable function to determine if metadata should be saved.
+     * You can add custom logic here, for example, to prevent saving if the keyword is empty.
+     * @param {object} seoAnalyzerMetadata The data that is about to be saved.
+     * @returns {boolean} Return true to proceed with saving, false to cancel.
+     */
+    async function shouldSave(seoAnalyzerMetadata) {
+        if (seoAnalyzerMetadata.focusKeyword && seoAnalyzerMetadata.focusKeyword.trim() === '') {
+            // return false;
+        }
+
+        // Default behavior: always save.
+        return true;
+    }
 
     /**
-     * A helper component to render a single analysis checklist item.
+     * Persists the plugin's metadata to the backend.
+     * This function calls the user-configurable `shouldSave` method before proceeding.
      */
+    async function persistMetadata(sdk, context) {
+        if (pluginState.isSaving) return;
+
+        pluginState.isSaving = true;
+        sdk.refresh(); // Optional: show a saving indicator
+
+        const seoAnalyzerMetadata = {
+            focusKeyword: pluginState.focusKeyword,
+            // You can add more metadata here in the future
+            // lastAnalyzed: new Date().toISOString(),
+        };
+
+        // Call the configurable check
+        if (shouldSave(seoAnalyzerMetadata)) {
+            try {
+                console.log("Saving metadata:", seoAnalyzerMetadata);
+                await sdk.apis.updateBlogMetadata(context.blogId, {seoAnalyzer: seoAnalyzerMetadata});
+            } catch (err) {
+                console.error("Failed to save metadata:", err);
+                // Optionally show an error to the user in the UI
+            }
+        } else {
+            console.log("`shouldSave` returned false. Skipping persistence.");
+        }
+
+        pluginState.isSaving = false;
+        sdk.refresh();
+    }
+
+    // =================================================================
+    // === MODULE: UI Components
+    // =================================================================
+
     function renderChecklistItem(item) {
         const colorMap = {
             good: 'bg-green-500',
@@ -234,9 +398,9 @@
             loading: 'bg-blue-500 animate-pulse',
         };
         return [
-            'div', {class: 'flex items-start my-2 p-2 border-b border-gray-100'},
+            'div', {class: 'flex items-start my-2 p-2 border-b border-gray-100 last:border-b-0'},
             ['div', {class: `w-3 h-3 rounded-full mr-3 mt-1 flex-shrink-0 ${colorMap[item.status]}`}],
-            ['div', {},
+            ['div', {class: 'flex-1'},
                 ['p', {class: 'font-semibold text-sm'}, item.label],
                 ['p', {class: 'text-xs text-gray-600'}, item.advice]
             ]
@@ -245,40 +409,33 @@
 
     function renderTypingIndicator() {
         return ['div', {class: 'flex items-center text-xs text-gray-500 p-2 italic'},
-            // Simple spinner using borders
-            ['div', {
-                class: 'w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mr-2'
-            }],
+            ['div', {class: 'w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mr-2'}],
             'Analyzing as you type...'
         ];
     }
 
-    /**
-     * The main function for the 'editor-sidebar-widget' hook.
-     */
-    function editorSidebarWidget(sdk, prev, context) {
+    function renderLoadingState() {
+        return ['div', {class: 'p-4 text-center text-gray-500'}, 'Loading SEO Analyzer...'];
+    }
 
+    // =================================================================
+    // === MODULE: Main Plugin Hook
+    // =================================================================
+
+    function editorSidebarWidget(sdk, prev, context) {
+        // Always keep the latest SDK and context available to other functions
         pluginState.latestSdk = sdk;
         pluginState.latestContext = context;
 
-        if (!pluginState.debouncedRunAnalysis) {
-            pluginState.debouncedRunAnalysis = sdk.utils.debounce(() => {
-                // Ensure we have the latest context before running.
-                if (pluginState.latestSdk && pluginState.latestContext) {
-                    runAnalysis(pluginState.latestSdk, pluginState.latestContext);
-                }
-            }, 2000);
-        }
-
-        // Always attempt to initialize, it will handle its own state and timing
+        // Initialize the plugin if it hasn't been, or if the blog context has changed
         initializePlugin(sdk, context);
 
-        if (pluginState.isLoading || !pluginState.initiated) {
-            return ['div', {class: 'p-4'}, 'Loading analysis...'];
+        if (pluginState.isLoading) {
+            return renderLoadingState();
         }
 
         return [
-            'div', {class: 'p-4 border border-gray-200 rounded-lg shadow-sm'},
+            'div', {class: 'p-4 border border-gray-200 rounded-lg shadow-sm bg-white'},
             // --- Focus Keyword Input ---
             ['div', {class: 'mb-4'},
                 ['label', {for: 'focus-keyword', class: 'block font-bold text-md mb-1'}, 'Focus Keyword'],
@@ -287,33 +444,37 @@
                     type: 'text',
                     value: pluginState.focusKeyword,
                     placeholder: 'Enter your main keyword',
-                    class: 'w-full p-2 border rounded',
-                    onInput: (sdk, context, value) => {
-                        return handleKeywordChange(value, sdk, context);
-                    },
+                    class: 'w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition',
+                    // Use onInput for real-time updates
+                    onInput: (sdk, context, value) => handleKeywordChange(value, sdk, context),
                 }],
             ],
 
             // --- Analysis Results ---
             ['div', {},
                 ['h3', {class: 'font-bold text-md mb-2 border-t pt-4'}, 'Analysis'],
-                ...(pluginState.analysisResults
-                        ? Object.values(pluginState.analysisResults).map(renderChecklistItem)
-                        : [['p', {}, 'No analysis results yet.']]
+                ...(pluginState.analysisResults.length > 0
+                        ? pluginState.analysisResults.map(renderChecklistItem)
+                        : [['p', {class: 'text-sm text-gray-500'}, 'Start typing or set a keyword to see analysis.']]
                 ),
+                // Show typing indicator when a debounced analysis is pending
                 ...(pluginState.isTyping ? [renderTypingIndicator()] : []),
             ]
         ];
     }
 
-    // === PLUGIN DEFINITION ===
-    return ({
+    // =================================================================
+    // === PLUGIN DEFINITION
+    // =================================================================
+    const plugin = {
         name: "Content SEO Analyzer",
-        version: "1.0.0",
-        description: "A Yoast-style plugin to analyze content SEO and readability in real-time.",
+        version: "2.0.0",
+        description: "A robust, modular plugin to analyze content SEO and readability in real-time.",
+
         hooks: {
             'editor-sidebar-widget': editorSidebarWidget,
-        },
+        }
+    };
 
-    });
+    return plugin;
 })();

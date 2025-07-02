@@ -127,15 +127,16 @@ export const updateBlog = secure(
 export const updateBlogMetadata = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
+        const blogId = request._params.id;
+
+        if (!blogId) {
+            throw new ValidationError("Blog ID is required");
+        }
 
         try {
             const body: any = await request.json();
-            const blogId = body.blogId;
-            const metadata = body.data;
+            const metadata = body.metadata;
 
-            if (!blogId) {
-                throw new ValidationError("Blog ID is required");
-            }
             if (!metadata) {
                 throw new ValidationError("Metadata is required");
             }
