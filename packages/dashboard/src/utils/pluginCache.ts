@@ -10,6 +10,7 @@ interface PluginCacheEntry {
     timestamp: number;
 }
 
+//todo add expiry in some way to not bloat db with removed plugins
 class PluginCache {
     private readonly dbPromise: Promise<IDBPDatabase<PluginCacheEntry>>;
 

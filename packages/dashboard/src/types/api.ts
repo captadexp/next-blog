@@ -45,7 +45,6 @@ export interface Blog {
     status?: 'draft' | 'pending' | 'private' | 'published' | 'trash';
     featuredImage?: string;
     excerpt?: string;
-    password?: string;
     parent?: string;
 }
 
