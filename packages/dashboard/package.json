@@ -33,21 +33,21 @@
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "ISC",
   "dependencies": {
-    "preact": "^10.26.4",
+    "preact": "^10.26.9",
     "preact-render-to-string": "^6.5.13",
-    "preact-iso": "^2.9.1"
+    "preact-iso": "^2.9.2"
   },
   "peerDependencies": {},
   "devDependencies": {
-    "@tailwindcss/vite": "^4.1.10",
-    "@types/react": "^19.0.12",
-    "@types/react-dom": "^19.0.4",
-    "tailwindcss": "^4.1.10",
-    "typescript": "^5.8.2",
-    "vite": "^6.3.5",
+    "@tailwindcss/vite": "^4.1.11",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.1",
     "daisyui": "^5.0.43",
     "vite-plugin-css-injected-by-js": "^3.5.2",
-    "vite-plugin-dts": "^4.5.3",
+    "vite-plugin-dts": "^4.5.4",
     "idb": "^8.0.3",
     "react-hot-toast": "^2.5.2",
     "@tailwindcss/typography": "^0.5.16"

@@ -40,5 +40,8 @@
   },
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "MIT",
-  "packageManager": "bun@1.2.8"
+  "packageManager": "bun@1.2.18",
+  "trustedDependencies": [
+    "@tailwindcss/oxide"
+  ]
 }
