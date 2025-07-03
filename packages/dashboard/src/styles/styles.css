@@ -1,9 +1,11 @@
 @import "tailwindcss";
 
 @tailwind utilities;
-/*todo add the needed theme, vanilla daisyui is breaking the dashboard colors at the moment*/
-/*@plugin "daisyui";*/
+@plugin "@tailwindcss/typography";
 
+@plugin "daisyui" {
+    themes: false;
+}
 
 @keyframes spin {
     0% {
