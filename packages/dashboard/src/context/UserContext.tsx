@@ -1,8 +1,8 @@
-import {h, createContext} from 'preact';
+import {createContext, h} from 'preact';
 import {useContext, useEffect, useState} from 'preact/hooks';
-import {User, UIConfig, Permission, EntityType, PermissionType} from '../types/api';
+import {EntityType, Permission, PermissionType, UIConfig, User} from '../types/api';
 import ApiClient from '../api/client';
-import {useCallback, useMemo} from "react";
+import {useMemo} from "react";
 
 interface UserContextType {
     user: User | null;
@@ -14,6 +14,7 @@ interface UserContextType {
     refreshUser: () => Promise<void>;
     hasPermission: (permission: Permission) => boolean;
     hasAnyPermission: (permissions: Permission[]) => boolean;
+    hasAllPermissions: (permissions: Permission[]) => boolean;
     apis: ApiClient; // API client instance
 }
 
@@ -31,6 +32,7 @@ const UserContext = createContext<UserContextType>({
     },
     hasPermission: () => false,
     hasAnyPermission: () => false,
+    hasAllPermissions: () => false,
     apis: defaultApiClient, // Provide the default API client
 });
 
@@ -148,6 +150,10 @@ export const UserProvider = ({children}: { children: any }) => {
         return permissions.some(permission => hasPermission(permission));
     };
 
+    const hasAllPermissions = (permissions: Permission[]): boolean => {
+        return permissions.every(permission => hasPermission(permission));
+    };
+
     return (
         <UserContext.Provider
             value={{
@@ -160,6 +166,7 @@ export const UserProvider = ({children}: { children: any }) => {
                 refreshUser,
                 hasPermission,
                 hasAnyPermission,
+                hasAllPermissions,
                 apis: apiClient // Provide the API client instance
             }}
         >

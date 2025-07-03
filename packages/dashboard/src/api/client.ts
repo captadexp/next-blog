@@ -1,19 +1,26 @@
 import {
-    StandardResponse,
     Blog,
     Category,
+    CreateBlogInput,
+    CreateCategoryInput,
+    CreatePluginInput,
+    CreateSettingsInput,
+    CreateTagInput,
+    CreateUserInput,
+    Permission,
+    Plugin,
+    PluginHookMapping,
+    Settings,
+    StandardResponse,
     Tag,
     UIConfig,
-    User,
-    CreateBlogInput,
     UpdateBlogInput,
-    CreateUserInput,
-    UpdateUserInput,
-    CreateCategoryInput,
     UpdateCategoryInput,
-    CreateTagInput,
+    UpdatePluginInput,
+    UpdateSettingsInput,
     UpdateTagInput,
-    Permission
+    UpdateUserInput,
+    User
 } from '../types/api';
 
 class ApiClient {
@@ -110,6 +117,10 @@ class ApiClient {
         return this.request<Blog>(`/blog/${id}/update`, 'POST', data);
     }
 
+    async updateBlogMetadata(id: string, metadata: any): Promise<StandardResponse<Blog>> {
+        return this.request<Blog>(`/blog/${id}/update-metadata`, 'POST', {metadata});
+    }
+
     async deleteBlog(id: string): Promise<StandardResponse<null>> {
         return this.request<null>(`/blog/${id}/delete`, 'POST');
     }
@@ -180,6 +191,57 @@ class ApiClient {
 
     async deleteTag(id: string): Promise<StandardResponse<null>> {
         return this.request<null>(`/tag/${id}/delete`, 'POST');
+    }
+
+    // Settings APIs
+    async getSettings(): Promise<StandardResponse<Settings[]>> {
+        return this.request<Settings[]>('/settings');
+    }
+
+    async getSetting(id: string): Promise<StandardResponse<Settings>> {
+        return this.request<Settings>(`/settings/${id}`);
+    }
+
+    async createSetting(data: CreateSettingsInput): Promise<StandardResponse<Settings>> {
+        return this.request<Settings>('/settings/create', 'POST', data);
+    }
+
+    async updateSetting(id: string, data: UpdateSettingsInput): Promise<StandardResponse<Settings>> {
+        return this.request<Settings>(`/setting/${id}/update`, 'POST', data);
+    }
+
+    async deleteSetting(id: string): Promise<StandardResponse<null>> {
+        return this.request<null>(`/setting/${id}/delete`, 'POST');
+    }
+
+    // Plugin APIs
+    async getPlugins(): Promise<StandardResponse<Plugin[]>> {
+        return this.request<Plugin[]>('/plugins');
+    }
+
+    async getPlugin(id: string): Promise<StandardResponse<Plugin>> {
+        return this.request<Plugin>(`/plugins/${id}`);
+    }
+
+    async createPlugin(data: CreatePluginInput): Promise<StandardResponse<Plugin>> {
+        return this.request<Plugin>('/plugins/create', 'POST', data);
+    }
+
+    async updatePlugin(id: string, data: UpdatePluginInput): Promise<StandardResponse<Plugin>> {
+        return this.request<Plugin>(`/plugin/${id}/update`, 'POST', data);
+    }
+
+    async deletePlugin(id: string): Promise<StandardResponse<null>> {
+        return this.request<null>(`/plugin/${id}/delete`, 'POST');
+    }
+
+    async reinstallPlugin(id: string): Promise<StandardResponse<{ clearCache: boolean }>> {
+        return this.request<{ clearCache: boolean }>(`/plugin/${id}/reinstall`, 'POST');
+    }
+
+    // Plugin Hook Mapping APIs
+    async getPluginHookMappings(): Promise<StandardResponse<PluginHookMapping[]>> {
+        return this.request<PluginHookMapping[]>('/plugin-hooks');
     }
 }
 

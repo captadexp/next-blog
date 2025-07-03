@@ -1,4 +1,4 @@
-import {h, FunctionComponent} from 'preact';
+import {FunctionComponent, h} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
 import {useLocation} from "preact-iso";
 import {useUser} from '../../context/UserContext';
@@ -90,7 +90,7 @@ const Home: FunctionComponent<HomeProps> = () => {
                     </div>
                 </div>
                 <div className="w-full md:w-60 lg:w-72">
-                    <DraftBox />
+                    <DraftBox/>
                 </div>
 
             </div>
@@ -135,7 +135,7 @@ const DraftBox: FunctionComponent = () => {
     const [content, setContent] = useState('');
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
-    const { apis, hasPermission } = useUser();
+    const {apis, hasPermission} = useUser();
     const location = useLocation();
 
     // Handle draft submission
@@ -143,7 +143,7 @@ const DraftBox: FunctionComponent = () => {
         e.preventDefault();
 
         if (!title.trim()) {
-            setMessage({ text: 'Title is required', type: 'error' });
+            setMessage({text: 'Title is required', type: 'error'});
             return;
         }
 
@@ -155,7 +155,7 @@ const DraftBox: FunctionComponent = () => {
 
             // Fetch default category
             const categoriesResponse = await apis.getCategories();
-            let categoryId = '';
+            let categoryId = 'all';
 
             if (categoriesResponse.code === 0 && categoriesResponse.payload && categoriesResponse.payload.length > 0) {
                 categoryId = categoriesResponse.payload[0]._id;
@@ -167,11 +167,12 @@ const DraftBox: FunctionComponent = () => {
                 slug,
                 content,
                 status: 'draft',
-                tags: []
+                tags: [],
+                category: categoryId
             });
 
             if (response.code === 0 && response.payload) {
-                setMessage({ text: 'Draft saved successfully!', type: 'success' });
+                setMessage({text: 'Draft saved successfully!', type: 'success'});
                 setTitle('');
                 setContent('');
 
@@ -197,7 +198,7 @@ const DraftBox: FunctionComponent = () => {
     }
 
     return (
-        <div className="border rounded-lg p-4 shadow-sm bg-gray-50">
+        <div className="border border-gray-100 rounded-lg p-4 shadow-sm bg-gray-50">
             <h2 className="text-base font-semibold mb-3">Quick Draft</h2>
             {message && (
                 <div className={`p-2 mb-3 text-xs rounded ${

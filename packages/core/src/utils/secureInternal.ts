@@ -2,11 +2,12 @@ import {headers} from "next/headers.js";
 import {type NextRequest, NextResponse} from "next/server.js";
 import {Configuration, DatabaseAdapter, Permission, User, UserData} from "../types.js";
 import crypto from "./crypto.js";
-import {hasPermission, hasAnyPermission} from "./permissions.js";
+import {hasAllPermissions, hasAnyPermission, hasPermission} from "./permissions.js";
 
 type SecureOptions = {
     requirePermission?: Permission;
     requireAnyPermission?: Permission[];
+    requireAllPermissions?: Permission[];
 };
 
 export type CNextRequest = NextRequest & {
@@ -124,6 +125,12 @@ export default function secure<T>(
                 return notAllowed(
                     `Insufficient permissions. Required any of: ${options.requireAnyPermission.join(', ')}`
                 );
+            }
+        }
+
+        if (options?.requireAllPermissions && options.requireAllPermissions.length > 0) {
+            if (!hasAllPermissions(user, options.requireAllPermissions)) {
+                return notAllowed(`Insufficient permissions. Required all of: ${options.requireAllPermissions.join(', ')}`);
             }
         }
 
