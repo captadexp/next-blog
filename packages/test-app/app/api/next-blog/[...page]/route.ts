@@ -4,7 +4,7 @@ import fs from "fs";
 import {FileDBAdapter} from "@supergrowthai/next-blog/adapters";
 
 // Create a data directory for our file-based database
-const dataPath = path.join(process.cwd(), "blog-data");
+const dataPath = process.env.NEXT_BLOG_DATA_PATH || path.join(process.cwd(), "blog-data");
 
 // Ensure the data directory exists
 if (!fs.existsSync(dataPath)) {
