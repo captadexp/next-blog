@@ -61,6 +61,8 @@ export async function handleStaticFileRequest(request: CNextRequest, filePath: s
         // Full path to the static file
         const fullPath = path.join(pkgPath, 'static', sanitizedPath);
 
+        console.log("==>", fullPath)
+
         // Check if the file exists
         if (!fs.existsSync(fullPath)) {
             return new Response(`File not found: ${sanitizedPath}`, {
