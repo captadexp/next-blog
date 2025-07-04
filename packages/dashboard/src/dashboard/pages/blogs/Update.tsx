@@ -160,28 +160,35 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
         }
     };
 
-    // Define form fields based on blog data
+    // Define form fields based on the current form data
     const getFormFields = (): DynamicFormFieldType[] => {
-        if (!blog) return [];
+        if (!formData) return [];
 
         return [
-            {key: 'id', label: 'ID', type: 'text', value: blog._id, disabled: true},
-            {key: 'title', label: 'Title', type: 'text', value: blog.title, required: true},
-            {key: 'slug', label: 'Slug', type: 'text', value: blog.slug, required: true},
-            {key: 'excerpt', label: 'Excerpt', type: 'textarea', value: blog.excerpt},
-            {key: 'content', label: 'Content', type: 'richtext', value: blog.content, required: true, ref: editorRef},
+            {key: 'id', label: 'ID', type: 'text', value: formData._id, disabled: true},
+            {key: 'title', label: 'Title', type: 'text', value: formData.title, required: true},
+            {key: 'slug', label: 'Slug', type: 'text', value: formData.slug, required: true},
+            {key: 'excerpt', label: 'Excerpt', type: 'textarea', value: formData.excerpt},
+            {
+                key: 'content',
+                label: 'Content',
+                type: 'richtext',
+                value: formData.content,
+                required: true,
+                ref: editorRef
+            },
             {
                 key: 'status',
                 label: 'Status',
                 type: 'select',
                 options: [{label: "draft", value: "draft"}, {label: "published", value: "published"}],
-                value: blog.status || 'draft'
+                value: formData.status || 'draft'
             },
             {
                 key: 'category',
                 label: 'Category',
                 type: 'select',
-                value: blog.category,
+                value: formData.category,
                 options: categories.map(cat => ({value: cat._id, label: cat.name})),
                 required: true,
                 onSearch: searchCategories,
@@ -191,7 +198,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                 key: 'tags',
                 label: 'Tags',
                 type: 'multiselect',
-                value: blog.tags,
+                value: formData.tags,
                 options: tags.map(tag => ({value: tag._id, label: tag.name})),
                 onSearch: searchTags,
                 onAdd: addNewTag
@@ -200,8 +207,8 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
     };
 
     const handleFieldChange = (key: string, value: any, formData: any) => {
-        setFormData(oFD => ({...oFD, [key]: value}));
-        return formData;
+        setFormData(currentFormData => ({...currentFormData, [key]: value}));
+        return null;
     };
 
     return (

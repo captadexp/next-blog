@@ -58,8 +58,6 @@ export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) 
     const brandName = config?.branding?.name || '...';
     const brandDescription = config?.branding?.description || '... Dashboard';
 
-    console.log("brandName", brandName)
-
     // Get theme colors from config or use defaults
     const primaryColor = config?.theme?.primaryColor || '#3498db';
     const isDarkMode = config?.theme?.darkMode || false;
