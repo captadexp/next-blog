@@ -10,6 +10,8 @@ const logger = new Logger('PluginSystem', LogLevel.INFO);
 
 interface PluginContextType {
     status: 'idle' | 'initializing' | 'ready' | 'error';
+    plugins: Plugin[];
+    loadedPlugins: Map<string, PluginModule>;
     getHookFunctions: (hookName: string) => { pluginId: string, hookFn: UIHookFn }[];
     callHook: <T, R>(hookName: string, payload: T) => Promise<R>;
 }
@@ -19,6 +21,7 @@ export interface PluginModule {
     name: string;
     version: string;
     description?: string;
+    hasPanel?: boolean;
 
     // Hooks implementation
     hooks?: {
@@ -32,6 +35,7 @@ export const PluginProvider: FunctionComponent = ({children}) => {
     const [status, setStatus] = useState<'idle' | 'initializing' | 'ready' | 'error'>('idle');
     const {user, apis} = useUser();
 
+    const [plugins, setPlugins] = useState<Plugin[]>([]);
     const [loadedPlugins, setLoadedPlugins] = useState<Map<string, PluginModule>>(new Map());
     const [hookMappings, setHookMappings] = useState<Map<string, PluginHookMapping[]>>(new Map());
 
@@ -84,6 +88,7 @@ export const PluginProvider: FunctionComponent = ({children}) => {
                 if (pluginsRes.code !== 0 || mappingsRes.code !== 0) throw new Error('Failed to fetch plugin metadata.');
 
                 const pluginsToLoad = pluginsRes.payload || [];
+                setPlugins(pluginsToLoad);
                 const hookMappingsToLoad = mappingsRes.payload || [];
                 logger.debug(`Found ${pluginsToLoad.length} plugins and ${hookMappingsToLoad.length} hook mappings.`);
 
@@ -154,9 +159,11 @@ export const PluginProvider: FunctionComponent = ({children}) => {
 
     const value = useMemo(() => ({
         status,
+        plugins,
+        loadedPlugins,
         getHookFunctions,
         callHook,
-    }), [status, getHookFunctions, callHook]);
+    }), [status, plugins, getHookFunctions, callHook]);
 
     return <PluginContext.Provider value={value}>{children}</PluginContext.Provider>;
 };

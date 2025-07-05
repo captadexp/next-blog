@@ -1,4 +1,3 @@
-// @ts-expect-error Next.js does not yet correctly use the `package.json#exports` field
 import {NextRequest, NextResponse} from "next/server";
 import {Configuration} from "./types.js";
 import {getCachedMatch, PathObject} from "./utils/parse-path.js";
@@ -15,6 +14,7 @@ export interface NextBlogHandlers {
     GET: (request: NextRequest) => Promise<NextResponse | Response>;
     POST: (request: NextRequest) => Promise<NextResponse | Response>;
 }
+
 
 /**
  * Main CMS function that creates the API route handlers
