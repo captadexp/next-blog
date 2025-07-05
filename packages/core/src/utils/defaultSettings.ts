@@ -21,7 +21,6 @@ export const DEFAULT_SETTINGS: SettingsEntryData[] = [
 export async function initializeDefaultSettings(db: DatabaseAdapter): Promise<void> {
     //todo we could leverage some caching strategy here to avoid doing this round trip everytime
     try {
-        console.log("Initializing default settings...");
 
         const existingSettings = await db.settings.find({});
 
@@ -39,8 +38,6 @@ export async function initializeDefaultSettings(db: DatabaseAdapter): Promise<vo
                 await db.settings.create({...setting, updatedAt: Date.now(), createdAt: Date.now()});
                 console.log(`Created default setting: ${setting.key}`);
             }
-        } else {
-            console.log("All default settings already exist.");
         }
     } catch (error) {
         console.error("Error initializing default settings:", error);

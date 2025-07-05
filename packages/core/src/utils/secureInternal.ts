@@ -134,7 +134,6 @@ export default function secure<T>(
             }
         }
 
-        console.log("User access given to", user.username);
         return fn(request);
     }
 }
