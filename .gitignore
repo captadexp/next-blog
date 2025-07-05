@@ -71,3 +71,5 @@ dist
 packages/*/dist
 .idea
 **/CLAUDE.local.md
+
+!packages/test-app/public/plugins/**/*.js

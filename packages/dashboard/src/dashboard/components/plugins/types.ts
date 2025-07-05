@@ -11,6 +11,7 @@ export interface PluginSDK {
     notify: (message: string, status?: 'success' | 'error') => void;
     /** Triggers the host component to re-render the plugin's UI. */
     refresh: () => void;
+    callHook: <T, R>(id: string, payload: T) => Promise<R>
 }
 
 /**

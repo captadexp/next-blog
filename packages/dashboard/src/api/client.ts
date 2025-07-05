@@ -240,12 +240,15 @@ class ApiClient {
     }
 
     // Plugin Hook Mapping APIs
-    async getPluginHookMappings(): Promise<StandardResponse<PluginHookMapping[]>> {
-        return this.request<PluginHookMapping[]>('/plugin-hooks');
+    async getPluginHookMappings(params?: {
+        type: 'client' | 'server' | 'rpc'
+    }): Promise<StandardResponse<PluginHookMapping[]>> {
+        const endpoint = new URLSearchParams(params).toString();
+        return this.request<PluginHookMapping[]>(`/plugin-hooks?${endpoint}`);
     }
 
-    async callPluginHook(hookName: string, payload: any): Promise<StandardResponse<any>> {
-        return this.request<any>(`/plugin/rpc/${hookName}`, 'POST', payload);
+    async callPluginHook<T, R>(hookName: string, payload: T): Promise<R> {
+        return this.request<any>(`/plugin/rpc/${hookName}`, 'POST', payload) as any;
     }
 }
 

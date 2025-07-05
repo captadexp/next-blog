@@ -39,8 +39,3 @@ next-env.d.ts
 /blog-data
 
 !next.config.js
-
-
-
-!public/plugins/api-widget-plugin.js
-!public/plugins/seo-content-analyzer.js

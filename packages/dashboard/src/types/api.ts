@@ -163,14 +163,13 @@ export interface UpdateSettingsInput {
     owner?: string;
 }
 
-export type PluginType = 'external' | 'lite' | 'browser';
-
 export interface Plugin {
     _id: string;
     name: string;
     description: string;
     version: string;
     url: string;
+    client?: { type: "url", url: string };
     author: string;
     createdAt: number;
     updatedAt: number;

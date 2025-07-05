@@ -1,227 +1,175 @@
 import secure, {type CNextRequest} from "../utils/secureInternal.js";
-import {DatabaseError, NotFound, Success, ValidationError,} from "../utils/errors.js";
-import {PluginModule} from "../types.ts";
+import {DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
 import pluginExecutor from "../plugins/plugin-executor.server.js";
+import pluginManager from "../plugins/pluginManager.js";
+import Logger, {LogLevel} from "../utils/Logger.js";
 
-// List all plugins - requires 'plugins:list' permission
+const logger = new Logger('plugins-api', LogLevel.ERROR);
+
 export const getPlugins = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
+        logger.info('Listing all plugins');
 
         try {
             const plugins = await db.plugins.find({});
+            logger.info('Plugins retrieved successfully');
             throw new Success("Plugins retrieved successfully", plugins);
         } catch (error) {
             if (error instanceof Success) throw error;
-
-            console.error("Error fetching plugins:", error);
+            logger.error("Error fetching plugins:", error);
             throw new DatabaseError("Failed to retrieve plugins: " + (error instanceof Error ? error.message : String(error)));
         }
     },
     {requirePermission: 'plugins:list'}
 );
 
-// Get a single plugin by ID - requires 'plugins:read' permission
 export const getPluginById = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
+        const pluginId = request._params.id;
+        logger.info(`Getting plugin by ID: ${pluginId}`);
 
         try {
-            const plugin = await db.plugins.findOne({_id: request._params.id});
-
+            const plugin = await db.plugins.findOne({_id: pluginId});
             if (!plugin) {
-                throw new NotFound(`Plugin with id ${request._params.id} not found`);
+                logger.warn(`Plugin not found: ${pluginId}`);
+                throw new NotFound(`Plugin with id ${pluginId} not found`);
             }
-
+            logger.info(`Plugin ${pluginId} retrieved successfully`);
             throw new Success("Plugin retrieved successfully", plugin);
         } catch (error) {
             if (error instanceof Success || error instanceof NotFound) throw error;
-
-            console.error(`Error fetching plugin ${request._params.id}:`, error);
+            logger.error(`Error fetching plugin ${pluginId}:`, error);
             throw new DatabaseError("Failed to retrieve plugin: " + (error instanceof Error ? error.message : String(error)));
         }
     },
     {requirePermission: 'plugins:read'}
 );
 
-// Create a new plugin - requires 'plugins:create' permission
 export const createPlugin = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
+        logger.time('Create plugin');
+        logger.info('Attempting to create a new plugin');
 
         try {
-            const body: { url: string } = await request.json() as any;
-
-            // Validate required fields
-            if (!body.url) {
-                throw new ValidationError("Plugin url is required");
-            }
-
-            const response = await fetch(body.url);
-            if (!response.ok) {
-                throw new Error(`Fetch failed for plugin: ${response.statusText}`);
-            }
-            const code = await response.text();
-
-            const blob = new Blob([`return ${code}`], {type: 'text/javascript'});
-            const objectUrl = URL.createObjectURL(blob);
-            const module: PluginModule = new Function(await (await fetch(objectUrl)).text())();
-            URL.revokeObjectURL(objectUrl);
-
-            if (!module.name || !module.version || !module.description) {
-                throw new ValidationError("Plugin manifest is missing required fields (name, version, description)");
-            }
-
-            const creation = await db.plugins.create({
-                ...module,
-                url: body.url,
-            });
-
-            if (module.hooks && typeof module.hooks === 'object') {
-                for (const hookName of Object.keys(module.hooks)) {
-                    await db.pluginHookMappings.create({
-                        pluginId: creation._id,
-                        hookName,
-                        priority: 10
-                    });
-                }
-            }
+            const {url} = (await request.json()) as { url: string };
+            const creation = await pluginManager.installPlugin(db, url);
 
             request.configuration.callbacks?.on?.("createPlugin", creation);
-
+            pluginExecutor.initalized = false;
             throw new Success("Plugin created successfully", creation);
         } catch (error) {
             if (error instanceof Success || error instanceof ValidationError) throw error;
-
-            console.error("Error creating plugin:", error);
+            logger.error("Error creating plugin:", error);
             throw new DatabaseError("Failed to create plugin: " + (error instanceof Error ? error.message : String(error)));
+        } finally {
+            logger.timeEnd('Create plugin');
         }
     },
     {requirePermission: 'plugins:create'}
 );
 
-// Delete a plugin - requires 'plugins:delete' permission
 export const deletePlugin = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
+        const pluginId = request._params.id;
+        logger.time(`Delete plugin ${pluginId}`);
+        logger.info(`Attempting to delete plugin with ID: ${pluginId}`);
 
         try {
-            // Check if plugin exists first
-            const existingPlugin = await db.plugins.findOne({_id: request._params.id});
-            if (!existingPlugin) {
-                throw new NotFound(`Plugin with id ${request._params.id} not found`);
+            const existing = await db.plugins.findOne({_id: pluginId});
+            if (!existing) {
+                logger.warn(`Delete failed, not found: ${pluginId}`);
+                throw new NotFound(`Plugin with id ${pluginId} not found`);
             }
-
-            // Also delete all hook mappings for this plugin
-            await db.pluginHookMappings.delete({pluginId: request._params.id});
-
-            const deletion = await db.plugins.deleteOne({_id: request._params.id});
-            request.configuration.callbacks?.on?.("deletePlugin", deletion);
-            throw new Success("Plugin deleted successfully", deletion);
+            await pluginManager.deletePluginAndMappings(db, pluginId);
+            logger.info(`Plugin ${pluginId} deleted successfully`);
+            request.configuration.callbacks?.on?.("deletePlugin", {_id: pluginId});
+            throw new Success("Plugin deleted successfully", {_id: pluginId});
         } catch (error) {
             if (error instanceof Success || error instanceof NotFound) throw error;
-
-            console.error(`Error deleting plugin ${request._params.id}:`, error);
+            logger.error(`Error deleting plugin ${pluginId}:`, error);
             throw new DatabaseError("Failed to delete plugin: " + (error instanceof Error ? error.message : String(error)));
+        } finally {
+            logger.timeEnd(`Delete plugin ${pluginId}`);
         }
     },
     {requirePermission: 'plugins:delete'}
 );
 
-// Reinstall a plugin - requires both 'plugins:create' and 'plugins:delete' permission
 export const reinstallPlugin = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
+        const pluginId = request._params.id;
+        logger.time(`Reinstall plugin ${pluginId}`);
+        logger.info(`Attempting to reinstall plugin ID: ${pluginId}`);
 
         try {
-            // Check if plugin exists first
-            const existingPlugin = await db.plugins.findOne({_id: request._params.id});
-            if (!existingPlugin) {
-                throw new NotFound(`Plugin with id ${request._params.id} not found`);
+            const existing = await db.plugins.findOne({_id: pluginId});
+            if (!existing) {
+                logger.warn(`Reinstall failed, not found: ${pluginId}`);
+                throw new NotFound(`Plugin with id ${pluginId} not found`);
             }
-
-            await db.pluginHookMappings.delete({pluginId: request._params.id});
-            await db.plugins.deleteOne({_id: request._params.id});
-
-            const response = await fetch(existingPlugin.url);
-            if (!response.ok) {
-                throw new Error(`Fetch failed for plugin: ${response.statusText}`);
-            }
-            const code = await response.text();
-
-            const blob = new Blob([`return ${code}`], {type: 'text/javascript'});
-            const objectUrl = URL.createObjectURL(blob);
-            const module: PluginModule = new Function(await (await fetch(objectUrl)).text())();
-            URL.revokeObjectURL(objectUrl);
-
-            if (!module.name || !module.version || !module.description) {
-                throw new ValidationError("Plugin manifest is missing required fields (name, version, description)");
-            }
-
-            const creation = await db.plugins.create({
-                ...module,
-                url: existingPlugin.url,
-            });
-
-            if (module.hooks && typeof module.hooks === 'object') {
-                for (const hookName of Object.keys(module.hooks)) {
-                    await db.pluginHookMappings.create({
-                        pluginId: creation._id,
-                        hookName,
-                        priority: 10
-                    });
-                }
-            }
-
+            await pluginManager.deletePluginAndMappings(db, pluginId);
+            request.configuration.callbacks?.on?.("deletePlugin", {_id: pluginId});
+            const creation = await pluginManager.installPlugin(db, existing.url);
+            request.configuration.callbacks?.on?.("createPlugin", creation);
+            pluginExecutor.initalized = false;
             throw new Success("Plugin reinstalled successfully", {clearCache: true});
         } catch (error) {
             if (error instanceof Success || error instanceof NotFound) throw error;
-
-            console.error(`Error reinstalling plugin ${request._params.id}:`, error);
+            logger.error(`Error reinstalling plugin ${pluginId}:`, error);
             throw new DatabaseError("Failed to reinstall plugin: " + (error instanceof Error ? error.message : String(error)));
+        } finally {
+            logger.timeEnd(`Reinstall plugin ${pluginId}`);
         }
     },
     {requireAllPermissions: ['plugins:create', 'plugins:delete']}
 );
 
-// List all plugin hook mappings - requires 'plugins:list' permission
 export const getPluginHookMappings = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
+        const pluginId = request._params.pluginId;
+        const type = request.nextUrl.searchParams.get('type');
+        logger.info(`Listing plugin hook mappings for pluginId: ${pluginId || 'all'}`);
 
         try {
-            const pluginId = request._params.pluginId;
-            const filter = pluginId ? {pluginId} : {};
+            const filter: any = pluginId ? {pluginId} : {};
+            if (type) filter.type = type;
             const mappings = await db.pluginHookMappings.find(filter);
+            logger.info('Plugin hook mappings retrieved successfully');
             throw new Success("Plugin hook mappings retrieved successfully", mappings);
         } catch (error) {
             if (error instanceof Success) throw error;
-
-            console.error("Error fetching plugin hook mappings:", error);
+            logger.error("Error fetching plugin hook mappings:", error);
             throw new DatabaseError("Failed to retrieve plugin hook mappings: " + (error instanceof Error ? error.message : String(error)));
         }
     },
     {requirePermission: 'plugins:list'}
 );
 
-export const executePluginHook = secure(
+export const executePluginRpc = secure(
     async (request: CNextRequest) => {
-        const {hookName} = request._params;
+        const {rpcName} = request._params;
         const payload = await request.json();
+        logger.info(`Executing plugin rpc: ${rpcName}`);
 
-        if (!hookName) {
+        if (!rpcName) {
+            logger.warn('RPC execution failed: name required');
             throw new ValidationError("Hook name is required");
         }
 
         try {
-            const result = await pluginExecutor.executeHook(hookName, (request as any).sdk, payload);
-            throw new Success(`Hook ${hookName} executed successfully`, result);
+            const result = await pluginExecutor.executeRpc(rpcName, (request as any).sdk, payload);
+            logger.info(`RPC ${rpcName} executed successfully`);
+            throw new Success(`Hook ${rpcName} executed successfully`, result);
         } catch (error) {
             if (error instanceof Success || error instanceof ValidationError) throw error;
-            console.error(`Error executing hook ${hookName}:`, error);
-            throw new DatabaseError(`Failed to execute hook ${hookName}: ` + (error instanceof Error ? error.message : String(error)));
+            logger.error(`Error executing rpc ${rpcName}:`, error);
+            throw new DatabaseError(`Failed to execute hook ${rpcName}: ` + (error instanceof Error ? error.message : String(error)));
         }
     }
 );
-
-

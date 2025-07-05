@@ -124,16 +124,20 @@ export interface Plugin {
     description: string;
     version: string;
     author: string;
-    url: string;
+    url: string
+    server?: { type: 'url'; url: string; }
+    client?: { type: 'url'; url: string; }
+    hooks?: {
+        [hookName: string]: (sdk: any, context: any) => Promise<any> | any;
+    };
+    rpc?: {
+        [rpc: string]: (sdk: any, context: any) => Promise<any> | any;
+    };
     createdAt: number;
     updatedAt: number;
 }
 
 export interface PluginData extends Partial<Plugin> {
-    name: string;
-    description: string;
-    version: string;
-    author: string;
     url: string;
 }
 
@@ -141,6 +145,7 @@ export interface PluginHookMapping {
     _id: string;
     pluginId: string;
     hookName: string;
+    type: 'client' | 'server' | 'rpc';
     priority: number;
     createdAt: number;
     updatedAt: number;
@@ -149,6 +154,7 @@ export interface PluginHookMapping {
 export interface PluginHookMappingData extends Partial<PluginHookMapping> {
     pluginId: string;
     hookName: string;
+    type: 'client' | 'server' | 'rpc';
     priority: number;
 }
 
@@ -217,26 +223,12 @@ export interface MediaData extends Partial<Media> {
  * This defines the expected structure of a plugin module
  */
 export interface PluginModule {
-    // Plugin metadata
-    name: string;
-    version: string;
-    description: string;
-    author: string;
-
-    // Hooks implementation
     hooks?: {
         [hookName: string]: (sdk: any, context: any) => Promise<any> | any;
     };
-
-    server?: {
-        type: 'url';
-        url: string;
-    }
-
-    client?: {
-        type: 'url';
-        url: string;
-    }
+    rpcs?: {
+        [rpcName: string]: (sdk: any, context: any) => Promise<any> | any;
+    };
 }
 
 export interface DatabaseAdapter {
@@ -294,7 +286,7 @@ export type EventPayload =
 
     | { event: "createPlugin"; payload: Plugin }
     | { event: "updatePlugin"; payload: Plugin }
-    | { event: "deletePlugin"; payload: Plugin }
+    | { event: "deletePlugin"; payload: { _id: Plugin["_id"] } }
 
     | { event: "createPluginHookMapping"; payload: PluginHookMapping }
     | { event: "updatePluginHookMapping"; payload: PluginHookMapping }
