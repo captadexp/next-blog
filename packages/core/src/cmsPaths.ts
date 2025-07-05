@@ -16,6 +16,7 @@ import {
     deleteSetting,
     deleteTag,
     deleteUser,
+    executePluginHook,
     getBlogById,
     getBlogs,
     getCategories,
@@ -35,7 +36,6 @@ import {
     updateBlog,
     updateBlogMetadata,
     updateCategory,
-    updatePlugin,
     updateSetting,
     updateTag,
     updateUser
@@ -137,9 +137,11 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
             },
             plugin: {
                 ':id': {
-                    update: updatePlugin,
                     delete: deletePlugin,
                     reinstall: reinstallPlugin
+                },
+                rpc: {
+                    ':hookName': executePluginHook
                 }
             },
             plugins: {

@@ -243,6 +243,10 @@ class ApiClient {
     async getPluginHookMappings(): Promise<StandardResponse<PluginHookMapping[]>> {
         return this.request<PluginHookMapping[]>('/plugin-hooks');
     }
+
+    async callPluginHook(hookName: string, payload: any): Promise<StandardResponse<any>> {
+        return this.request<any>(`/plugin/rpc/${hookName}`, 'POST', payload);
+    }
 }
 
 // Export the class for instantiation in the context

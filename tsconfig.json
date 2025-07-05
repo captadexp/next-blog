@@ -9,6 +9,7 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "module": "ESNext",
+    "allowImportingTsExtensions": true,
     "moduleResolution": "bundler",
     "skipDefaultLibCheck": true,
     "skipLibCheck": true,

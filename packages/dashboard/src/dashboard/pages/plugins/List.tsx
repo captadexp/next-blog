@@ -73,33 +73,10 @@ const PluginsList = () => {
         }
     };
 
-    const getPluginTypeLabel = (type: string) => {
-        switch (type) {
-            case 'external':
-                return <span className="badge p-1 bg-blue-500 text-white">External</span>;
-            case 'lite':
-                return <span className="badge p-1 bg-green-500 text-white">Lite</span>;
-            case 'browser':
-                return <span className="badge p-1 bg-purple-500 text-white">Browser</span>;
-            default:
-                return <span className="badge p-1 bg-gray-500 text-white">{type}</span>;
-        }
-    };
-
     const columns = [
         {
             header: 'Name',
             accessor: 'name',
-            cell: (plugin: Plugin) => (
-                <a href={`/api/next-blog/dashboard/plugins/${plugin._id}`} className="text-blue-600 hover:underline">
-                    {plugin.name}
-                </a>
-            ),
-        },
-        {
-            header: 'Type',
-            accessor: 'type',
-            cell: (plugin: Plugin) => getPluginTypeLabel(plugin.type),
         },
         {
             header: 'Version',
@@ -114,12 +91,6 @@ const PluginsList = () => {
             accessor: '_id',
             cell: (plugin: Plugin) => (
                 <div className="flex space-x-2">
-                    <a href={`/api/next-blog/dashboard/plugins/${plugin._id}`}>
-                        <button
-                            className="px-3 py-1 text-sm border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100">
-                            Edit
-                        </button>
-                    </a>
                     {hasAllPermissions(['plugins:create', 'plugins:delete']) && (
                         <button
                             className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"

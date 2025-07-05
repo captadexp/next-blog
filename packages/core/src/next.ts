@@ -45,6 +45,11 @@ const nextBlog = function (configuration: Configuration): NextBlogHandlers {
             (request as any)._params = params;
             (request as any).db = db;
             (request as any).configuration = configuration;
+            (request as any).sdk = {
+                log: console,
+                db: dbObj,
+                executionContext: (request as any).sessionUser
+            };
 
             // Check if the path appears to be an API endpoint
             const isApiRequest = finalPathname.startsWith("api/");

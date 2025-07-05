@@ -118,16 +118,13 @@ export interface SettingsEntryData extends Partial<SettingsEntry> {
     owner: string;
 }
 
-export type PluginType = 'external' | 'lite' | 'browser';
-
 export interface Plugin {
     _id: string;
     name: string;
     description: string;
     version: string;
-    type: PluginType;
-    entryPoint: string;
     author: string;
+    url: string;
     createdAt: number;
     updatedAt: number;
 }
@@ -136,9 +133,8 @@ export interface PluginData extends Partial<Plugin> {
     name: string;
     description: string;
     version: string;
-    type: PluginType;
-    entryPoint: string;
     author: string;
+    url: string;
 }
 
 export interface PluginHookMapping {
@@ -224,16 +220,23 @@ export interface PluginModule {
     // Plugin metadata
     name: string;
     version: string;
-    description?: string;
+    description: string;
+    author: string;
 
     // Hooks implementation
     hooks?: {
-        [hookName: string]: (context: any) => Promise<any> | any;
+        [hookName: string]: (sdk: any, context: any) => Promise<any> | any;
     };
 
-    // Lifecycle methods
-    postInstall?: (db: DatabaseAdapter, pluginId: string) => Promise<boolean>;
-    onDelete?: (db: DatabaseAdapter, pluginId: string) => Promise<boolean>;
+    server?: {
+        type: 'url';
+        url: string;
+    }
+
+    client?: {
+        type: 'url';
+        url: string;
+    }
 }
 
 export interface DatabaseAdapter {

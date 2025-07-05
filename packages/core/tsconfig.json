@@ -13,6 +13,7 @@
     "skipDefaultLibCheck": true,
     "skipLibCheck": true,
     "strict": true,
+    "allowImportingTsExtensions": true,
     "strictNullChecks": true,
     "stripInternal": true,
     "target": "es2020",

@@ -9,6 +9,7 @@ import {UIHookFn} from "../dashboard/components/plugins/types.ts";
 interface PluginContextType {
     status: 'idle' | 'initializing' | 'ready' | 'error';
     getHookFunctions: (hookName: string) => { pluginId: string, hookFn: UIHookFn }[];
+    callHook: (hookName: string, payload: any) => Promise<any>;
 }
 
 export interface PluginModule {
@@ -23,15 +24,12 @@ export interface PluginModule {
     };
 }
 
-export type PluginType = 'external' | 'lite' | 'browser';
-
 export interface Plugin {
     _id: string;
     name: string;
     description: string;
     version: string;
-    type: PluginType;
-    entryPoint: string;
+    url: string;
     author: string;
     createdAt: number;
     updatedAt: number;
@@ -49,7 +47,7 @@ export const PluginProvider: FunctionComponent = ({children}) => {
 
     const loadPluginModule = useCallback(async (plugin: Plugin): Promise<[string, PluginModule] | null> => {
         try {
-            const url = plugin.entryPoint;
+            const url = plugin.url;
             let code = await pluginCache.get(url);
             if (!code) {
                 const response = await fetch(url);
@@ -95,8 +93,7 @@ export const PluginProvider: FunctionComponent = ({children}) => {
                 }
                 setHookMappings(mappings);
 
-                const browserPlugins = pluginsToLoad.filter(p => p.type === 'browser');
-                const results = await Promise.all(browserPlugins.map(loadPluginModule));
+                const results = await Promise.all(pluginsToLoad.map(loadPluginModule));
 
                 const newPlugins = new Map<string, PluginModule>();
                 results.forEach(result => {
@@ -127,10 +124,15 @@ export const PluginProvider: FunctionComponent = ({children}) => {
             .filter((p): p is { pluginId: string; hookFn: UIHookFn } => p !== null);
     }, [loadedPlugins, hookMappings]);
 
+    const callHook = useCallback(async (hookName: string, payload: any) => {
+        return apis.callPluginHook(hookName, payload);
+    }, [apis]);
+
     const value = useMemo(() => ({
         status,
         getHookFunctions,
-    }), [status, getHookFunctions]);
+        callHook,
+    }), [status, getHookFunctions, callHook]);
 
     return <PluginContext.Provider value={value}>{children}</PluginContext.Provider>;
 };
@@ -140,3 +142,4 @@ export const usePlugins = (): PluginContextType => {
     if (!context) throw new Error('usePlugins must be used within a PluginProvider');
     return context;
 };
+

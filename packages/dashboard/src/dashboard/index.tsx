@@ -37,7 +37,6 @@ import UpdateSetting from './pages/settings/Update';
 // Import plugins pages
 import PluginsList from './pages/plugins/List';
 import CreatePlugin from './pages/plugins/Create';
-import UpdatePlugin from './pages/plugins/Update';
 
 import {Toaster} from 'react-hot-toast';
 
@@ -96,7 +95,6 @@ function DashboardApp() {
                             {/* Plugin routes */}
                             <Route path="/api/next-blog/dashboard/plugins" component={PluginsList}/>
                             <Route path="/api/next-blog/dashboard/plugins/create" component={CreatePlugin}/>
-                            <Route path="/api/next-blog/dashboard/plugins/:id" component={UpdatePlugin}/>
 
                             {/* 404 route */}
                             <Route default component={() => <div>Not Found</div>}/>

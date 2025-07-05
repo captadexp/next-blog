@@ -170,28 +170,21 @@ export interface Plugin {
     name: string;
     description: string;
     version: string;
-    type: PluginType;
-    entryPoint: string;
+    url: string;
     author: string;
     createdAt: number;
     updatedAt: number;
 }
 
 export interface CreatePluginInput {
-    name: string;
-    description: string;
-    version: string;
-    type: PluginType;
-    entryPoint: string;
-    author: string;
+    url: string;
 }
 
 export interface UpdatePluginInput {
     name?: string;
     description?: string;
     version?: string;
-    type?: PluginType;
-    entryPoint?: string;
+    url?: string;
     author?: string;
 }
 

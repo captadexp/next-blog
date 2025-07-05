@@ -1,6 +1,5 @@
 import {h} from 'preact';
 import {useState} from 'preact/hooks';
-import {CreatePluginInput, PluginType} from '../../../types/api';
 import {useUser} from "../../../context/UserContext.tsx";
 import {useLocation} from "preact-iso";
 
@@ -9,22 +8,7 @@ const CreatePlugin = () => {
     const {route} = useLocation();
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
-    const [formData, setFormData] = useState<CreatePluginInput>({
-        name: '',
-        description: '',
-        version: '1.0.0',
-        type: 'external' as PluginType,
-        entryPoint: '',
-        author: ''
-    });
-
-    const handleChange = (e: any) => {
-        const {name, value} = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
+    const [url, setUrl] = useState<string>('');
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
@@ -32,7 +16,7 @@ const CreatePlugin = () => {
         setError(null);
 
         try {
-            const response = await api.createPlugin(formData);
+            const response = await api.createPlugin({url});
             if (response.code === 0) {
                 route('/api/next-blog/dashboard/plugins');
             } else {
@@ -67,97 +51,16 @@ const CreatePlugin = () => {
             <div className="bg-white p-6 rounded-lg shadow-md">
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
-                            Name *
+                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="url">
+                            Plugin URL
                         </label>
                         <input
                             className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            id="name"
+                            id="url"
                             type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
-
-                    <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="description">
-                            Description
-                        </label>
-                        <textarea
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            id="description"
-                            name="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            rows={3}
-                        />
-                    </div>
-
-                    <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="version">
-                            Version *
-                        </label>
-                        <input
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            id="version"
-                            type="text"
-                            name="version"
-                            value={formData.version}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
-
-                    <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="type">
-                            Type *
-                        </label>
-                        <select
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            id="type"
-                            name="type"
-                            value={formData.type}
-                            onChange={handleChange}
-                            required
-                        >
-                            <option value="external">External</option>
-                            <option value="lite">Lite</option>
-                            <option value="browser">Browser</option>
-                        </select>
-                    </div>
-
-                    <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="entryPoint">
-                            Entry Point *
-                        </label>
-                        <input
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            id="entryPoint"
-                            type="text"
-                            name="entryPoint"
-                            value={formData.entryPoint}
-                            onChange={handleChange}
-                            required
-                        />
-                        <p className="text-gray-500 text-xs mt-1">
-                            For external plugins: URL to the plugin. For lite plugins: path to the plugin file. For
-                            browser plugins: filename of the plugin file (e.g., hello-dolly.dashboard.client.ts).
-                        </p>
-                    </div>
-
-                    <div className="mb-6">
-                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="author">
-                            Author *
-                        </label>
-                        <input
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            id="author"
-                            type="text"
-                            name="author"
-                            value={formData.author}
-                            onChange={handleChange}
+                            name="url"
+                            value={url}
+                            onChange={(e: any) => setUrl(e.target.value)}
                             required
                         />
                     </div>
