@@ -4,6 +4,9 @@ import {useMemo, useState} from "preact/hooks";
 import {useUser} from "../../../context/UserContext.tsx";
 import {PluginSDK, UITree} from "./types.ts";
 import toast from 'react-hot-toast';
+import Logger, {LogLevel} from "../../../utils/Logger.ts";
+
+const logger = new Logger('PluginSystem', LogLevel.INFO);
 
 
 /**
@@ -19,7 +22,7 @@ function PluginHost({pluginId, hookFn, context, callHook}: {
     // This host's state is just a number to trigger re-renders when a plugin calls refresh().
     const [refreshKey, setRefreshKey] = useState(0);
     const {apis, user, config} = useUser();
-    console.debug(`[PluginSystem] Creating PluginHost for plugin "${pluginId}" with refreshKey: ${refreshKey}`);
+    logger.debug(`Creating PluginHost for plugin "${pluginId}" with refreshKey: ${refreshKey}`);
 
     // Craft the secure, sandboxed SDK for the plugin.
     const sdk: PluginSDK = useMemo(() => ({
@@ -30,7 +33,7 @@ function PluginHost({pluginId, hookFn, context, callHook}: {
         },
         settings: config || {},
         refresh: () => {
-            console.debug(`[PluginSystem] Refresh requested by plugin "${pluginId}"`);
+            logger.debug(`Refresh requested by plugin "${pluginId}"`);
             setRefreshKey(Date.now())
         },
         utils: {
@@ -50,7 +53,7 @@ function PluginHost({pluginId, hookFn, context, callHook}: {
         if (!tree) return null;
         if (typeof tree === 'string') return tree;
         if (!Array.isArray(tree) || typeof tree[0] !== 'string') {
-            console.error(`[PluginSystem] Invalid UI Tree format from plugin "${pluginId}":`, tree);
+            logger.error(`Invalid UI Tree format from plugin "${pluginId}":`, tree);
             return null;
         }
 
@@ -63,7 +66,7 @@ function PluginHost({pluginId, hookFn, context, callHook}: {
             'label', 'input', 'textarea'
         ];
         if (!allowedTags.includes(tag.toLowerCase())) {
-            console.warn(`[PluginSystem] Plugin "${pluginId}" tried to render a disallowed tag: <${tag}>. Rendering an empty span instead.`);
+            logger.warn(`Plugin "${pluginId}" tried to render a disallowed tag: <${tag}>. Rendering an empty span instead.`);
             return <span/>;
         }
 
@@ -75,7 +78,7 @@ function PluginHost({pluginId, hookFn, context, callHook}: {
                 if (key.startsWith('on') && typeof props[key] === 'function') {
                     finalProps[key] = (e: Event) => {
                         e.preventDefault();
-                        console.debug(`[PluginSystem] Event "${key}" triggered by plugin "${pluginId}"`);
+                        logger.debug(`Event "${key}" triggered by plugin "${pluginId}"`);
                         //fixme maybe extract the value and pass it forward
                         props[key](sdk, context, JSON.parse(JSON.stringify((e.target as any)?.value || null)));
                     }
@@ -89,18 +92,18 @@ function PluginHost({pluginId, hookFn, context, callHook}: {
     }
 
     // 1. Execute the plugin's hook function, passing the SDK and context.
-    console.debug(`[PluginSystem] Executing hook for plugin "${pluginId}"`);
-    console.time(`[PluginSystem] Execute hook for plugin "${pluginId}"`);
+    logger.debug(`Executing hook for plugin "${pluginId}"`);
+    logger.time(`Execute hook for plugin "${pluginId}"`);
     const uiTree = hookFn(sdk, previous, context);
-    console.timeEnd(`[PluginSystem] Execute hook for plugin "${pluginId}"`);
-    console.debug(`[PluginSystem] UI tree received from plugin "${pluginId}":`, uiTree);
+    logger.timeEnd(`Execute hook for plugin "${pluginId}"`);
+    logger.debug(`UI tree received from plugin "${pluginId}":`, uiTree);
 
 
     // 2. Render the UI description provided by the plugin.
-    console.debug(`[PluginSystem] Rendering UI for plugin "${pluginId}"`);
-    console.time(`[PluginSystem] Render UI for plugin "${pluginId}"`);
+    logger.debug(`Rendering UI for plugin "${pluginId}"`);
+    logger.time(`Render UI for plugin "${pluginId}"`);
     const renderedElement = renderTree(uiTree);
-    console.timeEnd(`[PluginSystem] Render UI for plugin "${pluginId}"`);
+    logger.timeEnd(`Render UI for plugin "${pluginId}"`);
     return renderedElement;
 }
 

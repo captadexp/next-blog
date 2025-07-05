@@ -45,13 +45,13 @@ class Logger {
     }
 
     time(message: string) {
-        if (this.logLevel <= LogLevel.INFO) {
+        if (this.logLevel < LogLevel.INFO) {
             console.time(`[${this.prefix}] ${message}`)
         }
     }
 
     timeEnd(message: string) {
-        if (this.logLevel <= LogLevel.INFO) {
+        if (this.logLevel < LogLevel.INFO) {
             console.timeEnd(`[${this.prefix}] ${message}`)
         }
     }

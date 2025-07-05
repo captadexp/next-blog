@@ -4,7 +4,9 @@ import {useUser} from "./UserContext.tsx";
 import {Plugin, PluginHookMapping} from "../types/api.ts";
 import {pluginCache} from "../utils/pluginCache.ts";
 import {UIHookFn} from "../dashboard/components/plugins/types.ts";
+import Logger, {LogLevel} from "../utils/Logger.ts";
 
+const logger = new Logger('PluginSystem', LogLevel.INFO);
 
 interface PluginContextType {
     status: 'idle' | 'initializing' | 'ready' | 'error';
@@ -34,22 +36,22 @@ export const PluginProvider: FunctionComponent = ({children}) => {
     const [hookMappings, setHookMappings] = useState<Map<string, PluginHookMapping[]>>(new Map());
 
     const loadPluginModule = useCallback(async (plugin: Plugin): Promise<[string, PluginModule] | null> => {
-        console.time(`[PluginSystem] Load plugin ${plugin.name}`);
+        logger.time(`Load plugin ${plugin.name}`);
         if (!plugin.client)
-            throw new Error("[PluginSystem] No client side found for plugin");
+            throw new Error("No client side found for plugin");
 
         try {
             const url = plugin.client.url;
             let code = await pluginCache.get(url);
             if (!code) {
-                console.debug(`[PluginSystem] Fetching plugin from ${url}`);
+                logger.debug(`Fetching plugin from ${url}`);
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
                 code = await response.text();
                 await pluginCache.set(url, code);
-                console.debug(`[PluginSystem] Fetched and cached plugin ${plugin.name}`);
+                logger.debug(`Fetched and cached plugin ${plugin.name}`);
             } else {
-                console.debug(`[PluginSystem] Loaded plugin ${plugin.name} from cache`);
+                logger.debug(`Loaded plugin ${plugin.name} from cache`);
             }
 
             const blob = new Blob([`return ${code}`], {type: 'text/javascript'});
@@ -57,21 +59,21 @@ export const PluginProvider: FunctionComponent = ({children}) => {
             const module = new Function(await (await fetch(objectUrl)).text())();
             URL.revokeObjectURL(objectUrl);
             if (!module || typeof module !== 'object') throw new Error(`Plugin ${plugin.name} did not return a valid module object.`);
-            console.info(`[PluginSystem] Successfully loaded plugin: ${plugin.name}`);
+            logger.info(`Successfully loaded plugin: ${plugin.name}`);
             return [plugin._id, module];
         } catch (error) {
-            console.error(`[PluginSystem] Failed to load plugin ${plugin.name}:`, error);
+            logger.error(`Failed to load plugin ${plugin.name}:`, error);
             return null;
         } finally {
-            console.timeEnd(`[PluginSystem] Load plugin ${plugin.name}`);
+            logger.timeEnd(`Load plugin ${plugin.name}`);
         }
     }, [apis]);
 
     useEffect(() => {
         const initialize = async () => {
             if (!user || status !== 'idle') return;
-            console.time('[PluginSystem] Initialization');
-            console.info('[PluginSystem] Initializing...');
+            logger.time('Initialization');
+            logger.info('Initializing...');
             setStatus('initializing');
             try {
                 const [pluginsRes, mappingsRes] = await Promise.all([
@@ -83,7 +85,7 @@ export const PluginProvider: FunctionComponent = ({children}) => {
 
                 const pluginsToLoad = pluginsRes.payload || [];
                 const hookMappingsToLoad = mappingsRes.payload || [];
-                console.debug(`[PluginSystem] Found ${pluginsToLoad.length} plugins and ${hookMappingsToLoad.length} hook mappings.`);
+                logger.debug(`Found ${pluginsToLoad.length} plugins and ${hookMappingsToLoad.length} hook mappings.`);
 
                 const mappings = new Map<string, PluginHookMapping[]>();
                 for (const mapping of hookMappingsToLoad) {
@@ -94,7 +96,7 @@ export const PluginProvider: FunctionComponent = ({children}) => {
                     mappings.set(hookName, m.sort((a, b) => a.priority - b.priority));
                 }
                 setHookMappings(mappings);
-                console.debug('[PluginSystem] Hook mappings processed.');
+                logger.debug('Hook mappings processed.');
 
                 const results = await Promise.all(pluginsToLoad.map(loadPluginModule));
 
@@ -105,44 +107,44 @@ export const PluginProvider: FunctionComponent = ({children}) => {
 
                 setLoadedPlugins(newPlugins);
                 setStatus('ready');
-                console.info(`[PluginSystem] Initialization complete. ${newPlugins.size} plugins loaded.`);
+                logger.info(`Initialization complete. ${newPlugins.size} plugins loaded.`);
             } catch (error) {
-                console.error('[PluginSystem] Initialization failed:', error);
+                logger.error('Initialization failed:', error);
                 setStatus('error');
             } finally {
-                console.timeEnd('[PluginSystem] Initialization');
+                logger.timeEnd('Initialization');
             }
         };
         initialize();
     }, [user, status, apis, loadPluginModule]);
 
     const getHookFunctions = useCallback((hookName: string): { pluginId: string, hookFn: UIHookFn }[] => {
-        console.debug(`[PluginSystem] getHookFunctions called for hook: "${hookName}"`);
+        logger.debug(`getHookFunctions called for hook: "${hookName}"`);
         const mappings = hookMappings.get(hookName) || [];
         if (mappings.length === 0) {
-            console.warn(`[PluginSystem] No mappings found for hook: "${hookName}"`);
+            logger.warn(`No mappings found for hook: "${hookName}"`);
         }
 
         const functions = mappings
             .map(mapping => {
                 const plugin = loadedPlugins.get(mapping.pluginId);
                 if (!plugin) {
-                    console.warn(`[PluginSystem] Plugin with ID ${mapping.pluginId} not found in loadedPlugins for hook "${hookName}"`);
+                    logger.warn(`Plugin with ID ${mapping.pluginId} not found in loadedPlugins for hook "${hookName}"`);
                     return null;
                 }
 
                 const hookFn = plugin?.hooks?.[hookName];
                 if (typeof hookFn === 'function') {
-                    console.debug(`[PluginSystem] Found hook function for plugin ${plugin.name} (${mapping.pluginId}) for hook "${hookName}"`);
+                    logger.debug(`Found hook function for plugin ${plugin.name} (${mapping.pluginId}) for hook "${hookName}"`);
                     return {pluginId: mapping.pluginId, hookFn};
                 } else {
-                    console.warn(`[PluginSystem] Hook function for hook "${hookName}" not found or not a function in plugin ${plugin.name}`);
+                    logger.warn(`Hook function for hook "${hookName}" not found or not a function in plugin ${plugin.name}`);
                 }
                 return null;
             })
             .filter((p): p is { pluginId: string; hookFn: UIHookFn } => p !== null);
 
-        console.debug(`[PluginSystem] Found ${functions.length} functions for hook: "${hookName}"`);
+        logger.debug(`Found ${functions.length} functions for hook: "${hookName}"`);
         return functions;
     }, [loadedPlugins, hookMappings]);
 
