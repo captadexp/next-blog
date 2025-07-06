@@ -62,8 +62,7 @@
         },
         rpcs: {
             "scan-broken-links": async (sdk) => {
-                const report = await scanForBrokenLinks(sdk);
-                return {code: 0, payload: report};
+                return await scanForBrokenLinks(sdk);
             }
         }
     };

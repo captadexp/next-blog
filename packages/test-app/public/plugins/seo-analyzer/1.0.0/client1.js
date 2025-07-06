@@ -187,7 +187,25 @@
             pluginState.debouncedRunAnalysis = sdk.utils.debounce(runAnalysis, 1500);
             pluginState.debouncedPersistMetadata = sdk.utils.debounce(persistMetadata, 1500);
 
-            context.editor.on('change', () => {
+            context.on('content:change', () => {
+                pluginState.isTyping = true;
+                sdk.refresh();
+                pluginState.debouncedRunAnalysis();
+            });
+
+            context.on('title:change', () => {
+                pluginState.isTyping = true;
+                sdk.refresh();
+                pluginState.debouncedRunAnalysis();
+            });
+
+            context.on('slug:change', () => {
+                pluginState.isTyping = true;
+                sdk.refresh();
+                pluginState.debouncedRunAnalysis();
+            });
+
+            context.on('excerpt:change', () => {
                 pluginState.isTyping = true;
                 sdk.refresh();
                 pluginState.debouncedRunAnalysis();
@@ -209,8 +227,9 @@
         }
     }
 
-    async function handleKeywordChange(newKw, sdk, context) {
+    async function handleKeywordChange(sdk, context, newKw) {
         pluginState.focusKeyword = newKw;
+        pluginState.isTyping = true;
         sdk.refresh();
         pluginState.debouncedRunAnalysis();
         pluginState.debouncedPersistMetadata(sdk, context);
@@ -354,7 +373,7 @@
                         borderRadius: '0.25rem',
                         outline: 'none'
                     },
-                    onInput: e => handleKeywordChange(e.target.value, sdk, context)
+                    onInput: handleKeywordChange
                 }]
             ],
             ['div', {},

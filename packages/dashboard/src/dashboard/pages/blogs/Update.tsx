@@ -74,18 +74,15 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
             editor: {
                 getTitle: () => formData.title || '',
                 getContent: () => formData.content || '',
-                on: editorEventBus.on, // Expose the 'on' method to plugins
-            }
+            },
+            on: editorEventBus.on
         };
     }, [id, blog, formData, editorEventBus.on, tempRefresher]);
 
     const handleFieldChange = (key: string, value: any) => {
         setFormData(currentFormData => {
             const newData = {...currentFormData, [key]: value};
-            // When the content field changes, emit an event for plugins
-            if (key === 'content') {
-                editorEventBus.emit('change');
-            }
+            editorEventBus.emit(`${key}:change`, value);
             return newData;
         });
         return null;

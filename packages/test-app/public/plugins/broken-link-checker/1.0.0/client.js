@@ -4,17 +4,18 @@
         isScanning: false,
         report: null,
         error: null,
+        latestSdk: null,
     };
 
-    const fetchInitialReport = async (sdk) => {
+    const fetchInitialReport = async () => {
         // Prevent multiple initial fetches
         if (pluginState.isLoading || pluginState.report !== null) return;
 
         pluginState.isLoading = true;
-        sdk.refresh();
+        pluginState.latestSdk.refresh();
         try {
             // Call the hook without the parameter that might trigger a full scan
-            const response = await sdk.callHook("scan-broken-links", {});
+            const response = await pluginState.latestSdk.callHook("scan-broken-links", {});
             if (response.code === 0) {
                 const {code, message, payload} = response.payload;
                 pluginState.report = payload;
@@ -25,37 +26,38 @@
             pluginState.error = `Failed to fetch initial report: ${err.message}`;
         } finally {
             pluginState.isLoading = false;
-            sdk.refresh();
+            console.log("===>", pluginState.report);
+            pluginState.latestSdk.refresh();
         }
     };
 
-    const startScan = async (sdk) => {
+    const startScan = async () => {
         if (pluginState.isScanning) return;
 
         pluginState.isScanning = true;
         pluginState.isLoading = true;
         pluginState.error = null;
-        sdk.refresh();
+        pluginState.latestSdk.refresh();
 
         try {
-            const response = await sdk.callHook("scan-broken-links", {start_scan: true});
+            const response = await pluginState.latestSdk.callHook("scan-broken-links", {start_scan: true});
 
             if (response.code === 0) {
                 const {code, message, payload} = response.payload;
                 pluginState.report = payload;
-                sdk.notify('Scan complete!', 'success');
+                pluginState.latestSdk.notify('Scan complete!', 'success');
             } else {
                 throw new Error(response.message);
             }
 
         } catch (err) {
             pluginState.error = `Scan failed: ${err.message}`;
-            sdk.notify(pluginState.error, 'error');
+            pluginState.latestSdk.notify(pluginState.error, 'error');
         } finally {
             pluginState.isScanning = false;
             // FIX: Set isLoading to false here, as this function now completes the entire process.
             pluginState.isLoading = false;
-            sdk.refresh();
+            pluginState.latestSdk.refresh();
         }
     };
 
@@ -79,8 +81,10 @@
         ];
     };
 
-    const renderPanel = (sdk) => {
-        setTimeout(() => fetchInitialReport(sdk), 0);
+    const renderPanel = (sdk, prev, context) => {
+        pluginState.latestSdk = sdk;
+
+        setTimeout(() => fetchInitialReport(), 0);
 
         return ['div', {class: 'p-4 border rounded-lg shadow-sm bg-white'},
             ['div', {class: 'flex justify-between items-center mb-3'},
@@ -88,7 +92,7 @@
                 ['button', {
                     class: `btn p-2 rounded text-white ${pluginState.isScanning ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`,
                     // FIX: Ensure the onClick handler calls the corrected startScan function
-                    onClick: () => startScan(sdk),
+                    onClick: () => startScan(),
                     disabled: pluginState.isScanning,
                 }, pluginState.isScanning ? 'Scanning...' : 'Re-Scan All Posts']
             ],
