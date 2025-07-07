@@ -1,18 +1,34 @@
 import nextBlog from "@supergrowthai/next-blog";
+import {FileDBAdapter, MongoDBAdapter} from "@supergrowthai/next-blog/adapters";
+import {MongoClient} from "mongodb"
 import path from "path";
 import fs from "fs";
-import {FileDBAdapter} from "@supergrowthai/next-blog/adapters";
 
-// Create a data directory for our file-based database
-const dataPath = process.env.NEXT_BLOG_DATA_PATH || path.join(process.cwd(), "blog-data");
+let dbProvider;
 
-// Ensure the data directory exists
-if (!fs.existsSync(dataPath)) {
-    fs.mkdirSync(dataPath, {recursive: true});
+if (process.env.VERCEL === '1' || process.env.MONGO_DB_URL) {
+    // Use MongoDBAdapter on Vercel or when MONGO_DB_URL is set locally
+    const mongoDbUrl = process.env.MONGO_DB_URL;
+    if (!mongoDbUrl) {
+        throw new Error('MONGO_DB_URL environment variable is not set for this environment.');
+    }
+    const client = new MongoClient(mongoDbUrl);
+    const clientPromise = client.connect();
+    dbProvider = async () => {
+        const client = await clientPromise;
+        const dbName = 'next-blog';
+        return new MongoDBAdapter(dbName, client);
+    };
+    console.log("Using MongoDBAdapter.");
+} else {
+    // Use FileDBAdapter for local development by default
+    const dataPath = path.join(process.cwd(), 'blog-data');
+    if (!fs.existsSync(dataPath)) {
+        fs.mkdirSync(dataPath, {recursive: true});
+    }
+    dbProvider = async () => new FileDBAdapter(`${dataPath}/`);
+    console.log("Using FileDBAdapter for local development. Set MONGO_DB_URL to use MongoDB locally.");
 }
-
-// Initialize the FileDBAdapter
-const dbProvider = async () => new FileDBAdapter(`${dataPath}/`);
 
 // Initialize Next-Blog
 const {GET, POST} = nextBlog({
