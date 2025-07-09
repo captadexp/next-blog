@@ -1,23 +1,26 @@
 import nextBlog from "@supergrowthai/next-blog";
 import {FileDBAdapter, MongoDBAdapter} from "@supergrowthai/next-blog/adapters";
-import {MongoClient} from "mongodb"
+import {MongoClient} from "mongodb";
 import path from "path";
 import fs from "fs";
 
+const useMongo = process.env.VERCEL === "1" && Boolean(process.env.MONGO_DB_URL);
+
 let dbProvider;
 
-if (process.env.VERCEL === '1' || process.env.MONGO_DB_URL) {
-    // Use MongoDBAdapter on Vercel or when MONGO_DB_URL is set locally
-    const mongoDbUrl = process.env.MONGO_DB_URL;
-    if (!mongoDbUrl) {
-        throw new Error('MONGO_DB_URL environment variable is not set for this environment.');
+if (useMongo) {
+    const mongoUrl = process.env.MONGO_DB_URL!;
+
+    // cache the client promise across invocations
+    const globalAny: any = globalThis;
+    if (!globalAny._mongoClientPromise) {
+        globalAny._mongoClientPromise = new MongoClient(mongoUrl).connect();
     }
-    const client = new MongoClient(mongoDbUrl);
-    const clientPromise = client.connect();
+    const clientPromise = globalAny._mongoClientPromise;
+
     dbProvider = async () => {
         const client = await clientPromise;
-        const dbName = 'next-blog';
-        return new MongoDBAdapter(dbName, client);
+        return new MongoDBAdapter("next-blog", client);
     };
     console.log("Using MongoDBAdapter.");
 } else {
