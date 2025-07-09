@@ -9,7 +9,7 @@
 
     const fetchInitialReport = async () => {
         // Prevent multiple initial fetches
-        if (pluginState.isLoading || pluginState.report !== null) return;
+        if (pluginState.isLoading || pluginState.report !== null || pluginState.error !== null) return;
 
         pluginState.isLoading = true;
         pluginState.latestSdk.refresh();
@@ -18,6 +18,7 @@
             const response = await pluginState.latestSdk.callHook("scan-broken-links", {});
             if (response.code === 0) {
                 const {code, message, payload} = response.payload;
+                if (code !== 0) throw new Error(message);
                 pluginState.report = payload;
             } else {
                 throw new Error(response.message);
@@ -44,6 +45,7 @@
 
             if (response.code === 0) {
                 const {code, message, payload} = response.payload;
+                if (code !== 0) throw new Error(message);
                 pluginState.report = payload;
                 pluginState.latestSdk.notify('Scan complete!', 'success');
             } else {
