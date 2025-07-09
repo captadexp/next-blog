@@ -18,7 +18,7 @@ const CreatePlugin = () => {
         try {
             const response = await api.createPlugin({url});
             if (response.code === 0) {
-                route('/api/next-blog/dashboard/plugins');
+                route('/api/next-blog/dashboard/plugins?r=1');
             } else {
                 setError(response.message || 'Failed to create plugin');
             }

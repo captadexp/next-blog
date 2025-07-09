@@ -1,4 +1,4 @@
-import {h, FunctionComponent} from 'preact';
+import {FunctionComponent, h} from 'preact';
 import {useLocation} from 'preact-iso';
 import {useEffect, useState} from 'preact/hooks';
 import {useUser} from "../../../context/UserContext.tsx";
@@ -23,27 +23,26 @@ const TagsList: FunctionComponent<TagsListProps> = () => {
     const [error, setError] = useState<string | null>(null);
     const {apis} = useUser();
 
-    useEffect(() => {
-        // Function to fetch tags from the API
-        const fetchTags = async () => {
-            try {
-                // Fetch tags data from API
-                const response = await apis.getTags()
+    const fetchTags = async () => {
+        try {
+            // Fetch tags data from API
+            const response = await apis.getTags()
 
-                if (response.code !== 0) {
-                    throw new Error(`Error fetching tags: ${response.message}`);
-                }
-
-                const data = response.payload!;
-                setTags(Array.isArray(data) ? data : []);
-                setLoading(false);
-            } catch (err) {
-                console.error('Error fetching tags:', err);
-                setError(err instanceof Error ? err.message : 'Unknown error');
-                setLoading(false);
+            if (response.code !== 0) {
+                throw new Error(`Error fetching tags: ${response.message}`);
             }
-        };
 
+            const data = response.payload!;
+            setTags(Array.isArray(data) ? data : []);
+            setLoading(false);
+        } catch (err) {
+            console.error('Error fetching tags:', err);
+            setError(err instanceof Error ? err.message : 'Unknown error');
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchTags();
     }, []);
 
@@ -105,7 +104,12 @@ const TagsList: FunctionComponent<TagsListProps> = () => {
                                         Edit
                                     </a>
                                     <button
-                                        onClick={() => alert(`Delete tag: ${tag._id}`)}
+                                        onClick={() => {
+                                            if (confirm(`Delete tag: ${tag._id}`)) {
+                                                apis.deleteTag(tag._id)
+                                                    .then(() => fetchTags());
+                                            }
+                                        }}
                                         className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit"
                                     >
                                         Delete
