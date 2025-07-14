@@ -19,7 +19,7 @@ export default async function (props: { params: Promise<{ slug: string }> }) {
     const blogDb = await dbProvider();
     const blog = await blogDb.blogs.findOne({slug});
 
-    if (blog.status !== "published")
+    if (blog?.status !== "published")
         return notFound();
 
     return <>
