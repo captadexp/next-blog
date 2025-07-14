@@ -7,6 +7,7 @@ import {
     Comment,
     CommentData,
     DatabaseAdapter,
+    DetailedBlog,
     Filter,
     Media,
     MediaData,
@@ -34,9 +35,9 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
     get blogs() {
         return {
-            findOne: async (filter: Filter<Blog>): Promise<Blog> => {
+            findOne: async (filter: Filter<Blog>): Promise<Blog | null> => {
                 const blogs = await this.readData<Blog>('blogs.json');
-                return blogs.find((blog: any) => Object.keys(filter).every((key: any) => blog[key] === (filter as any)[key]))!;
+                return blogs.find((blog: any) => Object.keys(filter).every((key: any) => blog[key] === (filter as any)[key])) || null;
             },
 
             find: async (filter: Filter<Blog>): Promise<Blog[]> => {
@@ -44,9 +45,9 @@ export default class FileDBAdapter implements DatabaseAdapter {
                 return blogs.filter((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
             },
 
-            findById: async (id: string): Promise<Blog> => {
+            findById: async (id: string): Promise<Blog | null> => {
                 const blogs = await this.readData<Blog>('blogs.json');
-                return blogs.find(blog => blog._id === id)!;
+                return blogs.find(blog => blog._id === id) || null;
             },
 
             create: async (data: BlogData): Promise<Blog> => {
@@ -111,17 +112,17 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
     get categories() {
         return {
-            findOne: async (filter: Filter<Category>): Promise<Category> => {
+            findOne: async (filter: Filter<Category>): Promise<Category | null> => {
                 const blogs = await this.readData<Category>('categories.json');
-                return blogs.find((blog: any) => Object.keys(filter).every((key: any) => blog[key] === (filter as any)[key]))!;
+                return blogs.find((blog: any) => Object.keys(filter).every((key: any) => blog[key] === (filter as any)[key])) || null;
             },
             find: async (filter: Filter<Category>): Promise<Category[]> => {
                 const blogs = await this.readData<Category>('categories.json');
                 return blogs.filter((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
             },
-            findById: async (id: string): Promise<Category> => {
+            findById: async (id: string): Promise<Category | null> => {
                 const categories = await this.readData<Category>('categories.json');
-                return categories.find(category => category._id === id)!;
+                return categories.find(category => category._id === id) || null;
             },
 
             create: async (data: CategoryData): Promise<Category> => {
@@ -167,17 +168,17 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
     get tags() {
         return {
-            findOne: async (filter: Filter<Tag>): Promise<Tag> => {
+            findOne: async (filter: Filter<Tag>): Promise<Tag | null> => {
                 const blogs = await this.readData<Tag>('tags.json');
-                return blogs.find((blog: any) => Object.keys(filter).every((key: any) => blog[key] === (filter as any)[key]))!;
+                return blogs.find((blog: any) => Object.keys(filter).every((key: any) => blog[key] === (filter as any)[key])) || null;
             },
             find: async (filter: Filter<Tag>): Promise<Tag[]> => {
                 const blogs = await this.readData<Tag>('tags.json');
                 return blogs.filter((tag: any) => Object.keys(filter).every(key => tag[key] === (filter as any)[key]));
             },
-            findById: async (id: string): Promise<Tag> => {
+            findById: async (id: string): Promise<Tag | null> => {
                 const tags = await this.readData<Tag>('tags.json');
-                return tags.find(tag => tag._id === id)!;
+                return tags.find(tag => tag._id === id) || null;
             },
 
             create: async (data: TagData): Promise<Tag> => {
@@ -225,17 +226,17 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
     get users() {
         return {
-            findOne: async (filter: Filter<User>): Promise<User> => {
+            findOne: async (filter: Filter<User>): Promise<User | null> => {
                 const users = await this.readData<User>('users.json');
-                return users.find((user: any) => Object.keys(filter).every((key: any) => user[key] === (filter as any)[key]))!;
+                return users.find((user: any) => Object.keys(filter).every((key: any) => user[key] === (filter as any)[key])) || null;
             },
             find: async (filter: Filter<User>): Promise<User[]> => {
                 const users = await this.readData<User>('users.json');
                 return users.filter((user: any) => Object.keys(filter).every(key => user[key] === (filter as any)[key]));
             },
-            findById: async (id: string): Promise<User> => {
+            findById: async (id: string): Promise<User | null> => {
                 const users = await this.readData<User>('users.json');
-                return users.find(user => user._id === id)!;
+                return users.find(user => user._id === id) || null;
             },
 
             create: async (data: UserData): Promise<User> => {
@@ -298,17 +299,17 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
     get settings() {
         return {
-            findOne: async (filter: Filter<SettingsEntry>): Promise<SettingsEntry> => {
+            findOne: async (filter: Filter<SettingsEntry>): Promise<SettingsEntry | null> => {
                 const settings = await this.readData<SettingsEntry>('settings.json');
-                return settings.find((setting: any) => Object.keys(filter).every((key: any) => setting[key] === (filter as any)[key]))!;
+                return settings.find((setting: any) => Object.keys(filter).every((key: any) => setting[key] === (filter as any)[key])) || null;
             },
             find: async (filter: Filter<SettingsEntry>): Promise<SettingsEntry[]> => {
                 const settings = await this.readData<SettingsEntry>('settings.json');
                 return settings.filter((setting: any) => Object.keys(filter).every(key => setting[key] === (filter as any)[key]));
             },
-            findById: async (id: string): Promise<SettingsEntry> => {
+            findById: async (id: string): Promise<SettingsEntry | null> => {
                 const settings = await this.readData<SettingsEntry>('settings.json');
-                return settings.find(setting => setting._id === id)!;
+                return settings.find(setting => setting._id === id) || null;
             },
 
             create: async (data: SettingsEntryData): Promise<SettingsEntry> => {
@@ -360,17 +361,17 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
     get plugins() {
         return {
-            findOne: async (filter: Filter<Plugin>): Promise<Plugin> => {
+            findOne: async (filter: Filter<Plugin>): Promise<Plugin | null> => {
                 const plugins = await this.readData<Plugin>('plugins.json');
-                return plugins.find((plugin: any) => Object.keys(filter).every((key: any) => plugin[key] === (filter as any)[key]))!;
+                return plugins.find((plugin: any) => Object.keys(filter).every((key: any) => plugin[key] === (filter as any)[key])) || null;
             },
             find: async (filter: Filter<Plugin>): Promise<Plugin[]> => {
                 const plugins = await this.readData<Plugin>('plugins.json');
                 return plugins.filter((plugin: any) => Object.keys(filter).every(key => plugin[key] === (filter as any)[key]));
             },
-            findById: async (id: string): Promise<Plugin> => {
+            findById: async (id: string): Promise<Plugin | null> => {
                 const plugins = await this.readData<Plugin>('plugins.json');
-                return plugins.find(plugin => plugin._id === id)!;
+                return plugins.find(plugin => plugin._id === id) || null;
             },
 
             create: async (data: PluginData): Promise<Plugin> => {
@@ -422,17 +423,17 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
     get pluginHookMappings() {
         return {
-            findOne: async (filter: Filter<PluginHookMapping>): Promise<PluginHookMapping> => {
+            findOne: async (filter: Filter<PluginHookMapping>): Promise<PluginHookMapping | null> => {
                 const mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
-                return mappings.find((mapping: any) => Object.keys(filter).every((key: any) => mapping[key] === (filter as any)[key]))!;
+                return mappings.find((mapping: any) => Object.keys(filter).every((key: any) => mapping[key] === (filter as any)[key])) || null;
             },
             find: async (filter: Filter<PluginHookMapping>): Promise<PluginHookMapping[]> => {
                 const mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
                 return mappings.filter((mapping: any) => Object.keys(filter).every(key => mapping[key] === (filter as any)[key]));
             },
-            findById: async (id: string): Promise<PluginHookMapping> => {
+            findById: async (id: string): Promise<PluginHookMapping | null> => {
                 const mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
-                return mappings.find(mapping => mapping._id === id)!;
+                return mappings.find(mapping => mapping._id === id) || null;
             },
 
             create: async (data: PluginHookMappingData): Promise<PluginHookMapping> => {
@@ -484,17 +485,17 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
     get comments() {
         return {
-            findOne: async (filter: Filter<Comment>): Promise<Comment> => {
+            findOne: async (filter: Filter<Comment>): Promise<Comment | null> => {
                 const comments = await this.readData<Comment>('comments.json');
-                return comments.find((comment: any) => Object.keys(filter).every((key: any) => comment[key] === (filter as any)[key]))!;
+                return comments.find((comment: any) => Object.keys(filter).every((key: any) => comment[key] === (filter as any)[key])) || null;
             },
             find: async (filter: Filter<Comment>): Promise<Comment[]> => {
                 const comments = await this.readData<Comment>('comments.json');
                 return comments.filter((comment: any) => Object.keys(filter).every(key => comment[key] === (filter as any)[key]));
             },
-            findById: async (id: string): Promise<Comment> => {
+            findById: async (id: string): Promise<Comment | null> => {
                 const comments = await this.readData<Comment>('comments.json');
-                return comments.find(comment => comment._id === id)!;
+                return comments.find(comment => comment._id === id) || null;
             },
 
             create: async (data: CommentData): Promise<Comment> => {
@@ -546,17 +547,17 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
     get revisions() {
         return {
-            findOne: async (filter: Filter<Revision>): Promise<Revision> => {
+            findOne: async (filter: Filter<Revision>): Promise<Revision | null> => {
                 const revisions = await this.readData<Revision>('revisions.json');
-                return revisions.find((revision: any) => Object.keys(filter).every((key: any) => revision[key] === (filter as any)[key]))!;
+                return revisions.find((revision: any) => Object.keys(filter).every((key: any) => revision[key] === (filter as any)[key])) || null;
             },
             find: async (filter: Filter<Revision>): Promise<Revision[]> => {
                 const revisions = await this.readData<Revision>('revisions.json');
                 return revisions.filter((revision: any) => Object.keys(filter).every(key => revision[key] === (filter as any)[key]));
             },
-            findById: async (id: string): Promise<Revision> => {
+            findById: async (id: string): Promise<Revision | null> => {
                 const revisions = await this.readData<Revision>('revisions.json');
-                return revisions.find(revision => revision._id === id)!;
+                return revisions.find(revision => revision._id === id) || null;
             },
 
             create: async (data: RevisionData): Promise<Revision> => {
@@ -607,17 +608,17 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
     get media() {
         return {
-            findOne: async (filter: Filter<Media>): Promise<Media> => {
+            findOne: async (filter: Filter<Media>): Promise<Media | null> => {
                 const media = await this.readData<Media>('media.json');
-                return media.find((item: any) => Object.keys(filter).every((key: any) => item[key] === (filter as any)[key]))!;
+                return media.find((item: any) => Object.keys(filter).every((key: any) => item[key] === (filter as any)[key])) || null;
             },
             find: async (filter: Filter<Media>): Promise<Media[]> => {
                 const media = await this.readData<Media>('media.json');
                 return media.filter((item: any) => Object.keys(filter).every(key => item[key] === (filter as any)[key]));
             },
-            findById: async (id: string): Promise<Media> => {
+            findById: async (id: string): Promise<Media | null> => {
                 const media = await this.readData<Media>('media.json');
-                return media.find(item => item._id === id)!;
+                return media.find(item => item._id === id) || null;
             },
 
             create: async (data: MediaData): Promise<Media> => {
@@ -663,6 +664,35 @@ export default class FileDBAdapter implements DatabaseAdapter {
                 media = media.filter((item: any) => !Object.keys(filter).every(key => item[key] === (filter as any)[key]));
                 await this.writeData('media.json', media);
                 return initialLength - media.length;
+            },
+        }
+    }
+
+    get generated() {
+        return {
+            getDetailedBlogObject: async (filter: Filter<Blog>): Promise<DetailedBlog | null> => {
+                const blog = await this.blogs.findOne(filter);
+                if (!blog) {
+                    return null;
+                }
+
+                const author = await this.users.findById(blog.userId);
+                const category = await this.categories.findById(blog.category);
+                const tags = await Promise.all(blog.tags.map(tagId => this.tags.findById(tagId)));
+
+                if (!author || !category) {
+                    // Or handle this case more gracefully
+                    return null;
+                }
+
+                const { userId, ...restOfBlog } = blog;
+
+                return {
+                    ...restOfBlog,
+                    author,
+                    category,
+                    tags: tags.filter((t): t is Tag => t !== null),
+                };
             },
         }
     }

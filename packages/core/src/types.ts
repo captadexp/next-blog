@@ -25,6 +25,12 @@ export interface BlogData extends Partial<Blog> {
     userId: string;
 }
 
+export interface DetailedBlog extends Omit<Blog, 'category' | 'tags' | 'userId'> {
+    author: User;
+    category: Category;
+    tags: Tag[];
+}
+
 export interface Category {
     _id: string;
     name: string;

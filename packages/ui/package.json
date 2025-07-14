@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "UI components for next-blog",
   "repository": "https://github.com/captadexp/next-blog",
-  "type": "module",
+  "main": "dist/index.mjs",
+  "types": "dist/index.d.ts",
   "scripts": {
     "clean": "rimraf dist && mkdir -p dist",
     "dev": "npm run clean && vite build --watch",
@@ -23,7 +24,7 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "default": "./dist/index.mjs"
     },
     "./package.json": "./package.json"
   },
@@ -39,6 +40,7 @@
     "@types/react-dom": "^19.0.4",
     "typescript": "^5.8.2",
     "vite": "^6.2.3",
-    "vite-plugin-dts": "^4.5.3"
+    "vite-plugin-dts": "^4.5.3",
+    "@vitejs/plugin-react": "^4.6.0"
   }
 }

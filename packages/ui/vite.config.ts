@@ -1,6 +1,7 @@
 import {defineConfig} from 'vite';
 import {resolve} from 'path';
 import dts from 'vite-plugin-dts';
+import react from '@vitejs/plugin-react'
 
 export default defineConfig({
     build: {
@@ -11,16 +12,13 @@ export default defineConfig({
             formats: ['es'],
         },
         rollupOptions: {
-            external: ['react', 'react-dom'],
-            output: {
-                globals: {
-                    react: 'React',
-                    'react-dom': 'ReactDOM',
-                },
-            },
+            external: ['react', 'react-dom', '@supergrowthai/next-blog'],
         },
         sourcemap: true,
-        emptyOutDir: false,
+        emptyOutDir: true,
     },
-    plugins: [dts()],
+    plugins: [
+        react(),
+        dts(),
+    ],
 });
