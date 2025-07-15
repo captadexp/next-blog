@@ -8,11 +8,15 @@ export default defineConfig({
         lib: {
             entry: resolve(__dirname, 'src/index.tsx'),
             name: 'NextBlogUI',
-            fileName: 'index',
+            fileName: (format, entryName) => `${entryName}.js`,
             formats: ['es'],
         },
         rollupOptions: {
-            external: ['react', 'react-dom', '@supergrowthai/next-blog'],
+            external: [
+                /^react($|\/)/,
+                /^react-dom($|\/)/,
+                '@supergrowthai/next-blog'
+            ],
         },
         sourcemap: true,
         emptyOutDir: true,

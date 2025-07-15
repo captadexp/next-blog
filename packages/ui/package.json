@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "UI components for next-blog",
   "repository": "https://github.com/captadexp/next-blog",
-  "main": "dist/index.mjs",
+  "type": "module",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "clean": "rimraf dist && mkdir -p dist",
@@ -24,7 +25,7 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/index.mjs"
+      "default": "./dist/index.js"
     },
     "./package.json": "./package.json"
   },
