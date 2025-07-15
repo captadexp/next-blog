@@ -1,18 +1,18 @@
-import path from "path";
-import fs from "fs";
-import {adapters} from "@supergrowthai/next-blog";
 import {notFound} from "next/navigation";
-import {Header, RecentPosts, RelatedPosts, Content, AuthorInfo} from "@supergrowthai/next-blog-ui";
-//
-const dataPath = path.join(process.cwd(), "blog-data");
-
-// Ensure the data directory exists
-if (!fs.existsSync(dataPath)) {
-    fs.mkdirSync(dataPath, {recursive: true});
-}
-
-// Initialize the FileDBAdapter
-const dbProvider = async () => new adapters.FileDBAdapter(`${dataPath}/`);
+import {
+    Header,
+    RecentPosts,
+    RelatedPosts,
+    Content,
+    AuthorInfo,
+    BlogLayout,
+    MainSection,
+    Aside
+} from "@supergrowthai/next-blog-ui";
+import '@supergrowthai/next-blog-ui/dist/index.css';
+import styles from './page.module.css';
+import {dbProvider} from "@/lib/db";
+import {SEOAnalyzer} from "../_components/seo/SEOAnalyzer";
 
 export default async function (props: { params: Promise<{ slug: string }> }) {
     const {params} = props;
@@ -23,27 +23,27 @@ export default async function (props: { params: Promise<{ slug: string }> }) {
     if (blog?.status !== "published")
         return notFound();
 
-    return <>
-        <div className="min-h-screen bg-gray-100 flex flex-col">
-            <Header db={blogDb} blog={blog}/>
-
-            <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main content */}
-                <section className="lg:col-span-2 space-y-8">
+    return (
+        <BlogLayout>
+            <BlogLayout.Header>
+                <Header db={blogDb} blog={blog}/>
+            </BlogLayout.Header>
+            <BlogLayout.Body>
+                <MainSection>
                     <Content db={blogDb} blog={blog}/>
                     <AuthorInfo db={blogDb} blog={blog}/>
-                </section>
-
-                {/* Sidebar */}
-                <aside className="lg:col-span-1 space-y-8">
+                    <SEOAnalyzer blog={blog}/>
+                </MainSection>
+                <Aside>
                     <RelatedPosts db={blogDb} blog={blog}/>
                     <RecentPosts db={blogDb} blog={blog}/>
-                </aside>
-            </main>
-
-            <footer className="bg-white py-6 text-center text-sm text-gray-500">
-                © {new Date().getFullYear()} Next-Blog. All rights reserved.
-            </footer>
-        </div>
-    </>
+                </Aside>
+            </BlogLayout.Body>
+            <BlogLayout.Footer>
+                <footer className={styles.footer}>
+                    © {new Date().getFullYear()} Next-Blog. All rights reserved.
+                </footer>
+            </BlogLayout.Footer>
+        </BlogLayout>
+    );
 }

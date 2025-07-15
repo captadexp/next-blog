@@ -27,13 +27,17 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./dist/index.css": {
+      "default": "./dist/index.css"
+    },
     "./package.json": "./package.json"
   },
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "ISC",
   "peerDependencies": {
     "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react-dom": "^18.0.0",
+    "@supergrowthai/next-blog": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.13.14",
@@ -43,5 +47,8 @@
     "vite": "^7.0.4",
     "vite-plugin-dts": "^4.5.4",
     "@vitejs/plugin-react": "^4.6.0"
+  },
+  "dependencies": {
+    "vite-plugin-lib-inject-css": "^2.2.2"
   }
 }
