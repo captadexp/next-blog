@@ -1,3 +1,4 @@
+// @ts-expect-error Next.js does not yet correctly use the `package.json#exports` field
 import {NextRequest, NextResponse} from "next/server";
 import {Configuration} from "./types.js";
 import {getCachedMatch, PathObject} from "./utils/parse-path.js";

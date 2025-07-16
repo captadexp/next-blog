@@ -1,28 +1,49 @@
-import path from "path";
-import fs from "fs";
-import {FileDBAdapter} from "@supergrowthai/next-blog";
 import {notFound} from "next/navigation";
-
-const dataPath = path.join(process.cwd(), "blog-data");
-
-// Ensure the data directory exists
-if (!fs.existsSync(dataPath)) {
-    fs.mkdirSync(dataPath, {recursive: true});
-}
-
-// Initialize the FileDBAdapter
-const dbProvider = async () => new FileDBAdapter(`${dataPath}/`);
+import {
+    Header,
+    RecentPosts,
+    RelatedPosts,
+    Content,
+    AuthorInfo,
+    BlogLayout,
+    MainSection,
+    Aside
+} from "@supergrowthai/next-blog-ui";
+import '@supergrowthai/next-blog-ui/dist/index.css';
+import styles from './page.module.css';
+import {dbProvider} from "@/lib/db";
+import {SEOAnalyzer} from "../_components/seo/SEOAnalyzer";
 
 export default async function (props: { params: Promise<{ slug: string }> }) {
     const {params} = props;
     const {slug} = await params;
     const blogDb = await dbProvider();
-    const blog = await blogDb.blogs.findOne({slug});
+    const blog = await blogDb.generated.getDetailedBlogObject({slug});
 
-    if (blog.status !== "published")
+    if (blog?.status !== "published")
         return notFound();
 
-    return <>
-        <div dangerouslySetInnerHTML={{__html: blog.content}}></div>
-    </>
+    return (
+        <BlogLayout>
+            <BlogLayout.Header>
+                <Header db={blogDb} blog={blog}/>
+            </BlogLayout.Header>
+            <BlogLayout.Body>
+                <MainSection>
+                    <Content db={blogDb} blog={blog}/>
+                    <AuthorInfo db={blogDb} blog={blog}/>
+                    <SEOAnalyzer blog={blog}/>
+                </MainSection>
+                <Aside>
+                    <RelatedPosts db={blogDb} blog={blog}/>
+                    <RecentPosts db={blogDb} blog={blog}/>
+                </Aside>
+            </BlogLayout.Body>
+            <BlogLayout.Footer>
+                <footer className={styles.footer}>
+                    © {new Date().getFullYear()} Next-Blog. All rights reserved.
+                </footer>
+            </BlogLayout.Footer>
+        </BlogLayout>
+    );
 }

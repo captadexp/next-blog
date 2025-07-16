@@ -7,6 +7,7 @@ import {
     Comment,
     CommentData,
     DatabaseAdapter,
+    DetailedBlog,
     Filter,
     Media,
     MediaData,
@@ -503,6 +504,75 @@ export default class MongoDBAdapter implements DatabaseAdapter {
 
     get media(): CollectionOperations<Media, MediaData> {
         return this.getCollectionOperations<Media, MediaData>('media', this.mediaTransformer);
+    }
+
+    get generated() {
+        return {
+            getDetailedBlogObject: async (filter: Filter<Blog>): Promise<DetailedBlog | null> => {
+
+                const blogCollection: Collection<any> = this.db.collection('blogs');
+                const dbFilter = this.blogTransformer.toDb(filter);
+
+                const pipeline = [
+                    {$match: dbFilter},
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'userId',
+                            foreignField: '_id',
+                            as: 'author'
+                        }
+                    },
+                    {$unwind: '$author'},
+                    {
+                        $lookup: {
+                            from: 'categories',
+                            localField: 'category',
+                            foreignField: '_id',
+                            as: 'category'
+                        }
+                    },
+                    {$unwind: '$category'},
+                    {
+                        $lookup: {
+                            from: 'tags',
+                            localField: 'tags',
+                            foreignField: '_id',
+                            as: 'tags'
+                        }
+                    },
+                    {
+                        $project: {
+                            userId: 0, // Exclude original userId
+                        }
+                    }
+                ];
+
+                const results = await blogCollection.aggregate(pipeline).toArray();
+
+                if (results.length === 0) {
+                    return null;
+                }
+
+                const result = results[0];
+
+                // Transform the nested objects using transformers
+                const author = this.userTransformer.fromDb(result.author);
+                const category = this.categoryTransformer.fromDb(result.category);
+                const tags = result.tags.map((tag: any) => this.tagTransformer.fromDb(tag));
+
+                // Transform the main blog object
+                const blog = this.blogTransformer.fromDb(result);
+
+
+                return {
+                    ...blog,
+                    author,
+                    category,
+                    tags,
+                };
+            }
+        }
     }
 
     private getCollectionOperations<T extends U, U>(

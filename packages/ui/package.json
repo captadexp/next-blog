@@ -4,10 +4,23 @@
   "description": "UI components for next-blog",
   "repository": "https://github.com/captadexp/next-blog",
   "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/index.css",
+    "./package.json": "./package.json"
+  },
   "scripts": {
-    "clean": "rimraf dist && mkdir -p dist",
-    "dev": "npm run clean && vite build --watch",
-    "build": "npm run clean && vite build",
+    "clean": "rimraf dist",
+    "dev": "vite build --watch",
+    "build": "bun run clean && vite build",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
@@ -17,28 +30,25 @@
     "blogging",
     "ui"
   ],
-  "files": [
-    "dist"
-  ],
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    },
-    "./package.json": "./package.json"
-  },
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "ISC",
   "peerDependencies": {
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "@supergrowthai/next-blog": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^22.13.14",
-    "@types/react": "^19.0.12",
-    "@types/react-dom": "^19.0.4",
-    "typescript": "^5.8.2",
-    "vite": "^6.2.3",
-    "vite-plugin-dts": "^4.5.3"
+    "@types/node": "^24.0.14",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "@supergrowthai/next-blog": "workspace:*",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.4",
+    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-lib-inject-css": "^2.2.2"
   }
 }

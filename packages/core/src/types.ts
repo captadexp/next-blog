@@ -25,6 +25,12 @@ export interface BlogData extends Partial<Blog> {
     userId: string;
 }
 
+export interface DetailedBlog extends Omit<Blog, 'category' | 'tags' | 'userId'> {
+    author: User;
+    category: Category;
+    tags: Tag[];
+}
+
 export interface Category {
     _id: string;
     name: string;
@@ -242,6 +248,10 @@ export interface DatabaseAdapter {
     comments: CollectionOperations<Comment, CommentData>;
     revisions: CollectionOperations<Revision, RevisionData>;
     media: CollectionOperations<Media, MediaData>;
+
+    generated: {
+        getDetailedBlogObject(filter: Filter<Blog>): Promise<DetailedBlog | null>;
+    }
 }
 
 export type Filter<T> = Partial<Record<keyof T, any>>;

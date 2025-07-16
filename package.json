@@ -9,16 +9,11 @@
   ],
   "scripts": {
     "build": "npm run build:all",
-    "dev": "npm run dev:all",
+    "dev": "bun --filter=* run dev",
     "build:all": "npm run build:ui && npm run build:dashboard && npm run build:core",
-    "dev:all": "./dev.sh",
     "build:ui": "cd packages/ui && npm run build",
     "build:dashboard": "cd packages/dashboard && npm run build",
     "build:core": "cd packages/core && npm run build",
-    "dev:ui": "cd packages/ui && npm run dev",
-    "dev:dashboard": "cd packages/dashboard && npm run dev",
-    "dev:core": "cd packages/core && npm run dev",
-    "dev:test": "cd packages/test-app && npm run dev",
     "build:test": "cd packages/test-app && npm run build",
     "start:test": "cd packages/test-app && npm run start",
     "typecheck:ui": "cd packages/ui && npm run typecheck",
@@ -41,5 +36,13 @@
   },
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "MIT",
-  "packageManager": "bun@1.2.8"
+  "packageManager": "bun@1.2.8",
+  "devDependencies": {
+    "turbo": "^2.5.4"
+  },
+  "trustedDependencies": [
+    "@tailwindcss/oxide",
+    "esbuild",
+    "sharp"
+  ]
 }

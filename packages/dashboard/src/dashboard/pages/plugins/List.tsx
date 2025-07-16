@@ -1,13 +1,13 @@
 import {h} from 'preact';
 import {useUser} from '../../../context/UserContext';
 import {Plugin} from '../../../types/api';
-import {pluginCache} from "../../../utils/pluginCache.ts";
 import {usePlugins} from "../../../context/PluginContext.tsx";
 import {useLocation} from "preact-iso";
+import {useEffect} from "preact/hooks";
 
 const PluginsList = () => {
     const {hasPermission, hasAllPermissions, apis: api} = useUser();
-    const {plugins, loadedPlugins, status: pluginStatus} = usePlugins();
+    const {plugins, loadedPlugins, status: pluginStatus, hardReloadPlugins} = usePlugins();
     const location = useLocation();
 
     const handleReinstall = async (id: string) => {
@@ -17,8 +17,7 @@ const PluginsList = () => {
         try {
             const response = await api.reinstallPlugin(id);
             if (response.code === 0) {
-                await pluginCache.clear();
-                window.location.reload();
+                hardReloadPlugins();
             } else {
                 alert(`Error: ${response.message}`);
             }
@@ -34,7 +33,7 @@ const PluginsList = () => {
         try {
             const response = await api.deletePlugin(id);
             if (response.code === 0) {
-                window.location.reload();
+                hardReloadPlugins()
             } else {
                 alert(`Error: ${response.message}`);
             }
@@ -85,6 +84,16 @@ const PluginsList = () => {
             },
         },
     ];
+
+    useEffect(() => {
+        if (location.query.r === '1') {
+            console.log("Detected a refresh request")
+            hardReloadPlugins();
+            const {r, ...rest} = location.query;
+            const qs = new URLSearchParams(rest as Record<string, string>).toString();
+            location.route(location.path + (qs ? `?${qs}` : ''), /* replaceHistory */ true);
+        }
+    }, [location.query.r]);
 
     if (pluginStatus !== 'ready') {
         return (

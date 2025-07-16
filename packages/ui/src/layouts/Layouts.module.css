@@ -1,0 +1,41 @@
+.page {
+    min-height: 100vh;
+    background-color: #F3F4F6;
+    display: flex;
+    flex-direction: column;
+}
+
+.main {
+    flex: 1;
+    max-width: 72rem;
+    margin: 0 auto;
+    width: 100%;
+    padding: 32px 16px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.aside {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+@media (min-width: 1024px) {
+    .main {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    .section {
+        grid-column: span 2 / span 2;
+    }
+    .aside {
+        grid-column: span 1 / span 1;
+    }
+}

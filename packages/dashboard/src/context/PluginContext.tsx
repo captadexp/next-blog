@@ -14,6 +14,8 @@ interface PluginContextType {
     loadedPlugins: Map<string, PluginModule>;
     getHookFunctions: (hookName: string) => { pluginId: string, hookFn: UIHookFn }[];
     callHook: <T, R>(hookName: string, payload: T) => Promise<R>;
+    reloadPlugins: () => Promise<void>;
+    hardReloadPlugins: () => Promise<void>;
 }
 
 export interface PluginModule {
@@ -60,8 +62,9 @@ export const PluginProvider: FunctionComponent = ({children}) => {
 
             const blob = new Blob([`return ${code}`], {type: 'text/javascript'});
             const objectUrl = URL.createObjectURL(blob);
-            const module = new Function(await (await fetch(objectUrl)).text())();
+            const moduleFactory = new Function(await (await fetch(objectUrl)).text());
             URL.revokeObjectURL(objectUrl);
+            const module = moduleFactory();
             if (!module || typeof module !== 'object') throw new Error(`Plugin ${plugin.name} did not return a valid module object.`);
             logger.info(`Successfully loaded plugin: ${plugin.name}`);
             return [plugin._id, module];
@@ -73,55 +76,77 @@ export const PluginProvider: FunctionComponent = ({children}) => {
         }
     }, [apis]);
 
-    useEffect(() => {
-        const initialize = async () => {
-            if (!user || status !== 'idle') return;
-            logger.time('Initialization');
-            logger.info('Initializing...');
-            setStatus('initializing');
-            try {
-                const [pluginsRes, mappingsRes] = await Promise.all([
-                    apis.getPlugins(),
-                    apis.getPluginHookMappings({type: 'client'}),
-                ]);
+    const doLoadAll = useCallback(async () => {
+        if (!user || !['idle', 'ready'].includes(status)) return;
+        logger.time('Initialization');
+        logger.info('Initializing...');
+        setStatus('initializing');
+        try {
+            const [pluginsRes, mappingsRes] = await Promise.all([
+                apis.getPlugins(),
+                apis.getPluginHookMappings({type: 'client'}),
+            ]);
 
-                if (pluginsRes.code !== 0 || mappingsRes.code !== 0) throw new Error('Failed to fetch plugin metadata.');
+            if (pluginsRes.code !== 0 || mappingsRes.code !== 0) throw new Error('Failed to fetch plugin metadata.');
 
-                const pluginsToLoad = pluginsRes.payload || [];
-                setPlugins(pluginsToLoad);
-                const hookMappingsToLoad = mappingsRes.payload || [];
-                logger.debug(`Found ${pluginsToLoad.length} plugins and ${hookMappingsToLoad.length} hook mappings.`);
+            const pluginsToLoad = pluginsRes.payload || [];
+            setPlugins(pluginsToLoad);
+            const hookMappingsToLoad = mappingsRes.payload || [];
+            logger.debug(`Found ${pluginsToLoad.length} plugins and ${hookMappingsToLoad.length} hook mappings.`);
 
-                const mappings = new Map<string, PluginHookMapping[]>();
-                for (const mapping of hookMappingsToLoad) {
-                    if (!mappings.has(mapping.hookName)) mappings.set(mapping.hookName, []);
-                    mappings.get(mapping.hookName)?.push(mapping);
-                }
-                for (const [hookName, m] of mappings.entries()) {
-                    mappings.set(hookName, m.sort((a, b) => a.priority - b.priority));
-                }
-                setHookMappings(mappings);
-                logger.debug('Hook mappings processed.');
-
-                const results = await Promise.all(pluginsToLoad.map(loadPluginModule));
-
-                const newPlugins = new Map<string, PluginModule>();
-                results.forEach(result => {
-                    if (result) newPlugins.set(result[0], result[1]);
-                });
-
-                setLoadedPlugins(newPlugins);
-                setStatus('ready');
-                logger.info(`Initialization complete. ${newPlugins.size} plugins loaded.`);
-            } catch (error) {
-                logger.error('Initialization failed:', error);
-                setStatus('error');
-            } finally {
-                logger.timeEnd('Initialization');
+            const mappings = new Map<string, PluginHookMapping[]>();
+            for (const mapping of hookMappingsToLoad) {
+                if (!mappings.has(mapping.hookName)) mappings.set(mapping.hookName, []);
+                mappings.get(mapping.hookName)?.push(mapping);
             }
-        };
-        initialize();
-    }, [user, status, apis, loadPluginModule]);
+            for (const [hookName, m] of mappings.entries()) {
+                m.sort((a, b) => a.priority - b.priority);
+                mappings.set(hookName, m);
+            }
+            setHookMappings(mappings);
+            logger.debug('Hook mappings processed.');
+
+            const results = await Promise.all(pluginsToLoad.map(loadPluginModule));
+
+            const newPlugins = new Map<string, PluginModule>();
+            results.forEach(result => {
+                if (result) newPlugins.set(result[0], result[1]);
+            });
+
+            setLoadedPlugins(newPlugins);
+            setStatus('ready');
+            logger.info(`Initialization complete. ${newPlugins.size} plugins loaded.`);
+        } catch (error) {
+            logger.error('Initialization failed:', error);
+            setStatus('error');
+        } finally {
+            logger.timeEnd('Initialization');
+        }
+    }, [user, status, loadPluginModule]);
+
+    const reloadPlugins = useCallback(async () => {
+        try {
+            await doLoadAll();
+            logger.info('Plugins reloaded');
+        } catch (err) {
+            logger.error('reloadPlugins failed:', err);
+            setStatus('error');
+        }
+    }, [doLoadAll]);
+
+    const hardReloadPlugins = useCallback(async () => {
+        await pluginCache.clear();
+        await reloadPlugins();
+    }, [reloadPlugins]);
+
+    useEffect(() => {
+        if (!user || status !== 'idle') return;
+        doLoadAll()
+            .catch(err => {
+                logger.error('Initialization failed:', err);
+                setStatus('error');
+            });
+    }, [doLoadAll]);
 
     const getHookFunctions = useCallback((hookName: string): { pluginId: string, hookFn: UIHookFn }[] => {
         logger.debug(`getHookFunctions called for hook: "${hookName}"`);
@@ -163,7 +188,9 @@ export const PluginProvider: FunctionComponent = ({children}) => {
         loadedPlugins,
         getHookFunctions,
         callHook,
-    }), [status, plugins, getHookFunctions, callHook]);
+        reloadPlugins,
+        hardReloadPlugins
+    }), [status, plugins, loadedPlugins, getHookFunctions, callHook, reloadPlugins, hardReloadPlugins]);
 
     return <PluginContext.Provider value={value}>{children}</PluginContext.Provider>;
 };

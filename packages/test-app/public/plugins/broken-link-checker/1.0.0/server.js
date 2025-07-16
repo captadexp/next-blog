@@ -24,7 +24,7 @@
         try {
             const blogsResponse = await sdk.db.blogs.find({status: 'published'});
             if (!blogsResponse.length) {
-                throw new Error("Failed to fetch published blogs.");
+                throw new Error("No published articles found. Please publish some articles before running a scan.");
             }
 
             const allLinks = new Map();
