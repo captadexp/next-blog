@@ -8,9 +8,9 @@
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
   "scripts": {
-    "clean": "rimraf dist && mkdir -p dist/core",
-    "dev": "npm run clean && vite build --watch",
-    "build": "npm run clean && vite build",
+    "clean": "rimraf dist",
+    "dev": "vite build --watch",
+    "build": "bun run clean && vite build",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },
@@ -64,19 +64,19 @@
     "moment": "^2.30.1"
   },
   "optionalDependencies": {
-    "mongodb": "^6.15.0",
+    "mongodb": "^6.17.0",
     "uuid": "^11.1.0"
   },
   "peerDependencies": {
     "next": "^15.2.4"
   },
   "devDependencies": {
-    "vite-plugin-static-copy": "^2.3.0",
+    "vite-plugin-static-copy": "^3.1.1",
     "@supergrowthai/next-blog-dashboard": "workspace:*",
     "@types/mongodb": "^4.0.7",
-    "@types/node": "^22.13.14",
-    "@types/uuid": "^9.0.8",
-    "typescript": "^5.8.2",
+    "@types/node": "^24.0.14",
+    "@types/uuid": "^10.0.0",
+    "typescript": "^5.8.3",
     "vite": "^7.0.4",
     "vite-plugin-dts": "^4.5.4"
   }

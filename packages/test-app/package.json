@@ -11,14 +11,14 @@
   "dependencies": {
     "@supergrowthai/next-blog": "workspace:*",
     "@supergrowthai/next-blog-ui": "workspace:*",
-    "next": "^15.2.4",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "next": "^15.4.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
-    "@types/node": "^22.13.13",
-    "@types/react": "^19.0.12",
-    "@types/react-dom": "^19.0.4",
-    "typescript": "^5.8.2"
+    "@types/node": "^24.0.14",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "typescript": "^5.8.3"
   }
 }

@@ -8,9 +8,9 @@
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "clean": "rimraf dist && mkdir -p dist",
-    "dev": "npm run clean && vite build --watch",
-    "build": "npm run clean && vite build",
+    "clean": "rimraf dist",
+    "dev": "vite build --watch",
+    "build": "bun run clean && vite build",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
@@ -33,19 +33,19 @@
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "ISC",
   "dependencies": {
-    "preact": "^10.26.4",
+    "preact": "^10.26.9",
     "preact-render-to-string": "^6.5.13",
-    "preact-iso": "^2.9.1"
+    "preact-iso": "^2.9.2"
   },
   "peerDependencies": {},
   "devDependencies": {
-    "@tailwindcss/vite": "^4.1.10",
-    "@types/react": "^19.0.12",
-    "@types/react-dom": "^19.0.4",
-    "tailwindcss": "^4.1.10",
-    "typescript": "^5.8.2",
+    "@tailwindcss/vite": "^4.1.11",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.8.3",
     "vite": "^7.0.4",
-    "daisyui": "^5.0.43",
+    "daisyui": "^5.0.46",
     "vite-plugin-css-injected-by-js": "^3.5.2",
     "vite-plugin-dts": "^4.5.4",
     "idb": "^8.0.3",
