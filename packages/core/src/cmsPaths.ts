@@ -16,6 +16,7 @@ import {
     deleteSetting,
     deleteTag,
     deleteUser,
+    everyMinute,
     executePluginRpc,
     getBlogById,
     getBlogs,
@@ -76,6 +77,9 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
             },
             'plugin-hooks': {
                 '*': getPluginHookMappings
+            },
+            cron: {
+                'every-minute': everyMinute
             }
         },
         dashboard: {
