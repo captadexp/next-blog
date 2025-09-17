@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { dbProvider } from '@/lib/db';
-import { runCronJob } from '@supergrowthai/next-blog';
+import { runHourlyJob  } from '@supergrowthai/next-blog';
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
 
   try {
     const dbInstance = await dbProvider();
-    await runCronJob(dbInstance);
+    await runHourlyJob(dbInstance);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error executing cron job:', error);

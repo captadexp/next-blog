@@ -1,15 +1,15 @@
 import pluginExecutor from './plugins/plugin-executor.server.js';
 import Logger from './utils/Logger.js';
-import {DatabaseAdapter} from "./types.js";
+import { DatabaseAdapter } from "./types.js";
 
 /**
- * This function is designed to be called by a cron job.
- * It initializes the necessary component and executes the 'every-minute-blog' hook.
+ * This function is designed to be called by a cron job on an hourly basis.
+ * It initializes the necessary component and executes the generic 'scheduled-blog-post' hook.
+ * Plugins can then use this hook to perform tasks every hour.
  */
-export async function runCronJob(db: DatabaseAdapter) {
+export async function runHourlyJob(db: DatabaseAdapter) {
     const logger = new Logger('Cron');
 
-    // The plugin executor needs to be initialized to load plugins and hooks
     if (!pluginExecutor.initalized) {
         await pluginExecutor.initialize(db);
     }
@@ -19,7 +19,7 @@ export async function runCronJob(db: DatabaseAdapter) {
         log: logger,
     };
 
-    logger.info("Executing 'every-minute-blog' hook from cron job...");
-    await pluginExecutor.executeHook('every-minute-blog', sdk, {});
-    logger.info("Cron job execution for 'every-minute-blog' hook completed.");
+    logger.info("Executing 'scheduled-blog-post' hook from cron job...");
+    await pluginExecutor.executeHook('scheduled-blog-post', sdk, {});
+    logger.info("Cron job execution for 'scheduled-blog-post' hook completed.");
 }
