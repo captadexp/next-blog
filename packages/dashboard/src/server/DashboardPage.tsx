@@ -10,22 +10,52 @@ export default function DashboardPage() {
     return (
         <BasePage>
             {/* App container for client-side rendering */}
-            <div id="app">
+            <div id="app" style={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
                 {/* Loading indicator while client-side JavaScript loads */}
-                <div className="p-5 text-center">
-                    <div className="text-lg text-gray-600 mb-3">
+                <div style={{textAlign: 'center'}}>
+                    <div style={{fontSize: '18px', color: '#4B5563', marginBottom: '12px'}}>
                         Loading dashboard...
                     </div>
                     <div
-                        className="w-10 h-10 mx-auto border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
+                        style={{
+                            width: '40px',
+                            height: '40px',
+                            margin: '0 auto',
+                            border: '4px solid #E5E7EB',
+                            borderTopColor: '#3B82F6',
+                            borderRadius: '50%',
+                            animation: 'spin 1s linear infinite'
+                        }}></div>
                 </div>
 
                 {/* Fallback for users with JavaScript disabled */}
                 <noscript>
-                    <div className="p-5 text-center bg-red-100 text-red-800 rounded mt-5">
+                    <div style={{
+                        padding: '20px',
+                        textAlign: 'center',
+                        backgroundColor: '#FEE2E2',
+                        color: '#991B1B',
+                        borderRadius: '4px',
+                        marginTop: '20px'
+                    }}>
                         JavaScript is required for the dashboard to function.
                     </div>
                 </noscript>
+
+                {/* CSS for spinner animation */}
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                        @keyframes spin {
+                            from { transform: rotate(0deg); }
+                            to { transform: rotate(360deg); }
+                        }
+                    `
+                }}></style>
             </div>
 
             {/* Load plugin runtime first (global) */}
