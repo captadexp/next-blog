@@ -164,19 +164,6 @@
         "typescript": "^5.9.2",
       },
     },
-    "plugins/example-plugin": {
-      "name": "@plugins/example-plugin",
-      "version": "1.0.0",
-      "devDependencies": {
-        "@supergrowthai/plugin-dev-kit": "workspace:*",
-        "@types/react": "^18.3.17",
-        "typescript": "^5.7.3",
-      },
-      "peerDependencies": {
-        "react": "^18.0.0 || ^19.0.0",
-        "react-dom": "^18.0.0 || ^19.0.0",
-      },
-    },
     "plugins/seo-analyzer": {
       "name": "@plugins/seo-analyzer",
       "version": "1.0.0",
@@ -402,8 +389,6 @@
     "@next/swc-win32-x64-msvc": ["@next/swc-win32-x64-msvc@15.5.3", "", { "os": "win32", "cpu": "x64" }, "sha512-JMoLAq3n3y5tKXPQwCK5c+6tmwkuFDa2XAxz8Wm4+IVthdBZdZGh+lmiLUHg9f9IDwIQpUjp+ysd6OkYTyZRZw=="],
 
     "@plugins/broken-link-checker": ["@plugins/broken-link-checker@workspace:plugins/broken-link-checker"],
-
-    "@plugins/example-plugin": ["@plugins/example-plugin@workspace:plugins/example-plugin"],
 
     "@plugins/seo-analyzer": ["@plugins/seo-analyzer@workspace:plugins/seo-analyzer"],
 
