@@ -24,7 +24,7 @@ import {
     TagData,
     User,
     UserData
-} from "../types.js";
+} from "@supergrowthai/types/server";
 import {v4 as uuidv4} from 'uuid';
 
 export default class FileDBAdapter implements DatabaseAdapter {
@@ -89,24 +89,6 @@ export default class FileDBAdapter implements DatabaseAdapter {
                 await this.writeData('blogs.json', blogs);
                 return initialLength - blogs.length;
             },
-        }
-    }
-
-    async readData<T>(fileName: string): Promise<T[]> {
-        try {
-            const data = await fs.readFile(this.dataPath + fileName, {encoding: 'utf8'});
-            return JSON.parse(data);
-        } catch (error) {
-            console.error('Error reading file:', error);
-            return [];
-        }
-    }
-
-    async writeData<T>(fileName: string, data: T[]): Promise<void> {
-        try {
-            await fs.writeFile(this.dataPath + fileName, JSON.stringify(data, null, 2), {encoding: 'utf8'});
-        } catch (error) {
-            console.error('Error writing to file:', error);
         }
     }
 
@@ -295,8 +277,6 @@ export default class FileDBAdapter implements DatabaseAdapter {
         }
     }
 
-    // Authors functionality moved to users
-
     get settings() {
         return {
             findOne: async (filter: Filter<SettingsEntry>): Promise<SettingsEntry | null> => {
@@ -420,6 +400,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
             },
         }
     }
+
+    // Authors functionality moved to users
 
     get pluginHookMappings() {
         return {
@@ -685,7 +667,7 @@ export default class FileDBAdapter implements DatabaseAdapter {
                     return null;
                 }
 
-                const { userId, ...restOfBlog } = blog;
+                const {userId, ...restOfBlog} = blog;
 
                 return {
                     ...restOfBlog,
@@ -694,6 +676,24 @@ export default class FileDBAdapter implements DatabaseAdapter {
                     tags: tags.filter((t): t is Tag => t !== null),
                 };
             },
+        }
+    }
+
+    async readData<T>(fileName: string): Promise<T[]> {
+        try {
+            const data = await fs.readFile(this.dataPath + fileName, {encoding: 'utf8'});
+            return JSON.parse(data);
+        } catch (error) {
+            console.error('Error reading file:', error);
+            return [];
+        }
+    }
+
+    async writeData<T>(fileName: string, data: T[]): Promise<void> {
+        try {
+            await fs.writeFile(this.dataPath + fileName, JSON.stringify(data, null, 2), {encoding: 'utf8'});
+        } catch (error) {
+            console.error('Error writing to file:', error);
         }
     }
 

@@ -1,12 +1,12 @@
-// @ts-expect-error Next.js does not yet correctly use the `package.json#exports` field
 import {NextRequest, NextResponse} from "next/server";
-import {Configuration} from "./types.js";
+import {Configuration, ServerSDK} from "@supergrowthai/types/server";
 import {getCachedMatch, PathObject} from "./utils/parse-path.js";
 import cmsPaths from "./cmsPaths.js";
 import {NotFoundPage} from "@supergrowthai/next-blog-dashboard"
 import {BadRequest, Exception, Forbidden, NotFound, Success, Unauthorized} from "./utils/errors.js";
 import {initializeDefaultSettings} from "./utils/defaultSettings.js";
 import pluginExecutor from "./plugins/plugin-executor.server.js";
+import {createSettingsHelper} from "./plugins/settings-helper.server.js";
 
 /**
  * Return type for the nextBlog function containing route handlers
@@ -46,11 +46,21 @@ const nextBlog = function (configuration: Configuration): NextBlogHandlers {
             (request as any)._params = params;
             (request as any).db = db;
             (request as any).configuration = configuration;
-            (request as any).sdk = {
+
+            // Create system SDK
+            const sdk: ServerSDK = {
                 log: console,
                 db: dbObj,
-                executionContext: (request as any).sessionUser
+                executionContext: (request as any).sessionUser,
+                config: {},
+                pluginId: 'system',
+                settings: createSettingsHelper('system'),
+                callHook: async (hookName: string, payload: any) => {
+                    // Recursive reference will be resolved after sdk is created
+                    return pluginExecutor.executeHook(hookName, sdk, payload);
+                }
             };
+            (request as any).sdk = sdk;
 
             // Check if the path appears to be an API endpoint
             const isApiRequest = finalPathname.startsWith("api/");

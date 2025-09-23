@@ -73,3 +73,6 @@ packages/*/dist
 **/CLAUDE.local.md
 
 !packages/test-app/public/plugins/**/*.js
+PLUGIN_SYSTEM_IMPROVEMENTS.md
+
+.turbo

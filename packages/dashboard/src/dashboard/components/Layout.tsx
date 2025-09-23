@@ -1,7 +1,7 @@
 import {FunctionComponent, h} from 'preact';
 import {useLocation} from 'preact-iso';
 import {useUser} from '../../context/UserContext';
-import {Permission} from '../../types/api';
+import {Permission} from '@supergrowthai/types';
 import packageJson from '../../../package.json';
 import {PluginSlot} from "./plugins/PluginSlot.tsx";
 

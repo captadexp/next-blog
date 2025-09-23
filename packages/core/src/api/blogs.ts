@@ -1,4 +1,4 @@
-import {Permission} from "../types.js";
+import {Permission} from "@supergrowthai/types/server";
 import secure, {type CNextRequest} from "../utils/secureInternal.js";
 import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
 

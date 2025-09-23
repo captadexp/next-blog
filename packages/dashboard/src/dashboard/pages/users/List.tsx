@@ -1,7 +1,8 @@
 import {h} from 'preact';
-import {useState, useEffect} from 'preact/hooks';
-import {User, Permission} from '../../../types/api';
+import {useEffect, useState} from 'preact/hooks';
+import {Permission, User} from '@supergrowthai/types';
 import {useUser} from '../../../context/UserContext';
+import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 
 const UserList = () => {
     const [users, setUsers] = useState<User[]>([]);
@@ -76,67 +77,73 @@ const UserList = () => {
     }
 
     return (
-        <div className="p-4">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Users</h1>
-                {hasPermission('users:create') && (
-                    <a
-                        href="/api/next-blog/dashboard/users/create"
-                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                    >
-                        Add New User
-                    </a>
+        <ExtensionZone name="users-list" page="users" data={users}>
+            <div className="p-4">
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-2xl font-bold">Users</h1>
+                    {hasPermission('users:create') && (
+                        <a
+                            href="/api/next-blog/dashboard/users/create"
+                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                        >
+                            Add New User
+                        </a>
+                    )}
+                </div>
+
+                <ExtensionPoint name="users-list-toolbar" context={{users}}/>
+
+                {users.length === 0 ? (
+                    <div className="text-gray-500">No users found.</div>
+                ) : (
+                    <ExtensionZone name="user-table" page="users" data={users}>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full bg-white border border-gray-200">
+                                <thead>
+                                <tr className="bg-gray-100">
+                                    <th className="py-2 px-4 border-b text-left">Name</th>
+                                    <th className="py-2 px-4 border-b text-left">Username</th>
+                                    <th className="py-2 px-4 border-b text-left">Email</th>
+                                    <th className="py-2 px-4 border-b text-left">Permissions</th>
+                                    <th className="py-2 px-4 border-b text-left">Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {users.map(user => (
+                                    <tr key={user._id} className="hover:bg-gray-50">
+                                        <td className="py-2 px-4 border-b">{user.name}</td>
+                                        <td className="py-2 px-4 border-b">{user.username}</td>
+                                        <td className="py-2 px-4 border-b">{user.email}</td>
+                                        <td className="py-2 px-4 border-b">{formatPermissions(user.permissions)}</td>
+                                        <td className="py-2 px-4 border-b">
+                                            <div className="flex space-x-2">
+                                                {hasPermission('users:update') && (
+                                                    <a
+                                                        href={`/api/next-blog/dashboard/users/${user._id}`}
+                                                        className="text-blue-500 hover:text-blue-700"
+                                                    >
+                                                        Edit
+                                                    </a>
+                                                )}
+                                                {hasPermission('users:delete') && (
+                                                    <button
+                                                        onClick={() => handleDeleteUser(user._id)}
+                                                        className="text-red-500 hover:text-red-700"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </ExtensionZone>
                 )}
             </div>
-
-            {users.length === 0 ? (
-                <div className="text-gray-500">No users found.</div>
-            ) : (
-                <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white border border-gray-200">
-                        <thead>
-                        <tr className="bg-gray-100">
-                            <th className="py-2 px-4 border-b text-left">Name</th>
-                            <th className="py-2 px-4 border-b text-left">Username</th>
-                            <th className="py-2 px-4 border-b text-left">Email</th>
-                            <th className="py-2 px-4 border-b text-left">Permissions</th>
-                            <th className="py-2 px-4 border-b text-left">Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {users.map(user => (
-                            <tr key={user._id} className="hover:bg-gray-50">
-                                <td className="py-2 px-4 border-b">{user.name}</td>
-                                <td className="py-2 px-4 border-b">{user.username}</td>
-                                <td className="py-2 px-4 border-b">{user.email}</td>
-                                <td className="py-2 px-4 border-b">{formatPermissions(user.permissions)}</td>
-                                <td className="py-2 px-4 border-b">
-                                    <div className="flex space-x-2">
-                                        {hasPermission('users:update') && (
-                                            <a
-                                                href={`/api/next-blog/dashboard/users/${user._id}`}
-                                                className="text-blue-500 hover:text-blue-700"
-                                            >
-                                                Edit
-                                            </a>
-                                        )}
-                                        {hasPermission('users:delete') && (
-                                            <button
-                                                onClick={() => handleDeleteUser(user._id)}
-                                                className="text-red-500 hover:text-red-700"
-                                            >
-                                                Delete
-                                            </button>
-                                        )}
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-        </div>
+        </ExtensionZone>
     );
 };
 

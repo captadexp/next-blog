@@ -1,5 +1,5 @@
 import React from 'react';
-import {DatabaseAdapter, DetailedBlog} from '@supergrowthai/next-blog';
+import {DatabaseAdapter, DetailedBlog} from '@supergrowthai/types';
 
 interface ContentProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     db: DatabaseAdapter;

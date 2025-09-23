@@ -1,15 +1,15 @@
 import {notFound} from "next/navigation";
 import {
-    Header,
-    RecentPosts,
-    RelatedPosts,
-    Content,
+    Aside,
     AuthorInfo,
     BlogLayout,
+    Content,
+    Header,
     MainSection,
-    Aside
+    RecentPosts,
+    RelatedPosts
 } from "@supergrowthai/next-blog-ui";
-import '@supergrowthai/next-blog-ui/dist/index.css';
+import '@supergrowthai/next-blog-ui/style.css';
 import styles from './page.module.css';
 import {dbProvider} from "@/lib/db";
 import {SEOAnalyzer} from "../_components/seo/SEOAnalyzer";

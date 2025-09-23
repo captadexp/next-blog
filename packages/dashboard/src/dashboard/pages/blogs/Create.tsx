@@ -3,7 +3,7 @@ import {useEffect, useState} from 'preact/hooks';
 import {useLocation} from 'preact-iso';
 import {useUser} from '../../../context/UserContext';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
-import {Category, Tag} from '../../../types/api';
+import {Category, Tag} from '@supergrowthai/types';
 
 interface CreateBlogProps {
     path?: string;
@@ -90,6 +90,7 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
             // Use API client to create a new category
             const response = await apis.createCategory({
                 name: item.label,
+                description: '',
                 slug: slug
             });
 

@@ -24,7 +24,7 @@ import {
     TagData,
     User,
     UserData
-} from "../types.js";
+} from "@supergrowthai/types/server";
 import {Collection, Db, MongoClient, ObjectId} from "mongodb"
 
 export function oid(obj: ObjectId | string) {

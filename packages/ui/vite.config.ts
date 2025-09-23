@@ -2,7 +2,7 @@ import {defineConfig} from 'vite';
 import {resolve} from 'path';
 import dts from 'vite-plugin-dts';
 import react from '@vitejs/plugin-react'
-import { libInjectCss } from 'vite-plugin-lib-inject-css';
+import {libInjectCss} from 'vite-plugin-lib-inject-css';
 
 export default defineConfig({
     build: {

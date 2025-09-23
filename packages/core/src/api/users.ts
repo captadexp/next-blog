@@ -1,6 +1,6 @@
-import {Permission, User, UserData} from "../types.js";
+import {Permission, User, UserData} from "@supergrowthai/types/server";
 import secure, {type CNextRequest} from "../utils/secureInternal.js";
-import {Success, NotFound, BadRequest, Forbidden} from "../utils/errors.js";
+import {BadRequest, NotFound, Success} from "../utils/errors.js";
 import crypto from "../utils/crypto.js";
 
 /**

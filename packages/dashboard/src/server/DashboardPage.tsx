@@ -28,6 +28,9 @@ export default function DashboardPage() {
                 </noscript>
             </div>
 
+            {/* Load plugin runtime first (global) */}
+            <script src={"/api/next-blog/dashboard/static/plugin-runtime.js"}></script>
+
             {/* Client-side scripts and styles */}
             <script type="module" src={"/api/next-blog/dashboard/static/dashboard.js"}></script>
         </BasePage>

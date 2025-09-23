@@ -1,5 +1,5 @@
 import nextBlog from "@supergrowthai/next-blog";
-import { dbProvider } from "@/lib/db";
+import {dbProvider} from "@/lib/db";
 
 // Initialize Next-Blog
 const {GET, POST} = nextBlog({

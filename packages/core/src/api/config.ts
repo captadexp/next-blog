@@ -1,5 +1,4 @@
-import {CNextRequest} from "../utils/secureInternal.js";
-import secure from "../utils/secureInternal.js";
+import secure, {CNextRequest} from "../utils/secureInternal.js";
 import {Success} from "../utils/errors.js";
 
 /**

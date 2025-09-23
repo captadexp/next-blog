@@ -1,6 +1,6 @@
 import {headers} from "next/headers.js";
 import {type NextRequest, NextResponse} from "next/server.js";
-import {Configuration, DatabaseAdapter, Permission, User, UserData} from "../types.js";
+import {Configuration, DatabaseAdapter, Permission, User, UserData} from "@supergrowthai/types/server";
 import crypto from "./crypto.js";
 import {hasAllPermissions, hasAnyPermission, hasPermission} from "./permissions.js";
 

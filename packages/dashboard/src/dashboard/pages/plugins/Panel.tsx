@@ -1,4 +1,4 @@
-import {h, FunctionComponent} from 'preact';
+import {FunctionComponent, h} from 'preact';
 import {usePlugins} from '../../../context/PluginContext.tsx';
 import {PluginSlot} from '../../components/plugins/PluginSlot.tsx';
 import {useUser} from "../../../context/UserContext.tsx";

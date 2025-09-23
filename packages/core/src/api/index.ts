@@ -5,3 +5,4 @@ export * from './config.js';
 export * from './users.js';
 export * from './settings.js';
 export * from './plugins.js';
+export * from './plugin-settings.js';

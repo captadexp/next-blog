@@ -1,4 +1,4 @@
-import {DatabaseAdapter, SettingsEntryData} from "../types.js";
+import {DatabaseAdapter, SettingsEntryData} from "@supergrowthai/types/server";
 
 // Define default settings with their keys, values, and owner
 export const DEFAULT_SETTINGS: SettingsEntryData[] = [

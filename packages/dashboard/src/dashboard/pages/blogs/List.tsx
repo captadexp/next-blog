@@ -1,8 +1,9 @@
-import {h, FunctionComponent} from 'preact';
+import {FunctionComponent, h} from 'preact';
 import {useLocation} from 'preact-iso';
 import {useEffect, useState} from 'preact/hooks';
 import {useUser} from '../../../context/UserContext';
-import {Blog} from '../../../types/api';
+import {Blog} from '@supergrowthai/types';
+import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 
 interface BlogsListProps {
     path?: string;
@@ -49,7 +50,7 @@ const BlogsList: FunctionComponent<BlogsListProps> = () => {
     };
 
     return (
-        <div>
+        <ExtensionZone name="blogs-list" page="blogs" data={blogs}>
             <div className="flex justify-between items-center mb-5">
                 <h2 className="text-xl font-semibold m-0">Blogs</h2>
                 {hasPermission('blogs:create') && (
@@ -66,6 +67,8 @@ const BlogsList: FunctionComponent<BlogsListProps> = () => {
                 )}
             </div>
 
+            <ExtensionPoint name="blogs-list-toolbar" context={{blogs}}/>
+
             {loading ? (
                 <p>Loading blogs...</p>
             ) : error ? (
@@ -75,69 +78,72 @@ const BlogsList: FunctionComponent<BlogsListProps> = () => {
             ) : blogs.length === 0 ? (
                 <p>No blogs found. Create your first blog post!</p>
             ) : (
-                <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                        <thead>
-                        <tr className="bg-gray-100">
-                            <th className="p-3 text-left border-b border-gray-200">Title</th>
-                            <th className="p-3 text-left border-b border-gray-200">Created</th>
-                            <th className="p-3 text-left border-b border-gray-200">Updated</th>
-                            <th className="p-3 text-left border-b border-gray-200">Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {blogs.map(blog => (
-                            <tr key={blog._id} className="border-b border-gray-200 hover:bg-gray-50">
-                                <td className="p-3">
-                                    {blog.title}{blog.status === 'draft' && <span className="ml-2 text-gray-500 text-sm font-medium">[Draft]</span>}
-                                </td>
-                                <td className="p-3">{formatDate(blog.createdAt)}</td>
-                                <td className="p-3">{formatDate(blog.updatedAt)}</td>
-                                <td className="p-3">
-                                    {hasPermission('blogs:update') && (
-                                        <a
-                                            href={`/api/next-blog/dashboard/blogs/${blog._id}`}
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                location.route(`/api/next-blog/dashboard/blogs/${blog._id}`);
-                                            }}
-                                            className="text-blue-500 hover:text-blue-700 no-underline mr-3"
-                                        >
-                                            Edit
-                                        </a>
-                                    )}
-                                    {hasPermission('blogs:delete') && (
-                                        <button
-                                            onClick={async () => {
-                                                if (confirm(`Are you sure you want to delete "${blog.title}"?`)) {
-                                                    try {
-                                                        const response = await apis.deleteBlog(blog._id);
-
-                                                        if (response.code === 0) {
-                                                            // Remove the blog from state
-                                                            setBlogs(blogs.filter(b => b._id !== blog._id));
-                                                        } else {
-                                                            alert(`Error: ${response.message}`);
-                                                        }
-                                                    } catch (err) {
-                                                        console.error('Error deleting blog:', err);
-                                                        alert('Failed to delete blog. Please try again.');
-                                                    }
-                                                }
-                                            }}
-                                            className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit"
-                                        >
-                                            Delete
-                                        </button>
-                                    )}
-                                </td>
+                <ExtensionZone name="blog-table" page="blogs" data={blogs}>
+                    <div className="overflow-x-auto">
+                        <table className="w-full border-collapse">
+                            <thead>
+                            <tr className="bg-gray-100">
+                                <th className="p-3 text-left border-b border-gray-200">Title</th>
+                                <th className="p-3 text-left border-b border-gray-200">Created</th>
+                                <th className="p-3 text-left border-b border-gray-200">Updated</th>
+                                <th className="p-3 text-left border-b border-gray-200">Actions</th>
                             </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                            {blogs.map(blog => (
+                                <tr key={blog._id} className="border-b border-gray-200 hover:bg-gray-50">
+                                    <td className="p-3">
+                                        {blog.title}{blog.status === 'draft' &&
+                                        <span className="ml-2 text-gray-500 text-sm font-medium">[Draft]</span>}
+                                    </td>
+                                    <td className="p-3">{formatDate(blog.createdAt)}</td>
+                                    <td className="p-3">{formatDate(blog.updatedAt)}</td>
+                                    <td className="p-3">
+                                        {hasPermission('blogs:update') && (
+                                            <a
+                                                href={`/api/next-blog/dashboard/blogs/${blog._id}`}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    location.route(`/api/next-blog/dashboard/blogs/${blog._id}`);
+                                                }}
+                                                className="text-blue-500 hover:text-blue-700 no-underline mr-3"
+                                            >
+                                                Edit
+                                            </a>
+                                        )}
+                                        {hasPermission('blogs:delete') && (
+                                            <button
+                                                onClick={async () => {
+                                                    if (confirm(`Are you sure you want to delete "${blog.title}"?`)) {
+                                                        try {
+                                                            const response = await apis.deleteBlog(blog._id);
+
+                                                            if (response.code === 0) {
+                                                                // Remove the blog from state
+                                                                setBlogs(blogs.filter(b => b._id !== blog._id));
+                                                            } else {
+                                                                alert(`Error: ${response.message}`);
+                                                            }
+                                                        } catch (err) {
+                                                            console.error('Error deleting blog:', err);
+                                                            alert('Failed to delete blog. Please try again.');
+                                                        }
+                                                    }
+                                                }}
+                                                className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit"
+                                            >
+                                                Delete
+                                            </button>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </ExtensionZone>
             )}
-        </div>
+        </ExtensionZone>
     );
 };
 

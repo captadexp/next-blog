@@ -3,7 +3,7 @@ import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import {useLocation} from 'preact-iso';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {useUser} from "../../../context/UserContext.tsx";
-import {Blog, Category, Tag} from "../../../types/api.ts";
+import {Blog, Category, Tag} from "@supergrowthai/types";
 import {PluginSlot} from "../../components/plugins/PluginSlot.tsx";
 
 const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
@@ -110,6 +110,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
             // API call to create a new category
             const response = await apis.createCategory({
                 name: item.label,
+                description: '',
                 slug: item.label.toLowerCase().replace(/\s+/g, '-'),
             });
 

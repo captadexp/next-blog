@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@source inline("bg-{green,red,yellow}-500");
+
 @tailwind utilities;
 @plugin "@tailwindcss/typography";
 

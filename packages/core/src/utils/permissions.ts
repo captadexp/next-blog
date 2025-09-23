@@ -1,4 +1,4 @@
-import {Permission, PermissionType, EntityType, User, PERMISSION_WEIGHTS} from '../types.js';
+import {EntityType, Permission, PERMISSION_WEIGHTS, PermissionType, User} from '@supergrowthai/types/server';
 
 /**
  * Calculate the weight of a permission

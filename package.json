@@ -1,15 +1,16 @@
 {
-  "name": "next-blog-workspace",
+  "name": "@plugins/next-blog-workspace",
   "version": "1.0.0",
   "description": "Workspace for next-blog packages",
   "type": "module",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "plugins/*"
   ],
   "scripts": {
-    "build": "npm run build:all",
-    "dev": "bun --filter=* run dev",
+    "build": "turbo build --filter='@supergrowthai/*'",
+    "dev": "turbo dev --filter='./packages/*'",
     "build:all": "npm run build:ui && npm run build:dashboard && npm run build:core",
     "build:ui": "cd packages/ui && npm run build",
     "build:dashboard": "cd packages/dashboard && npm run build",
@@ -19,7 +20,8 @@
     "typecheck:ui": "cd packages/ui && npm run typecheck",
     "typecheck:dashboard": "cd packages/dashboard && npm run typecheck",
     "typecheck:core": "cd packages/core && npm run typecheck",
-    "typecheck": "bun --filter=* run typecheck"
+    "typecheck": "bun --filter=* run typecheck",
+    "clean-all": "rimraf '**/dist' '**/.next' 'packages/*/dist' 'packages/*/.next' 'plugins/*/dist' 'plugins/*/.next'"
   },
   "keywords": [
     "vite",
@@ -32,13 +34,16 @@
     "secure"
   ],
   "dependencies": {
-    "rimraf": "^6.0.1"
+    "rimraf": "^6.0.1",
+    "vite": "^7.1.6"
   },
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "MIT",
-  "packageManager": "bun@1.2.8",
+  "packageManager": "bun@1.2.22",
   "devDependencies": {
-    "turbo": "^2.5.4"
+    "@typescript/native-preview": "^7.0.0-dev.20250919.1",
+    "turbo": "^2.5.6",
+    "typescript": "^5.9.2"
   },
   "trustedDependencies": [
     "@tailwindcss/oxide",

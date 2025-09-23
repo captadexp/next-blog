@@ -25,9 +25,9 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
     const fields: DynamicFormFieldType[] = [
         {key: 'key', label: 'Key', type: 'text', required: true},
         {
-            key: 'value', 
-            label: 'Value', 
-            type: 'textarea', 
+            key: 'value',
+            label: 'Value',
+            type: 'textarea',
             required: true,
             placeholder: 'For arrays or objects, enter valid JSON'
         },
@@ -43,7 +43,7 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
     // Handler for setting creation using the API client directly
     const handleCreateSetting = async (data: any) => {
         let parsedValue = data.value;
-        
+
         // Try to parse the value as JSON if it starts with [ or {
         if (typeof data.value === 'string' && (data.value.trim().startsWith('[') || data.value.trim().startsWith('{'))) {
             try {
@@ -53,7 +53,7 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
                 // Keep the original string if parsing fails
             }
         }
-        
+
         const settingData = {
             key: data.key,
             value: parsedValue,

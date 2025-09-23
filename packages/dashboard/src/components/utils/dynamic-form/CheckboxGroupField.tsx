@@ -1,5 +1,5 @@
 import {h} from 'preact';
-import {useState, useEffect} from 'preact/hooks';
+import {useEffect, useState} from 'preact/hooks';
 import {DynamicFormFieldType} from './types';
 
 interface CheckboxGroupFieldProps {
@@ -22,7 +22,7 @@ const CheckboxGroupField = ({field, onChange}: CheckboxGroupFieldProps) => {
     // Handle checkbox toggle
     const handleValueChange = (value: string, checked: boolean) => {
         let updatedValues: string[];
-        
+
         if (checked && !selectedValues.includes(value)) {
             updatedValues = [...selectedValues, value];
         } else if (!checked && selectedValues.includes(value)) {
@@ -30,7 +30,7 @@ const CheckboxGroupField = ({field, onChange}: CheckboxGroupFieldProps) => {
         } else {
             return; // No change
         }
-        
+
         setSelectedValues(updatedValues);
         onChange(field.key, updatedValues);
     };
@@ -53,7 +53,7 @@ const CheckboxGroupField = ({field, onChange}: CheckboxGroupFieldProps) => {
             >
                 {field.label}
             </label>
-            
+
             {Object.entries(field.groupedOptions).map(([group, options]) => (
                 <div key={group} className="mb-4">
                     {showLabels && (

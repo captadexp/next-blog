@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { dbProvider } from '../lib/db';
+import {dbProvider} from '@/lib/db';
 import styles from './page.module.css';
 
 export default async function Home() {
@@ -43,7 +43,8 @@ export default async function Home() {
                 {posts.length > 0 ? (
                     <div className={styles.postGrid}>
                         {posts.map((post) => (
-                            <Link href={`/blogs/${post.slug}`} key={post._id} style={{ textDecoration: 'none', color: 'inherit' }}>
+                            <Link href={`/blogs/${post.slug}`} key={post._id}
+                                  style={{textDecoration: 'none', color: 'inherit'}}>
                                 <div className={styles.postCard}>
                                     <div className={styles.postCardContent}>
                                         <h3 className={styles.postCardTitle}>

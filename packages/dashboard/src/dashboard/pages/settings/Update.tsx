@@ -3,11 +3,11 @@ import {useEffect, useState} from 'preact/hooks';
 import {useLocation} from 'preact-iso';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {useUser} from "../../../context/UserContext";
-import {Settings} from "../../../types/api";
+import {SettingsEntry} from '@supergrowthai/types';
 
 const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
     const location = useLocation();
-    const [setting, setSetting] = useState<Settings | null>(null);
+    const [setting, setSetting] = useState<SettingsEntry | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const {apis} = useUser();
@@ -24,11 +24,11 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
             try {
                 // Fetch setting data
                 const response = await apis.getSetting(id);
-                
+
                 if (response.code !== 0) {
                     throw new Error(`Error fetching setting: ${response.message}`);
                 }
-                
+
                 setSetting(response.payload!);
                 setLoading(false);
             } catch (err) {
@@ -55,9 +55,9 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
             {key: 'id', label: 'ID', type: 'text', value: setting._id, disabled: true},
             {key: 'key', label: 'Key', type: 'text', value: setting.key, required: true},
             {
-                key: 'value', 
-                label: 'Value', 
-                type: 'textarea', 
+                key: 'value',
+                label: 'Value',
+                type: 'textarea',
                 value: displayValue,
                 required: true,
                 placeholder: 'For arrays or objects, enter valid JSON'
@@ -76,7 +76,7 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
     // Handler for setting update using the API client directly
     const handleUpdateSetting = async (data: any) => {
         let parsedValue = data.value;
-        
+
         // Try to parse the value as JSON if it starts with [ or {
         if (typeof data.value === 'string' && (data.value.trim().startsWith('[') || data.value.trim().startsWith('{'))) {
             try {
@@ -86,7 +86,7 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
                 // Keep the original string if parsing fails
             }
         }
-        
+
         const settingData = {
             key: data.key,
             value: parsedValue,

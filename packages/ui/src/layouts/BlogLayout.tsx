@@ -3,15 +3,15 @@ import styles from './Layouts.module.css';
 
 // --- Slot Components ---
 
-const Header: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const Header: React.FC<{ children: React.ReactNode }> = ({children}) => {
     return <>{children}</>;
 };
 
-const Body: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const Body: React.FC<{ children: React.ReactNode }> = ({children}) => {
     return <main className={styles.main}>{children}</main>;
 };
 
-const Footer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const Footer: React.FC<{ children: React.ReactNode }> = ({children}) => {
     return <>{children}</>;
 };
 
@@ -24,7 +24,7 @@ interface BlogLayoutComposition {
     Footer: typeof Footer;
 }
 
-export const BlogLayout: React.FC<{ children: React.ReactNode }> & BlogLayoutComposition = ({ children }) => {
+export const BlogLayout: React.FC<{ children: React.ReactNode }> & BlogLayoutComposition = ({children}) => {
     // Extract slots from children
     const header = React.Children.toArray(children).find(child => (child as React.ReactElement).type === Header);
     const body = React.Children.toArray(children).find(child => (child as React.ReactElement).type === Body);

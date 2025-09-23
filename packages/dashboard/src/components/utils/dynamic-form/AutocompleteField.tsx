@@ -1,5 +1,5 @@
 import {h} from 'preact';
-import {useState, useRef, useEffect} from 'preact/hooks';
+import {useEffect, useRef, useState} from 'preact/hooks';
 import {DynamicFormFieldType} from './types';
 
 interface AutocompleteFieldProps {

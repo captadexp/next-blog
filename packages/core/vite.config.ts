@@ -12,7 +12,6 @@ export default defineConfig(({mode}) => {
             lib: {
                 entry: {
                     index: path.resolve(__dirname, 'src/index.ts'),
-                    types: path.resolve(__dirname, 'src/types.ts'),
                     'adapters/index': path.resolve(__dirname, 'src/adapters/index.ts'),
                 },
                 fileName: (format, entryName) => `${entryName}.js`,
@@ -28,9 +27,20 @@ export default defineConfig(({mode}) => {
 
                     // Node.js builtin modules
                     'fs',
+                    'fs/promises',
                     'crypto',
                     'path',
                     'url',
+                    'events',
+                    'process',
+
+                    // Node: prefixed modules
+                    'node:fs',
+                    'node:fs/promises',
+                    'node:crypto',
+                    'node:path',
+                    'node:events',
+                    'node:process',
 
                     // Next.js specific imports
                     /^next\/.*/

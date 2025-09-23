@@ -2,9 +2,13 @@ import {Fragment, FunctionComponent, h} from "preact";
 import {usePlugins} from "../../../context/PluginContext.tsx";
 import {useMemo, useState} from "preact/hooks";
 import {useUser} from "../../../context/UserContext.tsx";
-import {PluginSDK, UITree} from "./types.ts";
-import toast from 'react-hot-toast';
+import {PluginSDK, UIHookFn} from "./types.ts";
 import Logger, {LogLevel} from "../../../utils/Logger.ts";
+import {createRenderer} from "@supergrowthai/jsx-runtime/preact";
+import {createClientSDK} from "../../../sdk/sdk-factory.client";
+
+// Create the renderer once with Preact's h and Fragment
+const render = createRenderer(h, Fragment);
 
 const logger = new Logger('PluginSystem', LogLevel.INFO);
 
@@ -15,105 +19,90 @@ const logger = new Logger('PluginSystem', LogLevel.INFO);
  */
 function PluginHost({pluginId, hookFn, context, callHook}: {
     pluginId: string,
-    hookFn: (sdk: PluginSDK, prev: UITree, context?: Record<string, any>) => UITree,
+    hookFn: UIHookFn,
     context?: Record<string, any>,
     callHook<T, R>(id: string, payload: T): Promise<R>
-}, previous: UITree) {
+}) {
     // This host's state is just a number to trigger re-renders when a plugin calls refresh().
     const [refreshKey, setRefreshKey] = useState(0);
-    const {apis, user, config} = useUser();
+    const {apis, user} = useUser();
     logger.debug(`Creating PluginHost for plugin "${pluginId}" with refreshKey: ${refreshKey}`);
 
-    // Craft the secure, sandboxed SDK for the plugin.
-    const sdk: PluginSDK = useMemo(() => ({
-        apis: apis,
-        user,
-        notify(message, status) {
-            (status ? (toast[status] || toast) : toast)(message);
-        },
-        settings: config || {},
-        refresh: () => {
-            logger.debug(`Refresh requested by plugin "${pluginId}"`);
-            setRefreshKey(Date.now())
-        },
-        utils: {
-            debounce: (func: any, delay: number) => {
-                let timeout: any
-                return (...args: any[]) => {
-                    clearTimeout(timeout);
-                    timeout = setTimeout(() => func(...args), delay);
-                };
+    // Create plugin-specific SDK using the factory
+    const sdk: PluginSDK = useMemo(() => {
+        const {utils} = window.PluginRuntime;
+
+        // Use the SDK factory to create a properly fingerprinted SDK
+        return createClientSDK(
+            pluginId,
+            apis,
+            user,
+            utils,
+            callHook,
+            () => {
+                logger.debug(`Refresh requested by plugin "${pluginId}"`);
+                setRefreshKey(Date.now());
             }
-        },
-        callHook
-    }), [apis, user, config, context, pluginId, callHook]);
+        ) as PluginSDK;
+    }, [apis, user, pluginId, callHook]);
 
-    // This recursive function securely turns the simple array format into Preact VNodes.
-    const renderTree = (tree: UITree): h.JSX.Element | string | null => {
-        if (!tree) return null;
-        if (typeof tree === 'string') return tree;
-        if (!Array.isArray(tree) || typeof tree[0] !== 'string') {
-            logger.error(`Invalid UI Tree format from plugin "${pluginId}":`, tree);
-            return null;
-        }
 
-        const [tag, props, ...children] = tree;
-        const finalProps: Record<string, any> = {};
+    // Execute the plugin's hook function
+    logger.debug(`Executing hook for plugin "${pluginId}"`);
+    const uiTree = hookFn(sdk, null, context);
 
-        // A whitelist of allowed tags for security. Added tags needed for the SEO plugin.
-        const allowedTags = [
-            'div', 'p', 'button', 'span', 'strong', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'img', 'ul', 'li',
-            'label', 'input', 'textarea'
-        ];
-        if (!allowedTags.includes(tag.toLowerCase())) {
-            logger.warn(`Plugin "${pluginId}" tried to render a disallowed tag: <${tag}>. Rendering an empty span instead.`);
-            return <span/>;
-        }
-
-        if (props) {
-            // A whitelist of allowed props
-            const allowedProps = ['class', 'style', 'id', 'type', 'value', 'placeholder', 'for', 'href', 'target', 'src', 'alt'];
-
-            for (const key in props) {
-                if (key.startsWith('on') && typeof props[key] === 'function') {
-                    finalProps[key] = (e: Event) => {
-                        e.preventDefault();
-                        logger.debug(`Event "${key}" triggered by plugin "${pluginId}"`);
-                        //fixme maybe extract the value and pass it forward
-                        props[key](sdk, context, JSON.parse(JSON.stringify((e.target as any)?.value || null)));
-                    }
-                } else if (allowedProps.includes(key.toLowerCase())) {
-                    finalProps[key] = props[key];
-                }
-            }
-        }
-
-        return h(tag as any, finalProps, ...children.map(renderTree));
+    if (!uiTree) {
+        logger.debug(`Plugin "${pluginId}" returned null`);
+        return null;
     }
 
-    // 1. Execute the plugin's hook function, passing the SDK and context.
-    logger.debug(`Executing hook for plugin "${pluginId}"`);
-    logger.time(`Execute hook for plugin "${pluginId}"`);
-    const uiTree = hookFn(sdk, previous, context);
-    logger.timeEnd(`Execute hook for plugin "${pluginId}"`);
-    logger.debug(`UI tree received from plugin "${pluginId}":`, uiTree);
+    // Render using jsx-runtime
+    try {
+        return render(uiTree, {sdk, context, pluginId});
+    } catch (err) {
+        logger.error(`Failed to render plugin "${pluginId}":`, err);
+        return null;
+    }
+}
 
-
-    // 2. Render the UI description provided by the plugin.
-    logger.debug(`Rendering UI for plugin "${pluginId}"`);
-    logger.time(`Render UI for plugin "${pluginId}"`);
-    const renderedElement = renderTree(uiTree);
-    logger.timeEnd(`Render UI for plugin "${pluginId}"`);
-    return renderedElement;
+interface PluginSlotProps {
+    hookName?: string;
+    page?: string;
+    position?: string;
+    entity?: string;
+    section?: string;
+    context?: Record<string, any>;
 }
 
 /**
  * The public-facing component. Place this in your application where you want
- * plugins to be able to add UI.
+ * plugins to be able to add UI. Supports both static hook names and dynamic patterns.
+ *
+ * Examples:
+ * - <PluginSlot hookName="dashboard-header" />
+ * - <PluginSlot page="blogs" position="header" />
+ * - <PluginSlot entity="blog" position="sidebar" />
  */
-export const PluginSlot: FunctionComponent<{ hookName: string, context?: Record<string, any> }> = (props) => {
-    const {hookName, context} = props;
+export const PluginSlot: FunctionComponent<PluginSlotProps> = (props) => {
+    const {hookName: providedHookName, page, position, entity, section, context} = props;
     const {getHookFunctions, status, callHook} = usePlugins();
+
+    // Generate hook name from pattern if not provided directly
+    const hookName = useMemo(() => {
+        if (providedHookName) return providedHookName;
+
+        // Build dynamic hook name from parts
+        const parts: string[] = [];
+        if (page) {
+            parts.push('dashboard', page);
+        } else if (entity) {
+            parts.push('editor', entity);
+        }
+        if (section) parts.push(section);
+        if (position) parts.push(position);
+
+        return parts.join('-');
+    }, [providedHookName, page, position, entity, section]);
 
     if (status !== 'ready') {
         return null; // Or a loading indicator
@@ -125,14 +114,24 @@ export const PluginSlot: FunctionComponent<{ hookName: string, context?: Record<
         return null;
     }
 
+    // Enhanced context with hook metadata
+    const enhancedContext = {
+        ...context,
+        hookName,
+        page,
+        position,
+        entity,
+        section
+    };
+
     return (
         <Fragment>
-            {hookFunctions.map(({pluginId, hookFn},) => PluginHost({
+            {hookFunctions.map(({pluginId, hookFn}) => PluginHost({
                 pluginId,
                 hookFn,
                 callHook,
-                context
-            }, ""))}
+                context: enhancedContext
+            }))}
         </Fragment>
     );
 };

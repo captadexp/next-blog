@@ -1,0 +1,16 @@
+{
+  "name": "my-next-blog-plugin",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.js",
+    "dev": "vite build --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@supergrowthai/plugin-dev-kit": "^1.0.0",
+    "vite": "^7.1.5",
+    "typescript": "^5.0.0"
+  }
+}

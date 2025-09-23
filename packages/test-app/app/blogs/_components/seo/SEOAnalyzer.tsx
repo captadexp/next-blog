@@ -1,6 +1,6 @@
 "use client";
-import React, {useState, useEffect, ReactNode} from 'react';
-import {DetailedBlog} from '@supergrowthai/next-blog';
+import React, {ReactNode, useEffect, useState} from 'react';
+import {DetailedBlog} from '@supergrowthai/types';
 import styles from './SEOAnalyzer.module.css';
 
 // --- Types and Interfaces ---

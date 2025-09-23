@@ -1,11 +1,5 @@
-import {CNextRequest} from "../utils/secureInternal.js";
-import secure from "../utils/secureInternal.js";
-import {
-    NotFound,
-    Success,
-    ValidationError,
-    DatabaseError
-} from "../utils/errors.js";
+import secure, {CNextRequest} from "../utils/secureInternal.js";
+import {DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
 
 export const getCategories = secure(async (request: CNextRequest) => {
     const db = await request.db();

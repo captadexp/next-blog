@@ -1,12 +1,12 @@
 import {createContext, h} from 'preact';
 import {useContext, useEffect, useState} from 'preact/hooks';
-import {EntityType, Permission, PermissionType, UIConfig, User} from '../types/api';
+import {EntityType, Permission, PermissionType, UIConfiguration, User} from '@supergrowthai/types';
 import ApiClient from '../api/client';
 import {useMemo} from "react";
 
 interface UserContextType {
     user: User | null;
-    config: UIConfig | null;
+    config: UIConfiguration | null;
     loading: boolean;
     error: string | null;
     login: (username: string, password: string) => Promise<boolean>;
@@ -41,7 +41,7 @@ export const UserProvider = ({children}: { children: any }) => {
     const apiClient = useMemo(() => new ApiClient("/api/next-blog/api"), []);
 
     const [user, setUser] = useState<User | null>(null);
-    const [config, setConfig] = useState<UIConfig | null>(null);
+    const [config, setConfig] = useState<UIConfiguration | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 

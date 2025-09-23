@@ -1,34 +1,28 @@
 import {createContext, FunctionComponent, h} from 'preact';
 import {useCallback, useContext, useEffect, useMemo, useState} from 'preact/hooks';
 import {useUser} from "./UserContext.tsx";
-import {Plugin, PluginHookMapping} from "../types/api.ts";
+import {matchesHookPattern, Plugin} from '@supergrowthai/types';
 import {pluginCache} from "../utils/pluginCache.ts";
 import {UIHookFn} from "../dashboard/components/plugins/types.ts";
 import Logger, {LogLevel} from "../utils/Logger.ts";
+import {ClientPluginModule} from "@supergrowthai/types/client";
 
 const logger = new Logger('PluginSystem', LogLevel.INFO);
 
 interface PluginContextType {
     status: 'idle' | 'initializing' | 'ready' | 'error';
     plugins: Plugin[];
-    loadedPlugins: Map<string, PluginModule>;
+    loadedPlugins: Map<string, ClientPluginModule>;
     getHookFunctions: (hookName: string) => { pluginId: string, hookFn: UIHookFn }[];
+    hasHook: (hookName: string) => boolean;
     callHook: <T, R>(hookName: string, payload: T) => Promise<R>;
     reloadPlugins: () => Promise<void>;
     hardReloadPlugins: () => Promise<void>;
 }
 
-export interface PluginModule {
-    // Plugin metadata
-    name: string;
-    version: string;
-    description?: string;
-    hasPanel?: boolean;
-
-    // Hooks implementation
-    hooks?: {
-        [hookName: string]: (context: any) => Promise<any> | any;
-    };
+interface HookIndex {
+    exact: Map<string, Array<{ pluginId: string, hookFn: UIHookFn }>>;
+    patterns: Map<string, Array<{ pattern: string, pluginId: string, hookFn: UIHookFn }>>;
 }
 
 const PluginContext = createContext<PluginContextType | undefined>(undefined);
@@ -38,10 +32,10 @@ export const PluginProvider: FunctionComponent = ({children}) => {
     const {user, apis} = useUser();
 
     const [plugins, setPlugins] = useState<Plugin[]>([]);
-    const [loadedPlugins, setLoadedPlugins] = useState<Map<string, PluginModule>>(new Map());
-    const [hookMappings, setHookMappings] = useState<Map<string, PluginHookMapping[]>>(new Map());
+    const [loadedPlugins, setLoadedPlugins] = useState<Map<string, ClientPluginModule>>(new Map());
+    const [hookIndex, setHookIndex] = useState<HookIndex>({exact: new Map(), patterns: new Map()});
 
-    const loadPluginModule = useCallback(async (plugin: Plugin): Promise<[string, PluginModule] | null> => {
+    const loadPluginModule = useCallback(async (plugin: Plugin): Promise<[string, ClientPluginModule] | null> => {
         logger.time(`Load plugin ${plugin.name}`);
         if (!plugin.client)
             throw new Error("No client side found for plugin");
@@ -82,38 +76,57 @@ export const PluginProvider: FunctionComponent = ({children}) => {
         logger.info('Initializing...');
         setStatus('initializing');
         try {
-            const [pluginsRes, mappingsRes] = await Promise.all([
-                apis.getPlugins(),
-                apis.getPluginHookMappings({type: 'client'}),
-            ]);
+            const pluginsRes = await apis.getPlugins();
 
-            if (pluginsRes.code !== 0 || mappingsRes.code !== 0) throw new Error('Failed to fetch plugin metadata.');
+            if (pluginsRes.code !== 0) throw new Error('Failed to fetch plugins.');
 
             const pluginsToLoad = pluginsRes.payload || [];
             setPlugins(pluginsToLoad);
-            const hookMappingsToLoad = mappingsRes.payload || [];
-            logger.debug(`Found ${pluginsToLoad.length} plugins and ${hookMappingsToLoad.length} hook mappings.`);
+            logger.debug(`Found ${pluginsToLoad.length} plugins to load.`);
 
-            const mappings = new Map<string, PluginHookMapping[]>();
-            for (const mapping of hookMappingsToLoad) {
-                if (!mappings.has(mapping.hookName)) mappings.set(mapping.hookName, []);
-                mappings.get(mapping.hookName)?.push(mapping);
-            }
-            for (const [hookName, m] of mappings.entries()) {
-                m.sort((a, b) => a.priority - b.priority);
-                mappings.set(hookName, m);
-            }
-            setHookMappings(mappings);
-            logger.debug('Hook mappings processed.');
+            const results = await Promise.all(pluginsToLoad.map(p => loadPluginModule(p).catch(console.error.bind(null, "Failed to load plugin:"))));
 
-            const results = await Promise.all(pluginsToLoad.map(loadPluginModule));
-
-            const newPlugins = new Map<string, PluginModule>();
+            const newPlugins = new Map<string, ClientPluginModule>();
             results.forEach(result => {
                 if (result) newPlugins.set(result[0], result[1]);
             });
 
             setLoadedPlugins(newPlugins);
+
+            // Build hook index for O(1) lookups
+            const index: HookIndex = {exact: new Map(), patterns: new Map()};
+            newPlugins.forEach((plugin, pluginId) => {
+                if (!plugin.hooks) return;
+
+                Object.entries(plugin.hooks).forEach(([hookName, fn]) => {
+                    if (typeof fn !== 'function') return;
+
+                    // Check if this is a pattern-based hook
+                    if (hookName.includes('*') || hookName.includes(':')) {
+                        if (!index.patterns.has(hookName)) {
+                            index.patterns.set(hookName, []);
+                        }
+                        index.patterns.get(hookName)!.push({
+                            pattern: hookName,
+                            pluginId,
+                            hookFn: fn as UIHookFn
+                        });
+                    } else {
+                        // Exact match hook
+                        if (!index.exact.has(hookName)) {
+                            index.exact.set(hookName, []);
+                        }
+                        index.exact.get(hookName)!.push({
+                            pluginId,
+                            hookFn: fn as UIHookFn
+                        });
+                    }
+                });
+            });
+
+            setHookIndex(index);
+            logger.info(`Hook index built: ${index.exact.size} exact hooks, ${index.patterns.size} pattern hooks`);
+
             setStatus('ready');
             logger.info(`Initialization complete. ${newPlugins.size} plugins loaded.`);
         } catch (error) {
@@ -150,33 +163,76 @@ export const PluginProvider: FunctionComponent = ({children}) => {
 
     const getHookFunctions = useCallback((hookName: string): { pluginId: string, hookFn: UIHookFn }[] => {
         logger.debug(`getHookFunctions called for hook: "${hookName}"`);
-        const mappings = hookMappings.get(hookName) || [];
-        if (mappings.length === 0) {
-            logger.warn(`No mappings found for hook: "${hookName}"`);
+
+        const functions: { pluginId: string, hookFn: UIHookFn }[] = [];
+        const seenPlugins = new Set<string>(); // Avoid duplicate plugins
+
+        // O(1) exact match lookup
+        if (hookIndex.exact.has(hookName)) {
+            const exactMatches = hookIndex.exact.get(hookName)!;
+            logger.debug(`Found ${exactMatches.length} exact matches for "${hookName}"`);
+            exactMatches.forEach(match => {
+                if (!seenPlugins.has(match.pluginId)) {
+                    functions.push(match);
+                    seenPlugins.add(match.pluginId);
+                }
+            });
         }
 
-        const functions = mappings
-            .map(mapping => {
-                const plugin = loadedPlugins.get(mapping.pluginId);
-                if (!plugin) {
-                    logger.warn(`Plugin with ID ${mapping.pluginId} not found in loadedPlugins for hook "${hookName}"`);
-                    return null;
-                }
+        // Check patterns (much smaller set than all hooks)
+        for (const [pattern, hooks] of hookIndex.patterns) {
+            // Check if this is a zone pattern
+            if (hookName.includes(':') && pattern.includes(':')) {
+                const [hookZone, hookPosition] = hookName.split(':');
+                const [patternZone, patternPosition] = pattern.split(':');
 
-                const hookFn = plugin?.hooks?.[hookName];
-                if (typeof hookFn === 'function') {
-                    logger.debug(`Found hook function for plugin ${plugin.name} (${mapping.pluginId}) for hook "${hookName}"`);
-                    return {pluginId: mapping.pluginId, hookFn};
-                } else {
-                    logger.warn(`Hook function for hook "${hookName}" not found or not a function in plugin ${plugin.name}`);
+                if ((patternZone === '*' || patternZone === hookZone) &&
+                    (patternPosition === '*' || patternPosition === hookPosition)) {
+                    hooks.forEach(hook => {
+                        if (!seenPlugins.has(hook.pluginId)) {
+                            logger.debug(`Hook "${hookName}" matches zone pattern "${pattern}"`);
+                            functions.push({pluginId: hook.pluginId, hookFn: hook.hookFn});
+                            seenPlugins.add(hook.pluginId);
+                        }
+                    });
                 }
-                return null;
-            })
-            .filter((p): p is { pluginId: string; hookFn: UIHookFn } => p !== null);
+            } else if (matchesHookPattern(hookName, pattern)) {
+                hooks.forEach(hook => {
+                    if (!seenPlugins.has(hook.pluginId)) {
+                        logger.debug(`Hook "${hookName}" matches pattern "${pattern}"`);
+                        functions.push({pluginId: hook.pluginId, hookFn: hook.hookFn});
+                        seenPlugins.add(hook.pluginId);
+                    }
+                });
+            }
+        }
 
-        logger.debug(`Found ${functions.length} functions for hook: "${hookName}"`);
+        logger.debug(`Returning ${functions.length} hook implementations for "${hookName}"`);
         return functions;
-    }, [loadedPlugins, hookMappings]);
+    }, [hookIndex]);
+
+    const hasHook = useCallback((hookName: string): boolean => {
+        // Quick O(1) check for exact match
+        if (hookIndex.exact.has(hookName)) {
+            return true;
+        }
+
+        // Check patterns
+        for (const pattern of hookIndex.patterns.keys()) {
+            if (hookName.includes(':') && pattern.includes(':')) {
+                const [hookZone, hookPosition] = hookName.split(':');
+                const [patternZone, patternPosition] = pattern.split(':');
+                if ((patternZone === '*' || patternZone === hookZone) &&
+                    (patternPosition === '*' || patternPosition === hookPosition)) {
+                    return true;
+                }
+            } else if (matchesHookPattern(hookName, pattern)) {
+                return true;
+            }
+        }
+
+        return false;
+    }, [hookIndex]);
 
     const callHook = useCallback(async (hookName: string, payload: any): Promise<any> => {
         return apis.callPluginHook(hookName, payload);
@@ -187,10 +243,11 @@ export const PluginProvider: FunctionComponent = ({children}) => {
         plugins,
         loadedPlugins,
         getHookFunctions,
+        hasHook,
         callHook,
         reloadPlugins,
         hardReloadPlugins
-    }), [status, plugins, loadedPlugins, getHookFunctions, callHook, reloadPlugins, hardReloadPlugins]);
+    }), [status, plugins, loadedPlugins, getHookFunctions, hasHook, callHook, reloadPlugins, hardReloadPlugins]);
 
     return <PluginContext.Provider value={value}>{children}</PluginContext.Provider>;
 };

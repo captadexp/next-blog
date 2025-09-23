@@ -3,6 +3,7 @@ import {resolve} from 'path';
 import dts from 'vite-plugin-dts';
 import tailwindcss from "@tailwindcss/vite";
 import cssInjectedByJs from 'vite-plugin-css-injected-by-js';
+import {viteStaticCopy} from 'vite-plugin-static-copy';
 
 export default defineConfig({
     base: "/static/",
@@ -38,6 +39,15 @@ export default defineConfig({
             include: ['src'],
             exclude: ['node_modules', 'src/**/*.test.ts', 'src/**/*.spec.ts'],
             rollupTypes: false,
+        }),
+        viteStaticCopy({
+            targets: [
+                {
+                    src: resolve(__dirname, '../jsx-runtime/dist/runtime.umd.js'),
+                    dest: 'static',
+                    rename: 'plugin-runtime.js'
+                }
+            ]
         }),
     ],
     resolve: {
