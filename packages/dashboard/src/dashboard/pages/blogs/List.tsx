@@ -91,52 +91,56 @@ const BlogsList: FunctionComponent<BlogsListProps> = () => {
                             </thead>
                             <tbody>
                             {blogs.map(blog => (
-                                <tr key={blog._id} className="border-b border-gray-200 hover:bg-gray-50">
-                                    <td className="p-3">
-                                        {blog.title}{blog.status === 'draft' &&
-                                        <span className="ml-2 text-gray-500 text-sm font-medium">[Draft]</span>}
-                                    </td>
-                                    <td className="p-3">{formatDate(blog.createdAt)}</td>
-                                    <td className="p-3">{formatDate(blog.updatedAt)}</td>
-                                    <td className="p-3">
-                                        {hasPermission('blogs:update') && (
-                                            <a
-                                                href={`/api/next-blog/dashboard/blogs/${blog._id}`}
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    location.route(`/api/next-blog/dashboard/blogs/${blog._id}`);
-                                                }}
-                                                className="text-blue-500 hover:text-blue-700 no-underline mr-3"
-                                            >
-                                                Edit
-                                            </a>
-                                        )}
-                                        {hasPermission('blogs:delete') && (
-                                            <button
-                                                onClick={async () => {
-                                                    if (confirm(`Are you sure you want to delete "${blog.title}"?`)) {
-                                                        try {
-                                                            const response = await apis.deleteBlog(blog._id);
+                                <>
+                                    <ExtensionPoint name="blog-item:before" context={{blog}} />
+                                    <tr key={blog._id} className="border-b border-gray-200 hover:bg-gray-50">
+                                        <td className="p-3">
+                                            {blog.title}{blog.status === 'draft' &&
+                                            <span className="ml-2 text-gray-500 text-sm font-medium">[Draft]</span>}
+                                        </td>
+                                        <td className="p-3">{formatDate(blog.createdAt)}</td>
+                                        <td className="p-3">{formatDate(blog.updatedAt)}</td>
+                                        <td className="p-3">
+                                            {hasPermission('blogs:update') && (
+                                                <a
+                                                    href={`/api/next-blog/dashboard/blogs/${blog._id}`}
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        location.route(`/api/next-blog/dashboard/blogs/${blog._id}`);
+                                                    }}
+                                                    className="text-blue-500 hover:text-blue-700 no-underline mr-3"
+                                                >
+                                                    Edit
+                                                </a>
+                                            )}
+                                            {hasPermission('blogs:delete') && (
+                                                <button
+                                                    onClick={async () => {
+                                                        if (confirm(`Are you sure you want to delete "${blog.title}"?`)) {
+                                                            try {
+                                                                const response = await apis.deleteBlog(blog._id);
 
-                                                            if (response.code === 0) {
-                                                                // Remove the blog from state
-                                                                setBlogs(blogs.filter(b => b._id !== blog._id));
-                                                            } else {
-                                                                alert(`Error: ${response.message}`);
+                                                                if (response.code === 0) {
+                                                                    // Remove the blog from state
+                                                                    setBlogs(blogs.filter(b => b._id !== blog._id));
+                                                                } else {
+                                                                    alert(`Error: ${response.message}`);
+                                                                }
+                                                            } catch (err) {
+                                                                console.error('Error deleting blog:', err);
+                                                                alert('Failed to delete blog. Please try again.');
                                                             }
-                                                        } catch (err) {
-                                                            console.error('Error deleting blog:', err);
-                                                            alert('Failed to delete blog. Please try again.');
                                                         }
-                                                    }
-                                                }}
-                                                className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit"
-                                            >
-                                                Delete
-                                            </button>
-                                        )}
-                                    </td>
-                                </tr>
+                                                    }}
+                                                    className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit"
+                                                >
+                                                    Delete
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                    <ExtensionPoint name="blog-item:after" context={{blog}} />
+                                </>
                             ))}
                             </tbody>
                         </table>

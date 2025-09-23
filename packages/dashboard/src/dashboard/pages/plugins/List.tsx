@@ -137,13 +137,17 @@ const PluginsList = () => {
                                 </thead>
                                 <tbody>
                                 {plugins.map((plugin: any) => (
-                                    <tr key={plugin._id} className="hover:bg-gray-50">
+                                    <>
+                                        <ExtensionPoint name="plugin-item:before" context={{plugin}} />
+                                        <tr key={plugin._id} className="hover:bg-gray-50">
                                         {columns.map((column) => (
                                             <td key={column.accessor} className="py-2 px-4 border-b">
                                                 {column.cell ? column.cell(plugin) : plugin[column.accessor]}
                                             </td>
                                         ))}
                                     </tr>
+                                    <ExtensionPoint name="plugin-item:after" context={{plugin}} />
+                                </>
                                 ))}
                                 </tbody>
                             </table>

@@ -93,7 +93,9 @@ const CategoriesList: FunctionComponent<CategoriesListProps> = () => {
                             </thead>
                             <tbody>
                             {categories.map(category => (
-                                <tr key={category._id} className="border-b border-gray-200 hover:bg-gray-50">
+                                <>
+                                    <ExtensionPoint name="category-item:before" context={{category}} />
+                                    <tr key={category._id} className="border-b border-gray-200 hover:bg-gray-50">
                                     <td className="p-3">{category.name}</td>
                                     <td className="p-3">{category.slug || 'N/A'}</td>
                                     <td className="p-3">{formatDate(category.createdAt)}</td>
@@ -116,6 +118,8 @@ const CategoriesList: FunctionComponent<CategoriesListProps> = () => {
                                         </button>
                                     </td>
                                 </tr>
+                                <ExtensionPoint name="category-item:after" context={{category}} />
+                            </>
                             ))}
                             </tbody>
                         </table>

@@ -3,7 +3,7 @@ import {useLocation} from 'preact-iso';
 import {useUser} from '../../context/UserContext';
 import {Permission} from '@supergrowthai/types';
 import packageJson from '../../../package.json';
-import {PluginSlot} from "./plugins/PluginSlot.tsx";
+import {ExtensionPoint} from "./ExtensionZone";
 
 interface LayoutProps {
     children: any;
@@ -86,7 +86,7 @@ export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) 
                     )}
                 </div>
                 <div className="plugin-header-slot">
-                    <PluginSlot hookName="dashboard-header"/>
+                    <ExtensionPoint name="dashboard-header"/>
                 </div>
                 <nav className="overflow-x-auto pb-2">
                     <ul className="flex flex-nowrap sm:flex-wrap gap-4 sm:gap-6 list-none p-0 m-0 min-w-max">
@@ -125,7 +125,7 @@ export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) 
                 )}
 
                 <div className="plugin-widget-slot">
-                    <PluginSlot hookName="dashboard-widget"/>
+                    <ExtensionPoint name="dashboard-widget"/>
                 </div>
             </main>
 

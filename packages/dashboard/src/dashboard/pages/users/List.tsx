@@ -110,32 +110,36 @@ const UserList = () => {
                                 </thead>
                                 <tbody>
                                 {users.map(user => (
-                                    <tr key={user._id} className="hover:bg-gray-50">
-                                        <td className="py-2 px-4 border-b">{user.name}</td>
-                                        <td className="py-2 px-4 border-b">{user.username}</td>
-                                        <td className="py-2 px-4 border-b">{user.email}</td>
-                                        <td className="py-2 px-4 border-b">{formatPermissions(user.permissions)}</td>
-                                        <td className="py-2 px-4 border-b">
-                                            <div className="flex space-x-2">
-                                                {hasPermission('users:update') && (
-                                                    <a
-                                                        href={`/api/next-blog/dashboard/users/${user._id}`}
-                                                        className="text-blue-500 hover:text-blue-700"
-                                                    >
-                                                        Edit
-                                                    </a>
-                                                )}
-                                                {hasPermission('users:delete') && (
-                                                    <button
-                                                        onClick={() => handleDeleteUser(user._id)}
-                                                        className="text-red-500 hover:text-red-700"
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
+                                    <>
+                                        <ExtensionPoint name="user-item:before" context={{user}} />
+                                        <tr key={user._id} className="hover:bg-gray-50">
+                                            <td className="py-2 px-4 border-b">{user.name}</td>
+                                            <td className="py-2 px-4 border-b">{user.username}</td>
+                                            <td className="py-2 px-4 border-b">{user.email}</td>
+                                            <td className="py-2 px-4 border-b">{formatPermissions(user.permissions)}</td>
+                                            <td className="py-2 px-4 border-b">
+                                                <div className="flex space-x-2">
+                                                    {hasPermission('users:update') && (
+                                                        <a
+                                                            href={`/api/next-blog/dashboard/users/${user._id}`}
+                                                            className="text-blue-500 hover:text-blue-700"
+                                                        >
+                                                            Edit
+                                                        </a>
+                                                    )}
+                                                    {hasPermission('users:delete') && (
+                                                        <button
+                                                            onClick={() => handleDeleteUser(user._id)}
+                                                            className="text-red-500 hover:text-red-700"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <ExtensionPoint name="user-item:after" context={{user}} />
+                                    </>
                                 ))}
                                 </tbody>
                             </table>

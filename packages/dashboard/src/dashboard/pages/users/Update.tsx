@@ -4,6 +4,7 @@ import {Permission, User} from '@supergrowthai/types';
 import {useLocation} from 'preact-iso/router';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {useUser} from '../../../context/UserContext';
+import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 
 interface UpdateUserProps {
     path?: string;
@@ -139,40 +140,48 @@ const UpdateUser: FunctionComponent<UpdateUserProps> = ({id: propId}) => {
     // The permissions are now handled within the DynamicForm via the PermissionsField component
 
     return (
-        <div className="max-w-4xl mx-auto p-2 md:p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold">Update User</h2>
-                <button
-                    onClick={() => location.route('/api/next-blog/dashboard/users')}
-                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
-                >
-                    Back to List
-                </button>
-            </div>
+        <ExtensionZone name="user-update" page="users" entity="user" data={{user, loading, error, availablePermissions}}>
+            <div className="max-w-4xl mx-auto p-2 md:p-6">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-semibold">Update User</h2>
+                    <button
+                        onClick={() => location.route('/api/next-blog/dashboard/users')}
+                        className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
+                    >
+                        Back to List
+                    </button>
+                </div>
 
-            {loading ? (
-                <p>Loading user data...</p>
-            ) : error ? (
-                <div className="p-4 bg-red-100 text-red-800 rounded">
-                    Error: {error}
-                </div>
-            ) : !user ? (
-                <div className="p-4 bg-yellow-100 text-yellow-800 rounded">
-                    User not found
-                </div>
-            ) : (
-                <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-                    <DynamicForm
-                        id="updateUser"
-                        submitLabel="Update User"
-                        postTo={`/api/next-blog/api/user/${userId}/update`}
-                        redirectTo={"api/next-blog/dashboard/users"}
-                        fields={getFormFields()}
-                        apiMethod={handleUpdateUser}
-                    />
-                </div>
-            )}
-        </div>
+                {loading ? (
+                    <p>Loading user data...</p>
+                ) : error ? (
+                    <div className="p-4 bg-red-100 text-red-800 rounded">
+                        Error: {error}
+                    </div>
+                ) : !user ? (
+                    <div className="p-4 bg-yellow-100 text-yellow-800 rounded">
+                        User not found
+                    </div>
+                ) : (
+                    <>
+                        <ExtensionPoint name="user-update-form:toolbar" context={{user, fields: getFormFields(), availablePermissions}}/>
+                        
+                        <ExtensionZone name="user-update-form" page="users" entity="user" data={{user, fields: getFormFields(), availablePermissions}}>
+                            <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                                <DynamicForm
+                                    id="updateUser"
+                                    submitLabel="Update User"
+                                    postTo={`/api/next-blog/api/user/${userId}/update`}
+                                    redirectTo={"api/next-blog/dashboard/users"}
+                                    fields={getFormFields()}
+                                    apiMethod={handleUpdateUser}
+                                />
+                            </div>
+                        </ExtensionZone>
+                    </>
+                )}
+            </div>
+        </ExtensionZone>
     );
 };
 

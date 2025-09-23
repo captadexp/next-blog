@@ -101,7 +101,9 @@ const SettingsList: FunctionComponent<SettingsListProps> = () => {
                             </thead>
                             <tbody>
                             {settings.map(setting => (
-                                <tr key={setting._id} className="border-b border-gray-200 hover:bg-gray-50">
+                                <>
+                                    <ExtensionPoint name="setting-item:before" context={{setting}} />
+                                    <tr key={setting._id} className="border-b border-gray-200 hover:bg-gray-50">
                                     <td className="p-3">{setting.key}</td>
                                     <td className="p-3">{formatValue(setting.value)}</td>
                                     <td className="p-3">{setting.owner}</td>
@@ -146,6 +148,8 @@ const SettingsList: FunctionComponent<SettingsListProps> = () => {
                                         )}
                                     </td>
                                 </tr>
+                                <ExtensionPoint name="setting-item:after" context={{setting}} />
+                            </>
                             ))}
                             </tbody>
                         </table>

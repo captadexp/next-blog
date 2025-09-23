@@ -92,7 +92,9 @@ const TagsList: FunctionComponent<TagsListProps> = () => {
                             </thead>
                             <tbody>
                             {tags.map(tag => (
-                                <tr key={tag._id} className="border-b border-gray-200 hover:bg-gray-50">
+                                <>
+                                    <ExtensionPoint name="tag-item:before" context={{tag}} />
+                                    <tr key={tag._id} className="border-b border-gray-200 hover:bg-gray-50">
                                     <td className="p-3">{tag.name}</td>
                                     <td className="p-3">{tag.slug || 'N/A'}</td>
                                     <td className="p-3">{formatDate(tag.createdAt)}</td>
@@ -120,6 +122,8 @@ const TagsList: FunctionComponent<TagsListProps> = () => {
                                         </button>
                                     </td>
                                 </tr>
+                                <ExtensionPoint name="tag-item:after" context={{tag}} />
+                            </>
                             ))}
                             </tbody>
                         </table>

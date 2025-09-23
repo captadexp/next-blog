@@ -6,9 +6,19 @@ import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../
 export const getBlogs = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
+        const sdk = (request as any).sdk;
 
         try {
-            const blogs = await db.blogs.find({});
+            let blogs = await db.blogs.find({});
+            
+            // Execute hook for list operation
+            if (sdk?.callHook) {
+                const hookResult = await sdk.callHook('blog:onList', { filters: {}, data: blogs });
+                if (hookResult?.data) {
+                    blogs = hookResult.data;
+                }
+            }
+            
             throw new Success("Blogs retrieved successfully", blogs);
         } catch (error) {
             if (error instanceof Success) throw error;
@@ -24,12 +34,21 @@ export const getBlogs = secure(
 export const getBlogById = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
+        const sdk = (request as any).sdk;
 
         try {
-            const blog = await db.blogs.findOne({_id: request._params.id});
+            let blog = await db.blogs.findOne({_id: request._params.id});
 
             if (!blog) {
                 throw new NotFound(`Blog with id ${request._params.id} not found`);
+            }
+
+            // Execute hook for read operation
+            if (sdk?.callHook) {
+                const hookResult = await sdk.callHook('blog:onRead', { blogId: blog._id, data: blog });
+                if (hookResult?.data) {
+                    blog = hookResult.data;
+                }
             }
 
             throw new Success("Blog retrieved successfully", blog);
@@ -47,9 +66,10 @@ export const getBlogById = secure(
 export const createBlog = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
+        const sdk = (request as any).sdk;
 
         try {
-            const body: any = await request.json();
+            let body: any = await request.json();
 
             // Validate required fields
             if (!body.title) {
@@ -58,6 +78,18 @@ export const createBlog = secure(
 
             if (!body.content) {
                 throw new ValidationError("Blog content is required");
+            }
+
+            // Execute before create hook
+            if (sdk?.callHook) {
+                const beforeResult = await sdk.callHook('blog:beforeCreate', {
+                    title: body.title,
+                    content: body.content,
+                    data: body
+                });
+                if (beforeResult) {
+                    body = { ...body, ...beforeResult };
+                }
             }
 
             const extras = {
@@ -70,6 +102,14 @@ export const createBlog = secure(
                 ...extras,
                 userId: request.sessionUser._id
             });
+
+            // Execute after create hook
+            if (sdk?.callHook) {
+                await sdk.callHook('blog:afterCreate', {
+                    blogId: creation._id,
+                    data: creation
+                });
+            }
 
             request.configuration.callbacks?.on?.("createBlog", creation);
             throw new Success("Blog created successfully", creation);
@@ -87,9 +127,10 @@ export const createBlog = secure(
 export const updateBlog = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
+        const sdk = (request as any).sdk;
 
         try {
-            const body: any = await request.json();
+            let body: any = await request.json();
             const extras = {updatedAt: Date.now()};
 
             // Check if blog exists first
@@ -106,10 +147,31 @@ export const updateBlog = secure(
                 throw new BadRequest("You can only update your own blogs");
             }
 
+            // Execute before update hook
+            if (sdk?.callHook) {
+                const beforeResult = await sdk.callHook('blog:beforeUpdate', {
+                    blogId: request._params.id,
+                    updates: body,
+                    previousData: existingBlog
+                });
+                if (beforeResult?.updates) {
+                    body = beforeResult.updates;
+                }
+            }
+
             const updation = await db.blogs.updateOne(
                 {_id: request._params.id},
                 {...body, ...extras, userId: existingBlog.userId}
             );
+
+            // Execute after update hook
+            if (sdk?.callHook) {
+                await sdk.callHook('blog:afterUpdate', {
+                    blogId: request._params.id,
+                    data: updation,
+                    previousData: existingBlog
+                });
+            }
 
             request.configuration.callbacks?.on?.("updateBlog", updation);
             throw new Success("Blog updated successfully", updation);
@@ -174,6 +236,7 @@ export const updateBlogMetadata = secure(
 export const deleteBlog = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
+        const sdk = (request as any).sdk;
 
         try {
             // Check if blog exists first
@@ -192,7 +255,27 @@ export const deleteBlog = secure(
                 throw new BadRequest("You can only delete your own blogs");
             }
 
+            // Execute before delete hook
+            if (sdk?.callHook) {
+                const beforeResult = await sdk.callHook('blog:beforeDelete', {
+                    blogId: request._params.id,
+                    data: existingBlog
+                });
+                if (beforeResult?.cancel) {
+                    throw new BadRequest("Blog deletion cancelled by plugin");
+                }
+            }
+
             const deletion = await db.blogs.deleteOne({_id: request._params.id});
+            
+            // Execute after delete hook
+            if (sdk?.callHook) {
+                await sdk.callHook('blog:afterDelete', {
+                    blogId: request._params.id,
+                    previousData: existingBlog
+                });
+            }
+            
             request.configuration.callbacks?.on?.("deleteBlog", deletion);
             throw new Success("Blog deleted successfully", deletion);
         } catch (error) {

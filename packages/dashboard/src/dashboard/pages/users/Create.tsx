@@ -4,6 +4,7 @@ import {Permission} from '@supergrowthai/types';
 import {useLocation} from 'preact-iso/router';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {useUser} from '../../../context/UserContext';
+import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 
 interface CreateUserProps {
     path?: string;
@@ -93,29 +94,35 @@ const CreateUser: FunctionComponent<CreateUserProps> = () => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-2 md:p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold">Create New User</h2>
-                <button
-                    onClick={() => location.route('/api/next-blog/dashboard/users')}
-                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
-                >
-                    Back to List
-                </button>
-            </div>
+        <ExtensionZone name="user-create" page="users" entity="user">
+            <div className="max-w-4xl mx-auto p-2 md:p-6">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-semibold">Create New User</h2>
+                    <button
+                        onClick={() => location.route('/api/next-blog/dashboard/users')}
+                        className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
+                    >
+                        Back to List
+                    </button>
+                </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-md">
-                <DynamicForm
-                    id="createUser"
-                    submitLabel="Create User"
-                    postTo={"/api/next-blog/api/users/create"}
-                    redirectTo={"/api/next-blog/dashboard/users"}
-                    fields={getFormFields()}
-                    apiMethod={handleCreateUser}
-                    onFieldChange={handleFieldChange}
-                />
+                <ExtensionPoint name="user-create-form:toolbar" context={{fields: getFormFields(), availablePermissions}}/>
+
+                <ExtensionZone name="user-create-form" page="users" entity="user" data={{fields: getFormFields(), availablePermissions}}>
+                    <div className="bg-white p-6 rounded-lg shadow-md">
+                        <DynamicForm
+                            id="createUser"
+                            submitLabel="Create User"
+                            postTo={"/api/next-blog/api/users/create"}
+                            redirectTo={"/api/next-blog/dashboard/users"}
+                            fields={getFormFields()}
+                            apiMethod={handleCreateUser}
+                            onFieldChange={handleFieldChange}
+                        />
+                    </div>
+                </ExtensionZone>
             </div>
-        </div>
+        </ExtensionZone>
     );
 };
 

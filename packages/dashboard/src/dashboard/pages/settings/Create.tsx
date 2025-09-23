@@ -3,6 +3,7 @@ import {useEffect, useState} from 'preact/hooks';
 import {useLocation} from 'preact-iso';
 import {useUser} from '../../../context/UserContext';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
+import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 
 interface CreateSettingProps {
     path?: string;
@@ -72,42 +73,48 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
     }
 
     return (
-        <div className="max-w-4xl mx-auto p-2 md:p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold">Create New Setting</h2>
-                <button
-                    onClick={() => location.route('/api/next-blog/dashboard/settings')}
-                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
-                >
-                    Back to List
-                </button>
-            </div>
+        <ExtensionZone name="setting-create" page="settings" entity="setting">
+            <div className="max-w-4xl mx-auto p-2 md:p-6">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-semibold">Create New Setting</h2>
+                    <button
+                        onClick={() => location.route('/api/next-blog/dashboard/settings')}
+                        className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
+                    >
+                        Back to List
+                    </button>
+                </div>
 
-            {loading ? (
-                <p>Loading form...</p>
-            ) : error ? (
-                <div className="p-4 bg-red-100 text-red-800 rounded">
-                    Error: {error}
-                </div>
-            ) : (
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <DynamicForm
-                        id="createSetting"
-                        submitLabel="Create Setting"
-                        postTo={"/api/next-blog/api/settings/create"}
-                        apiMethod={handleCreateSetting}
-                        redirectTo={"/api/next-blog/dashboard/settings"}
-                        fields={fields}
-                        onSubmitSuccess={(data) => {
-                            console.log('Setting created successfully:', data);
-                        }}
-                        onSubmitError={(error) => {
-                            console.error('Error creating setting:', error);
-                        }}
-                    />
-                </div>
-            )}
-        </div>
+                <ExtensionPoint name="setting-create-form:toolbar" context={{fields}}/>
+
+                {loading ? (
+                    <p>Loading form...</p>
+                ) : error ? (
+                    <div className="p-4 bg-red-100 text-red-800 rounded">
+                        Error: {error}
+                    </div>
+                ) : (
+                    <ExtensionZone name="setting-create-form" page="settings" entity="setting" data={{fields}}>
+                        <div className="bg-white p-6 rounded-lg shadow-md">
+                            <DynamicForm
+                                id="createSetting"
+                                submitLabel="Create Setting"
+                                postTo={"/api/next-blog/api/settings/create"}
+                                apiMethod={handleCreateSetting}
+                                redirectTo={"/api/next-blog/dashboard/settings"}
+                                fields={fields}
+                                onSubmitSuccess={(data) => {
+                                    console.log('Setting created successfully:', data);
+                                }}
+                                onSubmitError={(error) => {
+                                    console.error('Error creating setting:', error);
+                                }}
+                            />
+                        </div>
+                    </ExtensionZone>
+                )}
+            </div>
+        </ExtensionZone>
     );
 };
 

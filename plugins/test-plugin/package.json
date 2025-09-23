@@ -1,0 +1,20 @@
+{
+  "name": "test-plugin",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "next-blog build",
+    "dev": "next-blog dev",
+    "watch": "next-blog watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@supergrowthai/plugin-dev-kit": "workspace:*",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0"
+  },
+  "nextBlog": {
+    "baseUrl": "http://localhost:3248/plugins/test-plugin",
+    "devBaseUrl": "http://localhost:3001"
+  }
+}
