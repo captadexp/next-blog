@@ -4,7 +4,7 @@ import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../
 export const getTags = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
-        const sdk = (request as any).sdk;
+        const sdk = request.sdk;
 
         try {
             let tags = await db.tags.find({});
@@ -36,7 +36,7 @@ export const getTags = secure(
 export const getTagById = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
-        const sdk = (request as any).sdk;
+        const sdk = request.sdk;
 
         try {
             let tag = await db.tags.findOne({_id: request._params.id});
@@ -72,7 +72,7 @@ export const getTagById = secure(
 export const createTag = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
-        const sdk = (request as any).sdk;
+        const sdk = request.sdk;
 
         try {
             let data: any = await request.json();
@@ -124,7 +124,7 @@ export const createTag = secure(
 export const updateTag = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
-        const sdk = (request as any).sdk;
+        const sdk = request.sdk;
 
         try {
             let data: any = await request.json();
@@ -183,7 +183,7 @@ export const updateTag = secure(
 export const deleteTag = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
-        const sdk = (request as any).sdk;
+        const sdk = request.sdk;
 
         try {
             // Check if tag exists first

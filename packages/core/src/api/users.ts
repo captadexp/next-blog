@@ -48,7 +48,7 @@ export const requireAnyPermission = (permissions: Permission[]) => {
  * This endpoint returns a list of all users (without password fields)
  */
 export const listUsers = requirePermission('users:list')(async (request: CNextRequest) => {
-    const sdk = (request as any).sdk;
+    const sdk = request.sdk;
     
     try {
         const db = await request.db();
@@ -84,7 +84,7 @@ export const listUsers = requirePermission('users:list')(async (request: CNextRe
  * Get a specific user by ID
  */
 export const getUser = requirePermission('users:read')(async (request: CNextRequest) => {
-    const sdk = (request as any).sdk;
+    const sdk = request.sdk;
     
     try {
         const {id} = request._params;
@@ -122,7 +122,7 @@ export const getUser = requirePermission('users:read')(async (request: CNextRequ
  * Create a new user
  */
 export const createUser = requirePermission('users:create')(async (request: CNextRequest) => {
-    const sdk = (request as any).sdk;
+    const sdk = request.sdk;
     
     try {
         let body = await request.json() as any;
@@ -206,7 +206,7 @@ export const createUser = requirePermission('users:create')(async (request: CNex
  * Update a user
  */
 export const updateUser = requirePermission('users:update')(async (request: CNextRequest) => {
-    const sdk = (request as any).sdk;
+    const sdk = request.sdk;
     
     try {
         const {id} = request._params;
@@ -284,7 +284,7 @@ export const updateUser = requirePermission('users:update')(async (request: CNex
  * Delete a user
  */
 export const deleteUser = requirePermission('users:delete')(async (request: CNextRequest) => {
-    const sdk = (request as any).sdk;
+    const sdk = request.sdk;
     
     try {
         const {id} = request._params;

@@ -6,7 +6,7 @@ import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../
 export const getBlogs = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
-        const sdk = (request as any).sdk;
+        const sdk = request.sdk;
 
         try {
             let blogs = await db.blogs.find({});
@@ -34,7 +34,7 @@ export const getBlogs = secure(
 export const getBlogById = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
-        const sdk = (request as any).sdk;
+        const sdk = request.sdk;
 
         try {
             let blog = await db.blogs.findOne({_id: request._params.id});
@@ -66,7 +66,7 @@ export const getBlogById = secure(
 export const createBlog = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
-        const sdk = (request as any).sdk;
+        const sdk = request.sdk;
 
         try {
             let body: any = await request.json();
@@ -127,7 +127,7 @@ export const createBlog = secure(
 export const updateBlog = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
-        const sdk = (request as any).sdk;
+        const sdk = request.sdk;
 
         try {
             let body: any = await request.json();
@@ -236,7 +236,7 @@ export const updateBlogMetadata = secure(
 export const deleteBlog = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
-        const sdk = (request as any).sdk;
+        const sdk = request.sdk;
 
         try {
             // Check if blog exists first

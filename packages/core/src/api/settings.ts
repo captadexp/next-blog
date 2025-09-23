@@ -4,7 +4,7 @@ import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../
 export const getSettings = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
-        const sdk = (request as any).sdk;
+        const sdk = request.sdk;
 
         try {
             let settings = await db.settings.find({});
@@ -36,7 +36,7 @@ export const getSettings = secure(
 export const getSettingById = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
-        const sdk = (request as any).sdk;
+        const sdk = request.sdk;
 
         try {
             let setting = await db.settings.findOne({_id: request._params.id});
@@ -72,7 +72,7 @@ export const getSettingById = secure(
 export const createSetting = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
-        const sdk = (request as any).sdk;
+        const sdk = request.sdk;
 
         try {
             let data: any = await request.json();
@@ -132,7 +132,7 @@ export const createSetting = secure(
 export const updateSetting = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
-        const sdk = (request as any).sdk;
+        const sdk = request.sdk;
 
         try {
             let data: any = await request.json();
@@ -191,7 +191,7 @@ export const updateSetting = secure(
 export const deleteSetting = secure(
     async (request: CNextRequest) => {
         const db = await request.db();
-        const sdk = (request as any).sdk;
+        const sdk = request.sdk;
 
         try {
             // Check if setting exists first

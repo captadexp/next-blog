@@ -3,7 +3,7 @@ import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../
 
 export const getCategories = secure(async (request: CNextRequest) => {
     const db = await request.db();
-    const sdk = (request as any).sdk;
+    const sdk = request.sdk;
 
     try {
         let categories = await db.categories.find({});
@@ -32,7 +32,7 @@ export const getCategories = secure(async (request: CNextRequest) => {
 
 export const getCategoryById = secure(async (request: CNextRequest) => {
     const db = await request.db();
-    const sdk = (request as any).sdk;
+    const sdk = request.sdk;
 
     try {
         let category = await db.categories.findOne({_id: request._params.id});
@@ -65,7 +65,7 @@ export const getCategoryById = secure(async (request: CNextRequest) => {
 
 export const createCategory = secure(async (request: CNextRequest) => {
     const db = await request.db();
-    const sdk = (request as any).sdk;
+    const sdk = request.sdk;
 
     try {
         let data: any = await request.json();
@@ -114,7 +114,7 @@ export const createCategory = secure(async (request: CNextRequest) => {
 
 export const updateCategory = secure(async (request: CNextRequest) => {
     const db = await request.db();
-    const sdk = (request as any).sdk;
+    const sdk = request.sdk;
 
     try {
         let data: any = await request.json();
@@ -170,7 +170,7 @@ export const updateCategory = secure(async (request: CNextRequest) => {
 
 export const deleteCategory = secure(async (request: CNextRequest) => {
     const db = await request.db();
-    const sdk = (request as any).sdk;
+    const sdk = request.sdk;
 
     try {
         // Check if category exists first

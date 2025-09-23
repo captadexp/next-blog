@@ -163,7 +163,7 @@ export const executePluginRpc = secure(
         }
 
         try {
-            const result = await pluginExecutor.executeRpc(rpcName, (request as any).sdk, payload);
+            const result = await pluginExecutor.executeRpc(rpcName, request.sdk, payload);
             logger.info(`RPC ${rpcName} executed successfully`);
             throw new Success(`Hook ${rpcName} executed successfully`, result);
         } catch (error) {
