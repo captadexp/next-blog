@@ -10,6 +10,9 @@ import {
     createSetting,
     createTag,
     createUser,
+    cron5Minute,
+    cronDaily,
+    cronHourly,
     deleteBlog,
     deleteCategory,
     deletePlugin,
@@ -88,6 +91,11 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
                         ':key': getPluginSetting
                     }
                 }
+            },
+            cron: {
+                '5-min': cron5Minute,
+                'hourly': cronHourly,
+                'daily': cronDaily
             }
         },
         dashboard: {

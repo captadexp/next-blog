@@ -103,6 +103,11 @@ export interface ServerHooks {
     'setting:onRead': { payload: CrudPayload; response: void | { data?: any } };
     'setting:onList': { payload: CrudPayload; response: void | { data?: any[] } };
 
+    // Cron hooks
+    'cron:5-minute': { payload: CronPayload; response: void | { success?: boolean; message?: string } };
+    'cron:hourly': { payload: CronPayload; response: void | { success?: boolean; message?: string } };
+    'cron:daily': { payload: CronPayload; response: void | { success?: boolean; message?: string } };
+
     // Generic pattern for any entity (plugins can define custom entities)
     [hookName: string]: {
         payload: any;
@@ -137,6 +142,15 @@ export interface CrudPayload<T = any> {
     previousData?: T;
     changes?: Partial<T>;
     user?: { id: string; name: string };
+}
+
+/**
+ * Cron hook payload
+ */
+export interface CronPayload {
+    executedAt: Date;
+    interval: '5-minute' | 'hourly' | 'daily';
+    metadata?: Record<string, any>;
 }
 
 /**
