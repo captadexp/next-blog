@@ -39,12 +39,12 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Build packages
+        run: bun run build
+
       - name: Run typecheck
         run: |
           bun --filter="*" run typecheck
-
-      - name: Build packages
-        run: bun run build
 
       - name: Version and publish UI
         if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'ui:') }}
