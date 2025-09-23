@@ -7,15 +7,6 @@ on:
       - 'packages/**'
       - '.github/workflows/npm-publish.yml'
   workflow_dispatch:
-    inputs:
-      channel:
-        description: 'Release channel (latest or canary)'
-        required: true
-        default: 'latest'
-        type: choice
-        options:
-          - latest
-          - canary
 
 jobs:
   build-and-publish:
@@ -51,12 +42,18 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'ui:') }}
         run: |
           cd packages/ui
-          if [ "${{ github.event.inputs.channel }}" = "canary" ]; then
-            bun pm version prerelease --preid canary --no-git-tag-version
-            npm publish --tag canary --access public
-          else
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            # Main branch: publish to latest
             bun pm version patch --no-git-tag-version
             npm publish --access public
+          else
+            # Any other branch: publish as canary with timestamp
+            TIMESTAMP=$(date +%Y%m%d%H%M)
+            CURRENT_VERSION=$(node -p "require('./package.json').version")
+            BASE_VERSION=${CURRENT_VERSION%-canary.*}
+            NEW_VERSION="${BASE_VERSION}-canary.${TIMESTAMP}"
+            bun pm pkg set version="${NEW_VERSION}"
+            npm publish --tag canary --access public
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -65,18 +62,27 @@ jobs:
         if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'core:') }}
         run: |
           cd packages/core
-          if [ "${{ github.event.inputs.channel }}" = "canary" ]; then
-            bun pm version prerelease --preid canary --no-git-tag-version
-            npm publish --tag canary --access public
-          else
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            # Main branch: publish to latest
             bun pm version patch --no-git-tag-version
             npm publish --access public
+          else
+            # Any other branch: publish as canary with timestamp
+            TIMESTAMP=$(date +%Y%m%d%H%M)
+            CURRENT_VERSION=$(node -p "require('./package.json').version")
+            BASE_VERSION=${CURRENT_VERSION%-canary.*}
+            NEW_VERSION="${BASE_VERSION}-canary.${TIMESTAMP}"
+            bun pm pkg set version="${NEW_VERSION}"
+            npm publish --tag canary --access public
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Push version changes
+      - name: Commit and push version changes
+        if: github.ref == 'refs/heads/main'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
+          git add packages/*/package.json
+          git diff --staged --quiet || git commit -m "chore: bump package versions [skip ci]"
           git push origin main
