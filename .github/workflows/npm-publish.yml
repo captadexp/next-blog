@@ -56,7 +56,7 @@ jobs:
             bun publish --tag canary --access public
           fi
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Version and publish Core
         if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'core:') }}
@@ -76,7 +76,7 @@ jobs:
             bun publish --tag canary --access public
           fi
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Commit and push version changes
         if: github.ref == 'refs/heads/main'
