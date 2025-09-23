@@ -7,6 +7,15 @@ on:
       - 'packages/**'
       - '.github/workflows/npm-publish.yml'
   workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Release channel (latest or canary)'
+        required: true
+        default: 'latest'
+        type: choice
+        options:
+          - latest
+          - canary
 
 jobs:
   build-and-publish:
@@ -16,49 +25,52 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 'latest'
+
+      - name: Setup Node.js (for npm registry)
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Run typecheck
         run: |
-          npm run typecheck:ui
-          npm run typecheck:dashboard
-          npm run typecheck:core
+          bun --filter="*" run typecheck
 
       - name: Build packages
-        run: npm run build:all
+        run: bun run build
 
       - name: Version and publish UI
-        working-directory: packages/ui
         if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'ui:') }}
         run: |
-          npm version patch -m "Bump ui package to %s [skip ci]"
-          npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Version and publish Dashboard
-        working-directory: packages/dashboard
-        if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'dashboard:') }}
-        run: |
-          npm version patch -m "Bump dashboard package to %s [skip ci]"
-          npm publish --access public
+          cd packages/ui
+          if [ "${{ github.event.inputs.channel }}" = "canary" ]; then
+            bun pm version prerelease --preid canary --no-git-tag-version
+            npm publish --tag canary --access public
+          else
+            bun pm version patch --no-git-tag-version
+            npm publish --access public
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Version and publish Core
-        working-directory: packages/core
         if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'core:') }}
         run: |
-          npm version patch -m "Bump core package to %s [skip ci]"
-          npm publish --access public
+          cd packages/core
+          if [ "${{ github.event.inputs.channel }}" = "canary" ]; then
+            bun pm version prerelease --preid canary --no-git-tag-version
+            npm publish --tag canary --access public
+          else
+            bun pm version patch --no-git-tag-version
+            npm publish --access public
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
