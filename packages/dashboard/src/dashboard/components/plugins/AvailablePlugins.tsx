@@ -35,7 +35,7 @@ export const AvailablePlugins = () => {
     useEffect(() => {
         const fetchAvailablePlugins = async () => {
             try {
-                const response = await fetch('/plugins/available.json');
+                const response = await fetch('https://next-blog-test-app.vercel.app/plugins/available.json');
                 if (response.ok) {
                     const data = await response.json();
                     setAvailablePlugins(data.plugins || []);

@@ -74,6 +74,7 @@ packages/*/dist
 
 !packages/test-app/public/plugins/**/*.js
 PLUGIN_SYSTEM_IMPROVEMENTS.md
+SUGGESTED_PLUGINS.md
 
 .turbo
 

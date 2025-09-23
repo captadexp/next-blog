@@ -17,11 +17,11 @@
       "name": "@supergrowthai/next-blog",
       "version": "2.0.0",
       "dependencies": {
-        "@supergrowthai/next-blog-dashboard": "workspace:*",
-        "@supergrowthai/types": "workspace:*",
         "moment": "^2.30.1",
       },
       "devDependencies": {
+        "@supergrowthai/next-blog-dashboard": "workspace:*",
+        "@supergrowthai/types": "workspace:*",
         "@types/mongodb": "^4.0.7",
         "@types/node": "^24.5.2",
         "@types/uuid": "^10.0.0",
