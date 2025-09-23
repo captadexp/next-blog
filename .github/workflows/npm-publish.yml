@@ -45,15 +45,15 @@ jobs:
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             # Main branch: publish to latest
             bun pm version patch --no-git-tag-version
-            npm publish --access public
+            bun publish --access public
           else
             # Any other branch: publish as canary with timestamp
             TIMESTAMP=$(date +%Y%m%d%H%M)
-            CURRENT_VERSION=$(node -p "require('./package.json').version")
+            CURRENT_VERSION=$(bun -e "console.log(require('./package.json').version)")
             BASE_VERSION=${CURRENT_VERSION%-canary.*}
             NEW_VERSION="${BASE_VERSION}-canary.${TIMESTAMP}"
             bun pm pkg set version="${NEW_VERSION}"
-            npm publish --tag canary --access public
+            bun publish --tag canary --access public
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -65,15 +65,15 @@ jobs:
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             # Main branch: publish to latest
             bun pm version patch --no-git-tag-version
-            npm publish --access public
+            bun publish --access public
           else
             # Any other branch: publish as canary with timestamp
             TIMESTAMP=$(date +%Y%m%d%H%M)
-            CURRENT_VERSION=$(node -p "require('./package.json').version")
+            CURRENT_VERSION=$(bun -e "console.log(require('./package.json').version)")
             BASE_VERSION=${CURRENT_VERSION%-canary.*}
             NEW_VERSION="${BASE_VERSION}-canary.${TIMESTAMP}"
             bun pm pkg set version="${NEW_VERSION}"
-            npm publish --tag canary --access public
+            bun publish --tag canary --access public
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
