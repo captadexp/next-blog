@@ -28,11 +28,14 @@ interface ManifestEntry {
 }
 
 // Check for required environment variable
-const PLUGIN_HOST_URL = process.env.PLUGIN_HOST_URL;
+const PLUGIN_HOST_URL = process.env.PLUGIN_HOST_URL || 
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined);
+
 if (!PLUGIN_HOST_URL) {
-  console.error('❌ Error: PLUGIN_HOST_URL environment variable is not set');
+  console.error('❌ Error: PLUGIN_HOST_URL or VERCEL_PROJECT_PRODUCTION_URL environment variable must be set');
   console.error('Please set PLUGIN_HOST_URL to your deployment URL, e.g.:');
   console.error('  export PLUGIN_HOST_URL="https://next-blog.vercel.app"');
+  console.error('Or deploy to Vercel production (main branch) for automatic URL detection');
   process.exit(1);
 }
 
@@ -125,7 +128,7 @@ for (const pluginDir of pluginDirs) {
       name: pluginData.name || pluginName,
       version: version,
       author: pluginData.author || 'Unknown',
-      path: `/plugins/${pluginName}/${version}`,
+      path: `${PLUGIN_HOST_URL}/plugins/${pluginName}/${version}`,
       files: {}
     };
 
@@ -134,14 +137,8 @@ for (const pluginDir of pluginDirs) {
     }
 
     // Add file references
-    if (existsSync(join(targetDir, 'client.js'))) {
-      entry.files.client = `/plugins/${pluginName}/${version}/client.js`;
-    }
-    if (existsSync(join(targetDir, 'server.js'))) {
-      entry.files.server = `/plugins/${pluginName}/${version}/server.js`;
-    }
     if (existsSync(join(targetDir, 'plugin.js'))) {
-      entry.files.plugin = `/plugins/${pluginName}/${version}/plugin.js`;
+      entry.files.plugin = `${PLUGIN_HOST_URL}/plugins/${pluginName}/${version}/plugin.js`;
     }
 
     manifestEntries.push(entry);
