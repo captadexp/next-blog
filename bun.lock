@@ -133,6 +133,7 @@
       "version": "1.0.0",
       "devDependencies": {
         "@supergrowthai/next-blog": "workspace:*",
+        "@supergrowthai/plugin-dev-kit": "workspace:*",
         "@types/node": "^24.5.2",
         "@types/react": "^19.1.8",
         "@types/react-dom": "^19.1.6",

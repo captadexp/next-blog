@@ -43,6 +43,7 @@
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
     "@supergrowthai/next-blog": "workspace:*",
+    "@supergrowthai/plugin-dev-kit": "workspace:*",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "rimraf": "^6.0.1",
