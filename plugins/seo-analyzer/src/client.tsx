@@ -1,4 +1,4 @@
-import {defineClient} from "@supergrowthai/plugin-dev-kit";
+import {defineClient, content} from "@supergrowthai/plugin-dev-kit";
 
 interface AnalysisResult {
     label: string;
@@ -11,7 +11,7 @@ interface AnalysisData {
     title: string;
     keyword: string;
     wordCount: number;
-    html: string;
+    contentObject: any; // ContentObject from editor
 }
 
 interface PluginState {
@@ -116,15 +116,6 @@ function editorSidebarWidget(sdk: any, prev: any, context: any) {
 
     // Utils functions - moved inside to prevent tree shaking
     const utils = {
-        stripHtml(html: string): string {
-            if (!html) return '';
-            const doc = new DOMParser().parseFromString(html, 'text/html');
-            return doc.body.textContent || '';
-        },
-        getWordCount(text: string): number {
-            if (!text) return 0;
-            return text.trim().match(/\b\w+\b/g)?.length || 0;
-        },
         calculateKeywordDensity(text: string, keyword: string, wordCount: number): number {
             if (!text || !keyword || wordCount === 0) return 0;
             const keywordCount = (text.toLowerCase().match(new RegExp(`\\b${keyword.toLowerCase()}\\b`, 'g')) || []).length;
@@ -215,7 +206,7 @@ function editorSidebarWidget(sdk: any, prev: any, context: any) {
                 return {...result, status: 'bad', advice: 'Not enough content to analyze readability.'};
             }
             try {
-                const response = await sdk.callHook("get-flesch-score", {content: data.text});
+                const response = await sdk.callHook("get-flesch-score", {content: data.contentObject});
                 if (response.code !== 0) throw new Error(response.message);
 
                 const {payload} = response.payload;
@@ -262,13 +253,13 @@ function editorSidebarWidget(sdk: any, prev: any, context: any) {
 
         if (!sdk || !context) return;
 
-        const htmlContent = context.editor.getContent();
-        const textContent = utils.stripHtml(htmlContent);
+        const contentObject = context.editor.getContent();
+        const textContent = content.extractTextFromContent(contentObject);
         const title = context.editor.getTitle();
-        const wordCount = utils.getWordCount(textContent);
+        const wordCount = content.getWordCount(contentObject);
         const keyword = focusKeyword.trim().toLowerCase();
 
-        const analysisData: AnalysisData = {text: textContent, title, keyword, wordCount, html: htmlContent};
+        const analysisData: AnalysisData = {text: textContent, title, keyword, wordCount, contentObject};
 
         const syncResults = [
             CHECKS.keywordLength(analysisData),

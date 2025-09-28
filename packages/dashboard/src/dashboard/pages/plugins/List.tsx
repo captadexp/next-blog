@@ -44,7 +44,18 @@ const PluginsList = () => {
     };
 
     const columns = [
-        {header: 'Name', accessor: 'name'},
+        {
+            header: 'Name',
+            accessor: 'name',
+            cell: (plugin: Plugin) => (
+                <div>
+                    <div className="font-medium">{plugin.name}</div>
+                    {plugin.url && (
+                        <div className="text-xs text-gray-500 mt-1">{plugin.url}</div>
+                    )}
+                </div>
+            )
+        },
         {header: 'Version', accessor: 'version'},
         {header: 'Author', accessor: 'author'},
         {

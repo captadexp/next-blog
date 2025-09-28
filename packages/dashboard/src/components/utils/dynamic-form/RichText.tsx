@@ -1,8 +1,10 @@
 import {h} from 'preact';
-import {useCallback, useRef, useState} from 'preact/hooks';
+import {useEffect, useRef, useState} from 'preact/hooks';
 import {DynamicFormFieldType} from './types';
 import {memo} from "preact/compat"
-import {useEffect} from "react";
+import contentObjectToEditorJS from './htmlToJson/contentobject-to-editorjs';
+import editorJSToContentObject from './htmlToJson/editorjs-to-contentobject';
+import type {OutputBlockData} from '@editorjs/editorjs';
 
 interface RichTextProps {
     field: DynamicFormFieldType;
@@ -11,109 +13,255 @@ interface RichTextProps {
 
 const RichText = memo(({field, onChange}: RichTextProps) => {
     const editorRef = useRef<HTMLDivElement>(null);
-    const [editorLoaded, setEditorLoaded] = useState(false);
     const editorInstanceRef = useRef<any>(null);
-    const prevValueRef = useRef<string>(field.value);
-    const {key, value, disabled, label, ref} = field;
+    const [isLoading, setIsLoading] = useState(true);
+    const {key, value, disabled, label} = field;
 
-    // Memoize the onChange handler to prevent recreation on each render
-    const handleChange = useCallback((data: string) => {
-        onChange(key, data);
-    }, [key, onChange]);
-
-    // Load CKEditor script only once
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            // Skip if already loaded
-            if (document.querySelector('script[src*="ckeditor"]')) {
-                setEditorLoaded(true);
-                return;
-            }
+        let mounted = true;
 
-            const script = document.createElement('script');
-            script.src = "https://cdn.ckeditor.com/ckeditor5/41.2.1/classic/ckeditor.js";
-            script.async = true;
-            script.onload = () => setEditorLoaded(true);
-            document.body.appendChild(script);
-        }
-        // No cleanup needed as we want the script to remain loaded
+        const initEditor = async () => {
+            try {
+                // Wait for EditorJS to be available
+                const EditorJS = (window as any).EditorJS;
+                
+                if (!EditorJS || !editorRef.current || editorInstanceRef.current) return;
+
+                // Get available tools
+                const Header = (window as any).Header;
+                const List = (window as any).List;
+                const Quote = (window as any).Quote;
+                const SimpleImage = (window as any).SimpleImage;
+                const Table = (window as any).Table;
+                const InlineCode = (window as any).InlineCode;
+
+                // Prepare initial data
+                let initialData;
+                try {
+                    initialData = value ? contentObjectToEditorJS(value) : {
+                        time: new Date().getTime(),
+                        blocks: []
+                    };
+                } catch (err) {
+                    console.log('Error converting data:', err);
+                    initialData = {
+                        time: new Date().getTime(),
+                        blocks: []
+                    };
+                }
+
+                // Build tools config
+                const tools: any = {};
+                
+                if (Header) {
+                    tools.header = {
+                        class: Header,
+                        config: {
+                            levels: [1, 2, 3, 4, 5, 6],
+                            defaultLevel: 2
+                        }
+                    };
+                }
+                
+                if (List) {
+                    tools.list = {
+                        class: List,
+                        inlineToolbar: true,
+                        config: {
+                            defaultStyle: 'unordered'
+                        }
+                    };
+                }
+                
+                if (Quote) {
+                    tools.quote = Quote;
+                }
+                
+                if (SimpleImage) {
+                    tools.image = SimpleImage;
+                }
+                
+                if (Table) {
+                    tools.table = {
+                        class: Table,
+                        inlineToolbar: true,
+                        config: {
+                            rows: 2,
+                            cols: 3,
+                        }
+                    };
+                }
+                
+                if (InlineCode) {
+                    tools.inlineCode = InlineCode;
+                }
+
+                // Create editor instance
+                const editor = new EditorJS({
+                    holder: editorRef.current,
+                    data: initialData,
+                    readOnly: !!disabled,
+                    minHeight: 30,
+                    placeholder: 'Let\'s write an awesome story!',
+                    onChange: async () => {
+                        try {
+                            const outputData = await editor.saver.save();
+                            // Ensure all paragraphs have text field
+                            outputData.blocks = outputData.blocks.map((block: OutputBlockData) => {
+                                if (block.type === 'paragraph' && !block.data.text) {
+                                    block.data.text = '';
+                                }
+                                return block;
+                            });
+                            const contentObject = editorJSToContentObject(outputData);
+                            onChange(key, contentObject);
+                        } catch (error) {
+                            console.error('Error saving:', error);
+                        }
+                    },
+                    tools: tools,
+                    onReady: () => {
+                        if (mounted) {
+                            setIsLoading(false);
+                        }
+                    }
+                });
+
+                editorInstanceRef.current = editor;
+            } catch (error) {
+                console.error('Failed to initialize editor:', error);
+                setIsLoading(false);
+            }
+        };
+
+        // Load scripts then initialize
+        const loadScripts = async () => {
+            try {
+                // Load EditorJS first
+                if (!(window as any).EditorJS) {
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest';
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                }
+
+                // Load tools in parallel
+                const toolPromises = [];
+                
+                if (!(window as any).Header) {
+                    toolPromises.push(new Promise((resolve) => {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/@editorjs/header@latest';
+                        script.onload = resolve;
+                        script.onerror = () => {
+                            console.warn('Failed to load Header tool');
+                            resolve(null);
+                        };
+                        document.head.appendChild(script);
+                    }));
+                }
+                
+                if (!(window as any).List) {
+                    toolPromises.push(new Promise((resolve) => {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/@editorjs/list@latest';
+                        script.onload = resolve;
+                        script.onerror = () => {
+                            console.warn('Failed to load List tool');
+                            resolve(null);
+                        };
+                        document.head.appendChild(script);
+                    }));
+                }
+                
+                if (!(window as any).Quote) {
+                    toolPromises.push(new Promise((resolve) => {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/@editorjs/quote@latest';
+                        script.onload = resolve;
+                        script.onerror = () => {
+                            console.warn('Failed to load Quote tool');
+                            resolve(null);
+                        };
+                        document.head.appendChild(script);
+                    }));
+                }
+                
+                if (!(window as any).SimpleImage) {
+                    toolPromises.push(new Promise((resolve) => {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/@editorjs/simple-image@latest';
+                        script.onload = resolve;
+                        script.onerror = () => {
+                            console.warn('Failed to load SimpleImage tool');
+                            resolve(null);
+                        };
+                        document.head.appendChild(script);
+                    }));
+                }
+                
+                if (!(window as any).Table) {
+                    toolPromises.push(new Promise((resolve) => {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/@editorjs/table@latest';
+                        script.onload = resolve;
+                        script.onerror = () => {
+                            console.warn('Failed to load Table tool');
+                            resolve(null);
+                        };
+                        document.head.appendChild(script);
+                    }));
+                }
+                
+                if (!(window as any).InlineCode) {
+                    toolPromises.push(new Promise((resolve) => {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/@editorjs/inline-code@latest';
+                        script.onload = resolve;
+                        script.onerror = () => {
+                            console.warn('Failed to load InlineCode tool');
+                            resolve(null);
+                        };
+                        document.head.appendChild(script);
+                    }));
+                }
+
+                // Wait for all tools to load
+                await Promise.all(toolPromises);
+                
+                // Initialize editor after a small delay
+                if (mounted) {
+                    setTimeout(initEditor, 100);
+                }
+            } catch (error) {
+                console.error('Failed to load scripts:', error);
+                // Try to initialize with whatever loaded
+                if (mounted) {
+                    setTimeout(initEditor, 100);
+                }
+            }
+        };
+
+        loadScripts();
+
+        return () => {
+            mounted = false;
+            if (editorInstanceRef.current) {
+                editorInstanceRef.current.destroy();
+                editorInstanceRef.current = null;
+            }
+        };
     }, []);
 
-    // Initialize CKEditor only when necessary
+    // Update readonly state
     useEffect(() => {
-        if (!editorLoaded || !editorRef.current) return;
-
-        // Only create/update editor if we don't have an instance yet
-        if (!editorInstanceRef.current) {
-            let mounted = true;
-
-            const initEditor = async () => {
-                try {
-                    // Create new editor instance
-                    const editor = await (window as any).ClassicEditor.create(editorRef.current, {
-                        initialData: value || ''
-                    });
-
-                    if (!mounted) {
-                        editor.destroy();
-                        return;
-                    }
-
-                    editorInstanceRef.current = editor;
-                    if (ref)
-                        ref.current = editor;
-
-                    // Listen for changes
-                    editor.model.document.on('change:data', () => {
-                        const data = editor.getData();
-                        handleChange(data);
-                    });
-
-                    // Handle disabled state
-                    editor.isReadOnly = !!disabled;
-                } catch (error) {
-                    console.error('CKEditor initialization failed:', error);
-                }
-            };
-
-            // Ensure ClassicEditor is available
-            setTimeout(initEditor, 0);
-
-            // Cleanup on component unmount
-            return () => {
-                mounted = false;
-                if (editorInstanceRef.current) {
-                    editorInstanceRef.current.destroy().catch(console.error);
-                    editorInstanceRef.current = null;
-                }
-
-                if (ref)
-                    ref.current = null;
-            };
+        if (editorInstanceRef.current && editorInstanceRef.current.readOnly) {
+            editorInstanceRef.current.readOnly.toggle(!!disabled);
         }
-    }, [editorLoaded]); // Only run when editor loads
-
-    // Update editor content/state if props change
-    useEffect(() => {
-        // Only run if we have an editor instance and the value has changed
-        if (editorInstanceRef.current && prevValueRef.current !== value) {
-            const editor = editorInstanceRef.current;
-
-            // Only set data if the value is different from current editor content
-            // This prevents cursor jumping
-            const editorData = editor.getData();
-            if (editorData !== value) {
-                editor.setData(value || '');
-            }
-
-            prevValueRef.current = value;
-        }
-
-        // Update read-only state if disabled prop changes
-        if (editorInstanceRef.current && editorInstanceRef.current.isReadOnly !== !!disabled) {
-            editorInstanceRef.current.isReadOnly = !!disabled;
-        }
-    }, [value, disabled]);
+    }, [disabled]);
 
     return (
         <div className="w-full mb-4">
@@ -124,22 +272,15 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                 {label}
             </label>
             <div
-                className="border border-gray-300 rounded-md min-h-24"
+                className="border border-gray-300 rounded-md min-h-24 p-2"
                 ref={editorRef}
                 id={key}
-            />
-            {!editorLoaded && (
-                <div className="text-sm text-gray-500 mt-1">Loading editor...</div>
-            )}
+            >
+                {isLoading && (
+                    <div className="text-gray-500 text-sm">Loading editor...</div>
+                )}
+            </div>
         </div>
-    );
-}, (prevProps, nextProps) => {
-    return (
-        prevProps.field.key === nextProps.field.key &&
-        prevProps.field.value === nextProps.field.value &&
-        prevProps.field.disabled === nextProps.field.disabled &&
-        prevProps.onChange === nextProps.onChange &&
-        prevProps.field.ref === nextProps.field.ref
     );
 });
 

@@ -1,25 +1,24 @@
 import type {ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
+import {content} from '@supergrowthai/plugin-dev-kit';
 import {BrokenLink, LinkCheckResult, PostReference, ScanResponse} from './types';
 import {defineServer} from "@supergrowthai/plugin-dev-kit";
 
-const findLinksInHtml = (html: string): string[] => {
-    const regex = /<a\s+(?:[^>]*?\s+)?href="([^"]*)"/g;
-    const links: string[] = [];
-    let match: RegExpExecArray | null;
-
-    while ((match = regex.exec(html)) !== null) {
-        links.push(match[1]);
-    }
-
-    return links;
-};
-
 const checkLink = async (url: string): Promise<LinkCheckResult> => {
     try {
+        // Skip checking local/relative URLs
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            return {
+                url,
+                status: 'skipped',
+                ok: true
+            };
+        }
+
         // Use a HEAD request for efficiency
         const response = await fetch(url, {
             method: 'HEAD',
-            redirect: 'follow'
+            redirect: 'follow',
+            signal: AbortSignal.timeout(10000) // 10 second timeout
         });
 
         return {
@@ -49,19 +48,46 @@ const scanForBrokenLinks = async (sdk: ServerSDK): Promise<ScanResponse> => {
         const allLinks = new Map<string, Set<PostReference>>();
 
         for (const blog of blogsResponse) {
-            const links = findLinksInHtml(blog.content);
+            // Parse content as ContentObject and extract links
+            let links: content.ExtractedLink[] = [];
+            
+            try {
+                // The content might be stored as a JSON string or an object
+                const blogContent = typeof blog.content === 'string' 
+                    ? blog.content 
+                    : JSON.stringify(blog.content);
+                
+                links = content.extractLinksFromContent(blogContent);
+            } catch (error) {
+                sdk.log.warn(`Failed to parse content for blog ${blog._id}: ${error}`);
+                continue;
+            }
 
+            // Process extracted links
             for (const link of links) {
-                if (!allLinks.has(link)) {
-                    allLinks.set(link, new Set<PostReference>());
-                }
+                // Only check external URLs and images
+                if (link.url && (link.type === 'link' || link.type === 'image')) {
+                    if (!allLinks.has(link.url)) {
+                        allLinks.set(link.url, new Set<PostReference>());
+                    }
 
-                allLinks.get(link)!.add({
-                    postId: blog._id,
-                    postTitle: blog.title
-                });
+                    allLinks.get(link.url)!.add({
+                        postId: blog._id,
+                        postTitle: blog.title
+                    });
+                }
             }
         }
+
+        if (allLinks.size === 0) {
+            return {
+                code: 0,
+                message: 'No links found in published articles.',
+                payload: []
+            };
+        }
+
+        sdk.log.info(`Checking ${allLinks.size} unique links...`);
 
         const linkCheckPromises = Array.from(allLinks.keys()).map(checkLink);
         const results = await Promise.all(linkCheckPromises);
@@ -76,7 +102,7 @@ const scanForBrokenLinks = async (sdk: ServerSDK): Promise<ScanResponse> => {
 
         return {
             code: 0,
-            message: 'Scan complete.',
+            message: `Scan complete. Found ${brokenLinks.length} broken links out of ${allLinks.size} total links.`,
             payload: brokenLinks
         };
     } catch (error: any) {
