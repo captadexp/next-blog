@@ -207,24 +207,24 @@ const badHtml = `<p><span style="font-weight: 400;"><a href="https://netflixjunk
 function runTest(name: string, html: string, expectedChecks?: (l1: any, l2: any, l3: any) => boolean) {
     console.log(`\n🧪 Test: ${name}`)
     console.log('-'.repeat(40))
-    
+
     try {
         // Transform pipeline
         const fixed = fixMalformedHtmlBrowserDomParser(html)
         const l1 = htmlToContentObject(fixed)
         const l2 = contentObjectToEditorJS(l1)
         const l3 = editorJSToContentObject(l2)
-        
+
         // Basic checks
         const blocksMatch = l1.content.length === l3.content.length
         console.log(`Blocks preserved: ${l1.content.length} → ${l3.content.length} ${blocksMatch ? '✅' : '❌'}`)
-        
+
         // Custom checks if provided
         let customCheckPassed = true
         if (expectedChecks) {
             customCheckPassed = expectedChecks(l1, l2, l3)
         }
-        
+
         const passed = blocksMatch && customCheckPassed
         console.log(`Result: ${passed ? '✅ PASSED' : '❌ FAILED'}`)
         return passed
@@ -237,10 +237,10 @@ function runTest(name: string, html: string, expectedChecks?: (l1: any, l2: any,
 // Simple test cases
 function runSimpleTests() {
     console.log('🔬 Running Simple Tests')
-    console.log('=' .repeat(50))
-    
+    console.log('='.repeat(50))
+
     const results: boolean[] = []
-    
+
     // Test 1: Plain text
     results.push(runTest(
         'Plain Text',
@@ -251,7 +251,7 @@ function runSimpleTests() {
             return hasText
         }
     ))
-    
+
     // Test 2: Bold and Italic
     results.push(runTest(
         'Bold and Italic',
@@ -264,7 +264,7 @@ function runSimpleTests() {
             return hasBold && hasItalic
         }
     ))
-    
+
     // Test 3: Simple Link
     results.push(runTest(
         'Simple Link',
@@ -277,7 +277,7 @@ function runSimpleTests() {
             return hasLink && hasLinkText
         }
     ))
-    
+
     // Test 4: Headings
     results.push(runTest(
         'Headings',
@@ -290,7 +290,7 @@ function runSimpleTests() {
             return hasSubheading && hasParagraph
         }
     ))
-    
+
     // Test 5: Lists
     results.push(runTest(
         'Lists',
@@ -303,7 +303,7 @@ function runSimpleTests() {
             return hasList && hasItems
         }
     ))
-    
+
     // Test 6: Empty content
     results.push(runTest(
         'Empty Paragraph',
@@ -313,7 +313,7 @@ function runSimpleTests() {
             return true
         }
     ))
-    
+
     // Test 7: Special characters
     results.push(runTest(
         'Special Characters',
@@ -324,7 +324,7 @@ function runSimpleTests() {
             return hasSpecialChars
         }
     ))
-    
+
     // Test 8: Nested formatting
     results.push(runTest(
         'Nested Formatting',
@@ -335,7 +335,7 @@ function runSimpleTests() {
             return hasNested
         }
     ))
-    
+
     // Test 9: Multiple paragraphs
     results.push(runTest(
         'Multiple Paragraphs',
@@ -346,7 +346,7 @@ function runSimpleTests() {
             return paragraphCount === 3
         }
     ))
-    
+
     // Test 10: Image
     results.push(runTest(
         'Image',
@@ -359,55 +359,57 @@ function runSimpleTests() {
             return hasImage && hasImageData
         }
     ))
-    
+
     // Summary
-    console.log('\n' + '=' .repeat(50))
+    console.log('\n' + '='.repeat(50))
     const passed = results.filter(r => r).length
     const total = results.length
     console.log(`📊 Test Summary: ${passed}/${total} tests passed`)
     console.log(passed === total ? '✅ All tests PASSED!' : `❌ ${total - passed} tests failed`)
-    
+
     return passed === total
 }
 
 // Complex test with the original badHtml
 function runComplexTest() {
     console.log('\n🔬 Running Complex Test (Original badHtml)')
-    console.log('=' .repeat(50))
-    
+    console.log('='.repeat(50))
+
     const l0 = fixMalformedHtmlBrowserDomParser(badHtml)
     const l1 = htmlToContentObject(l0)
     const l2 = contentObjectToEditorJS(l1)
     const l3 = editorJSToContentObject(l2)
-    
+
     console.log('ContentObject blocks:', l1.content.length)
     console.log('EditorJS blocks:', l2.blocks.length)
     console.log('Roundtrip blocks:', l3.content.length)
-    
+
     const hasLinks = l1.content.some(b => JSON.stringify(b).includes('Link'))
     const hasLinksAfter = l3.content.some(b => JSON.stringify(b).includes('Link'))
     const hasSubheadings = l1.content.some(b => b.name === 'Subheading')
     const hasSubheadingsAfter = l3.content.some(b => b.name === 'Subheading')
-    
+
     const success = l1.content.length === l3.content.length && hasLinks === hasLinksAfter && hasSubheadings === hasSubheadingsAfter
     console.log(success ? '✅ Complex test PASSED!' : '❌ Complex test FAILED')
-    
+
     return success
 }
 
 // Main test runner
 function main() {
     console.log('🚀 HTML Transformer Test Suite')
-    console.log('=' .repeat(50))
-    
+    console.log('='.repeat(50))
+
     const simpleTestsPassed = runSimpleTests()
     const complexTestPassed = runComplexTest()
-    
-    console.log('\n' + '=' .repeat(50))
+
+    console.log('\n' + '='.repeat(50))
     console.log('🏁 FINAL RESULTS')
     console.log('Simple Tests:', simpleTestsPassed ? '✅ PASSED' : '❌ FAILED')
     console.log('Complex Test:', complexTestPassed ? '✅ PASSED' : '❌ FAILED')
     console.log('\n' + (simpleTestsPassed && complexTestPassed ? '🎉 ALL TESTS PASSED!' : '⚠️ Some tests failed'))
 }
 
-main()
+if (require.main === module) {
+    main();
+}
