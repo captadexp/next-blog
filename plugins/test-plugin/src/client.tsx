@@ -113,12 +113,12 @@ export default defineClient({
         },
         
         // Dashboard panel for plugin settings (requires hasSettingsPanel: true)
-        'dashboard-panel-my-plugin': (sdk) => {
+        'system:plugin:settings-panel': (sdk) => {
             return (
                 <div className="p-4">
                     <h2 className="text-xl font-bold mb-4">Test Plugin Panel</h2>
                     <div className="flex items-center space-x-2 mb-4">
-                        <HookIndicator hookName="dashboard-panel-test-plugin"/>
+                        <HookIndicator hookName="system:plugin:settings-panel"/>
                         <span className="text-sm">This is the plugin settings panel hook</span>
                     </div>
                     <button

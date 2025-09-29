@@ -116,9 +116,9 @@ export interface ClientHooks {
     'plugins-table:after': { payload: { page: string; data?: any }; response: any };
     'plugin-item:before': { payload: { context: { plugin: any } }; response: any };
     'plugin-item:after': { payload: { context: { plugin: any } }; response: any };
-    
-    // Dynamic plugin panel hooks
-    [key: `dashboard-panel-${string}`]: { payload: { context?: any }; response: any };
+
+    // Plugin system hooks
+    'system:plugin:settings-panel': { payload: { context?: any }; response: any };
 }
 
 export type HookPosition =

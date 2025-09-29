@@ -124,7 +124,7 @@ export default defineClient({
   },
   
   // Plugin settings panel (if hasSettingsPanel: true)
-  'dashboard-panel-my-plugin': (sdk, prev, context) => {
+  'system:plugin:settings-panel': (sdk, prev, context) => {
     return <PluginSettings sdk={sdk} />;
   }
 });

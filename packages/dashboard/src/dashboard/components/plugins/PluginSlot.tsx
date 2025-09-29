@@ -72,6 +72,7 @@ interface PluginSlotProps {
     entity?: string;
     section?: string;
     context?: Record<string, any>;
+    pluginFilter?: string;
 }
 
 /**
@@ -84,7 +85,7 @@ interface PluginSlotProps {
  * - <PluginSlot entity="blog" position="sidebar" />
  */
 export const PluginSlot: FunctionComponent<PluginSlotProps> = (props) => {
-    const {hookName: providedHookName, page, position, entity, section, context} = props;
+    const {hookName: providedHookName, page, position, entity, section, context, pluginFilter} = props;
     const {getHookFunctions, status, callHook} = usePlugins();
 
     // Generate hook name from pattern if not provided directly
@@ -108,7 +109,12 @@ export const PluginSlot: FunctionComponent<PluginSlotProps> = (props) => {
         return null; // Or a loading indicator
     }
 
-    const hookFunctions = getHookFunctions(hookName);
+    let hookFunctions = getHookFunctions(hookName);
+
+    // Filter by plugin if specified
+    if (pluginFilter) {
+        hookFunctions = hookFunctions.filter(({pluginId}) => pluginId === pluginFilter);
+    }
 
     if (!hookFunctions.length) {
         return null;

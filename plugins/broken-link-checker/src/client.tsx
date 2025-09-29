@@ -115,7 +115,7 @@ const renderPanel = (sdk: ClientSDK) => {
 
 export default defineClient({
     hooks: {
-        'dashboard-panel-broken-link-checker': renderPanel
+        'system:plugin:settings-panel': renderPanel
     },
     hasSettingsPanel: true,
 });

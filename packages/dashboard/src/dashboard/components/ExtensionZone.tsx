@@ -71,7 +71,8 @@ export const ExtensionZone: FunctionComponent<ExtensionZoneProps> = ({
 // Convenience component for inline extension points
 export const ExtensionPoint: FunctionComponent<{
     name: string;
-    context?: Record<string, any>
-}> = ({name, context = {}}) => {
-    return <PluginSlot hookName={name} context={context}/>;
+    context?: Record<string, any>;
+    pluginFilter?: string;
+}> = ({name, context = {}, pluginFilter}) => {
+    return <PluginSlot hookName={name} context={context} pluginFilter={pluginFilter}/>;
 };

@@ -12,12 +12,13 @@ const PluginPanel: FunctionComponent<{ pluginId: string }> = ({pluginId}) => {
         return <div>Plugin not found or not loaded.</div>;
     }
 
-    const panelHookName = `dashboard-panel-${plugin.name.toLowerCase().replace(/\s/g, '-')}`;
-
     return (
         <div className="plugin-panel">
             <h2 className="text-2xl font-bold mb-4">{plugin.name} Panel</h2>
-            <ExtensionPoint name={panelHookName}/>
+            <ExtensionPoint
+                name="system:plugin:settings-panel"
+                pluginFilter={pluginId}
+            />
         </div>
     );
 };
