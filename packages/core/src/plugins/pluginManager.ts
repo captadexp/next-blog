@@ -1,4 +1,4 @@
-import {DatabaseAdapter, Plugin, PluginModule} from "../types.js";
+import {createId, DatabaseAdapter, Plugin, ServerPluginModule} from "@supergrowthai/types/server";
 import {ValidationError} from "../utils/errors.js";
 import Logger from "../utils/Logger.js";
 
@@ -34,9 +34,9 @@ async function loadPluginManifest(url: string): Promise<Plugin> {
     return manifest;
 }
 
-async function loadPluginModule(url: string): Promise<PluginModule> {
+async function loadPluginModule<T>(url: string): Promise<T> {
     logger.debug(`Loading plugin module from URL: ${url}`);
-    return loadPluginFromUrl<PluginModule>(url);
+    return loadPluginFromUrl<T>(url);
 }
 
 async function registerHooks(
@@ -48,7 +48,7 @@ async function registerHooks(
     if (!hooks || typeof hooks !== 'object') return;
     logger.debug(`Registering ${type} hooks for plugin ${pluginId}`);
     for (const hookName of Object.keys(hooks)) {
-        await db.pluginHookMappings.create({pluginId, hookName, type, priority: 10});
+        await db.pluginHookMappings.create({pluginId: createId.plugin(pluginId), hookName, type, priority: 10});
         logger.debug(`Registered ${type} hook: ${hookName}`);
     }
 }
@@ -61,7 +61,12 @@ async function registerRpcs(
     if (!rpcs || typeof rpcs !== 'object') return;
     logger.debug(`Registering RPCs for plugin ${pluginId}`);
     for (const rpcName of Object.keys(rpcs)) {
-        await db.pluginHookMappings.create({pluginId, hookName: rpcName, type: 'rpc', priority: 10});
+        await db.pluginHookMappings.create({
+            pluginId: createId.plugin(pluginId),
+            hookName: rpcName,
+            type: 'rpc',
+            priority: 10
+        });
         logger.debug(`Registered rpc: ${rpcName}`);
     }
 }
@@ -78,14 +83,11 @@ async function installPlugin(db: DatabaseAdapter, url: string): Promise<any> {
     logger.info(`Plugin created: ${creation._id}`);
 
     if (manifest.server?.url) {
-        const server = await loadPluginModule(manifest.server?.url);
+        const server: ServerPluginModule = await loadPluginModule(manifest.server?.url);
         await registerHooks(db, creation._id, server.hooks, 'server');
         await registerRpcs(db, creation._id, server.rpcs);
     }
-    if (manifest.client?.url) {
-        const client = await loadPluginModule(manifest.client?.url);
-        await registerHooks(db, creation._id, client.hooks, 'client');
-    }
+    // Client modules are loaded in the browser, not on server
     return creation;
 }
 

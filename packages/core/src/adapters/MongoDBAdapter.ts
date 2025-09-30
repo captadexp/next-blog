@@ -1,11 +1,13 @@
 import {
     Blog,
     BlogData,
+    BrandedId,
     Category,
     CategoryData,
     CollectionOperations,
     Comment,
     CommentData,
+    createId,
     DatabaseAdapter,
     DetailedBlog,
     Filter,
@@ -24,7 +26,7 @@ import {
     TagData,
     User,
     UserData
-} from "../types.js";
+} from "@supergrowthai/types/server";
 import {Collection, Db, MongoClient, ObjectId} from "mongodb"
 
 export function oid(obj: ObjectId | string) {
@@ -50,26 +52,36 @@ class BlogTransformer implements DbEntityTransformer<Blog, BlogData> {
 
         const result = {...dbEntity};
 
-        // Convert _id from ObjectId to string
+        // Convert _id from ObjectId to BrandedId
         if (result._id instanceof ObjectId) {
-            result._id = result._id.toString();
+            result._id = createId.blog(result._id.toString());
         }
 
         // Convert userId if exists
         if (result.userId instanceof ObjectId) {
-            result.userId = result.userId.toString();
+            result.userId = createId.user(result.userId.toString());
         }
 
-        // Convert category if exists
-        if (result.category instanceof ObjectId) {
-            result.category = result.category.toString();
+        // Convert categoryId if exists
+        if (result.categoryId instanceof ObjectId) {
+            result.categoryId = createId.category(result.categoryId.toString());
         }
 
-        // Convert tags array if exists
-        if (Array.isArray(result.tags)) {
-            result.tags = result.tags.map((tag: any) =>
-                tag instanceof ObjectId ? tag.toString() : tag
+        // Convert tagIds array if exists
+        if (Array.isArray(result.tagIds)) {
+            result.tagIds = result.tagIds.map((tag: any) =>
+                tag instanceof ObjectId ? createId.tag(tag.toString()) : tag
             );
+        }
+
+        // Convert featuredMediaId if exists
+        if (result.featuredMediaId instanceof ObjectId) {
+            result.featuredMediaId = createId.media(result.featuredMediaId.toString());
+        }
+
+        // Convert parentId if exists
+        if (result.parentId instanceof ObjectId) {
+            result.parentId = createId.blog(result.parentId.toString());
         }
 
         return result as Blog;
@@ -88,12 +100,20 @@ class BlogTransformer implements DbEntityTransformer<Blog, BlogData> {
             result.userId = oid(result.userId);
         }
 
-        if (result.category) {
-            result.category = oid(result.category);
+        if (result.categoryId) {
+            result.categoryId = oid(result.categoryId);
         }
 
-        if (Array.isArray(result.tags)) {
-            result.tags = result.tags.map((tag: string) => oid(tag));
+        if (Array.isArray(result.tagIds)) {
+            result.tagIds = result.tagIds.map((tag: string | BrandedId<"Tag">) => oid(tag));
+        }
+
+        if (result.featuredMediaId) {
+            result.featuredMediaId = oid(result.featuredMediaId);
+        }
+
+        if (result.parentId) {
+            result.parentId = oid(result.parentId);
         }
 
         return result;
@@ -106,9 +126,14 @@ class CategoryTransformer implements DbEntityTransformer<Category, CategoryData>
 
         const result = {...dbEntity};
 
-        // Convert _id from ObjectId to string
+        // Convert _id from ObjectId to BrandedId
         if (result._id instanceof ObjectId) {
-            result._id = result._id.toString();
+            result._id = createId.category(result._id.toString());
+        }
+
+        // Convert parentId if exists
+        if (result.parentId instanceof ObjectId) {
+            result.parentId = createId.category(result.parentId.toString());
         }
 
         return result as Category;
@@ -123,6 +148,10 @@ class CategoryTransformer implements DbEntityTransformer<Category, CategoryData>
             result._id = oid(result._id);
         }
 
+        if (result.parentId) {
+            result.parentId = oid(result.parentId);
+        }
+
         return result;
     }
 }
@@ -133,9 +162,9 @@ class TagTransformer implements DbEntityTransformer<Tag, TagData> {
 
         const result = {...dbEntity};
 
-        // Convert _id from ObjectId to string
+        // Convert _id from ObjectId to BrandedId
         if (result._id instanceof ObjectId) {
-            result._id = result._id.toString();
+            result._id = createId.tag(result._id.toString());
         }
 
         return result as Tag;
@@ -160,9 +189,9 @@ class UserTransformer implements DbEntityTransformer<User, UserData> {
 
         const result = {...dbEntity};
 
-        // Convert _id from ObjectId to string
+        // Convert _id from ObjectId to BrandedId
         if (result._id instanceof ObjectId) {
-            result._id = result._id.toString();
+            result._id = createId.user(result._id.toString());
         }
 
         return result as User;
@@ -187,9 +216,14 @@ class SettingsTransformer implements DbEntityTransformer<SettingsEntry, Settings
 
         const result = {...dbEntity};
 
-        // Convert _id from ObjectId to string
+        // Convert _id from ObjectId to BrandedId
         if (result._id instanceof ObjectId) {
-            result._id = result._id.toString();
+            result._id = createId.settingsEntry(result._id.toString());
+        }
+
+        // Convert ownerId if exists
+        if (result.ownerId instanceof ObjectId) {
+            result.ownerId = createId.user(result.ownerId.toString());
         }
 
         return result as SettingsEntry;
@@ -204,6 +238,10 @@ class SettingsTransformer implements DbEntityTransformer<SettingsEntry, Settings
             result._id = oid(result._id);
         }
 
+        if (result.ownerId) {
+            result.ownerId = oid(result.ownerId);
+        }
+
         return result;
     }
 }
@@ -214,9 +252,9 @@ class PluginTransformer implements DbEntityTransformer<Plugin, PluginData> {
 
         const result = {...dbEntity};
 
-        // Convert _id from ObjectId to string
+        // Convert _id from ObjectId to BrandedId
         if (result._id instanceof ObjectId) {
-            result._id = result._id.toString();
+            result._id = createId.plugin(result._id.toString());
         }
 
         return result as Plugin;
@@ -241,14 +279,14 @@ class PluginHookMappingTransformer implements DbEntityTransformer<PluginHookMapp
 
         const result = {...dbEntity};
 
-        // Convert _id from ObjectId to string
+        // Convert _id from ObjectId to BrandedId
         if (result._id instanceof ObjectId) {
-            result._id = result._id.toString();
+            result._id = createId.pluginHookMapping(result._id.toString());
         }
 
         // Convert pluginId if exists
         if (result.pluginId instanceof ObjectId) {
-            result.pluginId = result.pluginId.toString();
+            result.pluginId = createId.plugin(result.pluginId.toString());
         }
 
         return result as PluginHookMapping;
@@ -276,16 +314,16 @@ class CommentTransformer implements DbEntityTransformer<Comment, CommentData> {
         if (!dbEntity) return dbEntity;
         const result = {...dbEntity};
         if (result._id instanceof ObjectId) {
-            result._id = result._id.toString();
+            result._id = createId.comment(result._id.toString());
         }
         if (result.blogId instanceof ObjectId) {
-            result.blogId = result.blogId.toString();
+            result.blogId = createId.blog(result.blogId.toString());
         }
         if (result.userId && result.userId instanceof ObjectId) {
-            result.userId = result.userId.toString();
+            result.userId = createId.user(result.userId.toString());
         }
         if (result.parentCommentId && result.parentCommentId instanceof ObjectId) {
-            result.parentCommentId = result.parentCommentId.toString();
+            result.parentCommentId = createId.comment(result.parentCommentId.toString());
         }
         return result as Comment;
     }
@@ -314,13 +352,13 @@ class RevisionTransformer implements DbEntityTransformer<Revision, RevisionData>
         if (!dbEntity) return dbEntity;
         const result = {...dbEntity};
         if (result._id instanceof ObjectId) {
-            result._id = result._id.toString();
+            result._id = createId.revision(result._id.toString());
         }
         if (result.blogId instanceof ObjectId) {
-            result.blogId = result.blogId.toString();
+            result.blogId = createId.blog(result.blogId.toString());
         }
         if (result.userId instanceof ObjectId) {
-            result.userId = result.userId.toString();
+            result.userId = createId.user(result.userId.toString());
         }
         return result as Revision;
     }
@@ -346,10 +384,10 @@ class MediaTransformer implements DbEntityTransformer<Media, MediaData> {
         if (!dbEntity) return dbEntity;
         const result = {...dbEntity};
         if (result._id instanceof ObjectId) {
-            result._id = result._id.toString();
+            result._id = createId.media(result._id.toString());
         }
         if (result.userId instanceof ObjectId) {
-            result.userId = result.userId.toString();
+            result.userId = createId.user(result.userId.toString());
         }
         return result as Media;
     }
@@ -507,8 +545,9 @@ export default class MongoDBAdapter implements DatabaseAdapter {
     }
 
     get generated() {
+        const self = this;
         return {
-            getDetailedBlogObject: async (filter: Filter<Blog>): Promise<DetailedBlog | null> => {
+            getHydratedBlog: async (filter: Filter<Blog>): Promise<DetailedBlog | null> => {
 
                 const blogCollection: Collection<any> = this.db.collection('blogs');
                 const dbFilter = this.blogTransformer.toDb(filter);
@@ -527,7 +566,7 @@ export default class MongoDBAdapter implements DatabaseAdapter {
                     {
                         $lookup: {
                             from: 'categories',
-                            localField: 'category',
+                            localField: 'categoryId',
                             foreignField: '_id',
                             as: 'category'
                         }
@@ -536,14 +575,27 @@ export default class MongoDBAdapter implements DatabaseAdapter {
                     {
                         $lookup: {
                             from: 'tags',
-                            localField: 'tags',
+                            localField: 'tagIds',
                             foreignField: '_id',
                             as: 'tags'
                         }
                     },
                     {
+                        $lookup: {
+                            from: 'media',
+                            localField: 'featuredMediaId',
+                            foreignField: '_id',
+                            as: 'featuredMedia'
+                        }
+                    },
+                    {$unwind: {path: '$featuredMedia', preserveNullAndEmptyArrays: true}},
+                    {
                         $project: {
                             userId: 0, // Exclude original userId
+                            categoryId: 0, // Exclude original categoryId
+                            tagIds: 0, // Exclude original tagIds
+                            featuredMediaId: 0, // Exclude since we have populated featuredMedia
+                            parentId: 0, // Exclude original parentId if populated
                         }
                     }
                 ];
@@ -557,20 +609,25 @@ export default class MongoDBAdapter implements DatabaseAdapter {
                 const result = results[0];
 
                 // Transform the nested objects using transformers
-                const author = this.userTransformer.fromDb(result.author);
+                const user = this.userTransformer.fromDb(result.author);
                 const category = this.categoryTransformer.fromDb(result.category);
                 const tags = result.tags.map((tag: any) => this.tagTransformer.fromDb(tag));
+                const featuredMedia = result.featuredMedia ? this.mediaTransformer.fromDb(result.featuredMedia) : undefined;
 
                 // Transform the main blog object
                 const blog = this.blogTransformer.fromDb(result);
 
-
+                // Return hydrated blog with proper field names
                 return {
                     ...blog,
-                    author,
-                    category,
-                    tags,
+                    user, // userId → user
+                    category, // categoryId → category
+                    tags, // tagIds → tags
+                    featuredMedia, // featuredMediaId → featuredMedia
                 };
+            },
+            getDetailedBlogObject: async function (filter: Filter<Blog>): Promise<DetailedBlog | null> {
+                return self.generated.getHydratedBlog(filter);
             }
         }
     }

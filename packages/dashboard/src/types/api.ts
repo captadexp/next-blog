@@ -1,86 +1,4 @@
-export interface StandardResponse<T> {
-    authenticated?: boolean;
-    code: number;
-    message: string;
-    payload?: T;
-}
-
-export interface UIConfig {
-    logo?: string;
-    theme?: {
-        primaryColor?: string;
-        secondaryColor?: string;
-        darkMode?: boolean;
-    };
-    branding?: {
-        name?: string;
-        description?: string;
-    };
-    features?: {
-        comments?: boolean;
-        search?: boolean;
-        analytics?: boolean;
-    };
-    navigation?: {
-        menuItems?: {
-            label: string;
-            path: string;
-            icon?: string;
-        }[];
-    };
-}
-
-export interface Blog {
-    _id: string;
-    title: string;
-    slug: string;
-    content: string;
-    category: string;
-    tags: string[];
-    userId: string;
-    createdAt: number;
-    updatedAt: number;
-    metadata?: Record<string, any>;
-    type?: 'post' | 'page' | string;
-    status?: 'draft' | 'pending' | 'private' | 'published' | 'trash';
-    featuredImage?: string;
-    excerpt?: string;
-    parent?: string;
-}
-
-export type PermissionType = 'list' | 'read' | 'create' | 'update' | 'delete' | 'all';
-export type EntityType = 'all' | 'blogs' | 'categories' | 'tags' | 'users' | 'settings' | 'plugins';
-export type Permission = `${EntityType}:${PermissionType}`;
-
-export interface User {
-    _id: string;
-    username: string;
-    email: string;
-    name: string;
-    slug: string;
-    bio: string;
-    permissions: Permission[];
-    createdAt: number;
-    updatedAt: number;
-    metadata?: Record<string, any>;
-}
-
-export interface Category {
-    _id: string;
-    name: string;
-    description?: string;
-    slug: string;
-    createdAt?: number;
-    updatedAt?: number;
-}
-
-export interface Tag {
-    _id: string;
-    name: string;
-    slug: string;
-    createdAt?: number;
-    updatedAt?: number;
-}
+import type {Permission} from '@supergrowthai/types';
 
 export interface CreateBlogInput {
     title: string;
@@ -142,37 +60,16 @@ export interface UpdateTagInput {
     slug?: string;
 }
 
-export interface Settings {
-    _id: string;
-    key: string;
-    value: string | boolean | number | boolean[] | string[] | number[];
-    owner: string;
-    createdAt: number;
-    updatedAt: number;
-}
-
 export interface CreateSettingsInput {
     key: string;
     value: string | boolean | number | boolean[] | string[] | number[];
-    owner: string;
+    ownerId: string;
 }
 
 export interface UpdateSettingsInput {
     key?: string;
     value?: string | boolean | number | boolean[] | string[] | number[];
-    owner?: string;
-}
-
-export interface Plugin {
-    _id: string;
-    name: string;
-    description: string;
-    version: string;
-    url: string;
-    client?: { type: "url", url: string };
-    author: string;
-    createdAt: number;
-    updatedAt: number;
+    ownerId?: string;
 }
 
 export interface CreatePluginInput {
@@ -185,30 +82,6 @@ export interface UpdatePluginInput {
     version?: string;
     url?: string;
     author?: string;
-}
-
-export interface PluginHookMapping {
-    _id: string;
-    pluginId: string;
-    hookName: string;
-    priority: number;
-    createdAt: number;
-    updatedAt: number;
-}
-
-export interface Comment {
-    _id: string;
-    blogId: string;
-    userId?: string;
-    authorName?: string;
-    authorEmail?: string;
-    authorUrl?: string;
-    content: string;
-    status: 'pending' | 'approved' | 'spam' | 'trash';
-    parentCommentId?: string;
-    createdAt: number;
-    updatedAt: number;
-    metadata?: Record<string, any>;
 }
 
 export interface CreateCommentInput {
@@ -226,32 +99,6 @@ export interface UpdateCommentInput {
     authorUrl?: string;
     content?: string;
     status?: 'pending' | 'approved' | 'spam' | 'trash';
-}
-
-export interface Revision {
-    _id: string;
-    blogId: string;
-    userId: string;
-    title: string;
-    content: string;
-    createdAt: number;
-    metadata?: Record<string, any>;
-}
-
-export interface Media {
-    _id: string;
-    filename: string;
-    url: string;
-    mimeType: string;
-    altText?: string;
-    caption?: string;
-    description?: string;
-    width?: number;
-    height?: number;
-    userId: string;
-    createdAt: number;
-    updatedAt: number;
-    metadata?: Record<string, any>;
 }
 
 export interface CreateMediaInput {

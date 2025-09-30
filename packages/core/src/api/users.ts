@@ -1,6 +1,6 @@
-import {Permission, User, UserData} from "../types.js";
+import {Permission, User, UserData} from "@supergrowthai/types/server";
 import secure, {type CNextRequest} from "../utils/secureInternal.js";
-import {Success, NotFound, BadRequest, Forbidden} from "../utils/errors.js";
+import {BadRequest, NotFound, Success} from "../utils/errors.js";
 import crypto from "../utils/crypto.js";
 
 /**
@@ -48,15 +48,30 @@ export const requireAnyPermission = (permissions: Permission[]) => {
  * This endpoint returns a list of all users (without password fields)
  */
 export const listUsers = requirePermission('users:list')(async (request: CNextRequest) => {
+    const sdk = request.sdk;
+    
     try {
         const db = await request.db();
-        const users = await db.users.find({});
+        let users = await db.users.find({});
 
         // Remove password fields
-        const sanitizedUsers = users.map(user => {
+        let sanitizedUsers = users.map(user => {
             const {password, ...userWithoutPassword} = user;
             return userWithoutPassword;
         });
+
+        // Execute hook for list operation
+        if (sdk?.callHook) {
+            const hookResult = await sdk.callHook('user:onList', {
+                entity: 'user',
+                operation: 'list',
+                filters: {},
+                data: sanitizedUsers
+            });
+            if (hookResult?.data) {
+                sanitizedUsers = hookResult.data;
+            }
+        }
 
         throw new Success("Users retrieved successfully", sanitizedUsers);
     } catch (error) {
@@ -69,6 +84,8 @@ export const listUsers = requirePermission('users:list')(async (request: CNextRe
  * Get a specific user by ID
  */
 export const getUser = requirePermission('users:read')(async (request: CNextRequest) => {
+    const sdk = request.sdk;
+    
     try {
         const {id} = request._params;
         if (!id) throw new BadRequest("User ID is required");
@@ -79,7 +96,20 @@ export const getUser = requirePermission('users:read')(async (request: CNextRequ
         if (!user) throw new NotFound("User not found");
 
         // Remove password field
-        const {password, ...userWithoutPassword} = user;
+        let {password, ...userWithoutPassword} = user;
+
+        // Execute hook for read operation
+        if (sdk?.callHook) {
+            const hookResult = await sdk.callHook('user:onRead', {
+                entity: 'user',
+                operation: 'read',
+                id: id,
+                data: userWithoutPassword
+            });
+            if (hookResult?.data) {
+                userWithoutPassword = hookResult.data;
+            }
+        }
 
         throw new Success("User retrieved successfully", userWithoutPassword);
     } catch (error) {
@@ -92,8 +122,10 @@ export const getUser = requirePermission('users:read')(async (request: CNextRequ
  * Create a new user
  */
 export const createUser = requirePermission('users:create')(async (request: CNextRequest) => {
+    const sdk = request.sdk;
+    
     try {
-        const body = await request.json() as any;
+        let body = await request.json() as any;
 
         if (!body.username || !body.email || !body.password || !body.name) {
             throw new BadRequest("Username, email, password, and name are required");
@@ -108,6 +140,18 @@ export const createUser = requirePermission('users:create')(async (request: CNex
 
         if (existingUserWithEmail || existingUserWithUsername) {
             throw new BadRequest("Username or email already exists");
+        }
+
+        // Execute before create hook
+        if (sdk?.callHook) {
+            const beforeResult = await sdk.callHook('user:beforeCreate', {
+                entity: 'user',
+                operation: 'create',
+                data: body
+            });
+            if (beforeResult?.data) {
+                body = beforeResult.data;
+            }
         }
 
         // Hash the password
@@ -136,6 +180,16 @@ export const createUser = requirePermission('users:create')(async (request: CNex
         // Remove password from response
         const {password, ...userWithoutPassword} = newUser;
 
+        // Execute after create hook
+        if (sdk?.callHook) {
+            await sdk.callHook('user:afterCreate', {
+                entity: 'user',
+                operation: 'create',
+                id: newUser._id,
+                data: userWithoutPassword
+            });
+        }
+
         // Trigger the event callback if configured
         if (request.configuration.callbacks?.on) {
             request.configuration.callbacks.on("createUser", newUser);
@@ -152,16 +206,32 @@ export const createUser = requirePermission('users:create')(async (request: CNex
  * Update a user
  */
 export const updateUser = requirePermission('users:update')(async (request: CNextRequest) => {
+    const sdk = request.sdk;
+    
     try {
         const {id} = request._params;
         if (!id) throw new BadRequest("User ID is required");
 
-        const body = await request.json() as any;
+        let body = await request.json() as any;
 
         const db = await request.db();
         const existingUser = await db.users.findById(id);
 
         if (!existingUser) throw new NotFound("User not found");
+
+        // Execute before update hook
+        if (sdk?.callHook) {
+            const beforeResult = await sdk.callHook('user:beforeUpdate', {
+                entity: 'user',
+                operation: 'update',
+                id: id,
+                data: body,
+                previousData: existingUser
+            });
+            if (beforeResult?.data) {
+                body = beforeResult.data;
+            }
+        }
 
         // Create update object
         const update: Partial<User> = {};
@@ -187,6 +257,17 @@ export const updateUser = requirePermission('users:update')(async (request: CNex
         // Remove password from response
         const {password, ...userWithoutPassword} = updatedUser!;
 
+        // Execute after update hook
+        if (sdk?.callHook) {
+            await sdk.callHook('user:afterUpdate', {
+                entity: 'user',
+                operation: 'update',
+                id: id,
+                data: userWithoutPassword,
+                previousData: existingUser
+            });
+        }
+
         // Trigger the event callback if configured
         if (request.configuration.callbacks?.on) {
             request.configuration.callbacks.on("updateUser", updatedUser);
@@ -203,6 +284,8 @@ export const updateUser = requirePermission('users:update')(async (request: CNex
  * Delete a user
  */
 export const deleteUser = requirePermission('users:delete')(async (request: CNextRequest) => {
+    const sdk = request.sdk;
+    
     try {
         const {id} = request._params;
         if (!id) throw new BadRequest("User ID is required");
@@ -213,11 +296,34 @@ export const deleteUser = requirePermission('users:delete')(async (request: CNex
         const existingUser = await db.users.findById(id);
         if (!existingUser) throw new NotFound("User not found");
 
+        // Execute before delete hook
+        if (sdk?.callHook) {
+            const beforeResult = await sdk.callHook('user:beforeDelete', {
+                entity: 'user',
+                operation: 'delete',
+                id: id,
+                data: existingUser
+            });
+            if (beforeResult?.cancel) {
+                throw new BadRequest("User deletion cancelled by plugin");
+            }
+        }
+
         // Delete the user
         const deletedUser = await db.users.deleteOne({_id: id});
 
         // Remove password from response
         const {password, ...userWithoutPassword} = deletedUser!;
+
+        // Execute after delete hook
+        if (sdk?.callHook) {
+            await sdk.callHook('user:afterDelete', {
+                entity: 'user',
+                operation: 'delete',
+                id: id,
+                previousData: existingUser
+            });
+        }
 
         // Trigger the event callback if configured
         if (request.configuration.callbacks?.on) {

@@ -1,0 +1,24 @@
+{
+  "name": "test-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "clean": "rimraf .next",
+    "dev": "PORT=3248 next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supergrowthai/next-blog": "workspace:*",
+    "@supergrowthai/next-blog-ui": "workspace:*",
+    "next": "^15.5.3",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6"
+  }
+}

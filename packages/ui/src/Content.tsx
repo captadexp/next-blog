@@ -1,5 +1,6 @@
 import React from 'react';
-import {DatabaseAdapter, DetailedBlog} from '@supergrowthai/next-blog';
+import {DatabaseAdapter, DetailedBlog} from '@supergrowthai/types';
+import {contentObjectToHtml} from "@supergrowthai/plugin-dev-kit/content";
 
 interface ContentProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     db: DatabaseAdapter;
@@ -22,9 +23,12 @@ export const Content: React.FC<ContentProps> = ({db, blog, style, contentStyle, 
         ...contentStyle,
     };
 
+    // Always convert ContentObject to HTML for rendering
+    const htmlContent = contentObjectToHtml(blog.content);
+
     return (
         <div style={containerStyles} {...rest}>
-            <div style={contentStyles} dangerouslySetInnerHTML={{__html: blog.content}}/>
+            <div style={contentStyles} dangerouslySetInnerHTML={{__html: htmlContent}}/>
         </div>
     );
 };

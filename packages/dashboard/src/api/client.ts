@@ -1,29 +1,18 @@
-import {
+import type {
+    APIClient,
+    APIResponse,
     Blog,
     Category,
-    CreateBlogInput,
-    CreateCategoryInput,
-    CreatePluginInput,
-    CreateSettingsInput,
-    CreateTagInput,
-    CreateUserInput,
     Permission,
     Plugin,
     PluginHookMapping,
-    Settings,
-    StandardResponse,
+    SettingsEntry,
     Tag,
-    UIConfig,
-    UpdateBlogInput,
-    UpdateCategoryInput,
-    UpdatePluginInput,
-    UpdateSettingsInput,
-    UpdateTagInput,
-    UpdateUserInput,
+    UIConfiguration,
     User
-} from '../types/api';
+} from '@supergrowthai/types';
 
-class ApiClient {
+class ApiClient implements APIClient {
     private readonly baseUrl: string;
     private token: string | null = null;
 
@@ -39,11 +28,249 @@ class ApiClient {
         this.token = null;
     }
 
+    // Auth APIs
+    async login(username: string, password: string): Promise<APIResponse<User>> {
+        return this.request<User>('/login', 'POST', {username, password});
+    }
+
+    async logout(): Promise<APIResponse<null>> {
+        return this.request<null>('/logout', 'POST');
+    }
+
+    async getCurrentUser(): Promise<APIResponse<User>> {
+        return this.request<User>('/me');
+    }
+
+    async checkPermission(permission: Permission): Promise<APIResponse<boolean>> {
+        return this.request<boolean>('/check-permission', 'POST', {permission});
+    }
+
+    // Config API
+    async getConfig(): Promise<APIResponse<UIConfiguration>> {
+        return this.request('/config');
+    }
+
+    // Blog APIs
+    async getBlogs(): Promise<APIResponse<Blog[]>> {
+        return this.request<Blog[]>('/blogs');
+    }
+
+    async getBlog(id: string): Promise<APIResponse<Blog>> {
+        return this.request<Blog>(`/blogs/${id}`);
+    }
+
+    async createBlog(data: {
+        title: string;
+        slug: string;
+        content: string;
+        status: 'draft' | 'published';
+        category: string;
+        tags: string[];
+        excerpt?: string;
+        featuredImage?: string;
+        metadata?: Record<string, any>;
+    }): Promise<APIResponse<Blog>> {
+        return this.request<Blog>('/blogs/create', 'POST', data);
+    }
+
+    async updateBlog(id: string, data: {
+        title?: string;
+        slug?: string;
+        content?: string;
+        excerpt?: string;
+        category?: string;
+        tags?: string[];
+        status?: 'draft' | 'pending' | 'private' | 'published' | 'trash';
+        featuredImage?: string;
+    }): Promise<APIResponse<Blog>> {
+        return this.request<Blog>(`/blog/${id}/update`, 'POST', data);
+    }
+
+    async updateBlogMetadata(id: string, metadata: Record<string, any>): Promise<APIResponse<Blog>> {
+        return this.request<Blog>(`/blog/${id}/update-metadata`, 'POST', {metadata});
+    }
+
+    async deleteBlog(id: string): Promise<APIResponse<null>> {
+        return this.request<null>(`/blog/${id}/delete`, 'POST');
+    }
+
+    // User APIs
+    async getUsers(): Promise<APIResponse<User[]>> {
+        return this.request<User[]>('/users');
+    }
+
+    async getUser(id: string): Promise<APIResponse<User>> {
+        return this.request<User>(`/users/${id}`);
+    }
+
+    async createUser(data: {
+        username: string;
+        email: string;
+        password: string;
+        name: string;
+        slug: string;
+        bio: string;
+        permissions?: Permission[];
+    }): Promise<APIResponse<User>> {
+        return this.request<User>('/users/create', 'POST', data);
+    }
+
+    async updateUser(id: string, data: {
+        username?: string;
+        email?: string;
+        password?: string;
+        name?: string;
+        slug?: string;
+        bio?: string;
+        permissions?: Permission[];
+    }): Promise<APIResponse<User>> {
+        return this.request<User>(`/user/${id}/update`, 'POST', data);
+    }
+
+    async deleteUser(id: string): Promise<APIResponse<null>> {
+        return this.request<null>(`/user/${id}/delete`, 'POST');
+    }
+
+    // Permissions
+    async getAllPermissions(): Promise<APIResponse<Permission[]>> {
+        return this.request<Permission[]>('/permissions');
+    }
+
+    // Category APIs
+    async getCategories(): Promise<APIResponse<Category[]>> {
+        return this.request<Category[]>('/categories');
+    }
+
+    async getCategory(id: string): Promise<APIResponse<Category>> {
+        return this.request<Category>(`/categories/${id}`);
+    }
+
+    async createCategory(data: {
+        name: string;
+        description: string;
+        slug: string;
+    }): Promise<APIResponse<Category>> {
+        return this.request<Category>('/categories/create', 'POST', data);
+    }
+
+    async updateCategory(id: string, data: {
+        name?: string;
+        description?: string;
+        slug?: string;
+    }): Promise<APIResponse<Category>> {
+        return this.request<Category>(`/category/${id}/update`, 'POST', data);
+    }
+
+    async deleteCategory(id: string): Promise<APIResponse<null>> {
+        return this.request<null>(`/category/${id}/delete`, 'POST');
+    }
+
+    // Tag APIs
+    async getTags(): Promise<APIResponse<Tag[]>> {
+        return this.request<Tag[]>('/tags');
+    }
+
+    async getTag(id: string): Promise<APIResponse<Tag>> {
+        return this.request<Tag>(`/tags/${id}`);
+    }
+
+    async createTag(data: {
+        name: string;
+        slug: string;
+    }): Promise<APIResponse<Tag>> {
+        return this.request<Tag>('/tags/create', 'POST', data);
+    }
+
+    async updateTag(id: string, data: {
+        name?: string;
+        slug?: string;
+    }): Promise<APIResponse<Tag>> {
+        return this.request<Tag>(`/tag/${id}/update`, 'POST', data);
+    }
+
+    async deleteTag(id: string): Promise<APIResponse<null>> {
+        return this.request<null>(`/tag/${id}/delete`, 'POST');
+    }
+
+    // Settings APIs
+    async getSettings(): Promise<APIResponse<SettingsEntry[]>> {
+        return this.request<SettingsEntry[]>('/settings');
+    }
+
+    async getSetting(id: string): Promise<APIResponse<SettingsEntry>> {
+        return this.request<SettingsEntry>(`/settings/${id}`);
+    }
+
+    async createSetting(data: {
+        key: string;
+        value: string | boolean | number | boolean[] | string[] | number[];
+        ownerId: string;
+    }): Promise<APIResponse<SettingsEntry>> {
+        return this.request<SettingsEntry>('/settings/create', 'POST', data);
+    }
+
+    async updateSetting(id: string, data: {
+        key?: string;
+        value?: string | boolean | number | boolean[] | string[] | number[];
+        ownerId?: string;
+    }): Promise<APIResponse<SettingsEntry>> {
+        return this.request<SettingsEntry>(`/setting/${id}/update`, 'POST', data);
+    }
+
+    async deleteSetting(id: string): Promise<APIResponse<null>> {
+        return this.request<null>(`/setting/${id}/delete`, 'POST');
+    }
+
+    // Plugin APIs
+    async getPlugins(): Promise<APIResponse<Plugin[]>> {
+        return this.request<Plugin[]>('/plugins');
+    }
+
+    async getPlugin(id: string): Promise<APIResponse<Plugin>> {
+        return this.request<Plugin>(`/plugins/${id}`);
+    }
+
+    async createPlugin(data: {
+        url: string;
+    }): Promise<APIResponse<Plugin>> {
+        return this.request<Plugin>('/plugins/create', 'POST', data);
+    }
+
+    async updatePlugin(id: string, data: {
+        name?: string;
+        description?: string;
+        version?: string;
+        url?: string;
+        author?: string;
+    }): Promise<APIResponse<Plugin>> {
+        return this.request<Plugin>(`/plugin/${id}/update`, 'POST', data);
+    }
+
+    async deletePlugin(id: string): Promise<APIResponse<null>> {
+        return this.request<null>(`/plugin/${id}/delete`, 'POST');
+    }
+
+    async reinstallPlugin(id: string): Promise<APIResponse<{ clearCache: boolean }>> {
+        return this.request<{ clearCache: boolean }>(`/plugin/${id}/reinstall`, 'POST');
+    }
+
+    // Plugin Hook Mapping APIs
+    async getPluginHookMappings(params?: {
+        type: 'client' | 'server' | 'rpc'
+    }): Promise<APIResponse<PluginHookMapping[]>> {
+        const endpoint = new URLSearchParams(params).toString();
+        return this.request<PluginHookMapping[]>(`/plugin-hooks?${endpoint}`);
+    }
+
+    async callPluginHook<TPayload = any, TResponse = any>(hookName: string, payload: TPayload): Promise<TResponse> {
+        return this.request<any>(`/plugin/rpc/${hookName}`, 'POST', payload) as any;
+    }
+
     private async request<T>(
         endpoint: string,
         method: 'GET' | 'POST' = 'GET',
         body?: any
-    ): Promise<StandardResponse<T>> {
+    ): Promise<APIResponse<T>> {
         const url = `${this.baseUrl}${endpoint}`;
 
         const headers: HeadersInit = {
@@ -66,7 +293,7 @@ class ApiClient {
 
         try {
             const response = await fetch(url, options);
-            const data: StandardResponse<T> = await response.json();
+            const data: APIResponse<T> = await response.json();
 
             return data;
         } catch (error) {
@@ -76,179 +303,6 @@ class ApiClient {
                 message: 'API request failed'
             };
         }
-    }
-
-    // Auth APIs
-    async login(username: string, password: string): Promise<StandardResponse<User>> {
-        return this.request<User>('/login', 'POST', {username, password});
-    }
-
-    async logout(): Promise<StandardResponse<null>> {
-        return this.request<null>('/logout', 'POST');
-    }
-
-    async getCurrentUser(): Promise<StandardResponse<User>> {
-        return this.request<User>('/me');
-    }
-
-    async checkPermission(permission: Permission): Promise<StandardResponse<boolean>> {
-        return this.request<boolean>('/check-permission', 'POST', {permission});
-    }
-
-    // Config API
-    async getConfig(): Promise<StandardResponse<UIConfig>> {
-        return this.request<UIConfig>('/config');
-    }
-
-    // Blog APIs
-    async getBlogs(): Promise<StandardResponse<Blog[]>> {
-        return this.request<Blog[]>('/blogs');
-    }
-
-    async getBlog(id: string): Promise<StandardResponse<Blog>> {
-        return this.request<Blog>(`/blogs/${id}`);
-    }
-
-    async createBlog(data: CreateBlogInput): Promise<StandardResponse<Blog>> {
-        return this.request<Blog>('/blogs/create', 'POST', data);
-    }
-
-    async updateBlog(id: string, data: UpdateBlogInput): Promise<StandardResponse<Blog>> {
-        return this.request<Blog>(`/blog/${id}/update`, 'POST', data);
-    }
-
-    async updateBlogMetadata(id: string, metadata: any): Promise<StandardResponse<Blog>> {
-        return this.request<Blog>(`/blog/${id}/update-metadata`, 'POST', {metadata});
-    }
-
-    async deleteBlog(id: string): Promise<StandardResponse<null>> {
-        return this.request<null>(`/blog/${id}/delete`, 'POST');
-    }
-
-    // User APIs
-    async getUsers(): Promise<StandardResponse<User[]>> {
-        return this.request<User[]>('/users');
-    }
-
-    async getUser(id: string): Promise<StandardResponse<User>> {
-        return this.request<User>(`/users/${id}`);
-    }
-
-    async createUser(data: CreateUserInput): Promise<StandardResponse<User>> {
-        return this.request<User>('/users/create', 'POST', data);
-    }
-
-    async updateUser(id: string, data: UpdateUserInput): Promise<StandardResponse<User>> {
-        return this.request<User>(`/user/${id}/update`, 'POST', data);
-    }
-
-    async deleteUser(id: string): Promise<StandardResponse<null>> {
-        return this.request<null>(`/user/${id}/delete`, 'POST');
-    }
-
-    // Permissions
-    async getAllPermissions(): Promise<StandardResponse<Permission[]>> {
-        return this.request<Permission[]>('/permissions');
-    }
-
-    // Category APIs
-    async getCategories(): Promise<StandardResponse<Category[]>> {
-        return this.request<Category[]>('/categories');
-    }
-
-    async getCategory(id: string): Promise<StandardResponse<Category>> {
-        return this.request<Category>(`/categories/${id}`);
-    }
-
-    async createCategory(data: CreateCategoryInput): Promise<StandardResponse<Category>> {
-        return this.request<Category>('/categories/create', 'POST', data);
-    }
-
-    async updateCategory(id: string, data: UpdateCategoryInput): Promise<StandardResponse<Category>> {
-        return this.request<Category>(`/category/${id}/update`, 'POST', data);
-    }
-
-    async deleteCategory(id: string): Promise<StandardResponse<null>> {
-        return this.request<null>(`/category/${id}/delete`, 'POST');
-    }
-
-    // Tag APIs
-    async getTags(): Promise<StandardResponse<Tag[]>> {
-        return this.request<Tag[]>('/tags');
-    }
-
-    async getTag(id: string): Promise<StandardResponse<Tag>> {
-        return this.request<Tag>(`/tags/${id}`);
-    }
-
-    async createTag(data: CreateTagInput): Promise<StandardResponse<Tag>> {
-        return this.request<Tag>('/tags/create', 'POST', data);
-    }
-
-    async updateTag(id: string, data: UpdateTagInput): Promise<StandardResponse<Tag>> {
-        return this.request<Tag>(`/tag/${id}/update`, 'POST', data);
-    }
-
-    async deleteTag(id: string): Promise<StandardResponse<null>> {
-        return this.request<null>(`/tag/${id}/delete`, 'POST');
-    }
-
-    // Settings APIs
-    async getSettings(): Promise<StandardResponse<Settings[]>> {
-        return this.request<Settings[]>('/settings');
-    }
-
-    async getSetting(id: string): Promise<StandardResponse<Settings>> {
-        return this.request<Settings>(`/settings/${id}`);
-    }
-
-    async createSetting(data: CreateSettingsInput): Promise<StandardResponse<Settings>> {
-        return this.request<Settings>('/settings/create', 'POST', data);
-    }
-
-    async updateSetting(id: string, data: UpdateSettingsInput): Promise<StandardResponse<Settings>> {
-        return this.request<Settings>(`/setting/${id}/update`, 'POST', data);
-    }
-
-    async deleteSetting(id: string): Promise<StandardResponse<null>> {
-        return this.request<null>(`/setting/${id}/delete`, 'POST');
-    }
-
-    // Plugin APIs
-    async getPlugins(): Promise<StandardResponse<Plugin[]>> {
-        return this.request<Plugin[]>('/plugins');
-    }
-
-    async getPlugin(id: string): Promise<StandardResponse<Plugin>> {
-        return this.request<Plugin>(`/plugins/${id}`);
-    }
-
-    async createPlugin(data: CreatePluginInput): Promise<StandardResponse<Plugin>> {
-        return this.request<Plugin>('/plugins/create', 'POST', data);
-    }
-
-    async updatePlugin(id: string, data: UpdatePluginInput): Promise<StandardResponse<Plugin>> {
-        return this.request<Plugin>(`/plugin/${id}/update`, 'POST', data);
-    }
-
-    async deletePlugin(id: string): Promise<StandardResponse<null>> {
-        return this.request<null>(`/plugin/${id}/delete`, 'POST');
-    }
-
-    async reinstallPlugin(id: string): Promise<StandardResponse<{ clearCache: boolean }>> {
-        return this.request<{ clearCache: boolean }>(`/plugin/${id}/reinstall`, 'POST');
-    }
-
-    // Plugin Hook Mapping APIs
-    async getPluginHookMappings(params?: {
-        type: 'client' | 'server' | 'rpc'
-    }): Promise<StandardResponse<PluginHookMapping[]>> {
-        const endpoint = new URLSearchParams(params).toString();
-        return this.request<PluginHookMapping[]>(`/plugin-hooks?${endpoint}`);
-    }
-
-    async callPluginHook<T, R>(hookName: string, payload: T): Promise<R> {
-        return this.request<any>(`/plugin/rpc/${hookName}`, 'POST', payload) as any;
     }
 }
 

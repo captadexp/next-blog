@@ -1,4 +1,4 @@
-import {Permission} from './types.js';
+import {Permission} from '@supergrowthai/types/server';
 
 /**
  * Predefined permissions for common operations

@@ -6,7 +6,8 @@
 
 ### Elevate your Next.js project with seamless blogging functionality.
 
-Next-Blog is designed to integrate a blogging platform into your Next.js application effortlessly, akin to the simplicity of integrating NextAuth today.
+Next-Blog is designed to integrate a blogging platform into your Next.js application effortlessly, akin to the
+simplicity of integrating NextAuth today.
 
 <div align="center">
   <img src="images/dashboard.png" alt="Next-Blog Dashboard" width="1200" style="border-radius: 4px; margin: 24px 0;"/>
@@ -26,12 +27,12 @@ Next-Blog provides everything you need to add a complete blogging system to your
 - **Built-in rich editor** - Markdown and WYSIWYG support
 - **Instant Rendering** - View formatted content
 
-
 ****
 
 ## Project Structure
 
-This project has been migrated to use Vite for building and Bun as the package manager. It's now organized as a monorepo with workspaces:
+This project has been migrated to use Vite for building and Bun as the package manager. It's now organized as a monorepo
+with workspaces:
 
 ```
 next-blog/
@@ -123,7 +124,8 @@ npm run dev:test
 
 ### Test Application
 
-A test Next.js application is included in the `packages/test-app` directory. This app demonstrates how to integrate Next-Blog into a Next.js project and can be used for development and testing.
+A test Next.js application is included in the `packages/test-app` directory. This app demonstrates how to integrate
+Next-Blog into a Next.js project and can be used for development and testing.
 
 To run the test app:
 
@@ -133,15 +135,13 @@ npm run dev:test
 
 Then visit `http://localhost:3248` and click on `Go to Blog Dashboard` to access the blog management interface.
 
-
 ### Type Safety
+
 * Strict typing throughout all operations
 * Automatic transformation between:
     * MongoDB ObjectId ↔ API string IDs
     * Database models ↔ API responses
 * Proper null handling for update/delete operations
-
-
 
 ### Roadmap
 

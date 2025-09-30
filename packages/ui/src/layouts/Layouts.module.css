@@ -32,9 +32,11 @@
     .main {
         grid-template-columns: repeat(3, 1fr);
     }
+
     .section {
         grid-column: span 2 / span 2;
     }
+
     .aside {
         grid-column: span 1 / span 1;
     }

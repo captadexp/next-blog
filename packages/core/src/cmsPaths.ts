@@ -10,9 +10,13 @@ import {
     createSetting,
     createTag,
     createUser,
+    cron5Minute,
+    cronDaily,
+    cronHourly,
     deleteBlog,
     deleteCategory,
     deletePlugin,
+    deletePluginSetting,
     deleteSetting,
     deleteTag,
     deleteUser,
@@ -26,6 +30,8 @@ import {
     getPluginById,
     getPluginHookMappings,
     getPlugins,
+    getPluginSetting,
+    getPluginSettings,
     getSettingById,
     getSettings,
     getTagById,
@@ -33,6 +39,7 @@ import {
     getUser,
     listUsers,
     reinstallPlugin,
+    setPluginSetting,
     updateBlog,
     updateBlogMetadata,
     updateCategory,
@@ -76,6 +83,19 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
             },
             'plugin-hooks': {
                 '*': getPluginHookMappings
+            },
+            plugin: {
+                ':pluginId': {
+                    settings: {
+                        '*': getPluginSettings,
+                        ':key': getPluginSetting
+                    }
+                }
+            },
+            cron: {
+                '5-min': cron5Minute,
+                'hourly': cronHourly,
+                'daily': cronDaily
             }
         },
         dashboard: {
@@ -139,6 +159,14 @@ const cmsPaths: { GET: PathObject, POST: PathObject } = {
                 ':id': {
                     delete: deletePlugin,
                     reinstall: reinstallPlugin
+                },
+                ':pluginId': {
+                    settings: {
+                        ':key': {
+                            set: setPluginSetting,
+                            delete: deletePluginSetting
+                        }
+                    }
                 },
                 rpc: {
                     ':rpcName': executePluginRpc

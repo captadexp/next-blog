@@ -1,0 +1,46 @@
+{
+  "name": "@supergrowthai/jsx-runtime",
+  "version": "1.0.0",
+  "description": "Secure JSX runtime for Next-Blog plugin system",
+  "type": "module",
+  "main": "dist/runtime.js",
+  "module": "dist/runtime.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/runtime.js",
+      "default": "./dist/runtime.js"
+    },
+    "./jsx-runtime": {
+      "types": "./dist/jsx-runtime.d.ts",
+      "default": "./dist/jsx-runtime.js"
+    },
+    "./jsx-dev-runtime": {
+      "types": "./dist/jsx-dev-runtime.d.ts",
+      "default": "./dist/jsx-dev-runtime.js"
+    },
+    "./preact": {
+      "types": "./dist/preact.d.ts",
+      "default": "./dist/preact.js"
+    },
+    "./components": {
+      "types": "./dist/plugin-components.d.ts",
+      "default": "./dist/plugin-components.js"
+    }
+  },
+  "scripts": {
+    "clean": "rimraf dist",
+    "dev": "concurrently \"vite build --watch\" \"vite build --config vite.config.umd.ts --watch\"",
+    "build": "concurrently \"vite build\" \"vite build --config vite.config.umd.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "vite": "^7.1.5",
+    "vite-plugin-dts": "^4.5.4"
+  }
+}

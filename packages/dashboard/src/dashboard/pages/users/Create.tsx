@@ -1,9 +1,10 @@
 import {FunctionComponent, h} from 'preact';
 import {useState} from 'preact/hooks';
-import {Permission} from '../../../types/api';
+import {Permission} from '@supergrowthai/types';
 import {useLocation} from 'preact-iso/router';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {useUser} from '../../../context/UserContext';
+import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 
 interface CreateUserProps {
     path?: string;
@@ -11,7 +12,7 @@ interface CreateUserProps {
 
 const CreateUser: FunctionComponent<CreateUserProps> = () => {
     const location = useLocation();
-    const { apis } = useUser(); // Get API client from context
+    const {apis} = useUser(); // Get API client from context
     const [availablePermissions] = useState<Permission[]>([
         'blogs:list', 'blogs:read', 'blogs:create', 'blogs:update', 'blogs:delete',
         'categories:list', 'categories:read', 'categories:create', 'categories:update', 'categories:delete',
@@ -43,7 +44,13 @@ const CreateUser: FunctionComponent<CreateUserProps> = () => {
             {key: 'username', label: 'Username', type: 'text', required: true},
             {key: 'email', label: 'Email', type: 'text', required: true},
             {key: 'name', label: 'Name', type: 'text', required: true},
-            {key: 'slug', label: 'Slug', type: 'text', required: true, placeholder: 'URL-friendly identifier. Auto-generated from name if left empty.'},
+            {
+                key: 'slug',
+                label: 'Slug',
+                type: 'text',
+                required: true,
+                placeholder: 'URL-friendly identifier. Auto-generated from name if left empty.'
+            },
             {key: 'password', label: 'Password', type: 'password', required: true},
             {key: 'bio', label: 'Bio', type: 'textarea'},
             {
@@ -61,11 +68,11 @@ const CreateUser: FunctionComponent<CreateUserProps> = () => {
     const handleFieldChange = (key: string, value: any, formData: any) => {
         // This function will be called by DynamicForm after field changes
         // We can use it to implement auto-slug generation
-        
+
         if (key === 'name' && value && !formData.slug) {
             const slug = value.toLowerCase().replace(/[^a-z0-9]+/g, '-');
             // Return an object of additional field updates to apply
-            return { slug };
+            return {slug};
         }
         return null;
     };
@@ -87,29 +94,35 @@ const CreateUser: FunctionComponent<CreateUserProps> = () => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-2 md:p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold">Create New User</h2>
-                <button
-                    onClick={() => location.route('/api/next-blog/dashboard/users')}
-                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
-                >
-                    Back to List
-                </button>
-            </div>
+        <ExtensionZone name="user-create" page="users" entity="user">
+            <div className="max-w-4xl mx-auto p-2 md:p-6">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-semibold">Create New User</h2>
+                    <button
+                        onClick={() => location.route('/api/next-blog/dashboard/users')}
+                        className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
+                    >
+                        Back to List
+                    </button>
+                </div>
 
-            <div className="bg-white p-6 rounded-lg shadow-md">
-                <DynamicForm
-                    id="createUser"
-                    submitLabel="Create User"
-                    postTo={"/api/next-blog/api/users/create"}
-                    redirectTo={"/api/next-blog/dashboard/users"}
-                    fields={getFormFields()}
-                    apiMethod={handleCreateUser}
-                    onFieldChange={handleFieldChange}
-                />
+                <ExtensionPoint name="user-create-form:toolbar" context={{fields: getFormFields(), availablePermissions}}/>
+
+                <ExtensionZone name="user-create-form" page="users" entity="user" data={{fields: getFormFields(), availablePermissions}}>
+                    <div className="bg-white p-6 rounded-lg shadow-md">
+                        <DynamicForm
+                            id="createUser"
+                            submitLabel="Create User"
+                            postTo={"/api/next-blog/api/users/create"}
+                            redirectTo={"/api/next-blog/dashboard/users"}
+                            fields={getFormFields()}
+                            apiMethod={handleCreateUser}
+                            onFieldChange={handleFieldChange}
+                        />
+                    </div>
+                </ExtensionZone>
             </div>
-        </div>
+        </ExtensionZone>
     );
 };
 

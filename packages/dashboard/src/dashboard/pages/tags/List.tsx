@@ -2,6 +2,7 @@ import {FunctionComponent, h} from 'preact';
 import {useLocation} from 'preact-iso';
 import {useEffect, useState} from 'preact/hooks';
 import {useUser} from "../../../context/UserContext.tsx";
+import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 
 interface TagsListProps {
     path?: string;
@@ -52,7 +53,7 @@ const TagsList: FunctionComponent<TagsListProps> = () => {
     };
 
     return (
-        <div>
+        <ExtensionZone name="tags-list" page="tags" data={tags}>
             <div className="flex justify-between items-center mb-5">
                 <h2 className="text-xl font-semibold m-0">Tags</h2>
                 <a
@@ -67,6 +68,8 @@ const TagsList: FunctionComponent<TagsListProps> = () => {
                 </a>
             </div>
 
+            <ExtensionPoint name="tags-list-toolbar" context={{tags}}/>
+
             {loading ? (
                 <p>Loading tags...</p>
             ) : error ? (
@@ -76,52 +79,58 @@ const TagsList: FunctionComponent<TagsListProps> = () => {
             ) : tags.length === 0 ? (
                 <p>No tags found. Create your first tag!</p>
             ) : (
-                <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                        <thead>
-                        <tr className="bg-gray-100">
-                            <th className="p-3 text-left border-b border-gray-200">Name</th>
-                            <th className="p-3 text-left border-b border-gray-200">Slug</th>
-                            <th className="p-3 text-left border-b border-gray-200">Created</th>
-                            <th className="p-3 text-left border-b border-gray-200">Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {tags.map(tag => (
-                            <tr key={tag._id} className="border-b border-gray-200 hover:bg-gray-50">
-                                <td className="p-3">{tag.name}</td>
-                                <td className="p-3">{tag.slug || 'N/A'}</td>
-                                <td className="p-3">{formatDate(tag.createdAt)}</td>
-                                <td className="p-3">
-                                    <a
-                                        href={`/api/next-blog/dashboard/tags/${tag._id}`}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            location.route(`/api/next-blog/dashboard/tags/${tag._id}`);
-                                        }}
-                                        className="text-blue-500 hover:text-blue-700 no-underline mr-3"
-                                    >
-                                        Edit
-                                    </a>
-                                    <button
-                                        onClick={() => {
-                                            if (confirm(`Delete tag: ${tag._id}`)) {
-                                                apis.deleteTag(tag._id)
-                                                    .then(() => fetchTags());
-                                            }
-                                        }}
-                                        className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit"
-                                    >
-                                        Delete
-                                    </button>
-                                </td>
+                <ExtensionZone name="tags-table" page="tags" data={tags}>
+                    <div className="overflow-x-auto">
+                        <table className="w-full border-collapse">
+                            <thead>
+                            <tr className="bg-gray-100">
+                                <th className="p-3 text-left border-b border-gray-200">Name</th>
+                                <th className="p-3 text-left border-b border-gray-200">Slug</th>
+                                <th className="p-3 text-left border-b border-gray-200">Created</th>
+                                <th className="p-3 text-left border-b border-gray-200">Actions</th>
                             </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                            {tags.map(tag => (
+                                <>
+                                    <ExtensionPoint name="tag-item:before" context={{tag}} />
+                                    <tr key={tag._id} className="border-b border-gray-200 hover:bg-gray-50">
+                                    <td className="p-3">{tag.name}</td>
+                                    <td className="p-3">{tag.slug || 'N/A'}</td>
+                                    <td className="p-3">{formatDate(tag.createdAt)}</td>
+                                    <td className="p-3">
+                                        <a
+                                            href={`/api/next-blog/dashboard/tags/${tag._id}`}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                location.route(`/api/next-blog/dashboard/tags/${tag._id}`);
+                                            }}
+                                            className="text-blue-500 hover:text-blue-700 no-underline mr-3"
+                                        >
+                                            Edit
+                                        </a>
+                                        <button
+                                            onClick={() => {
+                                                if (confirm(`Delete tag: ${tag._id}`)) {
+                                                    apis.deleteTag(tag._id)
+                                                        .then(() => fetchTags());
+                                                }
+                                            }}
+                                            className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit"
+                                        >
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                                <ExtensionPoint name="tag-item:after" context={{tag}} />
+                            </>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </ExtensionZone>
             )}
-        </div>
+        </ExtensionZone>
     );
 };
 

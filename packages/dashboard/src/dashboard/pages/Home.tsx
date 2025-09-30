@@ -2,6 +2,7 @@ import {FunctionComponent, h} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
 import {useLocation} from "preact-iso";
 import {useUser} from '../../context/UserContext';
+import {ExtensionZone} from '../components/ExtensionZone';
 
 interface HomeProps {
     path?: string;
@@ -39,7 +40,7 @@ const Home: FunctionComponent<HomeProps> = () => {
     }
 
     return (
-        <div>
+        <ExtensionZone name="dashboard-home" page="dashboard">
             <h2 className="text-xl font-semibold mb-5">Dashboard Home</h2>
 
             <div className="mb-8">
@@ -56,45 +57,48 @@ const Home: FunctionComponent<HomeProps> = () => {
                 <p className="mb-4">{welcomeText}</p>
             </div>
 
-            <div className="flex flex-wrap gap-5">
-                <div className="flex-1">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
-                        {/* Top row: Blogs and Categories */}
-                        <SectionCard
-                            title="Blogs"
-                            description="Manage your blog posts"
-                            link="/api/next-blog/dashboard/blogs"
-                            color={config?.theme?.primaryColor}
-                        />
-                        <SectionCard
-                            title="Categories"
-                            description="Organize content with categories"
-                            link="/api/next-blog/dashboard/categories"
-                            color={config?.theme?.primaryColor}
-                        />
+            <ExtensionZone name="stats-section" page="dashboard" data={{user}}>
+                <div className="flex flex-wrap gap-5">
+                    <div className="flex-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+                            {/* Top row: Blogs and Categories */}
+                            <SectionCard
+                                title="Blogs"
+                                description="Manage your blog posts"
+                                link="/api/next-blog/dashboard/blogs"
+                                color={config?.theme?.primaryColor}
+                            />
+                            <SectionCard
+                                title="Categories"
+                                description="Organize content with categories"
+                                link="/api/next-blog/dashboard/categories"
+                                color={config?.theme?.primaryColor}
+                            />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            {/* Bottom row: Tags and Users */}
+                            <SectionCard
+                                title="Tags"
+                                description="Add tags to your content"
+                                link="/api/next-blog/dashboard/tags"
+                                color={config?.theme?.primaryColor}
+                            />
+                            <SectionCard
+                                title="Authors"
+                                description="Manage content creators"
+                                link="/api/next-blog/dashboard/users"
+                                color={config?.theme?.primaryColor}
+                            />
+                        </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        {/* Bottom row: Tags and Users */}
-                        <SectionCard
-                            title="Tags"
-                            description="Add tags to your content"
-                            link="/api/next-blog/dashboard/tags"
-                            color={config?.theme?.primaryColor}
-                        />
-                        <SectionCard
-                            title="Authors"
-                            description="Manage content creators"
-                            link="/api/next-blog/dashboard/users"
-                            color={config?.theme?.primaryColor}
-                        />
+                    <div className="w-full md:w-60 lg:w-72">
+                        <ExtensionZone name="quick-draft" page="dashboard">
+                            <DraftBox/>
+                        </ExtensionZone>
                     </div>
                 </div>
-                <div className="w-full md:w-60 lg:w-72">
-                    <DraftBox/>
-                </div>
-
-            </div>
-        </div>
+            </ExtensionZone>
+        </ExtensionZone>
     );
 };
 

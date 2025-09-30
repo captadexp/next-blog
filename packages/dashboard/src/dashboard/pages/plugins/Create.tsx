@@ -2,6 +2,7 @@ import {h} from 'preact';
 import {useState} from 'preact/hooks';
 import {useUser} from "../../../context/UserContext.tsx";
 import {useLocation} from "preact-iso";
+import {AvailablePlugins} from "../../components/plugins/AvailablePlugins.tsx";
 
 const CreatePlugin = () => {
     const {apis: api} = useUser();
@@ -33,7 +34,7 @@ const CreatePlugin = () => {
     return (
         <div className="container mx-auto px-4 py-8">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold">Create New Plugin</h2>
+                <h2 className="text-2xl font-semibold">Install Plugin</h2>
             </div>
 
             {error && (
@@ -48,7 +49,11 @@ const CreatePlugin = () => {
                 </div>
             )}
 
+            <AvailablePlugins />
+
+            {/* Custom URL Section */}
             <div className="bg-white p-6 rounded-lg shadow-md">
+                <h3 className="text-lg font-semibold mb-4">Install from URL</h3>
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="url">
@@ -61,6 +66,7 @@ const CreatePlugin = () => {
                             name="url"
                             value={url}
                             onChange={(e: any) => setUrl(e.target.value)}
+                            placeholder="https://example.com/plugin.js"
                             required
                         />
                     </div>
@@ -80,9 +86,13 @@ const CreatePlugin = () => {
                             disabled={loading}
                         >
                             {loading ? (
-                                <div
-                                    className="inline-block animate-spin h-4 w-4 border-t-2 border-b-2 border-white rounded-full mr-2"></div>
-                            ) : 'Create Plugin'}
+                                <span className="flex items-center">
+                                    <div className="inline-block animate-spin h-4 w-4 border-t-2 border-b-2 border-white rounded-full mr-2"></div>
+                                    Installing...
+                                </span>
+                            ) : (
+                                'Install Plugin'
+                            )}
                         </button>
                     </div>
                 </form>

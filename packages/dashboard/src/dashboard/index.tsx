@@ -40,7 +40,7 @@ import CreatePlugin from './pages/plugins/Create';
 import PluginPanel from './pages/plugins/Panel';
 
 import {Toaster} from 'react-hot-toast';
-import { PluginProvider } from '../context/PluginContext';
+import {PluginProvider} from '../context/PluginContext';
 
 // Main Dashboard App
 function DashboardApp() {

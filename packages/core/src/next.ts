@@ -1,12 +1,13 @@
-// @ts-expect-error Next.js does not yet correctly use the `package.json#exports` field
 import {NextRequest, NextResponse} from "next/server";
-import {Configuration} from "./types.js";
+import {Configuration, ServerSDK} from "@supergrowthai/types/server";
 import {getCachedMatch, PathObject} from "./utils/parse-path.js";
 import cmsPaths from "./cmsPaths.js";
 import {NotFoundPage} from "@supergrowthai/next-blog-dashboard"
 import {BadRequest, Exception, Forbidden, NotFound, Success, Unauthorized} from "./utils/errors.js";
 import {initializeDefaultSettings} from "./utils/defaultSettings.js";
 import pluginExecutor from "./plugins/plugin-executor.server.js";
+import {createSettingsHelper} from "./plugins/settings-helper.server.js";
+import type {CNextRequest} from "./utils/secureInternal.js";
 
 /**
  * Return type for the nextBlog function containing route handlers
@@ -22,6 +23,7 @@ export interface NextBlogHandlers {
  */
 const nextBlog = function (configuration: Configuration): NextBlogHandlers {
     async function processRequest(pathObject: PathObject, request: NextRequest) {
+        const cRequest = request as CNextRequest;
         try {
             const finalPathname = request.nextUrl.pathname.replace("/api/next-blog/", "")
             const {db} = configuration
@@ -43,20 +45,30 @@ const nextBlog = function (configuration: Configuration): NextBlogHandlers {
                 throw new NotFound("Resource not found");
             }
 
-            (request as any)._params = params;
-            (request as any).db = db;
-            (request as any).configuration = configuration;
-            (request as any).sdk = {
+            cRequest._params = params;
+            cRequest.db = db;
+            cRequest.configuration = configuration;
+
+            // Create system SDK
+            const sdk: ServerSDK = {
                 log: console,
                 db: dbObj,
-                executionContext: (request as any).sessionUser
+                executionContext: cRequest.sessionUser,
+                config: {},
+                pluginId: 'system',
+                settings: createSettingsHelper('system'),
+                callHook: async (hookName: string, payload: any) => {
+                    // Recursive reference will be resolved after sdk is created
+                    return pluginExecutor.executeHook(hookName, sdk, payload);
+                }
             };
+            cRequest.sdk = sdk;
 
             // Check if the path appears to be an API endpoint
             const isApiRequest = finalPathname.startsWith("api/");
 
             try {
-                const response = await handler(request);
+                const response = await handler(cRequest);
 
                 // If the handler returns a Response or NextResponse, return it directly
                 if (response instanceof NextResponse || response instanceof Response) {

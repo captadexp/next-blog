@@ -68,8 +68,15 @@ dist
 /**/*.d.ts.map
 .npmrc
 
+apps/*/dist
 packages/*/dist
 .idea
 **/CLAUDE.local.md
 
-!packages/test-app/public/plugins/**/*.js
+!apps/test-app/public/plugins/**/*.js
+PLUGIN_SYSTEM_IMPROVEMENTS.md
+SUGGESTED_PLUGINS.md
+
+.turbo
+
+apps/test-app/public/plugins

@@ -6,6 +6,7 @@ import {
     CategoryData,
     Comment,
     CommentData,
+    createId,
     DatabaseAdapter,
     DetailedBlog,
     Filter,
@@ -24,7 +25,7 @@ import {
     TagData,
     User,
     UserData
-} from "../types.js";
+} from "@supergrowthai/types/server";
 import {v4 as uuidv4} from 'uuid';
 
 export default class FileDBAdapter implements DatabaseAdapter {
@@ -52,7 +53,12 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             create: async (data: BlogData): Promise<Blog> => {
                 const blogs = await this.readData<Blog>('blogs.json');
-                const newBlog: Blog = {...data, _id: uuidv4(), createdAt: Date.now(), updatedAt: Date.now()};
+                const newBlog: Blog = {
+                    ...data,
+                    _id: createId.blog(uuidv4()),
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                };
                 blogs.push(newBlog);
                 await this.writeData('blogs.json', blogs);
                 return newBlog;
@@ -92,24 +98,6 @@ export default class FileDBAdapter implements DatabaseAdapter {
         }
     }
 
-    async readData<T>(fileName: string): Promise<T[]> {
-        try {
-            const data = await fs.readFile(this.dataPath + fileName, {encoding: 'utf8'});
-            return JSON.parse(data);
-        } catch (error) {
-            console.error('Error reading file:', error);
-            return [];
-        }
-    }
-
-    async writeData<T>(fileName: string, data: T[]): Promise<void> {
-        try {
-            await fs.writeFile(this.dataPath + fileName, JSON.stringify(data, null, 2), {encoding: 'utf8'});
-        } catch (error) {
-            console.error('Error writing to file:', error);
-        }
-    }
-
     get categories() {
         return {
             findOne: async (filter: Filter<Category>): Promise<Category | null> => {
@@ -127,7 +115,12 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             create: async (data: CategoryData): Promise<Category> => {
                 const categories = await this.readData<Category>('categories.json');
-                const newCategory: Category = {...data, _id: uuidv4()} as any;
+                const newCategory: Category = {
+                    ...data,
+                    _id: createId.category(uuidv4()),
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                } as any;
                 categories.push(newCategory);
                 await this.writeData('categories.json', categories);
                 return newCategory;
@@ -183,7 +176,12 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             create: async (data: TagData): Promise<Tag> => {
                 const tags = await this.readData<Tag>('tags.json');
-                const newTag: Tag = {...data, _id: uuidv4()} as any;
+                const newTag: Tag = {
+                    ...data,
+                    _id: createId.tag(uuidv4()),
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                } as any;
                 tags.push(newTag);
                 await this.writeData('tags.json', tags);
                 return newTag;
@@ -250,7 +248,7 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
                 const newUser: User = {
                     ...data,
-                    _id: uuidv4(),
+                    _id: createId.user(uuidv4()),
                     permissions,
                     createdAt: Date.now(),
                     updatedAt: Date.now()
@@ -295,8 +293,6 @@ export default class FileDBAdapter implements DatabaseAdapter {
         }
     }
 
-    // Authors functionality moved to users
-
     get settings() {
         return {
             findOne: async (filter: Filter<SettingsEntry>): Promise<SettingsEntry | null> => {
@@ -316,7 +312,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
                 const settings = await this.readData<SettingsEntry>('settings.json');
                 const newSetting: SettingsEntry = {
                     ...data,
-                    _id: uuidv4(),
+                    _id: createId.settingsEntry(uuidv4()),
+                    ownerId: data.ownerId,
                     createdAt: Date.now(),
                     updatedAt: Date.now()
                 } as any;
@@ -378,7 +375,7 @@ export default class FileDBAdapter implements DatabaseAdapter {
                 const plugins = await this.readData<Plugin>('plugins.json');
                 const newPlugin: Plugin = {
                     ...data,
-                    _id: uuidv4(),
+                    _id: createId.plugin(uuidv4()),
                     createdAt: Date.now(),
                     updatedAt: Date.now()
                 } as any;
@@ -421,6 +418,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
         }
     }
 
+    // Authors functionality moved to users
+
     get pluginHookMappings() {
         return {
             findOne: async (filter: Filter<PluginHookMapping>): Promise<PluginHookMapping | null> => {
@@ -440,7 +439,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
                 const mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
                 const newMapping: PluginHookMapping = {
                     ...data,
-                    _id: uuidv4(),
+                    _id: createId.pluginHookMapping(uuidv4()),
+                    pluginId: data.pluginId,
                     createdAt: Date.now(),
                     updatedAt: Date.now()
                 } as any;
@@ -502,7 +502,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
                 const comments = await this.readData<Comment>('comments.json');
                 const newComment: Comment = {
                     ...data,
-                    _id: uuidv4(),
+                    _id: createId.comment(uuidv4()),
+                    blogId: data.blogId,
                     createdAt: Date.now(),
                     updatedAt: Date.now()
                 } as any;
@@ -564,7 +565,9 @@ export default class FileDBAdapter implements DatabaseAdapter {
                 const revisions = await this.readData<Revision>('revisions.json');
                 const newRevision: Revision = {
                     ...data,
-                    _id: uuidv4(),
+                    _id: createId.revision(uuidv4()),
+                    blogId: data.blogId,
+                    userId: data.userId,
                     createdAt: Date.now()
                 } as any;
                 revisions.push(newRevision);
@@ -625,7 +628,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
                 const media = await this.readData<Media>('media.json');
                 const newItem: Media = {
                     ...data,
-                    _id: uuidv4(),
+                    _id: createId.media(uuidv4()),
+                    userId: data.userId,
                     createdAt: Date.now(),
                     updatedAt: Date.now()
                 } as any;
@@ -669,31 +673,65 @@ export default class FileDBAdapter implements DatabaseAdapter {
     }
 
     get generated() {
+        const self = this;
         return {
-            getDetailedBlogObject: async (filter: Filter<Blog>): Promise<DetailedBlog | null> => {
+            getHydratedBlog: async (filter: Filter<Blog>): Promise<DetailedBlog | null> => {
                 const blog = await this.blogs.findOne(filter);
                 if (!blog) {
                     return null;
                 }
 
-                const author = await this.users.findById(blog.userId);
-                const category = await this.categories.findById(blog.category);
-                const tags = await Promise.all(blog.tags.map(tagId => this.tags.findById(tagId)));
+                const author = await self.users.findById(blog.userId);
+                const category = await self.categories.findById(blog.categoryId);
+                const tags = await Promise.all(blog.tagIds.map(tagId => self.tags.findById(tagId)));
+
+                // Populate featuredMedia
+                const featuredMedia = blog.featuredMediaId
+                    ? await self.media.findById(blog.featuredMediaId)
+                    : undefined;
 
                 if (!author || !category) {
                     // Or handle this case more gracefully
                     return null;
                 }
 
-                const { userId, ...restOfBlog } = blog;
+                if (!author) {
+                    // Missing user is critical
+                    return null;
+                }
+
+                const {userId, categoryId, tagIds, featuredMediaId, parentId, ...restOfBlog} = blog;
 
                 return {
-                    ...restOfBlog,
-                    author,
-                    category,
-                    tags: tags.filter((t): t is Tag => t !== null),
+                    ...blog,
+                    user: author,  // userId → user
+                    category,  // categoryId → category
+                    tags: tags.filter((t): t is Tag => t !== null),  // tagIds → tags
+                    featuredMedia: featuredMedia || undefined,  // featuredMediaId → featuredMedia
+                    parent: parentId ? (await self.blogs.findById(parentId)) || undefined : undefined,  // parentId → parent
                 };
             },
+            getDetailedBlogObject: async function (filter: Filter<Blog>): Promise<DetailedBlog | null> {
+                return self.generated.getHydratedBlog(filter);
+            }
+        }
+    }
+
+    async readData<T>(fileName: string): Promise<T[]> {
+        try {
+            const data = await fs.readFile(this.dataPath + fileName, {encoding: 'utf8'});
+            return JSON.parse(data);
+        } catch (error) {
+            console.error('Error reading file:', error);
+            return [];
+        }
+    }
+
+    async writeData<T>(fileName: string, data: T[]): Promise<void> {
+        try {
+            await fs.writeFile(this.dataPath + fileName, JSON.stringify(data, null, 2), {encoding: 'utf8'});
+        } catch (error) {
+            console.error('Error writing to file:', error);
         }
     }
 

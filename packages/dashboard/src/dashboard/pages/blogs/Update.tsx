@@ -3,8 +3,8 @@ import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import {useLocation} from 'preact-iso';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {useUser} from "../../../context/UserContext.tsx";
-import {Blog, Category, Tag} from "../../../types/api.ts";
-import {PluginSlot} from "../../components/plugins/PluginSlot.tsx";
+import {Blog, Category, Tag} from "@supergrowthai/types";
+import {ExtensionPoint, ExtensionZone} from "../../components/ExtensionZone";
 
 const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
     const location = useLocation();
@@ -110,6 +110,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
             // API call to create a new category
             const response = await apis.createCategory({
                 name: item.label,
+                description: '',
                 slug: item.label.toLowerCase().replace(/\s+/g, '-'),
             });
 
@@ -176,20 +177,20 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                 value: formData.status || 'draft'
             },
             {
-                key: 'category',
+                key: 'categoryId',
                 label: 'Category',
                 type: 'select',
-                value: formData.category,
+                value: formData.categoryId,
                 options: categories.map(cat => ({value: cat._id, label: cat.name})),
                 required: true,
                 onSearch: searchCategories,
                 onAdd: addNewCategory
             },
             {
-                key: 'tags',
+                key: 'tagIds',
                 label: 'Tags',
                 type: 'multiselect',
-                value: formData.tags,
+                value: formData.tagIds,
                 options: tags.map(tag => ({value: tag._id, label: tag.name})),
                 onSearch: searchTags,
                 onAdd: addNewTag
@@ -217,23 +218,25 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
             {loading ? <p>Loading blog data...</p> : error ?
                 <div className="p-4 bg-red-100 text-red-800 rounded">Error: {error}</div> : !blog || !formData ?
                     <div className="p-4 bg-yellow-100 text-yellow-800 rounded">Blog not found</div> : (
-                        <div className="flex flex-col md:flex-row gap-8">
-                            <div className="flex-grow bg-white p-6 rounded-lg shadow-md">
-                                <DynamicForm
-                                    id="updateBlog"
-                                    submitLabel="Update Blog"
-                                    postTo={`/api/next-blog/api/blog/${blog._id}/update`}
-                                    redirectTo={"/api/next-blog/dashboard/blogs"}
-                                    fields={getFormFields()}
-                                    onFieldChange={handleFieldChange}
-                                />
-                            </div>
-                            <div className="w-full md:w-1/3 lg:w-1/4 flex-shrink-0">
-                                <div className="sticky top-6">
-                                    <PluginSlot hookName="editor-sidebar-widget" context={pluginContext}/>
+                        <ExtensionZone name="blog-update-form" page="blogs" entity="blog" data={blog}>
+                            <div className="flex flex-col md:flex-row gap-8">
+                                <div className="flex-grow bg-white p-6 rounded-lg shadow-md">
+                                    <DynamicForm
+                                        id="updateBlog"
+                                        submitLabel="Update Blog"
+                                        postTo={`/api/next-blog/api/blog/${blog._id}/update`}
+                                        redirectTo={"/api/next-blog/dashboard/blogs"}
+                                        fields={getFormFields()}
+                                        onFieldChange={handleFieldChange}
+                                    />
+                                </div>
+                                <div className="w-full md:w-1/3 lg:w-1/4 flex-shrink-0">
+                                    <div className="sticky top-6">
+                                        <ExtensionPoint name="editor-sidebar-widget" context={pluginContext}/>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </ExtensionZone>
                     )}
         </div>
     );

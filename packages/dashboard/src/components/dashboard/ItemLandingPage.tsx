@@ -15,7 +15,8 @@ export default function ItemLandingPage<T extends { _id: string, title: string }
 
     return <BasePage>
         <div className="p-5 max-w-2xl mx-auto">
-            <a href={createUrl} className="inline-block mb-5 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded no-underline">
+            <a href={createUrl}
+               className="inline-block mb-5 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded no-underline">
                 {createBtnText}
             </a>
             <br/>

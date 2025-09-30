@@ -10,7 +10,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "dev": "vite build --watch",
-    "build": "bun run clean && vite build",
+    "build": "vite build",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },
@@ -71,13 +71,13 @@
     "next": "^15.2.4"
   },
   "devDependencies": {
-    "vite-plugin-static-copy": "^3.1.1",
     "@supergrowthai/next-blog-dashboard": "workspace:*",
+    "@supergrowthai/types": "workspace:*",
+    "vite-plugin-static-copy": "^3.1.1",
     "@types/mongodb": "^4.0.7",
-    "@types/node": "^24.0.14",
+    "@types/node": "^24.5.2",
     "@types/uuid": "^10.0.0",
-    "typescript": "^5.8.3",
-    "vite": "^7.0.4",
+    "vite": "^7.1.5",
     "vite-plugin-dts": "^4.5.4"
   }
 }

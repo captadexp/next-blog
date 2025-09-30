@@ -1,0 +1,99 @@
+{
+  "name": "@supergrowthai/types",
+  "version": "1.0.0",
+  "description": "Shared TypeScript types for SupergrowthAI Next Blog platform",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.mjs",
+      "require": "./dist/server.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.mjs",
+      "require": "./dist/client.js"
+    },
+    "./common": {
+      "types": "./dist/common.d.ts",
+      "import": "./dist/common.mjs",
+      "require": "./dist/common.js"
+    },
+    "./plugin": {
+      "types": "./dist/plugin/index.d.ts",
+      "import": "./dist/plugin/index.mjs",
+      "require": "./dist/plugin/index.js"
+    },
+    "./plugin/common": {
+      "types": "./dist/plugin/common.d.ts",
+      "import": "./dist/plugin/common.mjs",
+      "require": "./dist/plugin/common.js"
+    },
+    "./plugin/client": {
+      "types": "./dist/plugin/client.d.ts",
+      "import": "./dist/plugin/client.mjs",
+      "require": "./dist/plugin/client.js"
+    },
+    "./plugin/server": {
+      "types": "./dist/plugin/server.d.ts",
+      "import": "./dist/plugin/server.mjs",
+      "require": "./dist/plugin/server.js"
+    },
+    "./plugin/manifest": {
+      "types": "./dist/plugin/manifest.d.ts",
+      "import": "./dist/plugin/manifest.mjs",
+      "require": "./dist/plugin/manifest.js"
+    },
+    "./sdk/base": {
+      "types": "./dist/sdk/base.d.ts",
+      "import": "./dist/sdk/base.mjs",
+      "require": "./dist/sdk/base.js"
+    },
+    "./sdk/client": {
+      "types": "./dist/sdk/client.d.ts",
+      "import": "./dist/sdk/client.mjs",
+      "require": "./dist/sdk/client.js"
+    },
+    "./sdk/server": {
+      "types": "./dist/sdk/server.d.ts",
+      "import": "./dist/sdk/server.mjs",
+      "require": "./dist/sdk/server.js"
+    },
+    "./database/entities": {
+      "types": "./dist/database/entities.d.ts",
+      "import": "./dist/database/entities.mjs",
+      "require": "./dist/database/entities.js"
+    },
+    "./database/adapter": {
+      "types": "./dist/database/adapter.d.ts",
+      "import": "./dist/database/adapter.mjs",
+      "require": "./dist/database/adapter.js"
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "dev": "vite build --watch",
+    "build": "vite build && tsc --emitDeclarationOnly --declaration --declarationMap",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "dist"
+  ],
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5",
+    "vite-plugin-dts": "^4.5.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

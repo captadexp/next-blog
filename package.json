@@ -1,25 +1,22 @@
 {
-  "name": "next-blog-workspace",
+  "name": "@supergrowthai/next-blog-workspace",
   "version": "1.0.0",
   "description": "Workspace for next-blog packages",
   "type": "module",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "plugins/*",
+    "apps/*"
   ],
   "scripts": {
-    "build": "npm run build:all",
-    "dev": "bun --filter=* run dev",
-    "build:all": "npm run build:ui && npm run build:dashboard && npm run build:core",
-    "build:ui": "cd packages/ui && npm run build",
-    "build:dashboard": "cd packages/dashboard && npm run build",
-    "build:core": "cd packages/core && npm run build",
-    "build:test": "cd packages/test-app && npm run build",
-    "start:test": "cd packages/test-app && npm run start",
-    "typecheck:ui": "cd packages/ui && npm run typecheck",
-    "typecheck:dashboard": "cd packages/dashboard && npm run typecheck",
-    "typecheck:core": "cd packages/core && npm run typecheck",
-    "typecheck": "bun --filter=* run typecheck"
+    "build": "turbo build --filter='./packages/*'",
+    "dev": "turbo build --filter='./packages/*' && turbo dev --filter='./packages/*'",
+    "dev:fast": "turbo dev --filter='./packages/*'",
+    "clean": "turbo clean --filter='./packages/*'",
+    "typecheck": "turbo typecheck --filter='./packages/*'",
+    "app:dev": "turbo dev --filter='./apps/test-app'",
+    "app:build": "turbo build --filter='./apps/test-app'"
   },
   "keywords": [
     "vite",
@@ -32,13 +29,17 @@
     "secure"
   ],
   "dependencies": {
-    "rimraf": "^6.0.1"
+    "rimraf": "^6.0.1",
+    "vite": "^7.1.7"
   },
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "MIT",
-  "packageManager": "bun@1.2.8",
+  "packageManager": "bun@1.2.22",
   "devDependencies": {
-    "turbo": "^2.5.4"
+    "@typescript/native-preview": "^7.0.0-dev.20250930.1",
+    "jsdom": "^27.0.0",
+    "turbo": "^2.5.8",
+    "typescript": "^5.9.2"
   },
   "trustedDependencies": [
     "@tailwindcss/oxide",

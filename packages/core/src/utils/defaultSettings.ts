@@ -1,16 +1,16 @@
-import {DatabaseAdapter, SettingsEntryData} from "../types.js";
+import {createId, DatabaseAdapter, SettingsEntryData} from "@supergrowthai/types/server";
 
 // Define default settings with their keys, values, and owner
 export const DEFAULT_SETTINGS: SettingsEntryData[] = [
     {
         key: "BLOG_BASE_DOMAIN",
         value: "localhost:3000",
-        owner: "system"
+        ownerId: createId.user("system")
     },
     {
         key: "BLOG_BASE_PATH",
         value: "/blog/{blog_slug}",
-        owner: "system"
+        ownerId: createId.user("system")
     }
 ];
 

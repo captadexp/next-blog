@@ -1,6 +1,6 @@
 import {headers} from "next/headers.js";
 import {type NextRequest, NextResponse} from "next/server.js";
-import {Configuration, DatabaseAdapter, Permission, User, UserData} from "../types.js";
+import {Configuration, DatabaseAdapter, Permission, ServerSDK, User, UserData} from "@supergrowthai/types/server";
 import crypto from "./crypto.js";
 import {hasAllPermissions, hasAnyPermission, hasPermission} from "./permissions.js";
 
@@ -14,7 +14,8 @@ export type CNextRequest = NextRequest & {
     _params: Record<string, string>,
     db(): Promise<DatabaseAdapter>,
     configuration: Configuration,
-    sessionUser: User
+    sessionUser: User,
+    sdk: ServerSDK
 }
 
 /**
@@ -109,7 +110,7 @@ export default function secure<T>(
         }
 
         // User is authenticated - assign to request
-        (request as any).sessionUser = user;
+        request.sessionUser = user;
 
         // Check permissions if required
         if (options?.requirePermission) {

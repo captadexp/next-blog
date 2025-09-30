@@ -3,7 +3,8 @@ import {useEffect, useState} from 'preact/hooks';
 import {useLocation} from 'preact-iso';
 import {useUser} from '../../../context/UserContext';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
-import {Category, Tag} from '../../../types/api';
+import {Category, Tag} from '@supergrowthai/types';
+import {ExtensionZone} from '../../components/ExtensionZone';
 
 interface CreateBlogProps {
     path?: string;
@@ -90,6 +91,7 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
             // Use API client to create a new category
             const response = await apis.createCategory({
                 name: item.label,
+                description: '',
                 slug: slug
             });
 
@@ -213,22 +215,24 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
                     Error: {error}
                 </div>
             ) : (
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                    <DynamicForm
-                        id="createBlog"
-                        submitLabel="Create Blog"
-                        postTo={"/api/next-blog/api/blogs/create"}
-                        apiMethod={handleCreateBlog}
-                        redirectTo={"/api/next-blog/dashboard/blogs"}
-                        fields={fields}
-                        onSubmitSuccess={(data) => {
-                            console.log('Blog created successfully:', data);
-                        }}
-                        onSubmitError={(error) => {
-                            console.error('Error creating blog:', error);
-                        }}
-                    />
-                </div>
+                <ExtensionZone name="blog-create-form" page="blogs" entity="blog">
+                    <div className="bg-white p-6 rounded-lg shadow-md">
+                        <DynamicForm
+                            id="createBlog"
+                            submitLabel="Create Blog"
+                            postTo={"/api/next-blog/api/blogs/create"}
+                            apiMethod={handleCreateBlog}
+                            redirectTo={"/api/next-blog/dashboard/blogs"}
+                            fields={fields}
+                            onSubmitSuccess={(data) => {
+                                console.log('Blog created successfully:', data);
+                            }}
+                            onSubmitError={(error) => {
+                                console.error('Error creating blog:', error);
+                            }}
+                        />
+                    </div>
+                </ExtensionZone>
             )}
         </div>
     );

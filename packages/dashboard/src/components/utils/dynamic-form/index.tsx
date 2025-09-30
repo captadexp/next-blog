@@ -1,5 +1,5 @@
 import {h} from 'preact';
-import {useState, useEffect} from 'preact/hooks';
+import {useEffect, useState} from 'preact/hooks';
 import {useLocation} from 'preact-iso';
 import FormField from './FormField';
 import {DynamicFormFieldType} from './types';

@@ -1,5 +1,5 @@
 import {h} from 'preact';
-import {useState, useRef, useEffect} from 'preact/hooks';
+import {useEffect, useRef, useState} from 'preact/hooks';
 import {DynamicFormFieldType} from './types';
 
 interface AutocompleteFieldProps {
@@ -139,8 +139,8 @@ const AutocompleteField = ({field, onChange, multiple = false}: AutocompleteFiel
                 {field.label}
             </label>
 
-            {/* Selected chips display (for multiple select) */}
-            {multiple && selectedOptions.length > 0 && (
+            {/* Selected chips display */}
+            {selectedOptions.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-2">
                     {selectedOptions.map(option => (
                         <div
@@ -173,7 +173,7 @@ const AutocompleteField = ({field, onChange, multiple = false}: AutocompleteFiel
                     id={field.key}
                     name={field.key}
                     type="text"
-                    value={multiple ? inputValue : (selectedOptions[0]?.label || inputValue)}
+                    value={inputValue}
                     onChange={handleInputChange}
                     onFocus={handleInputFocus}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"

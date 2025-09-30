@@ -1,9 +1,10 @@
 import {h} from 'preact';
 import {useUser} from '../../../context/UserContext';
-import {Plugin} from '../../../types/api';
+import {Plugin} from '@supergrowthai/types';
 import {usePlugins} from "../../../context/PluginContext.tsx";
 import {useLocation} from "preact-iso";
 import {useEffect} from "preact/hooks";
+import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 
 const PluginsList = () => {
     const {hasPermission, hasAllPermissions, apis: api} = useUser();
@@ -43,7 +44,18 @@ const PluginsList = () => {
     };
 
     const columns = [
-        {header: 'Name', accessor: 'name'},
+        {
+            header: 'Name',
+            accessor: 'name',
+            cell: (plugin: Plugin) => (
+                <div>
+                    <div className="font-medium">{plugin.name}</div>
+                    {plugin.url && (
+                        <div className="text-xs text-gray-500 mt-1">{plugin.url}</div>
+                    )}
+                </div>
+            )
+        },
         {header: 'Version', accessor: 'version'},
         {header: 'Author', accessor: 'author'},
         {
@@ -51,11 +63,11 @@ const PluginsList = () => {
             accessor: '_id',
             cell: (plugin: Plugin) => {
                 const clientModule = loadedPlugins.get(plugin._id);
-                const hasPanel = clientModule?.hasPanel;
+                const hasSettingsPanel = clientModule?.hasSettingsPanel;
 
                 return (
                     <div className="flex space-x-2">
-                        {hasPanel && (
+                        {hasSettingsPanel && (
                             <button
                                 className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
                                 onClick={() => location.route(`/api/next-blog/dashboard/plugins/${plugin._id}`)}
@@ -104,46 +116,57 @@ const PluginsList = () => {
     }
 
     return (
-        <div className="p-4">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Plugins</h1>
-                {hasPermission('plugins:create') && (
-                    <a
-                        href="/api/next-blog/dashboard/plugins/create"
-                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                    >
-                        Add New Plugin
-                    </a>
+        <ExtensionZone name="plugins-list" page="plugins" data={plugins}>
+            <div className="p-4">
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-2xl font-bold">Plugins</h1>
+                    {hasPermission('plugins:create') && (
+                        <a
+                            href="/api/next-blog/dashboard/plugins/create"
+                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                        >
+                            Add New Plugin
+                        </a>
+                    )}
+                </div>
+
+                <ExtensionPoint name="plugins-list-toolbar" context={{plugins, loadedPlugins}}/>
+
+                {plugins.length === 0 ? (
+                    <div className="text-gray-500">No plugins found.</div>
+                ) : (
+                    <ExtensionZone name="plugins-table" page="plugins" data={{plugins, loadedPlugins}}>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full bg-white border border-gray-200">
+                                <thead>
+                                <tr className="bg-gray-100">
+                                    {columns.map((column) => (
+                                        <th key={column.header}
+                                            className="py-2 px-4 border-b text-left">{column.header}</th>
+                                    ))}
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {plugins.map((plugin: any) => (
+                                    <>
+                                        <ExtensionPoint name="plugin-item:before" context={{plugin}} />
+                                        <tr key={plugin._id} className="hover:bg-gray-50">
+                                        {columns.map((column) => (
+                                            <td key={column.accessor} className="py-2 px-4 border-b">
+                                                {column.cell ? column.cell(plugin) : plugin[column.accessor]}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                    <ExtensionPoint name="plugin-item:after" context={{plugin}} />
+                                </>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </ExtensionZone>
                 )}
             </div>
-
-            {plugins.length === 0 ? (
-                <div className="text-gray-500">No plugins found.</div>
-            ) : (
-                <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white border border-gray-200">
-                        <thead>
-                        <tr className="bg-gray-100">
-                            {columns.map((column) => (
-                                <th key={column.header} className="py-2 px-4 border-b text-left">{column.header}</th>
-                            ))}
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {plugins.map((plugin: any) => (
-                            <tr key={plugin._id} className="hover:bg-gray-50">
-                                {columns.map((column) => (
-                                    <td key={column.accessor} className="py-2 px-4 border-b">
-                                        {column.cell ? column.cell(plugin) : plugin[column.accessor]}
-                                    </td>
-                                ))}
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-        </div>
+        </ExtensionZone>
     );
 };
 
