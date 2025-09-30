@@ -1,0 +1,35 @@
+{
+  "name": "@supergrowthai/oneapi",
+  "version": "2.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./express": "./src/router/express-router.ts",
+    "./nextjs": "./src/router/nextjs-router.ts",
+    "./errors": "./src/errors.ts",
+    "./types": "./src/types.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "express": "^4.0.0",
+    "next": ">=13.0.0"
+  },
+  "peerDependenciesMeta": {
+    "express": {
+      "optional": true
+    },
+    "next": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.0"
+  },
+  "dependencies": {
+    "iron-session": "^8.0.4"
+  }
+}
