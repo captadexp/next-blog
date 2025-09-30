@@ -18,6 +18,7 @@ export default async function Home() {
                     <Link
                         href="/api/next-blog/dashboard"
                         className={styles.dashboardLink}
+                        prefetch={false}
                     >
                         Go to Dashboard
                     </Link>
