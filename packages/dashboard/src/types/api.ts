@@ -63,13 +63,13 @@ export interface UpdateTagInput {
 export interface CreateSettingsInput {
     key: string;
     value: string | boolean | number | boolean[] | string[] | number[];
-    owner: string;
+    ownerId: string;
 }
 
 export interface UpdateSettingsInput {
     key?: string;
     value?: string | boolean | number | boolean[] | string[] | number[];
-    owner?: string;
+    ownerId?: string;
 }
 
 export interface CreatePluginInput {

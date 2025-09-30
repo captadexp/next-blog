@@ -38,7 +38,10 @@ export default defineConfig({
             outDir: "dist",
             include: ['src'],
             exclude: ['node_modules', 'src/**/*.test.ts', 'src/**/*.spec.ts'],
-            rollupTypes: false,
+            rollupTypes: true,
+            copyDtsFiles: true,
+            insertTypesEntry: true,
+            declarationOnly: false,
         }),
         viteStaticCopy({
             targets: [

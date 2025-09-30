@@ -1,4 +1,4 @@
-import {DatabaseAdapter, Plugin, ServerPluginModule} from "@supergrowthai/types/server";
+import {createId, DatabaseAdapter, Plugin, ServerPluginModule} from "@supergrowthai/types/server";
 import {ValidationError} from "../utils/errors.js";
 import Logger from "../utils/Logger.js";
 
@@ -48,7 +48,7 @@ async function registerHooks(
     if (!hooks || typeof hooks !== 'object') return;
     logger.debug(`Registering ${type} hooks for plugin ${pluginId}`);
     for (const hookName of Object.keys(hooks)) {
-        await db.pluginHookMappings.create({pluginId, hookName, type, priority: 10});
+        await db.pluginHookMappings.create({pluginId: createId.plugin(pluginId), hookName, type, priority: 10});
         logger.debug(`Registered ${type} hook: ${hookName}`);
     }
 }
@@ -61,7 +61,12 @@ async function registerRpcs(
     if (!rpcs || typeof rpcs !== 'object') return;
     logger.debug(`Registering RPCs for plugin ${pluginId}`);
     for (const rpcName of Object.keys(rpcs)) {
-        await db.pluginHookMappings.create({pluginId, hookName: rpcName, type: 'rpc', priority: 10});
+        await db.pluginHookMappings.create({
+            pluginId: createId.plugin(pluginId),
+            hookName: rpcName,
+            type: 'rpc',
+            priority: 10
+        });
         logger.debug(`Registered rpc: ${rpcName}`);
     }
 }

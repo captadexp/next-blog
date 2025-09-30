@@ -20,7 +20,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "dev": "vite build --watch",
-    "build": "bun run clean && vite build",
+    "build": "vite build",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
@@ -32,6 +32,9 @@
   ],
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "ISC",
+  "dependencies": {
+    "@supergrowthai/plugin-dev-kit": "workspace:*"
+  },
   "peerDependencies": {
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
@@ -42,10 +45,6 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
-    "@supergrowthai/next-blog": "workspace:*",
-    "@supergrowthai/plugin-dev-kit": "workspace:*",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
     "rimraf": "^6.0.1",
     "vite": "^7.1.5",
     "vite-plugin-dts": "^4.5.4",

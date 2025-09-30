@@ -3,6 +3,7 @@ import {DatabaseError, NotFound, Success, ValidationError} from "../utils/errors
 import pluginExecutor from "../plugins/plugin-executor.server.js";
 import pluginManager from "../plugins/pluginManager.js";
 import Logger, {LogLevel} from "../utils/Logger.js";
+import {createId} from "@supergrowthai/types/server";
 
 const logger = new Logger('plugins-api', LogLevel.ERROR);
 
@@ -86,7 +87,7 @@ export const deletePlugin = secure(
             }
             await pluginManager.deletePluginAndMappings(db, pluginId);
             logger.info(`Plugin ${pluginId} deleted successfully`);
-            request.configuration.callbacks?.on?.("deletePlugin", {_id: pluginId});
+            request.configuration.callbacks?.on?.("deletePlugin", {_id: createId.plugin(pluginId)});
             throw new Success("Plugin deleted successfully", {_id: pluginId});
         } catch (error) {
             if (error instanceof Success || error instanceof NotFound) throw error;
@@ -113,7 +114,7 @@ export const reinstallPlugin = secure(
                 throw new NotFound(`Plugin with id ${pluginId} not found`);
             }
             await pluginManager.deletePluginAndMappings(db, pluginId);
-            request.configuration.callbacks?.on?.("deletePlugin", {_id: pluginId});
+            request.configuration.callbacks?.on?.("deletePlugin", {_id: createId.plugin(pluginId)});
             const creation = await pluginManager.installPlugin(db, existing.url);
             request.configuration.callbacks?.on?.("createPlugin", creation);
             pluginExecutor.initalized = false;

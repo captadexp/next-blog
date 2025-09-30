@@ -1,7 +1,7 @@
 import type {ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
-import {content} from '@supergrowthai/plugin-dev-kit';
+import {defineServer} from '@supergrowthai/plugin-dev-kit';
+import {ExtractedLink, extractLinksFromContent} from "@supergrowthai/plugin-dev-kit/content"
 import {BrokenLink, LinkCheckResult, PostReference, ScanResponse} from './types';
-import {defineServer} from "@supergrowthai/plugin-dev-kit";
 
 const checkLink = async (url: string): Promise<LinkCheckResult> => {
     try {
@@ -49,15 +49,15 @@ const scanForBrokenLinks = async (sdk: ServerSDK): Promise<ScanResponse> => {
 
         for (const blog of blogsResponse) {
             // Parse content as ContentObject and extract links
-            let links: content.ExtractedLink[] = [];
-            
+            let links: ExtractedLink[] = [];
+
             try {
                 // The content might be stored as a JSON string or an object
-                const blogContent = typeof blog.content === 'string' 
-                    ? blog.content 
+                const blogContent = typeof blog.content === 'string'
+                    ? blog.content
                     : JSON.stringify(blog.content);
-                
-                links = content.extractLinksFromContent(blogContent);
+
+                links = extractLinksFromContent(blogContent);
             } catch (error) {
                 sdk.log.warn(`Failed to parse content for blog ${blog._id}: ${error}`);
                 continue;

@@ -6,6 +6,7 @@ export default defineConfig({
     build: {
         lib: {
             entry: {
+                'index': resolve(__dirname, 'src/index.ts'),
                 'runtime': resolve(__dirname, 'src/runtime.ts'),
                 'preact': resolve(__dirname, 'src/preact.ts'),
                 'jsx-runtime': resolve(__dirname, 'src/jsx-runtime.ts'),
@@ -29,7 +30,10 @@ export default defineConfig({
         dts({
             outDir: 'dist',
             include: ['src'],
-            rollupTypes: false
+            rollupTypes: true,
+            copyDtsFiles: true,
+            insertTypesEntry: true,
+            declarationOnly: false,
         })
     ]
 });

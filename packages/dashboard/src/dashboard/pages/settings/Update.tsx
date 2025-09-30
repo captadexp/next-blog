@@ -64,10 +64,10 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
                 placeholder: 'For arrays or objects, enter valid JSON'
             },
             {
-                key: 'owner',
+                key: 'ownerId',
                 label: 'Owner',
                 type: 'text',
-                value: setting.owner,
+                value: setting.ownerId,
                 required: true,
                 placeholder: 'Enter "system" for system settings or the name of the plugin/package'
             }
@@ -91,7 +91,7 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
         const settingData = {
             key: data.key,
             value: parsedValue,
-            owner: data.owner
+            ownerId: data.ownerId
         };
 
         return apis.updateSetting(id, settingData);

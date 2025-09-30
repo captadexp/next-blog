@@ -1,6 +1,6 @@
-import {defineConfig, type UserConfig, type Plugin} from 'vite';
+import {defineConfig, type Plugin, type UserConfig} from 'vite';
 import {resolve} from 'path';
-import {readFileSync, existsSync} from 'fs';
+import {existsSync, readFileSync} from 'fs';
 import type {ViteConfigOptions} from './types.js';
 
 /**
@@ -160,7 +160,7 @@ export function createViteConfig(options: ViteConfigOptions): UserConfig {
                 plugins: [wrapIifePlugin],
                 build: {
                     ...baseConfig.build,
-                    ...createIifeBuildConfig(entry, 'server.js', 'ServerExport'),
+                    ...createIifeBuildConfig(entry, 'server.js', 'ServerExport', 'auto', []),
                     target: 'esnext',
                 },
             });
@@ -173,11 +173,13 @@ export function createViteConfig(options: ViteConfigOptions): UserConfig {
                 build: {
                     ...baseConfig.build,
                     ...createIifeBuildConfig(
-                        entry, 
-                        'client.js', 
-                        'ClientExport', 
-                        'auto', 
-                        ['@supergrowthai/jsx-runtime']
+                        entry,
+                        'client.js',
+                        'ClientExport',
+                        'auto',
+                        [
+                            '@supergrowthai/jsx-runtime'
+                        ]
                     ),
                 },
                 esbuild: {

@@ -1,43 +1,80 @@
+import {BrandedId, Hydrated} from '../type-base-hydration';
+
 export type BlogStatus = 'draft' | 'pending' | 'private' | 'published' | 'trash';
 
 export interface Blog {
-    _id: string;
+    _id: BrandedId<"Blog">;
     title: string;
     slug: string;
     content: string;
-    category: string;
-    tags: string[];
-    userId: string;
+    categoryId: BrandedId<"Category">;
+    tagIds: BrandedId<"Tag">[];
+    userId: BrandedId<"User">;
     createdAt: number;
     updatedAt: number;
     metadata?: Record<string, any>;
     type?: 'post' | 'page' | string;
     status?: BlogStatus;
-    featuredImage?: string;
+    featuredMediaId?: BrandedId<"Media">;
     excerpt?: string;
-    parent?: string;
+    parentId?: BrandedId<"Blog">;
 }
 
 export interface BlogData extends Partial<Blog> {
     title: string;
     slug: string;
     content: string;
-    category: string;
-    tags: string[];
-    userId: string;
+    categoryId: BrandedId<"Category">;
+    tagIds: BrandedId<"Tag">[];
+    userId: BrandedId<"User">;
 }
 
-export interface DetailedBlog extends Omit<Blog, 'category' | 'tags' | 'userId'> {
-    author: User;
-    category: Category;
-    tags: Tag[];
+// Model map for type-safe hydration
+export interface ModelMap {
+    Blog: Blog;
+    User: User;
+    Category: Category;
+    Tag: Tag;
+    Media: Media;
+    Comment: Comment;
+    Revision: Revision;
+    Plugin: Plugin;
+    PluginHookMapping: PluginHookMapping;
+    SettingsEntry: SettingsEntry;
 }
+
+// Automatically hydrated types
+export type HydratedBlog = Hydrated<Blog, ModelMap>;
+// Automatically infers: user, category, tags[], featuredMedia?, parent?
+
+export type HydratedComment = Hydrated<Comment, ModelMap>;
+// Automatically infers: blog, user?, parentComment?
+
+export type HydratedMedia = Hydrated<Media, ModelMap>;
+// Automatically infers: user
+
+export type HydratedRevision = Hydrated<Revision, ModelMap>;
+// Automatically infers: blog, user
+
+export type HydratedCategory = Hydrated<Category, ModelMap>;
+// Automatically infers: parent?
+
+export type HydratedSettingsEntry = Hydrated<SettingsEntry, ModelMap>;
+// Automatically infers: owner
+
+// Legacy aliases for backward compatibility (will be removed later)
+export type DetailedBlog = HydratedBlog;
+export type DetailedComment = HydratedComment;
+export type DetailedMedia = HydratedMedia;
+export type DetailedRevision = HydratedRevision;
+export type DetailedCategory = HydratedCategory;
 
 export interface Category {
-    _id: string;
+    _id: BrandedId<"Category">;
     name: string;
     description: string;
     slug: string;
+    parentId?: BrandedId<"Category">;
     createdAt: number;
     updatedAt: number;
 }
@@ -49,7 +86,7 @@ export interface CategoryData extends Partial<Category> {
 }
 
 export interface Tag {
-    _id: string;
+    _id: BrandedId<"Tag">;
     name: string;
     slug: string;
     createdAt: number;
@@ -62,7 +99,7 @@ export interface TagData extends Partial<Tag> {
 }
 
 export interface User {
-    _id: string;
+    _id: BrandedId<"User">;
     username: string;
     email: string;
     password: string;
@@ -85,10 +122,10 @@ export interface UserData extends Partial<User> {
 }
 
 export interface SettingsEntry {
-    _id: string;
+    _id: BrandedId<"SettingsEntry">;
     key: string;
     value: string | boolean | number | boolean[] | string[] | number[];
-    owner: string;
+    ownerId: BrandedId<"User">;
     createdAt: number;
     updatedAt: number;
 }
@@ -96,33 +133,33 @@ export interface SettingsEntry {
 export interface SettingsEntryData extends Partial<SettingsEntry> {
     key: string;
     value: string | boolean | number | boolean[] | string[] | number[];
-    owner: string;
+    ownerId: BrandedId<"User">;
 }
 
 export interface Comment {
-    _id: string;
-    blogId: string;
-    userId?: string;
+    _id: BrandedId<"Comment">;
+    blogId: BrandedId<"Blog">;
+    userId?: BrandedId<"User">;
     authorName?: string;
     authorEmail?: string;
     authorUrl?: string;
     content: string;
     status: 'pending' | 'approved' | 'spam' | 'trash';
-    parentCommentId?: string;
+    parentCommentId?: BrandedId<"Comment">;
     createdAt: number;
     updatedAt: number;
     metadata?: Record<string, any>;
 }
 
 export interface CommentData extends Partial<Comment> {
-    blogId: string;
+    blogId: BrandedId<"Blog">;
     content: string;
 }
 
 export interface Revision {
-    _id: string;
-    blogId: string;
-    userId: string;
+    _id: BrandedId<"Revision">;
+    blogId: BrandedId<"Blog">;
+    userId: BrandedId<"User">;
     title: string;
     content: string;
     createdAt: number;
@@ -130,23 +167,34 @@ export interface Revision {
 }
 
 export interface RevisionData extends Partial<Revision> {
-    blogId: string;
-    userId: string;
+    blogId: BrandedId<"Blog">;
+    userId: BrandedId<"User">;
     title: string;
     content: string;
 }
 
 export interface Media {
-    _id: string;
+    _id: BrandedId<"Media">;
     filename: string;
     url: string;
-    mimeType: string;
+    mimeType: string;  // 'image/jpeg', 'video/mp4', etc.
+
+    // Required for videos, used as og:image
+    thumbnailUrl?: string;  // REQUIRED if mimeType starts with 'video/'
+
+    // Metadata
     altText?: string;
     caption?: string;
     description?: string;
     width?: number;
     height?: number;
-    userId: string;
+
+    // Video specific
+    duration?: number;  // seconds
+    embedUrl?: string;
+
+    // Ownership
+    userId: BrandedId<"User">;
     createdAt: number;
     updatedAt: number;
     metadata?: Record<string, any>;
@@ -156,12 +204,12 @@ export interface MediaData extends Partial<Media> {
     filename: string;
     url: string;
     mimeType: string;
-    userId: string;
+    userId: BrandedId<"User">;
 }
 
 // Plugin entity stored in database
 export interface Plugin {
-    _id: string;
+    _id: BrandedId<"Plugin">;
     name: string;
     description: string;
     version: string;
@@ -179,8 +227,8 @@ export interface PluginData extends Partial<Plugin> {
 
 // Plugin hook mapping stored in database
 export interface PluginHookMapping {
-    _id: string;
-    pluginId: string;
+    _id: BrandedId<"PluginHookMapping">;
+    pluginId: BrandedId<"Plugin">;
     hookName: string;
     type: 'client' | 'server' | 'rpc';
     priority: number;
@@ -189,7 +237,7 @@ export interface PluginHookMapping {
 }
 
 export interface PluginHookMappingData extends Partial<PluginHookMapping> {
-    pluginId: string;
+    pluginId: BrandedId<"Plugin">;
     hookName: string;
     type: 'client' | 'server' | 'rpc';
     priority: number;

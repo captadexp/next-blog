@@ -1,4 +1,18 @@
-import type {APIClient, APIResponse, ClientSDK, PluginSettings, Storage, User} from '@supergrowthai/types';
+import type {APIClient, APIResponse, BrandedId, ClientSDK, PluginSettings, Storage, User} from '@supergrowthai/types';
+
+// Import createId for creating branded IDs
+const createBrandedId = {
+    blog: (id: string) => id as any,
+    user: (id: string) => id as any,
+    category: (id: string) => id as any,
+    tag: (id: string) => id as any,
+    media: (id: string) => id as any,
+    comment: (id: string) => id as any,
+    revision: (id: string) => id as any,
+    plugin: (id: string) => id as any,
+    pluginHookMapping: (id: string) => id as any,
+    settingsEntry: (id: string) => id as any,
+};
 
 class MockAPIClient implements APIClient {
     private mockData: Record<string, any> = {
@@ -115,7 +129,7 @@ class MockAPIClient implements APIClient {
         console.log('[Mock Client API] getCategories');
         return this.mockResponse([
             {
-                _id: '1',
+                _id: createBrandedId.category('1'),
                 name: 'General',
                 slug: 'general',
                 description: 'General category',
@@ -123,7 +137,7 @@ class MockAPIClient implements APIClient {
                 updatedAt: Date.now()
             },
             {
-                _id: '2',
+                _id: createBrandedId.category('2'),
                 name: 'Tech',
                 slug: 'tech',
                 description: 'Technology',
@@ -136,7 +150,7 @@ class MockAPIClient implements APIClient {
     async getCategory(id: string) {
         console.log('[Mock Client API] getCategory', id);
         return this.mockResponse({
-            _id: id,
+            _id: createBrandedId.category(id),
             name: 'Category',
             slug: 'category',
             description: 'A category',
@@ -164,14 +178,26 @@ class MockAPIClient implements APIClient {
     async getTags() {
         console.log('[Mock Client API] getTags');
         return this.mockResponse([
-            {_id: '1', name: 'JavaScript', slug: 'javascript', createdAt: Date.now(), updatedAt: Date.now()},
-            {_id: '2', name: 'React', slug: 'react', createdAt: Date.now(), updatedAt: Date.now()}
+            {
+                _id: createBrandedId.tag('1'),
+                name: 'JavaScript',
+                slug: 'javascript',
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            },
+            {_id: createBrandedId.tag('2'), name: 'React', slug: 'react', createdAt: Date.now(), updatedAt: Date.now()}
         ]);
     }
 
     async getTag(id: string) {
         console.log('[Mock Client API] getTag', id);
-        return this.mockResponse({_id: id, name: 'Tag', slug: 'tag', createdAt: Date.now(), updatedAt: Date.now()});
+        return this.mockResponse({
+            _id: createBrandedId.tag(id),
+            name: 'Tag',
+            slug: 'tag',
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        });
     }
 
     async createTag(data: any) {
@@ -198,10 +224,10 @@ class MockAPIClient implements APIClient {
     async getSetting(id: string) {
         console.log('[Mock Client API] getSetting', id);
         return this.mockResponse({
-            _id: id,
+            _id: createBrandedId.settingsEntry(id),
             key: 'setting',
             value: 'value',
-            owner: 'system',
+            ownerId: createBrandedId.user('system'),
             createdAt: Date.now(),
             updatedAt: Date.now()
         });
@@ -228,7 +254,7 @@ class MockAPIClient implements APIClient {
         return this.mockResponse([]);
     }
 
-    async getPlugin(id: string) {
+    async getPlugin(id: BrandedId<"Plugin">) {
         console.log('[Mock Client API] getPlugin', id);
         return this.mockResponse({
             _id: id,
@@ -276,7 +302,7 @@ class MockAPIClient implements APIClient {
     async login(username: string, _password: string) {
         console.log('[Mock Client API] login', username);
         return this.mockResponse({
-            _id: '1',
+            _id: createBrandedId.user('1'),
             username,
             email: `${username}@example.com`,
             name: username,
@@ -409,7 +435,7 @@ export function createMockClientSDK(options: {
     settings?: Record<string, any>;
 } = {}): ClientSDK {
     const mockUser: User | null = options.user !== undefined ? options.user : {
-        _id: 'dev-user-123',
+        _id: createBrandedId.user('dev-user-123'),
         username: 'developer',
         email: 'dev@example.com',
         password: 'hashed',

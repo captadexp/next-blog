@@ -19,7 +19,7 @@ export const AuthorInfo: React.FC<AuthorInfoProps> = ({
                                                           bioStyle,
                                                           ...rest
                                                       }) => {
-    const {author} = blog;
+    const {user} = blog;
 
     const containerStyles: React.CSSProperties = {
         backgroundColor: 'white',
@@ -56,8 +56,8 @@ export const AuthorInfo: React.FC<AuthorInfoProps> = ({
             {/* Placeholder for author image */}
             <div style={imageStyles}></div>
             <div>
-                <h4 style={nameStyles}>{author.name}</h4>
-                <p style={bioStyles}>{author.bio}</p>
+                <h4 style={nameStyles}>{user.name}</h4>
+                <p style={bioStyles}>{user.bio}</p>
             </div>
         </div>
     );

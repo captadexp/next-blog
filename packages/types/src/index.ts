@@ -1,5 +1,6 @@
 export * from './database/entities';
 export * from './database/adapter';
+export * from './type-base-hydration';
 export * from './plugin';
 export * from './api';
 export * from './sdk/base';

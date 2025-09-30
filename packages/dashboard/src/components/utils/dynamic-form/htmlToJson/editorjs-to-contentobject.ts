@@ -1,5 +1,5 @@
 import {OutputData} from '@editorjs/editorjs'
-import htmlToContentObject from './html-to-contentobject'
+import {htmlToContentObject} from './html-to-contentobject'
 import {ContentObject, ParagraphLayout} from './custom-types'
 
 export default function editorJSToContentObject(content: OutputData): ContentObject {
@@ -83,7 +83,7 @@ export default function editorJSToContentObject(content: OutputData): ContentObj
                     }
                 })
                 break
-            
+
             case 'quote':
                 blockContent.content.push({
                     name: 'Quote',
@@ -94,7 +94,7 @@ export default function editorJSToContentObject(content: OutputData): ContentObj
                     }
                 })
                 break
-            
+
             case 'header':
                 blockContent.content.push({
                     name: 'Subheading',
@@ -105,7 +105,7 @@ export default function editorJSToContentObject(content: OutputData): ContentObj
                     }
                 })
                 break
-            
+
             case 'code':
                 blockContent.content.push({
                     name: 'Code',

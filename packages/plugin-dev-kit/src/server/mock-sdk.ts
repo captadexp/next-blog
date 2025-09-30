@@ -1,4 +1,5 @@
 import type {Logger, PluginSettings, ServerSDK, User} from '@supergrowthai/types';
+import {createId} from "@supergrowthai/types/server";
 
 // Mock database implementation - simplified version
 // In real implementation, would use the full DatabaseAdapter interface from @supergrowthai/types
@@ -15,7 +16,8 @@ class MockDatabase {
     revisions = this.createCollectionMethods('revisions');
     media = this.createCollectionMethods('media');
     generated = {
-        getDetailedBlogObject: async () => null
+        getDetailedBlogObject: async () => null,
+        getHydratedBlog: async () => null
     };
     private data: Record<string, any[]> = {
         users: [
@@ -172,7 +174,7 @@ export function createMockServerSDK(options: {
     config?: Record<string, any>;
 } = {}): ServerSDK {
     const mockUser: User | null = options.user !== undefined ? options.user : {
-        _id: 'server-user-123',
+        _id: createId.user('server-user-123'),
         username: 'server',
         email: 'server@example.com',
         password: 'hashed',

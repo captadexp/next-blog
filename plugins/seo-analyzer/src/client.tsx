@@ -1,4 +1,5 @@
-import {defineClient, content} from "@supergrowthai/plugin-dev-kit";
+import {defineClient} from "@supergrowthai/plugin-dev-kit";
+import {extractTextFromContent, getWordCount} from "@supergrowthai/plugin-dev-kit/content";
 
 interface AnalysisResult {
     label: string;
@@ -254,9 +255,9 @@ function editorSidebarWidget(sdk: any, prev: any, context: any) {
         if (!sdk || !context) return;
 
         const contentObject = context.editor.getContent();
-        const textContent = content.extractTextFromContent(contentObject);
+        const textContent = extractTextFromContent(contentObject);
         const title = context.editor.getTitle();
-        const wordCount = content.getWordCount(contentObject);
+        const wordCount = getWordCount(contentObject);
         const keyword = focusKeyword.trim().toLowerCase();
 
         const analysisData: AnalysisData = {text: textContent, title, keyword, wordCount, contentObject};

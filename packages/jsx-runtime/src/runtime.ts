@@ -1,4 +1,4 @@
-import {PluginUtils} from './types';
+import {JSX_ELEMENT, JSX_FRAGMENT, PluginRuntime, PluginUtils, VNode} from './types';
 import {Button, Card, Text} from './components';
 // Use the jsx functions from jsx-runtime.ts to avoid duplication
 import {Fragment, jsx, jsxDEV, jsxs} from './jsx-runtime';
@@ -67,3 +67,5 @@ const utils: PluginUtils = {
 
 // Re-export everything needed for the runtime
 export {jsx, jsxs, jsxDEV, Fragment, Card, Button, Text, utils};
+export type {PluginUtils, PluginRuntime, VNode};
+export {JSX_ELEMENT, JSX_FRAGMENT};

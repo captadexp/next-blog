@@ -6,22 +6,17 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "plugins/*"
+    "plugins/*",
+    "apps/*"
   ],
   "scripts": {
-    "build": "turbo build --filter='@supergrowthai/*'",
-    "dev": "turbo dev --filter='./packages/*'",
-    "build:all": "npm run build:ui && npm run build:dashboard && npm run build:core",
-    "build:ui": "cd packages/ui && npm run build",
-    "build:dashboard": "cd packages/dashboard && npm run build",
-    "build:core": "cd packages/core && npm run build",
-    "build:test": "cd packages/test-app && npm run build",
-    "start:test": "cd packages/test-app && npm run start",
-    "typecheck:ui": "cd packages/ui && npm run typecheck",
-    "typecheck:dashboard": "cd packages/dashboard && npm run typecheck",
-    "typecheck:core": "cd packages/core && npm run typecheck",
-    "typecheck": "bun --filter=* run typecheck",
-    "clean-all": "rimraf '**/dist' '**/.next' 'packages/*/dist' 'packages/*/.next' 'plugins/*/dist' 'plugins/*/.next'"
+    "build": "turbo build --filter='./packages/*'",
+    "dev": "turbo build --filter='./packages/*' && turbo dev --filter='./packages/*'",
+    "dev:fast": "turbo dev --filter='./packages/*'",
+    "clean": "turbo clean --filter='./packages/*'",
+    "typecheck": "turbo typecheck --filter='./packages/*'",
+    "app:dev": "turbo dev --filter='./apps/test-app'",
+    "app:build": "turbo build --filter='./apps/test-app'"
   },
   "keywords": [
     "vite",
@@ -43,7 +38,7 @@
   "devDependencies": {
     "@typescript/native-preview": "^7.0.0-dev.20250919.1",
     "jsdom": "^27.0.0",
-    "turbo": "^2.5.6",
+    "turbo": "^2.5.8",
     "typescript": "^5.9.2"
   },
   "trustedDependencies": [

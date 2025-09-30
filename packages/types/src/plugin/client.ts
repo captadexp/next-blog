@@ -9,7 +9,7 @@ export interface ClientHooks {
     // Dashboard Layout
     'dashboard-header': { payload: { context?: any }; response: any };
     'dashboard-widget': { payload: { context?: any }; response: any };
-    
+
     // Dashboard Home
     'dashboard-home:before': { payload: { page: string; context?: any }; response: any };
     'dashboard-home:after': { payload: { page: string; context?: any }; response: any };
@@ -17,7 +17,7 @@ export interface ClientHooks {
     'stats-section:after': { payload: { page: string; data?: any }; response: any };
     'quick-draft:before': { payload: { page: string; context?: any }; response: any };
     'quick-draft:after': { payload: { page: string; context?: any }; response: any };
-    
+
     // Blog Pages
     'blogs-list:before': { payload: { page: string; data?: any }; response: any };
     'blogs-list:after': { payload: { page: string; data?: any }; response: any };
@@ -31,7 +31,7 @@ export interface ClientHooks {
     'blog-update-form:before': { payload: { page: string; entity: string; data?: any }; response: any };
     'blog-update-form:after': { payload: { page: string; entity: string; data?: any }; response: any };
     'editor-sidebar-widget': { payload: { context?: any }; response: any };
-    
+
     // User Pages
     'users-list:before': { payload: { page: string; data?: any }; response: any };
     'users-list:after': { payload: { page: string; data?: any }; response: any };
@@ -50,7 +50,7 @@ export interface ClientHooks {
     'user-update-form:before': { payload: { page: string; entity: string; data?: any }; response: any };
     'user-update-form:after': { payload: { page: string; entity: string; data?: any }; response: any };
     'user-update-form:toolbar': { payload: { context?: any }; response: any };
-    
+
     // Tag Pages
     'tags-list:before': { payload: { page: string; data?: any }; response: any };
     'tags-list:after': { payload: { page: string; data?: any }; response: any };
@@ -69,7 +69,7 @@ export interface ClientHooks {
     'tag-update-form:before': { payload: { page: string; entity: string; data?: any }; response: any };
     'tag-update-form:after': { payload: { page: string; entity: string; data?: any }; response: any };
     'tag-update-form:toolbar': { payload: { context?: any }; response: any };
-    
+
     // Category Pages
     'categories-list:before': { payload: { page: string; data?: any }; response: any };
     'categories-list:after': { payload: { page: string; data?: any }; response: any };
@@ -88,7 +88,7 @@ export interface ClientHooks {
     'category-update-form:before': { payload: { page: string; entity: string; data?: any }; response: any };
     'category-update-form:after': { payload: { page: string; entity: string; data?: any }; response: any };
     'category-update-form:toolbar': { payload: { context?: any }; response: any };
-    
+
     // Settings Pages
     'settings-list:before': { payload: { page: string; data?: any }; response: any };
     'settings-list:after': { payload: { page: string; data?: any }; response: any };
@@ -107,7 +107,7 @@ export interface ClientHooks {
     'setting-update-form:before': { payload: { page: string; entity: string; data?: any }; response: any };
     'setting-update-form:after': { payload: { page: string; entity: string; data?: any }; response: any };
     'setting-update-form:toolbar': { payload: { context?: any }; response: any };
-    
+
     // Plugin Pages
     'plugins-list:before': { payload: { page: string; data?: any }; response: any };
     'plugins-list:after': { payload: { page: string; data?: any }; response: any };

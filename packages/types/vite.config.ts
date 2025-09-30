@@ -9,7 +9,17 @@ export default defineConfig({
                 index: resolve(__dirname, 'src/index.ts'),
                 server: resolve(__dirname, 'src/server.ts'),
                 client: resolve(__dirname, 'src/client.ts'),
-                common: resolve(__dirname, 'src/common.ts')
+                common: resolve(__dirname, 'src/common.ts'),
+                'plugin/index': resolve(__dirname, 'src/plugin/index.ts'),
+                'plugin/common': resolve(__dirname, 'src/plugin/common.ts'),
+                'plugin/client': resolve(__dirname, 'src/plugin/client.ts'),
+                'plugin/server': resolve(__dirname, 'src/plugin/server.ts'),
+                'plugin/manifest': resolve(__dirname, 'src/plugin/manifest.ts'),
+                'sdk/base': resolve(__dirname, 'src/sdk/base.ts'),
+                'sdk/client': resolve(__dirname, 'src/sdk/client.ts'),
+                'sdk/server': resolve(__dirname, 'src/sdk/server.ts'),
+                'database/entities': resolve(__dirname, 'src/database/entities.ts'),
+                'database/adapter': resolve(__dirname, 'src/database/adapter.ts')
             },
             name: 'SupergrowthAITypes',
             formats: ['es', 'cjs'],
@@ -25,6 +35,7 @@ export default defineConfig({
                 exports: 'named'
             }
         },
+        emptyOutDir: false,
         minify: false,
         sourcemap: true
     },
@@ -32,8 +43,10 @@ export default defineConfig({
         dts({
             include: ['src/**/*.ts'],
             outDir: 'dist',
-            rollupTypes: true,
-            insertTypesEntry: true
+            rollupTypes: false,
+            copyDtsFiles: true,
+            insertTypesEntry: true,
+            declarationOnly: false,
         })
     ]
 });

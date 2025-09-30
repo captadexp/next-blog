@@ -1,4 +1,5 @@
 import type {DatabaseAdapter, PluginSettings} from '@supergrowthai/types/server';
+import {createId} from '@supergrowthai/types/server';
 
 // Global database reference for backwards compatibility
 let globalDb: DatabaseAdapter | null = null;
@@ -31,7 +32,7 @@ export class ServerSettingsHelper implements PluginSettings {
     async get<T = any>(key: string): Promise<T | null> {
         const setting = await this.db.settings.findOne({
             key,
-            owner: this.pluginId
+            ownerId: createId.user(this.pluginId)
         });
 
         return setting ? (setting.value as T) : null;
@@ -43,7 +44,7 @@ export class ServerSettingsHelper implements PluginSettings {
     async set<T = any>(key: string, value: T): Promise<void> {
         const existingSetting = await this.db.settings.findOne({
             key,
-            owner: this.pluginId
+            ownerId: createId.user(this.pluginId)
         });
 
         if (existingSetting) {
@@ -55,7 +56,7 @@ export class ServerSettingsHelper implements PluginSettings {
             await this.db.settings.create({
                 key,
                 value: value as any,
-                owner: this.pluginId
+                ownerId: createId.user(this.pluginId)  // HACK: Using user ID for plugin ID
             });
         }
     }
@@ -66,7 +67,7 @@ export class ServerSettingsHelper implements PluginSettings {
     async getGlobal<T = any>(key: string): Promise<T | null> {
         const setting = await this.db.settings.findOne({
             key,
-            owner: 'global'
+            ownerId: createId.user('global')
         });
 
         return setting ? (setting.value as T) : null;
@@ -79,7 +80,7 @@ export class ServerSettingsHelper implements PluginSettings {
         // TODO: Add permission check - should plugins be able to read each other's settings?
         const setting = await this.db.settings.findOne({
             key,
-            owner: targetPluginId
+            ownerId: createId.user(targetPluginId)
         });
 
         return setting ? (setting.value as T) : null;

@@ -1,5 +1,15 @@
+import {
+    ContentObject,
+    extractHeadingsFromContent,
+    extractImagesFromContent,
+    extractLinksFromContent,
+    extractTextFromContent,
+    getCharacterCount,
+    getWordCount,
+    hasBlockType
+} from "@supergrowthai/plugin-dev-kit/content";
 import {defineServer} from "@supergrowthai/plugin-dev-kit";
-import {content} from '@supergrowthai/plugin-dev-kit';
+
 
 interface FleschScoreResult {
     score: number;
@@ -58,14 +68,14 @@ const getFleschScore = (text: string): FleschScoreResult => {
 };
 
 // Analyze SEO aspects of content
-const analyzeContent = (contentData: string | content.ContentObject): SEOAnalysisResult => {
+const analyzeContent = (contentData: string | ContentObject): SEOAnalysisResult => {
     // Extract various elements from content
-    const text = content.extractTextFromContent(contentData);
-    const links = content.extractLinksFromContent(contentData);
-    const images = content.extractImagesFromContent(contentData);
-    const headings = content.extractHeadingsFromContent(contentData);
-    const wordCount = content.getWordCount(contentData);
-    const characterCount = content.getCharacterCount(contentData);
+    const text = extractTextFromContent(contentData);
+    const links = extractLinksFromContent(contentData);
+    const images = extractImagesFromContent(contentData);
+    const headings = extractHeadingsFromContent(contentData);
+    const wordCount = getWordCount(contentData);
+    const characterCount = getCharacterCount(contentData);
 
     // Get readability score
     const readabilityScore = getFleschScore(text);
@@ -103,7 +113,7 @@ const analyzeContent = (contentData: string | content.ContentObject): SEOAnalysi
     }
 
     // Check for very long paragraphs
-    const hasLists = content.hasBlockType(contentData, 'List');
+    const hasLists = hasBlockType(contentData, 'List');
     if (!hasLists && wordCount > 500) {
         suggestions.push('Consider using lists to break up long text sections.');
     }
@@ -127,7 +137,7 @@ export default defineServer({
             const {content: contentData} = request;
             try {
                 // Extract text and calculate Flesch score
-                const text = content.extractTextFromContent(contentData);
+                const text = extractTextFromContent(contentData);
                 const result = getFleschScore(text);
                 return {code: 0, payload: result};
             } catch (error: any) {
@@ -147,7 +157,7 @@ export default defineServer({
         'get-word-count': async (sdk, request) => {
             const {content: contentData} = request;
             try {
-                const wordCount = content.getWordCount(contentData);
+                const wordCount = getWordCount(contentData);
                 return {code: 0, payload: {wordCount}};
             } catch (error: any) {
                 return {code: 500, message: error.message};
@@ -156,17 +166,17 @@ export default defineServer({
         'extract-metadata': async (sdk, request) => {
             const {content: contentData} = request;
             try {
-                const headings = content.extractHeadingsFromContent(contentData);
-                const images = content.extractImagesFromContent(contentData);
-                const links = content.extractLinksFromContent(contentData);
-                
+                const headings = extractHeadingsFromContent(contentData);
+                const images = extractImagesFromContent(contentData);
+                const links = extractLinksFromContent(contentData);
+
                 return {
-                    code: 0, 
+                    code: 0,
                     payload: {
                         headings,
                         images,
                         links,
-                        hasContent: content.getWordCount(contentData) > 0
+                        hasContent: getWordCount(contentData) > 0
                     }
                 };
             } catch (error: any) {

@@ -5,6 +5,9 @@
 // Re-export entities - used by both
 export * from './database/entities';
 
+// Re-export type-safe hydration utilities
+export * from './type-base-hydration';
+
 // Re-export base SDK types - used by both
 export type {
     BaseSDK,

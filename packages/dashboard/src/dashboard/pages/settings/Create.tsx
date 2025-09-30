@@ -33,7 +33,7 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
             placeholder: 'For arrays or objects, enter valid JSON'
         },
         {
-            key: 'owner',
+            key: 'ownerId',
             label: 'Owner',
             type: 'text',
             required: true,
@@ -58,7 +58,7 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
         const settingData = {
             key: data.key,
             value: parsedValue,
-            owner: data.owner
+            ownerId: data.ownerId
         };
 
         return apis.createSetting(settingData);

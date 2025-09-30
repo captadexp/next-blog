@@ -9,7 +9,7 @@ import type {
     CategoryData,
     Comment,
     CommentData,
-    DetailedBlog,
+    HydratedBlog,
     Media,
     MediaData,
     Plugin,
@@ -71,7 +71,8 @@ export interface DatabaseAdapter {
 
     // Generated/computed operations
     generated: {
-        getDetailedBlogObject(filter: Filter<Blog>): Promise<DetailedBlog | null>;
+        getHydratedBlog(filter: Filter<Blog>): Promise<HydratedBlog | null>;
+        getDetailedBlogObject(filter: Filter<Blog>): Promise<HydratedBlog | null>;
     };
 
     // Optional transaction support

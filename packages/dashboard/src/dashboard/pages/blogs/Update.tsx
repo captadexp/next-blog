@@ -177,20 +177,20 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                 value: formData.status || 'draft'
             },
             {
-                key: 'category',
+                key: 'categoryId',
                 label: 'Category',
                 type: 'select',
-                value: formData.category,
+                value: formData.categoryId,
                 options: categories.map(cat => ({value: cat._id, label: cat.name})),
                 required: true,
                 onSearch: searchCategories,
                 onAdd: addNewCategory
             },
             {
-                key: 'tags',
+                key: 'tagIds',
                 label: 'Tags',
                 type: 'multiselect',
-                value: formData.tags,
+                value: formData.tagIds,
                 options: tags.map(tag => ({value: tag._id, label: tag.name})),
                 onSearch: searchTags,
                 onAdd: addNewTag

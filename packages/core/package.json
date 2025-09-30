@@ -10,7 +10,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "dev": "vite build --watch",
-    "build": "bun run clean && vite build",
+    "build": "vite build",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },

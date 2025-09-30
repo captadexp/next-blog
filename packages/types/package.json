@@ -79,10 +79,10 @@
     }
   },
   "scripts": {
-    "build": "vite build && tsc --emitDeclarationOnly --declaration --declarationMap",
+    "clean": "rm -rf dist",
     "dev": "vite build --watch",
-    "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "build": "vite build && tsc --emitDeclarationOnly --declaration --declarationMap",
+    "typecheck": "tsc --noEmit"
   },
   "files": [
     "dist"

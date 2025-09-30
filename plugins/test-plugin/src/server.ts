@@ -1,4 +1,4 @@
-import {defineServer} from '@supergrowthai/plugin-dev-kit';
+import {defineServer} from "@supergrowthai/plugin-dev-kit";
 
 export default defineServer({
     hooks: {

@@ -106,7 +106,7 @@ const SettingsList: FunctionComponent<SettingsListProps> = () => {
                                     <tr key={setting._id} className="border-b border-gray-200 hover:bg-gray-50">
                                     <td className="p-3">{setting.key}</td>
                                     <td className="p-3">{formatValue(setting.value)}</td>
-                                    <td className="p-3">{setting.owner}</td>
+                                        <td className="p-3">{setting.ownerId}</td>
                                     <td className="p-3">{formatDate(setting.createdAt)}</td>
                                     <td className="p-3">{formatDate(setting.updatedAt)}</td>
                                     <td className="p-3">

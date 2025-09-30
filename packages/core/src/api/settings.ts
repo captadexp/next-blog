@@ -85,8 +85,8 @@ export const createSetting = secure(
                 throw new ValidationError("Setting value is required");
             }
 
-            if (!data.owner) {
-                throw new ValidationError("Setting owner is required");
+            if (!data.ownerId) {
+                throw new ValidationError("Setting ownerId is required");
             }
 
             // Execute before create hook

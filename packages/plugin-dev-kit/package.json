@@ -7,40 +7,43 @@
     "create-next-blog-plugin": "./bin/create.ts"
   },
   "main": "./dist/index.js",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./client": {
       "types": "./dist/client/index.d.ts",
-      "import": "./dist/client/index.js"
+      "import": "./dist/client/index.js",
+      "default": "./dist/client/index.js"
+    },
+    "./content": {
+      "types": "./dist/content/index.d.ts",
+      "import": "./dist/content/index.js",
+      "default": "./dist/content/index.js"
     },
     "./server": {
       "types": "./dist/server/index.d.ts",
-      "import": "./dist/server/index.js"
+      "import": "./dist/server/index.js",
+      "default": "./dist/server/index.js"
     },
     "./build": {
       "types": "./dist/build/index.d.ts",
-      "import": "./dist/build/index.js"
-    },
-    "./jsx-runtime": {
-      "types": "@supergrowthai/jsx-runtime/jsx-runtime",
-      "import": "@supergrowthai/jsx-runtime/jsx-runtime",
-      "default": "@supergrowthai/jsx-runtime/jsx-runtime"
-    },
-    "./jsx-dev-runtime": {
-      "types": "@supergrowthai/jsx-runtime/jsx-dev-runtime",
-      "import": "@supergrowthai/jsx-runtime/jsx-dev-runtime",
-      "default": "@supergrowthai/jsx-runtime/jsx-dev-runtime"
+      "import": "./dist/build/index.js",
+      "default": "./dist/build/index.js"
     }
   },
   "scripts": {
-    "build": "vite build",
+    "clean": "rimraf dist",
     "dev": "vite build --watch",
-    "typecheck": "tsc --noEmit",
-    "clean": "rimraf dist"
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@supergrowthai/jsx-runtime": "workspace:*",

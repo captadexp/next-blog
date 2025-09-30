@@ -1,5 +1,6 @@
 import secure, {CNextRequest} from "../utils/secureInternal.js";
 import {DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
+import {createId} from "@supergrowthai/types/server";
 
 /**
  * Get all settings for a specific plugin
@@ -11,7 +12,7 @@ export const getPluginSettings = secure(
 
         try {
             // Get all settings for this plugin
-            const settings = await db.settings.find({owner: pluginId});
+            const settings = await db.settings.find({ownerId: createId.user(pluginId)});
 
             // Transform to key-value pairs for easier consumption
             const settingsMap: Record<string, any> = {};
@@ -40,7 +41,7 @@ export const getPluginSetting = secure(
 
         try {
             const setting = await db.settings.findOne({
-                owner: pluginId,
+                ownerId: createId.user(pluginId),
                 key: key
             });
 
@@ -77,7 +78,7 @@ export const setPluginSetting = secure(
 
             // Check if setting exists
             const existing = await db.settings.findOne({
-                owner: pluginId,
+                ownerId: createId.user(pluginId),
                 key: key
             });
 
@@ -97,7 +98,7 @@ export const setPluginSetting = secure(
                 const created = await db.settings.create({
                     key,
                     value,
-                    owner: pluginId,
+                    ownerId: createId.user(pluginId),
                     createdAt: Date.now(),
                     updatedAt: Date.now()
                 });
@@ -124,7 +125,7 @@ export const deletePluginSetting = secure(
 
         try {
             const existing = await db.settings.findOne({
-                owner: pluginId,
+                ownerId: createId.user(pluginId),
                 key: key
             });
 
