@@ -8,6 +8,16 @@ import chalk from 'chalk';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Generate random port between 60000-65535
+const getRandomPort = () => Math.floor(Math.random() * 5536) + 60000;
+
+// Convert kebab-case to Title Case
+const toTitleCase = (str: string) => {
+    return str.split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+};
+
 async function createPlugin(projectName?: string) {
     console.log(chalk.cyan('🚀 Creating Next-Blog Plugin...\n'));
 
@@ -58,9 +68,19 @@ async function createPlugin(projectName?: string) {
         // Copy example plugin (as .ts file)
         const pluginExists = await fs.access(path.join(srcDir, 'index.ts')).then(() => true).catch(() => false);
         if (!pluginExists) {
-            await fs.copyFile(
-                path.join(templatesDir, 'plugin.ts'),
-                path.join(srcDir, 'index.ts')
+            // Use the last part of the path as plugin name
+            const pluginName = path.basename(targetDir);
+            const pluginDisplayName = toTitleCase(pluginName);
+
+            // Read template and replace placeholders
+            let pluginContent = await fs.readFile(path.join(templatesDir, 'plugin.ts'), 'utf-8');
+            pluginContent = pluginContent
+                .replace(/id: 'my-plugin'/g, `id: '${pluginName}'`)
+                .replace(/name: 'My Plugin'/g, `name: '${pluginDisplayName}'`);
+
+            await fs.writeFile(
+                path.join(srcDir, 'index.ts'),
+                pluginContent
             );
             console.log(chalk.green('✅ Created src/index.ts'));
         } else {
@@ -95,6 +115,7 @@ async function createPlugin(projectName?: string) {
 
             // Use the last part of the path as plugin name
             const pluginName = path.basename(targetDir);
+            const randomPort = getRandomPort();
 
             const packageJson = {
                 name: pluginName,
@@ -102,7 +123,7 @@ async function createPlugin(projectName?: string) {
                 type: 'module',
                 scripts: {
                     build: 'next-blog build',
-                    dev: 'next-blog dev',
+                    dev: `next-blog dev --port ${randomPort}`,
                     watch: 'next-blog watch',
                     typecheck: 'tsc --noEmit'
                 },
