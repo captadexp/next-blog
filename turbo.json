@@ -31,6 +31,18 @@
     },
     "clean": {
       "cache": false
+    },
+    "test-app#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        ".next/**"
+      ],
+      "env": [
+        "MONGO_DB_URL",
+        "VERCEL"
+      ]
     }
   }
 }
