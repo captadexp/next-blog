@@ -3,7 +3,6 @@ import {BadRequest, Exception, Forbidden, NotFound, Success, UnAuthorised} from 
 import {IRouterConfig, MinimumRequest, OneApiResponse, PathObject, SessionData} from '../types';
 import {cookies} from "next/headers";
 import {NextRequest, NextResponse} from "next/server";
-import {requestContext} from "@packages/utils/core/request-context";
 
 
 export interface NextJSRouterConfig extends IRouterConfig {
@@ -86,7 +85,7 @@ export class NextJSRouter {
                     }, {} as Record<string, string>);
 
                 const headersObj: Record<string, string> = {}
-                for (const [k, v] of request.headers) {
+                for (const [k, v] of request.headers.entries()) {
                     headersObj[k] = v;
                 }
                 const queryParamsObj: Record<string, string> = {};
@@ -144,9 +143,8 @@ export class NextJSRouter {
         };
 
         const processRequest = async (request: NextRequest) => {
-            //fixme instead of hardcoding we can play a priority game
-            const store: { DB_ACCESS_TYPE: "api" | "wordpress" | "mongodb" } = {DB_ACCESS_TYPE: "wordpress"};
-            return requestContext.run(store, processRequestInternal, request);
+            // Process request directly without context
+            return processRequestInternal(request);
         }
 
         return {
