@@ -1,11 +1,11 @@
 import type {MinimumRequest, OneApiFunctionResponse, SessionData} from "@supergrowthai/oneapi/types";
-import {BadRequest, NotFound} from "@supergrowthai/oneapi";
 import {CategoryData} from "@supergrowthai/types/server";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
+import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
 
 // List all categories
-export const getCategories = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const getCategories = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = await extra.db();
 
     try {
@@ -24,28 +24,19 @@ export const getCategories = secure(async (session: SessionData, request: Minimu
             }
         }
 
-        return {
-            code: 0,
-            message: "Categories retrieved successfully",
-            payload: categories
-        };
+        throw new Success("Categories retrieved successfully", categories);
     } catch (error) {
+        if (error instanceof Success) throw error;
+
         console.error("Error fetching categories:", error);
-        return {
-            code: 500,
-            message: "Failed to retrieve categories: " + (error instanceof Error ? error.message : String(error))
-        };
+        throw new DatabaseError("Failed to retrieve categories: " + (error instanceof Error ? error.message : String(error)));
     }
 });
 
 // Get a single category by ID
-export const getCategoryById = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const getCategoryById = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = await extra.db();
     const categoryId = request._params?.id;
-
-    if (!categoryId) {
-        throw new BadRequest("Category ID is required");
-    }
 
     try {
         let category = await db.categories.findOne({_id: categoryId});
@@ -59,7 +50,7 @@ export const getCategoryById = secure(async (session: SessionData, request: Mini
             const hookResult = await extra.callHook('category:onRead', {
                 entity: 'category',
                 operation: 'read',
-                id: categoryId,
+                id: categoryId!,
                 data: category
             });
             if (hookResult?.data) {
@@ -67,31 +58,24 @@ export const getCategoryById = secure(async (session: SessionData, request: Mini
             }
         }
 
-        return {
-            code: 0,
-            message: "Category retrieved successfully",
-            payload: category
-        };
+        throw new Success("Category retrieved successfully", category);
     } catch (error) {
-        if (error instanceof NotFound) throw error;
+        if (error instanceof Success || error instanceof NotFound) throw error;
 
         console.error(`Error fetching category ${categoryId}:`, error);
-        return {
-            code: 500,
-            message: "Failed to retrieve category: " + (error instanceof Error ? error.message : String(error))
-        };
+        throw new DatabaseError("Failed to retrieve category: " + (error instanceof Error ? error.message : String(error)));
     }
 });
 
 // Create a new category
-export const createCategory = secure(async (session: SessionData, request: MinimumRequest<any, Partial<CategoryData>>, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const createCategory = secure(async (session: SessionData, request: MinimumRequest<any, Partial<CategoryData>>, extra: ApiExtra) => {
     const db = await extra.db();
 
     try {
         let data = request.body as Partial<CategoryData>;
 
         if (!data.name) {
-            throw new BadRequest("Category name is required");
+            throw new ValidationError("Category name is required");
         }
 
         // Execute before create hook
@@ -124,30 +108,19 @@ export const createCategory = secure(async (session: SessionData, request: Minim
 
         extra.configuration.callbacks?.on?.("createCategory", creation);
 
-        return {
-            code: 0,
-            message: "Category created successfully",
-            payload: creation
-        };
+        throw new Success("Category created successfully", creation);
     } catch (error) {
-        if (error instanceof BadRequest) throw error;
+        if (error instanceof Success || error instanceof ValidationError) throw error;
 
         console.error("Error creating category:", error);
-        return {
-            code: 500,
-            message: "Failed to create category: " + (error instanceof Error ? error.message : String(error))
-        };
+        throw new DatabaseError("Failed to create category: " + (error instanceof Error ? error.message : String(error)));
     }
 }, {requirePermission: 'categories:create'});
 
 // Update a category
-export const updateCategory = secure(async (session: SessionData, request: MinimumRequest<any, Partial<CategoryData>>, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const updateCategory = secure(async (session: SessionData, request: MinimumRequest<any, Partial<CategoryData>>, extra: ApiExtra) => {
     const db = await extra.db();
     const categoryId = request._params?.id;
-
-    if (!categoryId) {
-        throw new BadRequest("Category ID is required");
-    }
 
     try {
         let data = request.body as Partial<CategoryData>;
@@ -163,7 +136,7 @@ export const updateCategory = secure(async (session: SessionData, request: Minim
             const beforeResult = await extra.callHook('category:beforeUpdate', {
                 entity: 'category',
                 operation: 'update',
-                id: categoryId,
+                id: categoryId!,
                 data,
                 previousData: existingCategory
             });
@@ -185,7 +158,7 @@ export const updateCategory = secure(async (session: SessionData, request: Minim
             await extra.callHook('category:afterUpdate', {
                 entity: 'category',
                 operation: 'update',
-                id: categoryId,
+                id: categoryId!,
                 data: updation,
                 previousData: existingCategory
             });
@@ -193,30 +166,19 @@ export const updateCategory = secure(async (session: SessionData, request: Minim
 
         extra.configuration.callbacks?.on?.("updateCategory", updation);
 
-        return {
-            code: 0,
-            message: "Category updated successfully",
-            payload: updation
-        };
+        throw new Success("Category updated successfully", updation);
     } catch (error) {
-        if (error instanceof NotFound || error instanceof BadRequest) throw error;
+        if (error instanceof Success || error instanceof NotFound || error instanceof BadRequest) throw error;
 
         console.error(`Error updating category ${categoryId}:`, error);
-        return {
-            code: 500,
-            message: "Failed to update category: " + (error instanceof Error ? error.message : String(error))
-        };
+        throw new DatabaseError("Failed to update category: " + (error instanceof Error ? error.message : String(error)));
     }
 }, {requirePermission: 'categories:update'});
 
 // Delete a category
-export const deleteCategory = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const deleteCategory = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = await extra.db();
     const categoryId = request._params?.id;
-
-    if (!categoryId) {
-        throw new BadRequest("Category ID is required");
-    }
 
     try {
         // Check if category exists first
@@ -230,7 +192,7 @@ export const deleteCategory = secure(async (session: SessionData, request: Minim
             const beforeResult = await extra.callHook('category:beforeDelete', {
                 entity: 'category',
                 operation: 'delete',
-                id: categoryId,
+                id: categoryId!,
                 data: existingCategory
             });
             if (beforeResult?.cancel) {
@@ -245,25 +207,18 @@ export const deleteCategory = secure(async (session: SessionData, request: Minim
             await extra.callHook('category:afterDelete', {
                 entity: 'category',
                 operation: 'delete',
-                id: categoryId,
+                id: categoryId!,
                 previousData: existingCategory
             });
         }
 
         extra.configuration.callbacks?.on?.("deleteCategory", deletion);
 
-        return {
-            code: 0,
-            message: "Category deleted successfully",
-            payload: deletion
-        };
+        throw new Success("Category deleted successfully", deletion);
     } catch (error) {
-        if (error instanceof NotFound || error instanceof BadRequest) throw error;
+        if (error instanceof Success || error instanceof NotFound || error instanceof BadRequest) throw error;
 
         console.error(`Error deleting category ${categoryId}:`, error);
-        return {
-            code: 500,
-            message: "Failed to delete category: " + (error instanceof Error ? error.message : String(error))
-        };
+        throw new DatabaseError("Failed to delete category: " + (error instanceof Error ? error.message : String(error)));
     }
-}, {requireAnyPermission: ['categories:delete', 'all:delete']});
+});

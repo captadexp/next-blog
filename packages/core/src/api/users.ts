@@ -1,12 +1,12 @@
 import type {MinimumRequest, OneApiFunctionResponse, SessionData} from "@supergrowthai/oneapi/types";
-import {BadRequest, InternalServerError, NotFound} from "@supergrowthai/oneapi";
 import {Permission, User, UserData} from "@supergrowthai/types/server";
 import crypto from "../utils/crypto.js";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
+import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
 
 // Get the currently logged in user - requires authentication but no special permission
-export const getCurrentUser = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const getCurrentUser = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = await extra.db();
     const user = await db.users.findById(session.user._id);
 
@@ -17,11 +17,7 @@ export const getCurrentUser = secure(async (session: SessionData, request: Minim
     // Create a copy of the user object without the password
     const {password, ...userWithoutPassword} = user;
 
-    return {
-        code: 0,
-        message: "Current user retrieved successfully",
-        payload: userWithoutPassword
-    };
+    throw new Success("Current user retrieved successfully", userWithoutPassword);
 });
 
 // Helper to check permissions
@@ -36,7 +32,7 @@ function hasAnyPermission(user: User, permissions: Permission[]): boolean {
 }
 
 // List all users
-export const listUsers = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const listUsers = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = await extra.db();
     let users = await db.users.find({});
 
@@ -59,22 +55,15 @@ export const listUsers = secure(async (session: SessionData, request: MinimumReq
         }
     }
 
-    return {
-        code: 0,
-        message: "Users retrieved successfully",
-        payload: sanitizedUsers
-    };
+    throw new Success("Users retrieved successfully", sanitizedUsers);
 }, {requirePermission: 'users:list'});
 
 // Get a specific user by ID
-export const getUser = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const getUser = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const userId = request._params?.id;
-    if (!userId) {
-        throw new BadRequest("User ID is required");
-    }
 
     const db = await extra.db();
-    const user = await db.users.findById(userId);
+    const user = await db.users.findById(userId!);
 
     if (!user) {
         throw new NotFound("User not found");
@@ -88,7 +77,7 @@ export const getUser = secure(async (session: SessionData, request: MinimumReque
         const hookResult = await extra.callHook('user:onRead', {
             entity: 'user',
             operation: 'read',
-            id: userId,
+            id: userId!,
             data: userWithoutPassword
         });
         if (hookResult?.data) {
@@ -96,19 +85,15 @@ export const getUser = secure(async (session: SessionData, request: MinimumReque
         }
     }
 
-    return {
-        code: 0,
-        message: "User retrieved successfully",
-        payload: userWithoutPassword
-    };
+    throw new Success("User retrieved successfully", userWithoutPassword);
 }, {requirePermission: 'users:read'});
 
 // Create a new user
-export const createUser = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const createUser = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const body = request.body as any;
 
     if (!body.username || !body.email || !body.password || !body.name) {
-        throw new BadRequest("Username, email, password, and name are required");
+        throw new ValidationError("Username, email, password, and name are required");
     }
 
     const db = await extra.db();
@@ -166,24 +151,17 @@ export const createUser = secure(async (session: SessionData, request: MinimumRe
         });
     }
 
-    return {
-        code: 0,
-        message: "User created successfully",
-        payload: userWithoutPassword
-    };
+    throw new Success("User created successfully", userWithoutPassword);
 }, {requirePermission: 'users:create'});
 
 // Update a user
-export const updateUser = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const updateUser = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const userId = request._params?.id;
-    if (!userId) {
-        throw new BadRequest("User ID is required");
-    }
 
     let updates = request.body as any;
 
     const db = await extra.db();
-    const existingUser = await db.users.findById(userId);
+    const existingUser = await db.users.findById(userId!);
 
     if (!existingUser) {
         throw new NotFound("User not found");
@@ -194,7 +172,7 @@ export const updateUser = secure(async (session: SessionData, request: MinimumRe
         const beforeResult = await extra.callHook('user:beforeUpdate', {
             entity: 'user',
             operation: 'update',
-            id: userId,
+            id: userId!,
             data: updates,
             previousData: existingUser
         });
@@ -224,7 +202,7 @@ export const updateUser = secure(async (session: SessionData, request: MinimumRe
     const updatedUser = await db.users.updateOne({_id: userId}, updateData);
 
     if (!updatedUser) {
-        throw new InternalServerError("Failed to update user");
+        throw new DatabaseError("Failed to update user");
     }
 
     // Remove password from response
@@ -235,30 +213,23 @@ export const updateUser = secure(async (session: SessionData, request: MinimumRe
         await extra.callHook('user:afterUpdate', {
             entity: 'user',
             operation: 'update',
-            id: userId,
+            id: userId!,
             data: userWithoutPassword,
             previousData: existingUser
         });
     }
 
-    return {
-        code: 0,
-        message: "User updated successfully",
-        payload: userWithoutPassword
-    };
+    throw new Success("User updated successfully", userWithoutPassword);
 }, {requirePermission: 'users:update'});
 
 // Delete a user
-export const deleteUser = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const deleteUser = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const userId = request._params?.id;
-    if (!userId) {
-        throw new BadRequest("User ID is required");
-    }
 
     const db = await extra.db();
 
     // Check if the user exists
-    const existingUser = await db.users.findById(userId);
+    const existingUser = await db.users.findById(userId!);
     if (!existingUser) {
         throw new NotFound("User not found");
     }
@@ -268,7 +239,7 @@ export const deleteUser = secure(async (session: SessionData, request: MinimumRe
         const beforeResult = await extra.callHook('user:beforeDelete', {
             entity: 'user',
             operation: 'delete',
-            id: userId,
+            id: userId!,
             data: existingUser
         });
         if (beforeResult?.cancel) {
@@ -280,7 +251,7 @@ export const deleteUser = secure(async (session: SessionData, request: MinimumRe
     const deletedUser = await db.users.deleteOne({_id: userId});
 
     if (!deletedUser) {
-        throw new InternalServerError("Failed to delete user");
+        throw new DatabaseError("Failed to delete user");
     }
 
     // Remove password from response
@@ -291,14 +262,10 @@ export const deleteUser = secure(async (session: SessionData, request: MinimumRe
         await extra.callHook('user:afterDelete', {
             entity: 'user',
             operation: 'delete',
-            id: userId,
+            id: userId!,
             previousData: existingUser
         });
     }
 
-    return {
-        code: 0,
-        message: "User deleted successfully",
-        payload: {_id: userId}
-    };
+    throw new Success("User deleted successfully", {_id: userId});
 }, {requirePermission: 'users:delete'});

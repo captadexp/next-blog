@@ -1,10 +1,10 @@
 import type {MinimumRequest, SessionData, OneApiFunctionResponse} from "@supergrowthai/oneapi/types";
-import {BadRequest, NotFound} from "@supergrowthai/oneapi";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import type {TagData} from "@supergrowthai/types/server";
+import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
 
-export const getTags = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const getTags = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = await extra.db();
 
     try {
@@ -23,27 +23,18 @@ export const getTags = secure(async (session: SessionData, request: MinimumReque
             }
         }
 
-        return {
-            code: 0,
-            message: "Tags retrieved successfully",
-            payload: tags
-        };
+        throw new Success("Tags retrieved successfully", tags);
     } catch (error) {
+        if (error instanceof Success) throw error;
+
         console.error("Error fetching tags:", error);
-        return {
-            code: 500,
-            message: "Failed to retrieve tags: " + (error instanceof Error ? error.message : String(error))
-        };
+        throw new DatabaseError("Failed to retrieve tags: " + (error instanceof Error ? error.message : String(error)));
     }
 }, {requirePermission: 'tags:list'});
 
-export const getTagById = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const getTagById = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = await extra.db();
     const tagId = request._params?.id;
-
-    if (!tagId) {
-        throw new BadRequest("Tag ID is required");
-    }
 
     try {
         let tag = await db.tags.findOne({_id: tagId});
@@ -57,7 +48,7 @@ export const getTagById = secure(async (session: SessionData, request: MinimumRe
             const hookResult = await extra.callHook('tag:onRead', {
                 entity: 'tag',
                 operation: 'read',
-                id: tagId,
+                id: tagId!,
                 data: tag
             });
             if (hookResult?.data) {
@@ -65,30 +56,23 @@ export const getTagById = secure(async (session: SessionData, request: MinimumRe
             }
         }
 
-        return {
-            code: 0,
-            message: "Tag retrieved successfully",
-            payload: tag
-        };
+        throw new Success("Tag retrieved successfully", tag);
     } catch (error) {
-        if (error instanceof NotFound) throw error;
+        if (error instanceof Success || error instanceof NotFound) throw error;
 
         console.error(`Error fetching tag ${tagId}:`, error);
-        return {
-            code: 500,
-            message: "Failed to retrieve tag: " + (error instanceof Error ? error.message : String(error))
-        };
+        throw new DatabaseError("Failed to retrieve tag: " + (error instanceof Error ? error.message : String(error)));
     }
 }, {requirePermission: 'tags:read'});
 
-export const createTag = secure(async (session: SessionData, request: MinimumRequest<any, Partial<TagData>>, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const createTag = secure(async (session: SessionData, request: MinimumRequest<any, Partial<TagData>>, extra: ApiExtra) => {
     const db = await extra.db();
 
     try {
         let data = request.body as Partial<TagData>;
 
         if (!data.name) {
-            throw new BadRequest("Tag name is required");
+            throw new ValidationError("Tag name is required");
         }
 
         // Execute before create hook
@@ -121,29 +105,18 @@ export const createTag = secure(async (session: SessionData, request: MinimumReq
 
         extra.configuration.callbacks?.on?.("createTag", creation);
 
-        return {
-            code: 0,
-            message: "Tag created successfully",
-            payload: creation
-        };
+        throw new Success("Tag created successfully", creation);
     } catch (error) {
-        if (error instanceof BadRequest) throw error;
+        if (error instanceof Success || error instanceof ValidationError) throw error;
 
         console.error("Error creating tag:", error);
-        return {
-            code: 500,
-            message: "Failed to create tag: " + (error instanceof Error ? error.message : String(error))
-        };
+        throw new DatabaseError("Failed to create tag: " + (error instanceof Error ? error.message : String(error)));
     }
 }, {requirePermission: 'tags:create'});
 
-export const updateTag = secure(async (session: SessionData, request: MinimumRequest<any, Partial<TagData>>, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const updateTag = secure(async (session: SessionData, request: MinimumRequest<any, Partial<TagData>>, extra: ApiExtra) => {
     const db = await extra.db();
     const tagId = request._params?.id;
-
-    if (!tagId) {
-        throw new BadRequest("Tag ID is required");
-    }
 
     try {
         let data = request.body as Partial<TagData>;
@@ -159,7 +132,7 @@ export const updateTag = secure(async (session: SessionData, request: MinimumReq
             const beforeResult = await extra.callHook('tag:beforeUpdate', {
                 entity: 'tag',
                 operation: 'update',
-                id: tagId,
+                id: tagId!,
                 data,
                 previousData: existingTag
             });
@@ -181,7 +154,7 @@ export const updateTag = secure(async (session: SessionData, request: MinimumReq
             await extra.callHook('tag:afterUpdate', {
                 entity: 'tag',
                 operation: 'update',
-                id: tagId,
+                id: tagId!,
                 data: updation,
                 previousData: existingTag
             });
@@ -189,29 +162,18 @@ export const updateTag = secure(async (session: SessionData, request: MinimumReq
 
         extra.configuration.callbacks?.on?.("updateTag", updation);
 
-        return {
-            code: 0,
-            message: "Tag updated successfully",
-            payload: updation
-        };
+        throw new Success("Tag updated successfully", updation);
     } catch (error) {
-        if (error instanceof NotFound || error instanceof BadRequest) throw error;
+        if (error instanceof Success || error instanceof NotFound || error instanceof BadRequest) throw error;
 
         console.error(`Error updating tag ${tagId}:`, error);
-        return {
-            code: 500,
-            message: "Failed to update tag: " + (error instanceof Error ? error.message : String(error))
-        };
+        throw new DatabaseError("Failed to update tag: " + (error instanceof Error ? error.message : String(error)));
     }
 }, {requirePermission: 'tags:update'});
 
-export const deleteTag = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const deleteTag = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = await extra.db();
     const tagId = request._params?.id;
-
-    if (!tagId) {
-        throw new BadRequest("Tag ID is required");
-    }
 
     try {
         // Check if tag exists first
@@ -225,7 +187,7 @@ export const deleteTag = secure(async (session: SessionData, request: MinimumReq
             const beforeResult = await extra.callHook('tag:beforeDelete', {
                 entity: 'tag',
                 operation: 'delete',
-                id: tagId,
+                id: tagId!,
                 data: existingTag
             });
             if (beforeResult?.cancel) {
@@ -240,25 +202,18 @@ export const deleteTag = secure(async (session: SessionData, request: MinimumReq
             await extra.callHook('tag:afterDelete', {
                 entity: 'tag',
                 operation: 'delete',
-                id: tagId,
+                id: tagId!,
                 previousData: existingTag
             });
         }
 
         extra.configuration.callbacks?.on?.("deleteTag", deletion);
 
-        return {
-            code: 0,
-            message: "Tag deleted successfully",
-            payload: deletion
-        };
+        throw new Success("Tag deleted successfully", deletion);
     } catch (error) {
-        if (error instanceof NotFound || error instanceof BadRequest) throw error;
+        if (error instanceof Success || error instanceof NotFound || error instanceof BadRequest) throw error;
 
         console.error(`Error deleting tag ${tagId}:`, error);
-        return {
-            code: 500,
-            message: "Failed to delete tag: " + (error instanceof Error ? error.message : String(error))
-        };
+        throw new DatabaseError("Failed to delete tag: " + (error instanceof Error ? error.message : String(error)));
     }
-}, {requireAnyPermission: ['tags:delete', 'all:delete']});
+}, {requirePermission: 'tags:delete'});

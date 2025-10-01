@@ -2,10 +2,10 @@ import type {MinimumRequest, OneApiFunctionResponse, SessionData} from "@supergr
 import {Blog, BlogData, Permission} from "@supergrowthai/types/server";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
-import {BadRequest, NotFound} from "@supergrowthai/oneapi";
+import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
 
 // List all blogs
-export const getBlogs = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const getBlogs = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = await extra.db();
 
     try {
@@ -19,28 +19,19 @@ export const getBlogs = secure(async (session: SessionData, request: MinimumRequ
             }
         }
 
-        return {
-            code: 0,
-            message: "Blogs retrieved successfully",
-            payload: blogs
-        };
+        throw new Success("Blogs retrieved successfully", blogs);
     } catch (error) {
+        if (error instanceof Success) throw error;
+
         console.error("Error fetching blogs:", error);
-        return {
-            code: 500,
-            message: "Failed to retrieve blogs: " + (error instanceof Error ? error.message : String(error))
-        };
+        throw new DatabaseError("Failed to retrieve blogs: " + (error instanceof Error ? error.message : String(error)));
     }
 }, {requirePermission: 'blogs:list'});
 
 // Get a single blog by ID
-export const getBlogById = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const getBlogById = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = await extra.db();
     const blogId = request._params?.id;
-
-    if (!blogId) {
-        throw new BadRequest("Blog ID is required");
-    }
 
     try {
         let blog = await db.blogs.findOne({_id: blogId});
@@ -57,35 +48,28 @@ export const getBlogById = secure(async (session: SessionData, request: MinimumR
             }
         }
 
-        return {
-            code: 0,
-            message: "Blog retrieved successfully",
-            payload: blog
-        };
+        throw new Success("Blog retrieved successfully", blog);
     } catch (error) {
-        if (error instanceof NotFound) throw error;
+        if (error instanceof Success || error instanceof NotFound) throw error;
 
         console.error(`Error fetching blog ${blogId}:`, error);
-        return {
-            code: 500,
-            message: "Failed to retrieve blog: " + (error instanceof Error ? error.message : String(error))
-        };
+        throw new DatabaseError("Failed to retrieve blog: " + (error instanceof Error ? error.message : String(error)));
     }
 }, {requirePermission: 'blogs:read'});
 
 // Create a new blog
-export const createBlog = secure(async (session: SessionData, request: MinimumRequest<any, Partial<BlogData>>, extra: ApiExtra): Promise<OneApiFunctionResponse<Blog>> => {
+export const createBlog = secure(async (session: SessionData, request: MinimumRequest<any, Partial<BlogData>>, extra: ApiExtra) => {
     const db = await extra.db();
     let body = request.body as Partial<BlogData>;
 
     try {
         // Validate required fields
         if (!body.title) {
-            throw new BadRequest("Blog title is required");
+            throw new ValidationError("Blog title is required");
         }
 
         if (!body.content) {
-            throw new BadRequest("Blog content is required");
+            throw new ValidationError("Blog content is required");
         }
 
         // Execute before create hook
@@ -121,31 +105,20 @@ export const createBlog = secure(async (session: SessionData, request: MinimumRe
 
         extra.configuration.callbacks?.on?.("createBlog", creation);
 
-        return {
-            code: 0,
-            message: "Blog created successfully",
-            payload: creation
-        };
+        throw new Success("Blog created successfully", creation);
     } catch (error) {
-        if (error instanceof BadRequest) throw error;
+        if (error instanceof Success || error instanceof ValidationError) throw error;
 
         console.error("Error creating blog:", error);
-        return {
-            code: 500,
-            message: "Failed to create blog: " + (error instanceof Error ? error.message : String(error))
-        };
+        throw new DatabaseError("Failed to create blog: " + (error instanceof Error ? error.message : String(error)));
     }
 }, {requirePermission: 'blogs:create'});
 
 // Update a blog
-export const updateBlog = secure(async (session: SessionData, request: MinimumRequest<any, Partial<Blog>>, extra: ApiExtra): Promise<OneApiFunctionResponse<Blog | null>> => {
+export const updateBlog = secure(async (session: SessionData, request: MinimumRequest<any, Partial<Blog>>, extra: ApiExtra) => {
     const db = await extra.db();
     const blogId = request._params?.id;
     let body = request.body as Partial<Blog>;
-
-    if (!blogId) {
-        throw new BadRequest("Blog ID is required");
-    }
 
     try {
         const extras = {updatedAt: Date.now()};
@@ -167,7 +140,7 @@ export const updateBlog = secure(async (session: SessionData, request: MinimumRe
         // Execute before update hook
         if (extra?.callHook) {
             const beforeResult = await extra.callHook('blog:beforeUpdate', {
-                blogId: blogId,
+                blogId: blogId!,
                 updates: body,
                 previousData: existingBlog
             });
@@ -184,7 +157,7 @@ export const updateBlog = secure(async (session: SessionData, request: MinimumRe
         // Execute after update hook
         if (extra?.callHook) {
             await extra.callHook('blog:afterUpdate', {
-                blogId: blogId,
+                blogId: blogId!,
                 data: updation,
                 previousData: existingBlog
             });
@@ -192,37 +165,26 @@ export const updateBlog = secure(async (session: SessionData, request: MinimumRe
 
         extra.configuration.callbacks?.on?.("updateBlog", updation);
 
-        return {
-            code: 0,
-            message: "Blog updated successfully",
-            payload: updation
-        };
+        throw new Success("Blog updated successfully", updation);
     } catch (error) {
-        if (error instanceof NotFound || error instanceof BadRequest) throw error;
+        if (error instanceof Success || error instanceof NotFound || error instanceof BadRequest) throw error;
 
         console.error(`Error updating blog ${blogId}:`, error);
-        return {
-            code: 500,
-            message: "Failed to update blog: " + (error instanceof Error ? error.message : String(error))
-        };
+        throw new DatabaseError("Failed to update blog: " + (error instanceof Error ? error.message : String(error)));
     }
 }, {requirePermission: 'blogs:update'});
 
 // Update blog metadata
-export const updateBlogMetadata = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const updateBlogMetadata = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = await extra.db();
     const blogId = request._params?.id;
-
-    if (!blogId) {
-        throw new BadRequest("Blog ID is required");
-    }
 
     try {
         const body = request.body as { metadata?: Record<string, unknown> };
         const metadata = body.metadata;
 
         if (!metadata) {
-            throw new BadRequest("Metadata is required");
+            throw new ValidationError("Metadata is required");
         }
 
         const existingBlog = await db.blogs.findOne({_id: blogId}) as (Blog & {
@@ -245,30 +207,19 @@ export const updateBlogMetadata = secure(async (session: SessionData, request: M
 
         extra.configuration.callbacks?.on?.("updateBlog", updation);
 
-        return {
-            code: 0,
-            message: "Blog metadata updated successfully",
-            payload: updation
-        };
+        throw new Success("Blog metadata updated successfully", updation);
     } catch (error) {
-        if (error instanceof NotFound || error instanceof BadRequest) throw error;
+        if (error instanceof Success || error instanceof NotFound || error instanceof ValidationError) throw error;
 
         console.error(`Error updating blog metadata for blog ${blogId}:`, error);
-        return {
-            code: 500,
-            message: "Failed to update blog metadata: " + (error instanceof Error ? error.message : String(error))
-        };
+        throw new DatabaseError("Failed to update blog metadata: " + (error instanceof Error ? error.message : String(error)));
     }
 }, {requirePermission: 'blogs:update'});
 
 // Delete a blog
-export const deleteBlog = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const deleteBlog = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = await extra.db();
     const blogId = request._params?.id;
-
-    if (!blogId) {
-        throw new BadRequest("Blog ID is required");
-    }
 
     try {
         // Check if blog exists first
@@ -290,7 +241,7 @@ export const deleteBlog = secure(async (session: SessionData, request: MinimumRe
         // Execute before delete hook
         if (extra?.callHook) {
             const beforeResult = await extra.callHook('blog:beforeDelete', {
-                blogId: blogId,
+                blogId: blogId!,
                 data: existingBlog
             });
             if (beforeResult?.cancel) {
@@ -303,25 +254,18 @@ export const deleteBlog = secure(async (session: SessionData, request: MinimumRe
         // Execute after delete hook
         if (extra?.callHook) {
             await extra.callHook('blog:afterDelete', {
-                blogId: blogId,
+                blogId: blogId!,
                 previousData: existingBlog
             });
         }
 
         extra.configuration.callbacks?.on?.("deleteBlog", deletion);
 
-        return {
-            code: 0,
-            message: "Blog deleted successfully",
-            payload: deletion
-        };
+        throw new Success("Blog deleted successfully", deletion);
     } catch (error) {
-        if (error instanceof NotFound || error instanceof BadRequest) throw error;
+        if (error instanceof Success || error instanceof NotFound || error instanceof BadRequest) throw error;
 
         console.error(`Error deleting blog ${blogId}:`, error);
-        return {
-            code: 500,
-            message: "Failed to delete blog: " + (error instanceof Error ? error.message : String(error))
-        };
+        throw new DatabaseError("Failed to delete blog: " + (error instanceof Error ? error.message : String(error)));
     }
-}, {requireAnyPermission: ['blogs:delete', 'all:delete']});
+}, {requirePermission: 'blogs:delete'});
