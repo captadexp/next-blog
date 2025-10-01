@@ -1,9 +1,9 @@
 import type {IAuthHandler} from './auth/auth-handler';
 import {NextRequest, NextResponse} from "next/server";
-import {Request, Response} from "express";
+import {Request, Response as ExpressResponse} from "express";
 
 export type OneApiRequest = NextRequest | Request
-export type OneApiResponse = (NextResponse | Response) & { setHeader(key: string, value: string): void };
+export type OneApiResponse = (NextResponse | ExpressResponse) & { setHeader(key: string, value: string): void };
 
 export interface MinimumRequest<HEADERS = any, BODY = any, QUERY = any> {
     query: QUERY;
@@ -25,11 +25,12 @@ export interface SessionData {
     session?: any;
 }
 
+// Support both standard OneApiFunctionResponse and raw Response objects (for static files, etc)
 export type OneApiFunction<EXTRA = any, HEADERS = any, BODY = any, QUERY = any, RPayload = any> = (
     session: SessionData,
     request: MinimumRequest<HEADERS, BODY, QUERY>,
     extra: EXTRA
-) => Promise<OneApiFunctionResponse<RPayload>>;
+) => Promise<OneApiFunctionResponse<RPayload> | Response | NextResponse>;
 
 export interface OneApiFunctionResponse<T = any> {
     code: number;

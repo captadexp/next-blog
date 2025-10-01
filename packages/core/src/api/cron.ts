@@ -1,99 +1,97 @@
-import {CronPayload} from "@supergrowthai/types/server";
-import {type CNextRequest} from "../utils/secureInternal.js";
-import {Success} from "../utils/errors.js";
+import type {MinimumRequest, OneApiFunctionResponse, SessionData} from "@supergrowthai/oneapi/types";
+import type {ApiExtra} from "../types/api.js";
 
-// 5-minute cron endpoint
-export const cron5Minute = async (request: CNextRequest) => {
-    const sdk = request.sdk;
+// 5-minute cron job
+export async function cron5Minute(session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> {
+    const db = await extra.db();
+    const tasks: any[] = [];
 
-    const payload: CronPayload = {
-        executedAt: new Date(),
-        interval: '5-minute',
-        metadata: {}
-    };
-
-    try {
-        // Execute hook for 5-minute cron
-        if (sdk?.callHook) {
-            await sdk.callHook('cron:5-minute', payload);
+    // Execute hook for 5-minute cron
+    if (extra?.callHook) {
+        const result = await extra.callHook('cron:5-minute', {
+            timestamp: Date.now()
+        });
+        if (result) {
+            tasks.push({task: '5minute-hook', result});
         }
-
-        throw new Success("5-minute cron executed successfully", {
-            executed: true,
-            timestamp: payload.executedAt
-        });
-    } catch (error) {
-        if (error instanceof Success) throw error;
-
-        console.error("Error executing 5-minute cron:", error);
-        throw new Success("5-minute cron executed with errors", {
-            executed: true,
-            timestamp: payload.executedAt,
-            error: error instanceof Error ? error.message : String(error)
-        });
     }
-};
 
-// Hourly cron endpoint
-export const cronHourly = async (request: CNextRequest) => {
-    const sdk = request.sdk;
-
-    const payload: CronPayload = {
-        executedAt: new Date(),
-        interval: 'hourly',
-        metadata: {}
-    };
-
-    try {
-        // Execute hook for hourly cron
-        if (sdk?.callHook) {
-            await sdk.callHook('cron:hourly', payload);
+    return {
+        code: 0,
+        message: "5-minute cron executed successfully",
+        payload: {
+            executedAt: Date.now(),
+            tasks
         }
-
-        throw new Success("Hourly cron executed successfully", {
-            executed: true,
-            timestamp: payload.executedAt
-        });
-    } catch (error) {
-        if (error instanceof Success) throw error;
-
-        console.error("Error executing hourly cron:", error);
-        throw new Success("Hourly cron executed with errors", {
-            executed: true,
-            timestamp: payload.executedAt,
-            error: error instanceof Error ? error.message : String(error)
-        });
-    }
-};
-
-// Daily cron endpoint
-export const cronDaily = async (request: CNextRequest) => {
-    const sdk = request.sdk;
-
-    const payload: CronPayload = {
-        executedAt: new Date(),
-        interval: 'daily',
-        metadata: {}
     };
+}
 
-    try {
-        // Execute hook for daily cron
-        if (sdk?.callHook) {
-            await sdk.callHook('cron:daily', payload);
+// Hourly cron job
+export async function cronHourly(session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> {
+    const db = await extra.db();
+    const tasks: any[] = [];
+
+    // Clean up old sessions or temporary data
+    // Example: Remove expired tokens, clean cache, etc.
+
+    // Execute hook for hourly cron
+    if (extra?.callHook) {
+        const result = await extra.callHook('cron:hourly', {
+            timestamp: Date.now()
+        });
+        if (result) {
+            tasks.push({task: 'hourly-hook', result});
         }
-
-        throw new Success("Daily cron executed successfully", {
-            executed: true,
-            timestamp: payload.executedAt
-        });
-    } catch (error) {
-        if (error instanceof Success) throw error;
-
-        console.error("Error executing daily cron:", error);
-        throw new Success("Daily cron executed with errors", {
-            executed: true,
-            timestamp: payload.executedAt,
-            error: error instanceof Error ? error.message : String(error)
-        });
     }
-};
+
+    return {
+        code: 0,
+        message: "Hourly cron executed successfully",
+        payload: {
+            executedAt: Date.now(),
+            tasks
+        }
+    };
+}
+
+// Daily cron job
+export async function cronDaily(session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> {
+    const db = await extra.db();
+    const tasks: any[] = [];
+
+    // Daily maintenance tasks
+    // Example: Generate reports, backup, cleanup old data, etc.
+
+    // Execute hook for daily cron
+    if (extra?.callHook) {
+        const result = await extra.callHook('cron:daily', {
+            timestamp: Date.now()
+        });
+        if (result) {
+            tasks.push({task: 'daily-hook', result});
+        }
+    }
+
+    // Clean up old data (example: delete drafts older than 30 days)
+    // TODO: Implement batch delete functionality in database adapter
+    // const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+    // const deletedDrafts = await db.blogs.deleteMany({
+    //     status: 'draft',
+    //     updatedAt: {$lt: thirtyDaysAgo}
+    // });
+    // if (deletedDrafts.deletedCount > 0) {
+    //     tasks.push({
+    //         task: 'cleanup-drafts',
+    //         deletedCount: deletedDrafts.deletedCount
+    //     });
+    // }
+
+    return {
+        code: 0,
+        message: "Daily cron executed successfully",
+        payload: {
+            executedAt: Date.now(),
+            tasks
+        }
+    };
+}

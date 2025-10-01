@@ -1,8 +1,6 @@
-import secure, {CNextRequest} from "./utils/secureInternal.js";
-import {PathObject} from "./utils/parse-path.js";
-import {handleStaticFileRequest} from "./utils/staticFileHandler.js";
+import type {OneApiFunction, PathObject} from "@supergrowthai/oneapi/types";
+import {NextResponse} from "next/server";
 import {DashboardPage} from "@supergrowthai/next-blog-dashboard";
-
 import {
     createBlog,
     createCategory,
@@ -46,136 +44,148 @@ import {
     updateSetting,
     updateTag,
     updateUser
-} from "./api/index.js";
+} from "./api";
+import {handleStaticFileRequest} from "./utils/staticFileHandler.js";
 
-const cmsPaths: { GET: PathObject, POST: PathObject } = {
-    GET: {
-        api: {
-            blogs: {
-                '*': getBlogs,
-                ':id': getBlogById
-            },
-            categories: {
-                '*': getCategories,
-                ':id': getCategoryById
-            },
-            tags: {
-                '*': getTags,
-                ':id': getTagById
-            },
-            users: {
-                '*': listUsers,
-                ':id': getUser
-            },
-            config: {
-                '*': getConfig
-            },
-            me: {
-                '*': getCurrentUser
-            },
-            settings: {
-                '*': getSettings,
-                ':id': getSettingById
-            },
-            plugins: {
-                '*': getPlugins,
-                ':id': getPluginById
-            },
-            'plugin-hooks': {
-                '*': getPluginHookMappings
-            },
-            plugin: {
-                ':pluginId': {
-                    settings: {
-                        '*': getPluginSettings,
-                        ':key': getPluginSetting
-                    }
-                }
-            },
-            cron: {
-                '5-min': cron5Minute,
-                'hourly': cronHourly,
-                'daily': cronDaily
+// Helper to create method-aware handlers
+function methodHandler(handlers: {
+    GET?: OneApiFunction;
+    POST?: OneApiFunction;
+    DELETE?: OneApiFunction;
+    PUT?: OneApiFunction;
+    PATCH?: OneApiFunction;
+}): OneApiFunction {
+    return async (session, request, extra) => {
+        const handler = handlers[request.method as keyof typeof handlers];
+        if (!handler) {
+            return {code: 405, message: 'Method not allowed'};
+        }
+        return handler(session, request, extra);
+    };
+}
+
+const cmsPaths: PathObject = {
+    api: {
+        blogs: {
+            '*': methodHandler({GET: getBlogs}),
+            ':id': methodHandler({GET: getBlogById}),
+            create: methodHandler({POST: createBlog})
+        },
+        blog: {
+            ':id': {
+                update: methodHandler({POST: updateBlog}),
+                delete: methodHandler({POST: deleteBlog}),
+                'update-metadata': methodHandler({POST: updateBlogMetadata})
             }
         },
-        dashboard: {
-            '[...]': secure(DashboardPage.toString),
-            static: {
-                '[...]': async (request: CNextRequest) => {
-                    return handleStaticFileRequest(request, '*');
+        categories: {
+            '*': methodHandler({GET: getCategories}),
+            ':id': methodHandler({GET: getCategoryById}),
+            create: methodHandler({POST: createCategory})
+        },
+        category: {
+            ':id': {
+                update: methodHandler({POST: updateCategory}),
+                delete: methodHandler({POST: deleteCategory})
+            }
+        },
+        tags: {
+            '*': methodHandler({GET: getTags}),
+            ':id': methodHandler({GET: getTagById}),
+            create: methodHandler({POST: createTag})
+        },
+        tag: {
+            ':id': {
+                update: methodHandler({POST: updateTag}),
+                delete: methodHandler({POST: deleteTag})
+            }
+        },
+        users: {
+            '*': methodHandler({GET: listUsers}),
+            ':id': methodHandler({GET: getUser}),
+            create: methodHandler({POST: createUser})
+        },
+        user: {
+            ':id': {
+                update: methodHandler({POST: updateUser}),
+                delete: methodHandler({POST: deleteUser})
+            }
+        },
+        config: {
+            '*': methodHandler({GET: getConfig})
+        },
+        me: {
+            '*': methodHandler({GET: getCurrentUser})
+        },
+        settings: {
+            '*': methodHandler({GET: getSettings}),
+            ':id': methodHandler({GET: getSettingById}),
+            create: methodHandler({POST: createSetting})
+        },
+        setting: {
+            ':id': {
+                update: methodHandler({POST: updateSetting}),
+                delete: methodHandler({POST: deleteSetting})
+            }
+        },
+        plugins: {
+            '*': methodHandler({GET: getPlugins}),
+            ':id': methodHandler({GET: getPluginById}),
+            create: methodHandler({POST: createPlugin})
+        },
+        'plugin-hooks': {
+            '*': methodHandler({GET: getPluginHookMappings})
+        },
+        plugin: {
+            ':id': {
+                delete: methodHandler({POST: deletePlugin}),
+                reinstall: methodHandler({POST: reinstallPlugin})
+            },
+            ':pluginId': {
+                settings: {
+                    '*': methodHandler({GET: getPluginSettings}),
+                    ':key': {
+                        '*': methodHandler({GET: getPluginSetting}),
+                        set: methodHandler({POST: setPluginSetting}),
+                        delete: methodHandler({POST: deletePluginSetting})
+                    }
                 }
             },
+            rpc: {
+                ':rpcName': methodHandler({POST: executePluginRpc})
+            }
+        },
+        cron: {
+            '5-min': methodHandler({GET: cron5Minute}),
+            'hourly': methodHandler({GET: cronHourly}),
+            'daily': methodHandler({GET: cronDaily})
         }
     },
-    POST: {
-        api: {
-            blog: {
-                ':id': {
-                    update: updateBlog,
-                    delete: deleteBlog,
-                    'update-metadata': updateBlogMetadata
-                },
-            },
-            blogs: {
-                create: createBlog
-            },
-            category: {
-                ':id': {
-                    update: updateCategory,
-                    delete: deleteCategory
+    dashboard: {
+        '[...]': methodHandler({
+            GET: async (session, request, extra) => {
+                // Check if user is authenticated
+                if (!session.user) {
+                    return {
+                        code: 401,
+                        message: "Authentication required to access dashboard"
+                    };
                 }
-            },
-            categories: {
-                create: createCategory
-            },
-            tag: {
-                ':id': {
-                    update: updateTag,
-                    delete: deleteTag
-                }
-            },
-            tags: {
-                create: createTag
-            },
-            user: {
-                ':id': {
-                    update: updateUser,
-                    delete: deleteUser
-                }
-            },
-            users: {
-                create: createUser
-            },
-            setting: {
-                ':id': {
-                    update: updateSetting,
-                    delete: deleteSetting
-                }
-            },
-            settings: {
-                create: createSetting
-            },
-            plugin: {
-                ':id': {
-                    delete: deletePlugin,
-                    reinstall: reinstallPlugin
-                },
-                ':pluginId': {
-                    settings: {
-                        ':key': {
-                            set: setPluginSetting,
-                            delete: deletePluginSetting
-                        }
+                // Return HTML directly as NextResponse
+                return new NextResponse(DashboardPage.toString(), {
+                    status: 200,
+                    headers: {
+                        'Content-Type': 'text/html; charset=utf-8'
                     }
-                },
-                rpc: {
-                    ':rpcName': executePluginRpc
-                }
-            },
-            plugins: {
-                create: createPlugin
+                });
             }
+        }),
+        static: {
+            '[...]': methodHandler({
+                GET: handleStaticFileRequest
+            })
         }
     }
 };
-export default cmsPaths
+
+export default cmsPaths;

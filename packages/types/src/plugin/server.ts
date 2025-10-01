@@ -48,14 +48,35 @@ export interface ServerHooks {
     'blog:onList': { payload: { filters?: any; data?: any[] }; response: void | { data?: any[] } };
 
     // User hooks
-    'user:beforeCreate': { payload: CrudPayload; response: void | { data?: any } };
-    'user:afterCreate': { payload: CrudPayload; response: void };
-    'user:beforeUpdate': { payload: CrudPayload; response: void | { data?: any } };
-    'user:afterUpdate': { payload: CrudPayload; response: void };
-    'user:beforeDelete': { payload: CrudPayload; response: void | { cancel?: boolean } };
-    'user:afterDelete': { payload: CrudPayload; response: void };
-    'user:onRead': { payload: CrudPayload; response: void | { data?: any } };
-    'user:onList': { payload: CrudPayload; response: void | { data?: any[] } };
+    'user:beforeCreate': {
+        payload: { entity: string; operation: string; data?: any };
+        response: void | { data?: any }
+    };
+    'user:afterCreate': { payload: { entity: string; operation: string; id: string; data?: any }; response: void };
+    'user:beforeUpdate': {
+        payload: { entity: string; operation: string; id: string; data?: any; previousData?: any };
+        response: void | { data?: any }
+    };
+    'user:afterUpdate': {
+        payload: { entity: string; operation: string; id: string; data?: any; previousData?: any };
+        response: void
+    };
+    'user:beforeDelete': {
+        payload: { entity: string; operation: string; id: string; data?: any };
+        response: void | { cancel?: boolean }
+    };
+    'user:afterDelete': {
+        payload: { entity: string; operation: string; id: string; previousData?: any };
+        response: void
+    };
+    'user:onRead': {
+        payload: { entity: string; operation: string; id: string; data?: any };
+        response: void | { data?: any }
+    };
+    'user:onList': {
+        payload: { entity: string; operation: string; filters?: any; data?: any[] };
+        response: void | { data?: any[] }
+    };
 
     // Auth hooks
     'auth:beforeLogin': { payload: { username: string; metadata?: any }; response: void | { cancel?: boolean } };
@@ -64,24 +85,99 @@ export interface ServerHooks {
     'auth:afterLogout': { payload: { userId: string }; response: void };
 
     // Category hooks
-    'category:beforeCreate': { payload: CrudPayload; response: void | { data?: any } };
-    'category:afterCreate': { payload: CrudPayload; response: void };
-    'category:beforeUpdate': { payload: CrudPayload; response: void | { data?: any } };
-    'category:afterUpdate': { payload: CrudPayload; response: void };
-    'category:beforeDelete': { payload: CrudPayload; response: void | { cancel?: boolean } };
-    'category:afterDelete': { payload: CrudPayload; response: void };
-    'category:onRead': { payload: CrudPayload; response: void | { data?: any } };
-    'category:onList': { payload: CrudPayload; response: void | { data?: any[] } };
+    'category:beforeCreate': {
+        payload: { entity: string; operation: string; data?: any };
+        response: void | { data?: any }
+    };
+    'category:afterCreate': { payload: { entity: string; operation: string; id: string; data?: any }; response: void };
+    'category:beforeUpdate': {
+        payload: { entity: string; operation: string; id: string; data?: any; previousData?: any };
+        response: void | { data?: any }
+    };
+    'category:afterUpdate': {
+        payload: { entity: string; operation: string; id: string; data?: any; previousData?: any };
+        response: void
+    };
+    'category:beforeDelete': {
+        payload: { entity: string; operation: string; id: string; data?: any };
+        response: void | { cancel?: boolean }
+    };
+    'category:afterDelete': {
+        payload: { entity: string; operation: string; id: string; previousData?: any };
+        response: void
+    };
+    'category:onRead': {
+        payload: { entity: string; operation: string; id: string; data?: any };
+        response: void | { data?: any }
+    };
+    'category:onList': {
+        payload: { entity: string; operation: string; filters?: any; data?: any[] };
+        response: void | { data?: any[] }
+    };
 
     // Tag hooks
-    'tag:beforeCreate': { payload: CrudPayload; response: void | { data?: any } };
-    'tag:afterCreate': { payload: CrudPayload; response: void };
-    'tag:beforeUpdate': { payload: CrudPayload; response: void | { data?: any } };
-    'tag:afterUpdate': { payload: CrudPayload; response: void };
-    'tag:beforeDelete': { payload: CrudPayload; response: void | { cancel?: boolean } };
-    'tag:afterDelete': { payload: CrudPayload; response: void };
-    'tag:onRead': { payload: CrudPayload; response: void | { data?: any } };
-    'tag:onList': { payload: CrudPayload; response: void | { data?: any[] } };
+    'tag:beforeCreate': { payload: { entity: string; operation: string; data?: any }; response: void | { data?: any } };
+    'tag:afterCreate': { payload: { entity: string; operation: string; id: string; data?: any }; response: void };
+    'tag:beforeUpdate': {
+        payload: { entity: string; operation: string; id: string; data?: any; previousData?: any };
+        response: void | { data?: any }
+    };
+    'tag:afterUpdate': {
+        payload: { entity: string; operation: string; id: string; data?: any; previousData?: any };
+        response: void
+    };
+    'tag:beforeDelete': {
+        payload: { entity: string; operation: string; id: string; data?: any };
+        response: void | { cancel?: boolean }
+    };
+    'tag:afterDelete': {
+        payload: { entity: string; operation: string; id: string; previousData?: any };
+        response: void
+    };
+    'tag:onRead': {
+        payload: { entity: string; operation: string; id: string; data?: any };
+        response: void | { data?: any }
+    };
+    'tag:onList': {
+        payload: { entity: string; operation: string; filters?: any; data?: any[] };
+        response: void | { data?: any[] }
+    };
+
+    // Setting hooks
+    'setting:beforeCreate': {
+        payload: { entity: string; operation: string; data?: any };
+        response: void | { data?: any }
+    };
+    'setting:afterCreate': { payload: { entity: string; operation: string; id: string; data?: any }; response: void };
+    'setting:beforeUpdate': {
+        payload: { entity: string; operation: string; id: string; data?: any; previousData?: any };
+        response: void | { data?: any }
+    };
+    'setting:afterUpdate': {
+        payload: { entity: string; operation: string; id: string; data?: any; previousData?: any };
+        response: void
+    };
+    'setting:beforeDelete': {
+        payload: { entity: string; operation: string; id: string; data?: any };
+        response: void | { cancel?: boolean }
+    };
+    'setting:afterDelete': {
+        payload: { entity: string; operation: string; id: string; previousData?: any };
+        response: void
+    };
+    'setting:onRead': {
+        payload: { entity: string; operation: string; id: string; data?: any };
+        response: void | { data?: any }
+    };
+    'setting:onList': {
+        payload: { entity: string; operation: string; filters?: any; data?: any[] };
+        response: void | { data?: any[] }
+    };
+
+    // Cron hooks
+    'cron:5-minute': { payload: { timestamp: number }; response: void | { success?: boolean; message?: string } };
+    'cron:hourly': { payload: { timestamp: number }; response: void | { success?: boolean; message?: string } };
+    'cron:daily': { payload: { timestamp: number }; response: void | { success?: boolean; message?: string } };
 
     // Plugin hooks
     'plugin:beforeInstall': { payload: CrudPayload; response: void | { cancel?: boolean } };
@@ -93,20 +189,6 @@ export interface ServerHooks {
     'plugin:beforeDisable': { payload: CrudPayload; response: void | { cancel?: boolean } };
     'plugin:afterDisable': { payload: CrudPayload; response: void };
 
-    // Setting hooks
-    'setting:beforeCreate': { payload: CrudPayload; response: void | { data?: any } };
-    'setting:afterCreate': { payload: CrudPayload; response: void };
-    'setting:beforeUpdate': { payload: CrudPayload; response: void | { data?: any } };
-    'setting:afterUpdate': { payload: CrudPayload; response: void };
-    'setting:beforeDelete': { payload: CrudPayload; response: void | { cancel?: boolean } };
-    'setting:afterDelete': { payload: CrudPayload; response: void };
-    'setting:onRead': { payload: CrudPayload; response: void | { data?: any } };
-    'setting:onList': { payload: CrudPayload; response: void | { data?: any[] } };
-
-    // Cron hooks
-    'cron:5-minute': { payload: CronPayload; response: void | { success?: boolean; message?: string } };
-    'cron:hourly': { payload: CronPayload; response: void | { success?: boolean; message?: string } };
-    'cron:daily': { payload: CronPayload; response: void | { success?: boolean; message?: string } };
 
     // Generic pattern for any entity (plugins can define custom entities)
     [hookName: string]: {

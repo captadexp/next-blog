@@ -1,238 +1,220 @@
-import secure, {CNextRequest} from "../utils/secureInternal.js";
-import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
+import type {MinimumRequest, OneApiFunctionResponse, SessionData} from "@supergrowthai/oneapi/types";
+import {BadRequest, NotFound} from "@supergrowthai/oneapi";
+import secure from "../utils/secureInternal.js";
+import type {ApiExtra} from "../types/api.js";
+import type {SettingsEntryData} from "@supergrowthai/types/server";
 
-export const getSettings = secure(
-    async (request: CNextRequest) => {
-        const db = await request.db();
-        const sdk = request.sdk;
+// List all settings
+export const getSettings = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+    const db = await extra.db();
+    let settings = await db.settings.find({});
 
-        try {
-            let settings = await db.settings.find({});
-            
-            // Execute hook for list operation
-            if (sdk?.callHook) {
-                const hookResult = await sdk.callHook('setting:onList', {
-                    entity: 'setting',
-                    operation: 'list',
-                    filters: {},
-                    data: settings
-                });
-                if (hookResult?.data) {
-                    settings = hookResult.data;
-                }
-            }
-            
-            throw new Success("Settings retrieved successfully", settings);
-        } catch (error) {
-            if (error instanceof Success) throw error;
-
-            console.error("Error fetching settings:", error);
-            throw new DatabaseError("Failed to retrieve settings: " + (error instanceof Error ? error.message : String(error)));
+    // Execute hook for list operation
+    if (extra?.callHook) {
+        const hookResult = await extra.callHook('setting:onList', {
+            entity: 'setting',
+            operation: 'list',
+            filters: {},
+            data: settings
+        });
+        if (hookResult?.data) {
+            settings = hookResult.data;
         }
-    },
-    {requirePermission: 'settings:list'}
-);
+    }
 
-export const getSettingById = secure(
-    async (request: CNextRequest) => {
-        const db = await request.db();
-        const sdk = request.sdk;
+    return {
+        code: 0,
+        message: "Settings retrieved successfully",
+        payload: settings
+    };
+}, {requirePermission: 'settings:list'});
 
-        try {
-            let setting = await db.settings.findOne({_id: request._params.id});
+// Get a single setting by ID
+export const getSettingById = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+    const settingId = request._params?.id;
 
-            if (!setting) {
-                throw new NotFound(`Setting with id ${request._params.id} not found`);
-            }
+    if (!settingId) {
+        throw new BadRequest("Setting ID is required");
+    }
 
-            // Execute hook for read operation
-            if (sdk?.callHook) {
-                const hookResult = await sdk.callHook('setting:onRead', {
-                    entity: 'setting',
-                    operation: 'read',
-                    id: request._params.id,
-                    data: setting
-                });
-                if (hookResult?.data) {
-                    setting = hookResult.data;
-                }
-            }
+    const db = await extra.db();
+    let setting = await db.settings.findOne({_id: settingId});
 
-            throw new Success("Setting retrieved successfully", setting);
-        } catch (error) {
-            if (error instanceof Success || error instanceof NotFound) throw error;
+    if (!setting) {
+        throw new NotFound(`Setting with id ${settingId} not found`);
+    }
 
-            console.error(`Error fetching setting ${request._params.id}:`, error);
-            throw new DatabaseError("Failed to retrieve setting: " + (error instanceof Error ? error.message : String(error)));
+    // Execute hook for read operation
+    if (extra?.callHook) {
+        const hookResult = await extra.callHook('setting:onRead', {
+            entity: 'setting',
+            operation: 'read',
+            id: settingId,
+            data: setting
+        });
+        if (hookResult?.data) {
+            setting = hookResult.data;
         }
-    },
-    {requirePermission: 'settings:read'}
-);
+    }
 
-export const createSetting = secure(
-    async (request: CNextRequest) => {
-        const db = await request.db();
-        const sdk = request.sdk;
+    return {
+        code: 0,
+        message: "Setting retrieved successfully",
+        payload: setting
+    };
+}, {requirePermission: 'settings:read'});
 
-        try {
-            let data: any = await request.json();
+// Create a new setting
+export const createSetting = secure(async (session: SessionData, request: MinimumRequest<any, Partial<SettingsEntryData>>, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+    const db = await extra.db();
+    let settingData = request.body as Partial<SettingsEntryData>;
 
-            if (!data.key) {
-                throw new ValidationError("Setting key is required");
-            }
+    if (!settingData.key) {
+        throw new BadRequest("Setting key is required");
+    }
 
-            if (data.value === undefined) {
-                throw new ValidationError("Setting value is required");
-            }
+    if (settingData.value === undefined) {
+        throw new BadRequest("Setting value is required");
+    }
 
-            if (!data.ownerId) {
-                throw new ValidationError("Setting ownerId is required");
-            }
+    if (!settingData.ownerId) {
+        throw new BadRequest("Setting ownerId is required");
+    }
 
-            // Execute before create hook
-            if (sdk?.callHook) {
-                const beforeResult = await sdk.callHook('setting:beforeCreate', {
-                    entity: 'setting',
-                    operation: 'create',
-                    data
-                });
-                if (beforeResult?.data) {
-                    data = beforeResult.data;
-                }
-            }
-
-            const creation = await db.settings.create({
-                ...data,
-                createdAt: Date.now(),
-                updatedAt: Date.now()
-            });
-
-            // Execute after create hook
-            if (sdk?.callHook) {
-                await sdk.callHook('setting:afterCreate', {
-                    entity: 'setting',
-                    operation: 'create',
-                    id: creation._id,
-                    data: creation
-                });
-            }
-
-            request.configuration.callbacks?.on?.("createSettingsEntry", creation);
-            throw new Success("Setting created successfully", creation);
-        } catch (error) {
-            if (error instanceof Success || error instanceof ValidationError) throw error;
-
-            console.error("Error creating setting:", error);
-            throw new DatabaseError("Failed to create setting: " + (error instanceof Error ? error.message : String(error)));
+    // Execute before create hook
+    if (extra?.callHook) {
+        const beforeResult = await extra.callHook('setting:beforeCreate', {
+            entity: 'setting',
+            operation: 'create',
+            data: settingData
+        });
+        if (beforeResult?.data) {
+            settingData = beforeResult.data;
         }
-    },
-    {requirePermission: 'settings:create'}
-);
+    }
 
-export const updateSetting = secure(
-    async (request: CNextRequest) => {
-        const db = await request.db();
-        const sdk = request.sdk;
+    // Set timestamps
+    settingData.createdAt = Date.now();
+    settingData.updatedAt = Date.now();
 
-        try {
-            let data: any = await request.json();
+    const setting = await db.settings.create(<SettingsEntryData>settingData);
 
-            // Check if setting exists first
-            const existingSetting = await db.settings.findOne({_id: request._params.id});
-            if (!existingSetting) {
-                throw new NotFound(`Setting with id ${request._params.id} not found`);
-            }
+    // Execute after create hook
+    if (extra?.callHook) {
+        await extra.callHook('setting:afterCreate', {
+            entity: 'setting',
+            operation: 'create',
+            id: setting._id,
+            data: setting
+        });
+    }
 
-            // Execute before update hook
-            if (sdk?.callHook) {
-                const beforeResult = await sdk.callHook('setting:beforeUpdate', {
-                    entity: 'setting',
-                    operation: 'update',
-                    id: request._params.id,
-                    data,
-                    previousData: existingSetting
-                });
-                if (beforeResult?.data) {
-                    data = beforeResult.data;
-                }
-            }
+    return {
+        code: 0,
+        message: "Setting created successfully",
+        payload: setting
+    };
+}, {requirePermission: 'settings:create'});
 
-            const updation = await db.settings.updateOne(
-                {_id: request._params.id},
-                {
-                    ...data,
-                    updatedAt: Date.now()
-                }
-            );
+// Update a setting
+export const updateSetting = secure(async (session: SessionData, request: MinimumRequest<any, Partial<SettingsEntryData>>, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+    const settingId = request._params?.id;
+    const updates = request.body as Partial<SettingsEntryData>;
 
-            // Execute after update hook
-            if (sdk?.callHook) {
-                await sdk.callHook('setting:afterUpdate', {
-                    entity: 'setting',
-                    operation: 'update',
-                    id: request._params.id,
-                    data: updation,
-                    previousData: existingSetting
-                });
-            }
+    if (!settingId) {
+        throw new BadRequest("Setting ID is required");
+    }
 
-            request.configuration.callbacks?.on?.("updateSettingsEntry", updation);
-            throw new Success("Setting updated successfully", updation);
-        } catch (error) {
-            if (error instanceof Success || error instanceof NotFound || error instanceof ValidationError) throw error;
+    const db = await extra.db();
 
-            console.error(`Error updating setting ${request._params.id}:`, error);
-            throw new DatabaseError("Failed to update setting: " + (error instanceof Error ? error.message : String(error)));
+    // Check if setting exists first
+    const existingSetting = await db.settings.findOne({_id: settingId});
+    if (!existingSetting) {
+        throw new NotFound(`Setting with id ${settingId} not found`);
+    }
+
+    // Execute before update hook
+    let finalUpdates = updates;
+    if (extra?.callHook) {
+        const beforeResult = await extra.callHook('setting:beforeUpdate', {
+            entity: 'setting',
+            operation: 'update',
+            id: settingId,
+            data: updates,
+            previousData: existingSetting
+        });
+        if (beforeResult?.data) {
+            finalUpdates = beforeResult.data;
         }
-    },
-    {requirePermission: 'settings:update'}
-);
+    }
 
-export const deleteSetting = secure(
-    async (request: CNextRequest) => {
-        const db = await request.db();
-        const sdk = request.sdk;
+    // Update timestamp
+    finalUpdates.updatedAt = Date.now();
 
-        try {
-            // Check if setting exists first
-            const existingSetting = await db.settings.findOne({_id: request._params.id});
-            if (!existingSetting) {
-                throw new NotFound(`Setting with id ${request._params.id} not found`);
-            }
+    const setting = await db.settings.updateOne({_id: settingId}, finalUpdates);
 
-            // Execute before delete hook
-            if (sdk?.callHook) {
-                const beforeResult = await sdk.callHook('setting:beforeDelete', {
-                    entity: 'setting',
-                    operation: 'delete',
-                    id: request._params.id,
-                    data: existingSetting
-                });
-                if (beforeResult?.cancel) {
-                    throw new BadRequest("Setting deletion cancelled by plugin");
-                }
-            }
+    // Execute after update hook
+    if (extra?.callHook) {
+        await extra.callHook('setting:afterUpdate', {
+            entity: 'setting',
+            operation: 'update',
+            id: settingId,
+            data: setting,
+            previousData: existingSetting
+        });
+    }
 
-            const deletion = await db.settings.deleteOne({_id: request._params.id});
+    return {
+        code: 0,
+        message: "Setting updated successfully",
+        payload: setting
+    };
+}, {requirePermission: 'settings:update'});
 
-            // Execute after delete hook
-            if (sdk?.callHook) {
-                await sdk.callHook('setting:afterDelete', {
-                    entity: 'setting',
-                    operation: 'delete',
-                    id: request._params.id,
-                    previousData: existingSetting
-                });
-            }
+// Delete a setting
+export const deleteSetting = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+    const settingId = request._params?.id;
 
-            request.configuration.callbacks?.on?.("deleteSettingsEntry", deletion);
-            throw new Success("Setting deleted successfully", deletion);
-        } catch (error) {
-            if (error instanceof Success || error instanceof NotFound) throw error;
+    if (!settingId) {
+        throw new BadRequest("Setting ID is required");
+    }
 
-            console.error(`Error deleting setting ${request._params.id}:`, error);
-            throw new DatabaseError("Failed to delete setting: " + (error instanceof Error ? error.message : String(error)));
+    const db = await extra.db();
+
+    // Check if setting exists first
+    const existingSetting = await db.settings.findOne({_id: settingId});
+    if (!existingSetting) {
+        throw new NotFound(`Setting with id ${settingId} not found`);
+    }
+
+    // Execute before delete hook
+    if (extra?.callHook) {
+        const beforeResult = await extra.callHook('setting:beforeDelete', {
+            entity: 'setting',
+            operation: 'delete',
+            id: settingId,
+            data: existingSetting
+        });
+        if (beforeResult?.cancel) {
+            throw new BadRequest("Setting deletion cancelled by plugin");
         }
-    },
-    {requireAnyPermission: ['settings:delete', 'all:delete']}
-);
+    }
+
+    await db.settings.deleteOne({_id: settingId});
+
+    // Execute after delete hook
+    if (extra?.callHook) {
+        await extra.callHook('setting:afterDelete', {
+            entity: 'setting',
+            operation: 'delete',
+            id: settingId,
+            previousData: existingSetting
+        });
+    }
+
+    return {
+        code: 0,
+        message: "Setting deleted successfully",
+        payload: {_id: settingId}
+    };
+}, {requireAnyPermission: ['settings:delete', 'all:delete']});

@@ -85,9 +85,10 @@ export class NextJSRouter {
                     }, {} as Record<string, string>);
 
                 const headersObj: Record<string, string> = {}
-                for (const [k, v] of request.headers.entries()) {
-                    headersObj[k] = v;
-                }
+                // Convert Headers to object
+                request.headers.forEach((value, key) => {
+                    headersObj[key] = value;
+                });
                 const queryParamsObj: Record<string, string> = {};
                 for (const [k, v] of request.nextUrl.searchParams.entries()) {
                     queryParamsObj[k] = v;
@@ -130,7 +131,7 @@ export class NextJSRouter {
                     return response;
                 }
 
-                if (response.code && response.message) {
+                if ('code' in response && 'message' in response) {
                     const httpStatus = this.getHttpStatus(response.code);
                     return NextResponse.json(response, {status: httpStatus, headers: headersForResponse});
                 }

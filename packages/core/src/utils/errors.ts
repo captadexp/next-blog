@@ -1,16 +1,6 @@
-/**
- * Base exception class for all API errors
- */
-export class Exception extends Error {
-    public readonly code: number;
+import {Exception} from "@supergrowthai/oneapi/errors";
 
-    constructor(message: string, code: number = 500) {
-        super(message);
-        this.code = code;
-        this.name = this.constructor.name;
-        Error.captureStackTrace(this, this.constructor);
-    }
-}
+export {Exception}
 
 /**
  * Error for bad requests - invalid input, validation failures, etc.
@@ -18,7 +8,7 @@ export class Exception extends Error {
  */
 export class BadRequest extends Exception {
     constructor(message: string, code: number = 400) {
-        super(message, code);
+        super(code, message);
     }
 }
 
@@ -28,7 +18,7 @@ export class BadRequest extends Exception {
  */
 export class NotFound extends Exception {
     constructor(message: string, code: number = 404) {
-        super(message, code);
+        super(code, message);
     }
 }
 
@@ -38,7 +28,7 @@ export class NotFound extends Exception {
  */
 export class Unauthorized extends Exception {
     constructor(message: string = "Unauthorized", code: number = 401) {
-        super(message, code);
+        super(code, message);
     }
 }
 
@@ -48,7 +38,7 @@ export class Unauthorized extends Exception {
  */
 export class Forbidden extends Exception {
     constructor(message: string = "Forbidden", code: number = 403) {
-        super(message, code);
+        super(code, message);
     }
 }
 
@@ -68,7 +58,7 @@ export class ValidationError extends BadRequest {
  */
 export class DatabaseError extends Exception {
     constructor(message: string = "Database error", code: number = 500) {
-        super(message, code);
+        super(code, message);
     }
 }
 
@@ -80,7 +70,7 @@ export class Success extends Exception {
     public readonly payload: any;
 
     constructor(message: string = "Success", payload: any = null, code: number = 0) {
-        super(message, code);
+        super(code, message);
         this.payload = payload;
     }
 }

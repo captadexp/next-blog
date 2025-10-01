@@ -1,7 +1,5 @@
-import {headers} from "next/headers.js";
-import {type NextRequest, NextResponse} from "next/server.js";
-import {Configuration, DatabaseAdapter, Permission, ServerSDK, User, UserData} from "@supergrowthai/types/server";
-import crypto from "./crypto.js";
+import type {MinimumRequest, OneApiFunction, OneApiFunctionResponse, SessionData} from "@supergrowthai/oneapi/types";
+import type {Permission} from "@supergrowthai/types/server";
 import {hasAllPermissions, hasAnyPermission, hasPermission} from "./permissions.js";
 
 type SecureOptions = {
@@ -10,147 +8,56 @@ type SecureOptions = {
     requireAllPermissions?: Permission[];
 };
 
-export type CNextRequest = NextRequest & {
-    _params: Record<string, string>,
-    db(): Promise<DatabaseAdapter>,
-    configuration: Configuration,
-    sessionUser: User,
-    sdk: ServerSDK
-}
-
 /**
- * Create a default admin user with all permissions
- */
-async function createDefaultAdminUser(db: DatabaseAdapter, password: string) {
-    // Default admin credentials
-    const username = "admin";
-    const email = "admin@nextblog.local";
-
-    // Check if this admin already exists
-    const existingAdmin = await db.users.findOne({username});
-    if (existingAdmin) return existingAdmin;
-
-    // Create a user with all permissions
-    const allPermissions: Permission[] = [
-        'all:all',
-        'blogs:all', 'blogs:list', 'blogs:read', 'blogs:create', 'blogs:update', 'blogs:delete',
-        'categories:all', 'categories:list', 'categories:read', 'categories:create', 'categories:update', 'categories:delete',
-        'tags:all', 'tags:list', 'tags:read', 'tags:create', 'tags:update', 'tags:delete',
-        'users:all', 'users:list', 'users:read', 'users:create', 'users:update', 'users:delete'
-    ];
-
-    // Hash the password
-    const hashedPassword = crypto.hashPassword(password);
-
-    // Create user data
-    const userData: UserData = {
-        username,
-        email,
-        name: "Default Admin",
-        slug: "admin",
-        bio: "Default administrator account",
-        password: hashedPassword,
-        permissions: allPermissions,
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-    };
-
-    // Create the user
-    return db.users.create(userData);
-}
-
-/**
- * Middleware to secure an endpoint with authentication and optional permission checking
- * @param fn The handler function to secure
+ * Wrapper to secure an oneapi endpoint with permission checking
+ * This is now a wrapper around OneApiFunction to add permission checking
+ *
+ * @param fn The oneapi handler function to secure
  * @param options Optional configuration for permission requirements
+ * @returns A wrapped oneapi function that checks permissions before executing
  */
-export default function secure<T>(
-    fn: (request: CNextRequest) => T,
+export default function secure(
+    fn: OneApiFunction,
     options?: SecureOptions
-) {
-    return async (request: CNextRequest) => {
-        const headerList = await headers()
-        const [authMethod, authData] = headerList.get("authorization")?.split(" ") || [];
-
-        const db = await request.db()
-
-        // Check if there are any users
-        const hasUser = await db.users.findOne({});
-
-        if (!hasUser || hasUser.email === "admin@nextblog.local") {
-            const adminUser = await createDefaultAdminUser(db, "password");
-
-            console.log("\n" + "=".repeat(80));
-            console.log("=".repeat(20) + " DEFAULT ADMIN USER CREATED " + "=".repeat(20));
-            console.log("=".repeat(80));
-            console.log(`Username: ${adminUser.username}`);
-            console.log(`Password: password`);
-            console.log(`Email: ${adminUser.email}`);
-            console.log("IMPORTANT: Please change these credentials immediately after first login!");
-            console.log("=".repeat(80) + "\n");
+): OneApiFunction {
+    return async (session: SessionData, request: MinimumRequest, extra: any) => {
+        // Check if user is authenticated
+        if (!session.user) {
+            return {
+                code: 401,
+                message: "Authentication required"
+            };
         }
-
-        if (authMethod !== 'Basic')
-            return notAllowed("Authentication required")
-
-        const decoded = Buffer.from(authData, 'base64').toString()
-        const [username, password] = decoded.split(':')
-
-        // Find user with the provided username
-        let user: User | null = await db.users.findOne({username});
-
-        if (!user) {
-            // If no user was found, return not allowed
-            return notAllowed("Invalid credentials");
-        }
-
-        // Verify password
-        if (!(crypto.comparePassword(password, user.password))) {
-            return notAllowed("Invalid credentials");
-        }
-
-        // User is authenticated - assign to request
-        request.sessionUser = user;
 
         // Check permissions if required
         if (options?.requirePermission) {
-            if (!hasPermission(user, options.requirePermission)) {
-                return notAllowed(
-                    `Insufficient permissions. Required: ${options.requirePermission}`
-                );
+            if (!hasPermission(session.user, options.requirePermission)) {
+                return {
+                    code: 403,
+                    message: `Insufficient permissions. Required: ${options.requirePermission}`
+                };
             }
         }
 
         if (options?.requireAnyPermission && options.requireAnyPermission.length > 0) {
-            if (!hasAnyPermission(user, options.requireAnyPermission)) {
-                return notAllowed(
-                    `Insufficient permissions. Required any of: ${options.requireAnyPermission.join(', ')}`
-                );
+            if (!hasAnyPermission(session.user, options.requireAnyPermission)) {
+                return {
+                    code: 403,
+                    message: `Insufficient permissions. Required any of: ${options.requireAnyPermission.join(', ')}`
+                };
             }
         }
 
         if (options?.requireAllPermissions && options.requireAllPermissions.length > 0) {
-            if (!hasAllPermissions(user, options.requireAllPermissions)) {
-                return notAllowed(`Insufficient permissions. Required all of: ${options.requireAllPermissions.join(', ')}`);
+            if (!hasAllPermissions(session.user, options.requireAllPermissions)) {
+                return {
+                    code: 403,
+                    message: `Insufficient permissions. Required all of: ${options.requireAllPermissions.join(', ')}`
+                };
             }
         }
 
-        return fn(request);
-    }
-}
-
-function notAllowed(message: string = "Unauthorized") {
-    return new NextResponse(
-        JSON.stringify({
-            error: "Unauthorized",
-            message: message
-        }),
-        {
-            status: 401,
-            headers: {
-                'WWW-Authenticate': 'Basic realm="Protected Page"',
-                'Content-Type': 'application/json'
-            }
-        }
-    );
+        // All permission checks passed, execute the original function
+        return fn(session, request, extra);
+    };
 }

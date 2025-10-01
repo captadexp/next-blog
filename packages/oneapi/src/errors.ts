@@ -43,3 +43,10 @@ export class NotFound extends Exception {
         this.name = 'NotFound';
     }
 }
+
+export class InternalServerError extends Exception {
+    constructor(message: string = 'Internal Server Error') {
+        super(500, message);
+        this.name = 'InternalServerError';
+    }
+}

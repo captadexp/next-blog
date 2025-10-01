@@ -56,7 +56,7 @@ export const AvailablePlugins = () => {
 
         try {
             // Construct the full URL for the plugin
-            const pluginUrl = window.location.origin + plugin.files.plugin;
+            const pluginUrl = plugin.files.plugin;
             const response = await api.createPlugin({url: pluginUrl});
             if (response.code === 0) {
                 route('/api/next-blog/dashboard/plugins?r=1');
