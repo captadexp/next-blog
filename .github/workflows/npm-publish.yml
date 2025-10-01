@@ -1,17 +1,23 @@
 name: Publish to NPM
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'packages/**'
-      - '.github/workflows/npm-publish.yml'
   workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'canary'
+        type: choice
+        options:
+          - latest
+          - canary
 
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
     environment: preview
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,15 +45,12 @@ jobs:
           bun --filter="*" run typecheck
 
       - name: Version and publish UI
-        if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'ui:') }}
         run: |
           cd packages/ui
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            # Main branch: publish to latest
+          if [ "${{ inputs.release_type }}" = "latest" ]; then
             bun pm version patch --no-git-tag-version
             bun publish --access public
           else
-            # Any other branch: publish as canary with timestamp
             TIMESTAMP=$(date +%Y%m%d%H%M)
             CURRENT_VERSION=$(bun -e "console.log(require('./package.json').version)")
             BASE_VERSION=${CURRENT_VERSION%-canary.*}
@@ -59,15 +62,12 @@ jobs:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Version and publish Core
-        if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'core:') }}
         run: |
           cd packages/core
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            # Main branch: publish to latest
+          if [ "${{ inputs.release_type }}" = "latest" ]; then
             bun pm version patch --no-git-tag-version
             bun publish --access public
           else
-            # Any other branch: publish as canary with timestamp
             TIMESTAMP=$(date +%Y%m%d%H%M)
             CURRENT_VERSION=$(bun -e "console.log(require('./package.json').version)")
             BASE_VERSION=${CURRENT_VERSION%-canary.*}
@@ -79,10 +79,10 @@ jobs:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Commit and push version changes
-        if: github.ref == 'refs/heads/main'
+        if: inputs.release_type == 'latest'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add packages/*/package.json
           git diff --staged --quiet || git commit -m "chore: bump package versions [skip ci]"
-          git push origin main
+          git push
