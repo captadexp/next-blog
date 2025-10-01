@@ -178,7 +178,7 @@ const AutocompleteField = ({field, onChange, multiple = false}: AutocompleteFiel
                     onFocus={handleInputFocus}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     placeholder={selectedOptions.length > 0 && multiple ? 'Add more...' : field.placeholder || field.label}
-                    required={field.required && (!multiple || selectedOptions.length === 0)}
+                    required={field.required && (selectedOptions.length === 0)}
                     disabled={field.disabled}
                     autocomplete={"off"}
                 />
