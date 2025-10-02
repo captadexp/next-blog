@@ -217,6 +217,7 @@ export interface Plugin {
     url: string;
     server?: { type: 'url'; url: string; };
     client?: { type: 'url'; url: string; };
+    devMode?: boolean;
     createdAt: number;
     updatedAt: number;
 }

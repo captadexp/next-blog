@@ -290,7 +290,12 @@ export class PluginExecutor {
             if (!plugin.server) throw new Error("Missing server module URL");
             let module: ServerPluginModule;
             const url = plugin.server.url;
-            if (this.pluginModuleCache.has(url)) {
+
+            // Skip caching for devMode plugins
+            if (plugin.devMode) {
+                this.logger.debug(`DevMode enabled for ${plugin.name}, skipping cache`);
+                module = await pluginManager.loadPluginModule(url);
+            } else if (this.pluginModuleCache.has(url)) {
                 this.logger.debug(`Cache hit for ${plugin.name}`);
                 module = this.pluginModuleCache.get(url)!;
             } else {

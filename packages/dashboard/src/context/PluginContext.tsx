@@ -41,16 +41,27 @@ export const PluginProvider: FunctionComponent = ({children}) => {
 
         try {
             const url = plugin.client.url;
-            let code = await pluginCache.get(url);
-            if (!code) {
-                logger.debug(`Fetching plugin from ${url}`);
+            let code: string;
+
+            // Skip caching for devMode plugins
+            if (plugin.devMode) {
+                logger.debug(`DevMode enabled for ${plugin.name}, fetching fresh copy`);
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
                 code = await response.text();
-                await pluginCache.set(url, code);
-                logger.debug(`Fetched and cached plugin ${plugin.name}`);
             } else {
-                logger.debug(`Loaded plugin ${plugin.name} from cache`);
+                const cachedCode = await pluginCache.get(url);
+                if (!cachedCode) {
+                    logger.debug(`Fetching plugin from ${url}`);
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
+                    code = await response.text();
+                    await pluginCache.set(url, code);
+                    logger.debug(`Fetched and cached plugin ${plugin.name}`);
+                } else {
+                    code = cachedCode;
+                    logger.debug(`Loaded plugin ${plugin.name} from cache`);
+                }
             }
 
             const blob = new Blob([`return ${code}`], {type: 'text/javascript'});
