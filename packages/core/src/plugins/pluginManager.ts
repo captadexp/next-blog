@@ -1,4 +1,4 @@
-import {createId, DatabaseAdapter, Plugin, ServerPluginModule} from "@supergrowthai/types/server";
+import {createId, DatabaseAdapter, PluginManifest, ServerPluginModule} from "@supergrowthai/types/server";
 import {ValidationError} from "../utils/errors.js";
 import Logger from "../utils/Logger.js";
 
@@ -23,10 +23,10 @@ async function loadPluginFromUrl<T>(url: string): Promise<T> {
     return plugin;
 }
 
-async function loadPluginManifest(url: string): Promise<Plugin> {
+async function loadPluginManifest(url: string): Promise<PluginManifest> {
     if (!url) throw new ValidationError("Plugin url is required");
     logger.debug(`Fetching plugin manifest from URL: ${url}`);
-    const manifest = await loadPluginFromUrl<Plugin>(url);
+    const manifest = await loadPluginFromUrl<PluginManifest>(url);
     if (!manifest.name || !manifest.version || !manifest.description) {
         logger.warn('Manifest missing required fields');
         throw new ValidationError("Plugin manifest is missing required fields (name, version, description)");
@@ -81,8 +81,12 @@ async function deletePluginAndMappings(db: DatabaseAdapter, pluginId: string): P
 
 async function installPlugin(db: DatabaseAdapter, url: string): Promise<any> {
     const manifest = await loadPluginManifest(url);
-    const creation = await db.plugins.create({...manifest, url});
-    logger.info(`Plugin created: ${creation._id}`);
+    const creation = await db.plugins.create({
+        ...manifest,
+        url,
+        devMode: !!manifest.devMode
+    });
+    logger.info(`Plugin created: ${creation._id}${manifest.devMode ? ' (devMode enabled)' : ''}`);
 
     if (manifest.server?.url) {
         const server: ServerPluginModule = await loadPluginModule(manifest.server?.url);

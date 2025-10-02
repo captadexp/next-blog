@@ -30,25 +30,31 @@ export function definePlugin(manifest: PluginManifest): PluginManifest {
     const hasClient = typeof __HAS_CLIENT__ !== 'undefined' ? __HAS_CLIENT__ : false;
     // @ts-ignore
     const hasServer = typeof __HAS_SERVER__ !== 'undefined' ? __HAS_SERVER__ : false;
+    // @ts-ignore
+    const isDevMode = typeof __DEV_MODE__ !== 'undefined' ? __DEV_MODE__ : false;
+
+    let result: PluginManifest = manifest;
 
     if (baseUrl) {
-        const injected: PluginManifest = {
-            ...manifest,
-            url: manifest.url || `${baseUrl}/plugin.js`
-        };
+        result = {...result, url: manifest.url || `${baseUrl}/plugin.js`};
 
         if (hasClient && !manifest.client) {
-            injected.client = {type: 'url', url: `${baseUrl}/client.js`};
+            result.client = {type: 'url', url: `${baseUrl}/client.js`};
         }
 
         if (hasServer && !manifest.server) {
-            injected.server = {type: 'url', url: `${baseUrl}/server.js`};
+            result.server = {type: 'url', url: `${baseUrl}/server.js`};
         }
-
-        return injected;
     }
 
-    return manifest;
+    if (isDevMode && !manifest.devMode) {
+        result = {
+            ...result,
+            devMode: true
+        };
+    }
+
+    return result;
 }
 
 /**

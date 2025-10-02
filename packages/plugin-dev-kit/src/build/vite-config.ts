@@ -26,11 +26,12 @@ function createIifeWrapperPlugin(): Plugin {
 /**
  * Creates a plugin that injects the actual version from package.json
  */
-function createVersionInjectionPlugin(version: string): Plugin {
+function createVersionInjectionPlugin(pluginEntryPath: string, version: string): Plugin {
+    const normalizedEntry = resolve(pluginEntryPath);
     return {
         name: 'version-inject',
         transform(code: string, id: string) {
-            if (id.endsWith('index.ts') || id.endsWith('index.js')) {
+            if (resolve(id) === normalizedEntry) {
                 return code.replace(
                     /version:\s*['"`][\d.]+['"`]/g,
                     `version: '${version}'`
@@ -40,6 +41,7 @@ function createVersionInjectionPlugin(version: string): Plugin {
         },
     };
 }
+
 
 /**
  * Gets the package.json data for the plugin
@@ -56,8 +58,8 @@ function getPackageInfo(root: string) {
  */
 function getAvailableEntryPoints(root: string) {
     return {
-        hasClient: existsSync(resolve(root, 'src', 'client.tsx')) || 
-                   existsSync(resolve(root, 'src', 'client.ts')),
+        hasClient: existsSync(resolve(root, 'src', 'client.tsx')) ||
+            existsSync(resolve(root, 'src', 'client.ts')),
         hasServer: existsSync(resolve(root, 'src', 'server.ts'))
     };
 }
@@ -66,7 +68,7 @@ function getAvailableEntryPoints(root: string) {
  * Creates the base Vite configuration shared by all build types
  */
 function createBaseConfig(options: ViteConfigOptions): UserConfig {
-    const { root, outDir, mode = 'production', watch = false, server } = options;
+    const {root, outDir, mode = 'production', watch = false, server} = options;
     const isProduction = mode === 'production';
 
     return {
@@ -116,7 +118,7 @@ function createIifeBuildConfig(
                 extend: false,
                 exports: exportType,
                 ...(external.includes('@supergrowthai/jsx-runtime') && {
-                    globals: { '@supergrowthai/jsx-runtime': 'PluginRuntime' }
+                    globals: {'@supergrowthai/jsx-runtime': 'PluginRuntime'}
                 })
             },
             treeshake: {
@@ -128,25 +130,28 @@ function createIifeBuildConfig(
 }
 
 export function createViteConfig(options: ViteConfigOptions): UserConfig {
-    const { root, entry, type } = options;
+    const {root, entry, type, mode = 'production'} = options;
     const baseConfig = createBaseConfig(options);
     const packageJson = getPackageInfo(root);
     const wrapIifePlugin = createIifeWrapperPlugin();
+    const isDevelopment = mode === 'development';
 
     switch (type) {
         case 'plugin': {
-            const { hasClient, hasServer } = getAvailableEntryPoints(root);
-            const versionPlugin = createVersionInjectionPlugin(packageJson.version || '1.0.0');
-            
+            const {hasClient, hasServer} = getAvailableEntryPoints(root);
+            const versionPlugin = createVersionInjectionPlugin(entry, packageJson.version);
+            const plugins = [versionPlugin, wrapIifePlugin];
+
             return defineConfig({
                 ...baseConfig,
                 define: {
                     ...baseConfig.define,
                     '__PLUGIN_BASE_URL__': JSON.stringify(process.env.PLUGIN_BASE_URL || null),
                     '__HAS_CLIENT__': String(hasClient),
-                    '__HAS_SERVER__': String(hasServer)
+                    '__HAS_SERVER__': String(hasServer),
+                    '__DEV_MODE__': String(isDevelopment)
                 },
-                plugins: [versionPlugin, wrapIifePlugin],
+                plugins,
                 build: {
                     ...baseConfig.build,
                     ...createIifeBuildConfig(entry, 'plugin.js', 'PluginExport', 'default'),

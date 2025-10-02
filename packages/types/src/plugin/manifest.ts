@@ -20,7 +20,7 @@ export interface PluginManifest {
         description?: string;
         required?: boolean;
     }>;
-    
+
     // URLs for plugin resources (injected at build time in dev mode)
     url?: string;  // URL to the plugin manifest file
     client?: {
@@ -31,4 +31,7 @@ export interface PluginManifest {
         type: 'url';
         url: string;
     };  // Server-side bundle location
+
+    // Development mode flag (injected at build time)
+    devMode?: boolean;
 }
