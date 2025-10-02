@@ -1,4 +1,5 @@
 import type {Configuration, DatabaseAdapter, ServerSDK, ServerHooks} from "@supergrowthai/types/server";
+import type {CallServerHookFunction} from "@supergrowthai/types";
 
 /**
  * Extra context passed to all API handlers
@@ -8,10 +9,7 @@ export interface ApiExtra {
     db: () => Promise<DatabaseAdapter>;
 
     /** Execute plugin hooks */
-    callHook: <K extends keyof ServerHooks>(
-        hookName: K,
-        payload: ServerHooks[K]['payload']
-    ) => Promise<ServerHooks[K]['response'] | undefined>;
+    callHook: CallServerHookFunction<ServerHooks>;
 
     /** Configuration callbacks */
     callbacks?: {

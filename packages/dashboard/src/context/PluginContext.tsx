@@ -1,9 +1,8 @@
 import {createContext, FunctionComponent, h} from 'preact';
 import {useCallback, useContext, useEffect, useMemo, useState} from 'preact/hooks';
 import {useUser} from "./UserContext.tsx";
-import {matchesHookPattern, Plugin} from '@supergrowthai/types';
+import {matchesHookPattern, Plugin, UIHookFn} from '@supergrowthai/types';
 import {pluginCache} from "../utils/pluginCache.ts";
-import {UIHookFn} from "../dashboard/components/plugins/types.ts";
 import Logger, {LogLevel} from "../utils/Logger.ts";
 import {ClientPluginModule} from "@supergrowthai/types/client";
 

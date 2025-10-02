@@ -23,7 +23,6 @@ export default defineServer({
 
         'blog:beforeDelete': async (sdk, payload) => {
             console.log('🟢 Server Hook: blog:beforeDelete', payload);
-            return payload;
         },
 
         'blog:afterDelete': async (sdk, payload) => {
@@ -61,7 +60,6 @@ export default defineServer({
 
         'user:beforeDelete': async (sdk, payload) => {
             console.log('🟢 Server Hook: user:beforeDelete', payload);
-            return payload;
         },
 
         'user:afterDelete': async (sdk, payload) => {
@@ -71,7 +69,6 @@ export default defineServer({
         // Authentication hooks
         'auth:beforeLogin': async (sdk, payload) => {
             console.log('🟢 Server Hook: auth:beforeLogin', payload);
-            return payload;
         },
 
         'auth:afterLogin': async (sdk, payload) => {
@@ -107,7 +104,6 @@ export default defineServer({
 
         'category:beforeDelete': async (sdk, payload) => {
             console.log('🟢 Server Hook: category:beforeDelete', payload);
-            return payload;
         },
 
         'category:afterDelete': async (sdk, payload) => {
@@ -135,7 +131,6 @@ export default defineServer({
 
         'tag:beforeDelete': async (sdk, payload) => {
             console.log('🟢 Server Hook: tag:beforeDelete', payload);
-            return payload;
         },
 
         'tag:afterDelete': async (sdk, payload) => {
@@ -145,7 +140,6 @@ export default defineServer({
         // Plugin management hooks
         'plugin:beforeInstall': async (sdk, payload) => {
             console.log('🟢 Server Hook: plugin:beforeInstall', payload);
-            return payload;
         },
 
         'plugin:afterInstall': async (sdk, payload) => {
@@ -154,7 +148,6 @@ export default defineServer({
 
         'plugin:beforeUninstall': async (sdk, payload) => {
             console.log('🟢 Server Hook: plugin:beforeUninstall', payload);
-            return payload;
         },
 
         'plugin:afterUninstall': async (sdk, payload) => {
@@ -163,7 +156,6 @@ export default defineServer({
 
         'plugin:beforeEnable': async (sdk, payload) => {
             console.log('🟢 Server Hook: plugin:beforeEnable', payload);
-            return payload;
         },
 
         'plugin:afterEnable': async (sdk, payload) => {
@@ -172,7 +164,6 @@ export default defineServer({
 
         'plugin:beforeDisable': async (sdk, payload) => {
             console.log('🟢 Server Hook: plugin:beforeDisable', payload);
-            return payload;
         },
 
         'plugin:afterDisable': async (sdk, payload) => {

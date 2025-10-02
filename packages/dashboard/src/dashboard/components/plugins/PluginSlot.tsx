@@ -2,10 +2,11 @@ import {Fragment, FunctionComponent, h} from "preact";
 import {usePlugins} from "../../../context/PluginContext.tsx";
 import {useMemo, useState} from "preact/hooks";
 import {useUser} from "../../../context/UserContext.tsx";
-import {PluginSDK, UIHookFn} from "./types.ts";
 import Logger, {LogLevel} from "../../../utils/Logger.ts";
 import {createRenderer} from "@supergrowthai/jsx-runtime/preact";
 import {createClientSDK} from "../../../sdk/sdk-factory.client";
+import {UIHookFn} from "@supergrowthai/types";
+import {ClientSDK} from "@supergrowthai/types/client";
 
 // Create the renderer once with Preact's h and Fragment
 const render = createRenderer(h, Fragment);
@@ -29,7 +30,7 @@ function PluginHost({pluginId, hookFn, context, callHook}: {
     logger.debug(`Creating PluginHost for plugin "${pluginId}" with refreshKey: ${refreshKey}`);
 
     // Create plugin-specific SDK using the factory
-    const sdk: PluginSDK = useMemo(() => {
+    const sdk: ClientSDK = useMemo(() => {
         const {utils} = window.PluginRuntime;
 
         // Use the SDK factory to create a properly fingerprinted SDK
@@ -43,7 +44,7 @@ function PluginHost({pluginId, hookFn, context, callHook}: {
                 logger.debug(`Refresh requested by plugin "${pluginId}"`);
                 setRefreshKey(Date.now());
             }
-        ) as PluginSDK;
+        );
     }, [apis, user, pluginId, callHook]);
 
 

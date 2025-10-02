@@ -5,7 +5,8 @@
   "scripts": {
     "build": "next-blog build",
     "dev": "next-blog dev",
-    "watch": "next-blog watch"
+    "watch": "next-blog watch",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@supergrowthai/plugin-dev-kit": "workspace:*",

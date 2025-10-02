@@ -42,14 +42,16 @@ async function loadPluginModule<T>(url: string): Promise<T> {
 async function registerHooks(
     db: DatabaseAdapter,
     pluginId: string,
-    hooks: Record<string, Function> | undefined,
+    hooks: Record<string, Function | undefined> | undefined,
     type: 'server' | 'client'
 ): Promise<void> {
     if (!hooks || typeof hooks !== 'object') return;
     logger.debug(`Registering ${type} hooks for plugin ${pluginId}`);
     for (const hookName of Object.keys(hooks)) {
-        await db.pluginHookMappings.create({pluginId: createId.plugin(pluginId), hookName, type, priority: 10});
-        logger.debug(`Registered ${type} hook: ${hookName}`);
+        if (hooks[hookName]) { // Only register if the hook function exists
+            await db.pluginHookMappings.create({pluginId: createId.plugin(pluginId), hookName, type, priority: 10});
+            logger.debug(`Registered ${type} hook: ${hookName}`);
+        }
     }
 }
 

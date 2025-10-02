@@ -1,7 +1,6 @@
 import type {BaseSDK, Logger, PluginCache, PluginEvents} from './base';
 import type {DatabaseAdapter} from '../database/adapter';
-import type {ServerHooks} from '../plugin/server';
-import type {RPCMethods} from '../plugin/common';
+import type {CallServerHookFunction, CallServerRPCFunction, RPCMethods, ServerHooks} from '../plugin';
 
 export interface ServerConfig {
     environment?: 'development' | 'staging' | 'production';
@@ -27,14 +26,8 @@ export interface ServerSDK extends BaseSDK {
     cache?: PluginCache;
     events?: PluginEvents;
     storage?: PluginStorage;
-    callRPC: <T extends keyof RPCMethods>(
-        method: T,
-        request: RPCMethods[T]['request']
-    ) => Promise<RPCMethods[T]['response']>;
-    callHook: <T extends keyof ServerHooks>(
-        hookName: T,
-        payload: ServerHooks[T]['payload']
-    ) => Promise<ServerHooks[T]['response']>;
+    callRPC: CallServerRPCFunction<RPCMethods>;
+    callHook: CallServerHookFunction<ServerHooks>;
 }
 
 export interface PluginStorage {

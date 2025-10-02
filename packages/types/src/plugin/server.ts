@@ -2,24 +2,22 @@
  * Server-side plugin types
  */
 
-import type {ServerSDK} from '../sdk/server';
 import type {RPCMethods} from './common';
+import type {ServerHooksDefinition, ServerRPCsDefinition} from './types';
 
 /**
  * Server-side plugin module
  * This is what's exported from the plugin's server.ts
  */
 export interface ServerPluginModule {
-    hooks?: ServerHooksDefinition
-    rpcs?: {
-        [K in keyof RPCMethods]?: (sdk: ServerSDK, request: RPCMethods[K]['request']) => Promise<RPCMethods[K]['response']>
-    }
+    hooks?: ServerHooksDefinition<ServerHooks>
+    rpcs?: ServerRPCsDefinition<RPCMethods>
 }
 
 /**
  * Server hook definitions with payloads and responses
  */
-export interface ServerHooks {
+export interface ServerHooks extends Record<string, { payload?: any; response: any }> {
     // Blog hooks
     'blog:beforeCreate': { payload: { title: string; content: string; data?: any }; response: void | { data?: any } };
     'blog:afterCreate': { payload: { blogId: string; data?: any }; response: void };
@@ -180,17 +178,8 @@ export interface ServerHooks {
 
     // System hooks
     'system:update': { payload: SystemUpdatePayload; response: void | { success?: boolean; message?: string } };
-
-
-    // Generic pattern for any entity (plugins can define custom entities)
-    [hookName: string]: {
-        payload: any;
-        response: any;
-    };
 }
 
-// Server-specific hook types
-export type HookTiming = 'before' | 'after' | 'on';
 export type HookAction =
     | 'create'
     | 'update'
@@ -219,15 +208,6 @@ export interface CrudPayload<T = any> {
 }
 
 /**
- * Cron hook payload
- */
-export interface CronPayload {
-    executedAt: Date;
-    interval: '5-minute' | 'hourly' | 'daily';
-    metadata?: Record<string, any>;
-}
-
-/**
  * Plugin update hook payload
  */
 export interface PluginUpdatePayload {
@@ -253,22 +233,3 @@ export interface SystemUpdatePayload {
     toVersion: string;
     timestamp: number;
 }
-
-/**
- * Pattern for server-side hook names
- */
-export interface ServerHookPattern {
-    entity: HookEntity;
-    timing: HookTiming;
-    action: HookAction;
-}
-
-/**
- * Server hooks definition - maps hook names to functions
- */
-export type ServerHooksDefinition = {
-    [hookName: string]: (
-        sdk: ServerSDK,
-        payload: any
-    ) => Promise<any> | any;
-};

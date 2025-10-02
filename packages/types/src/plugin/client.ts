@@ -1,15 +1,13 @@
-import type {ClientSDK, JSXElement} from '../sdk/client';
 import type {RPCMethods} from './common';
+import type {ClientHooksDefinition, ClientRPCsDefinition} from './types';
 
 export interface ClientPluginModule {
     hasSettingsPanel?: boolean;
-    hooks?: ClientHooksDefinition,
-    rpcs?: {
-        [K in keyof RPCMethods]?: (sdk: ClientSDK, request: RPCMethods[K]['request']) => Promise<RPCMethods[K]['response']>
-    }
+    hooks?: ClientHooksDefinition<ClientHooks>,
+    rpcs?: ClientRPCsDefinition<RPCMethods>
 }
 
-export interface ClientHooks {
+export interface ClientHooks extends Record<string, { payload?: any; response: any }> {
     // Dashboard Layout
     'dashboard-header': { payload: { context?: any }; response: any };
     'dashboard-widget': { payload: { context?: any }; response: any };
@@ -123,31 +121,5 @@ export interface ClientHooks {
 
     // Plugin system hooks
     'system:plugin:settings-panel': { payload: { context?: any }; response: any };
+
 }
-
-export type HookPosition =
-    | 'header'
-    | 'footer'
-    | 'sidebar'
-    | 'toolbar'
-    | 'content'
-    | 'widget'
-    | 'modal'
-    | 'panel'
-    | string;
-
-export type DashboardPage = 'blogs' | 'users' | 'tags' | 'categories' | 'plugins' | 'settings' | 'dashboard' | string;
-
-export interface ClientHookPattern {
-    page?: DashboardPage;
-    entity?: string;
-    position?: HookPosition;
-}
-
-export type ClientHooksDefinition = {
-    [hookName: string]: (
-        sdk: ClientSDK,
-        prev?: any,
-        context?: Record<string, any>
-    ) => JSXElement | null;
-};

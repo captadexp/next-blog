@@ -4,8 +4,7 @@
 
 import type {BaseSDK, PluginCache, PluginEvents} from './base';
 import type {User} from '../database/entities';
-import type {ClientHooks} from '../plugin/client';
-import type {RPCMethods} from '../plugin/common';
+import type {CallClientHookFunction, CallClientRPCFunction, ClientHooks, RPCMethods} from '../plugin';
 import type {APIClient} from '../api';
 import {SystemInfo} from "./server";
 
@@ -50,15 +49,9 @@ export interface ClientSDK extends BaseSDK {
     refresh: () => void;
     navigate?: (path: string) => void; // Optional as not all implementations have it
 
-    callRPC: <T extends keyof RPCMethods>(
-        method: T,
-        request: RPCMethods[T]['request']
-    ) => Promise<{ code: number, message: string, payload: RPCMethods[T]['response'] }>;
+    callRPC: CallClientRPCFunction<RPCMethods>;
 
-    callHook: <T extends keyof ClientHooks>(
-        hookName: T,
-        request: ClientHooks[T]['payload']
-    ) => Promise<{ code: number, message: string, payload: ClientHooks[T]['response'] }>;
+    callHook: CallClientHookFunction<ClientHooks>;
 
     system: SystemInfo;
 }
