@@ -1,8 +1,6 @@
 /// <reference types="@supergrowthai/plugin-dev-kit/client" />
 /// <reference types="@supergrowthai/plugin-dev-kit/server" />
-/// <reference types="@supergrowthai/jsx-runtime/jsx-runtime" />
-/// <reference types="react" />
-/// <reference types="react-dom" />
+/// <reference types="@supergrowthai/jsx-runtime" />
 
 declare module '@supergrowthai/plugin-dev-kit/client' {
     export * from '@supergrowthai/plugin-dev-kit/client';

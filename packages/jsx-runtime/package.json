@@ -7,7 +7,8 @@
   "module": "dist/runtime.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "src/global.d.ts"
   ],
   "exports": {
     ".": {

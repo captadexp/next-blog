@@ -1,3 +1,4 @@
+/// <reference path="./global.d.ts" />
 import {JSX_ELEMENT, VNode} from './types';
 
 export function jsx(type: any, props: any, ...childrenRaw: any[]): VNode {
