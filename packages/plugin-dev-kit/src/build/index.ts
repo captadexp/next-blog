@@ -119,12 +119,17 @@ export async function devServer(options: PluginDevOptions) {
     // Set the dev server URL in environment for the build to use
     process.env.PLUGIN_BASE_URL = `http://localhost:${port}`;
 
-    // First, build all files to dist/
-    console.log('📦 Building plugin files...');
-    await buildPlugin({
-        root,
-        outDir: 'dist'
+    // Start watching and building files
+    console.log('📦 Starting watch mode...');
+
+    // Run watchPlugin in the background (non-blocking)
+    watchPlugin({root, outDir: 'dist'}).catch(error => {
+        console.error('❌ Watch process failed:', error);
+        process.exit(1);
     });
+
+    // Give the watcher a moment to create initial builds
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Create a simple static server for the dist directory
     const config = defineConfig({
@@ -146,6 +151,7 @@ export async function devServer(options: PluginDevOptions) {
 
     console.log(`\n🚀 Dev server running at http://localhost:${port}`);
     console.log(`📁 Serving: ${join(root, 'dist')}`);
+    console.log(`👀 Watching for file changes...`);
     console.log(`\nFiles available at:`);
     console.log(`  - http://localhost:${port}/plugin.js`);
     console.log(`  - http://localhost:${port}/client.js`);
