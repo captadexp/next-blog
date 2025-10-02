@@ -34,12 +34,14 @@ export const VERSION_INFO = ${JSON.stringify(versionInfo, null, 2)} as const;
 }
 
 export default defineConfig(({mode}) => {
+    const isWatchMode = process.argv.includes('--watch') || process.argv.includes('-w');
+    const filesToIgnoreInWatch = isWatchMode ? {
+        watch: {exclude: ['src/version.ts']}
+    } : {};
 
     return {
         build: {
-            watch: {
-                exclude: ['src/version.ts']
-            },
+            ...filesToIgnoreInWatch,
             lib: {
                 entry: {
                     index: path.resolve(__dirname, 'src/index.ts'),
