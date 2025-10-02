@@ -35,14 +35,34 @@ export class NextJSRouter {
                     throw new NotFound();
                 }
 
+                const headersForResponse: Record<string, string> = {};
+                const patchedResponse: OneApiResponse = new NextResponse() as any;
+                patchedResponse.setHeader = (k: string, v: string) => {
+                    headersForResponse[k] = v;
+                };
+
+                // --- helper: unwrap optional early Response from auth methods
+                const runAuthStep = async <T>(fn?: (req: NextRequest, res: OneApiResponse) => Promise<T | Response | NextResponse>) => {
+                    if (!fn) return {value: null as unknown as T};
+                    const out = await fn(request, patchedResponse);
+                    if (out instanceof NextResponse || out instanceof Response) {
+                        return {response: out as Response};
+                    }
+                    return {value: out as T};
+                };
+
                 // Get session if getSession is provided
                 let session = null;
                 let user = null;
 
                 if (this.config.authHandler) {
-                    // Use auth handler if provided
-                    session = await this.config.authHandler.getSession(request, null);
-                    user = await this.config.authHandler.getUser(request, null);
+                    const s = await runAuthStep(this.config.authHandler.getSession.bind(this.config.authHandler));
+                    if (s.response) return s.response;
+                    session = s.value;
+
+                    const u = await runAuthStep(this.config.authHandler.getUser.bind(this.config.authHandler));
+                    if (u.response) return u.response;
+                    user = u.value;
                 }
 
                 // Create normalized request
@@ -89,14 +109,6 @@ export class NextJSRouter {
                 request.headers.forEach((value, key) => {
                     headersObj[key] = value;
                 });
-                const queryParamsObj: Record<string, string> = {};
-                for (const [k, v] of request.nextUrl.searchParams.entries()) {
-                    queryParamsObj[k] = v;
-                }
-
-                const patchedResponse: OneApiResponse = new NextResponse() as any
-                const headersForResponse: Record<string, string> = {}
-                patchedResponse.setHeader = (k: string, v: string) => headersForResponse[k] = v
 
                 const normalizedRequest: MinimumRequest = {
                     query,
@@ -114,7 +126,7 @@ export class NextJSRouter {
                 const sessionData: SessionData = {
                     user,
                     domain: request.headers.get('host'),
-                    api: this.config.createApiImpl?.({request, session}) || null,
+                    api: await this.config.createApiImpl?.({request, session, response: patchedResponse}) || null,
                     authHandler: this.config.authHandler,
                     session
                 };
@@ -127,7 +139,7 @@ export class NextJSRouter {
                 );
 
                 //find a better way to check if its a class object
-                if (response instanceof Response || response instanceof NextResponse) {
+                if (response instanceof NextResponse || response instanceof Response) {
                     return response;
                 }
 

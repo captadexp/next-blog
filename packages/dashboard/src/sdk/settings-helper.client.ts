@@ -48,6 +48,17 @@ export class ClientSettingsHelper implements PluginSettings {
     }
 
     /**
+     * Set a global setting (no plugin prefix) in localStorage
+     */
+    setGlobal<T = any>(key: string, value: T): void {
+        try {
+            localStorage.setItem(`global_${key}`, JSON.stringify(value));
+        } catch (error) {
+            console.error(`Failed to set global setting ${key}:`, error);
+        }
+    }
+
+    /**
      * Get a setting from another plugin's localStorage
      */
     getFromPlugin<T = any>(targetPluginId: string, key: string): T | null {

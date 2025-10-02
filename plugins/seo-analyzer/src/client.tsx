@@ -207,7 +207,7 @@ function editorSidebarWidget(sdk: any, prev: any, context: any) {
                 return {...result, status: 'bad', advice: 'Not enough content to analyze readability.'};
             }
             try {
-                const response = await sdk.callHook("get-flesch-score", {content: data.contentObject});
+                const response = await sdk.callRPC("get-flesch-score", {content: data.contentObject});
                 if (response.code !== 0) throw new Error(response.message);
 
                 const {payload} = response.payload;

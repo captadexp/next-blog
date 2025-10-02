@@ -10,12 +10,13 @@ import Logger, {LogLevel} from "../utils/Logger.js";
 import pluginManager from "./pluginManager.js";
 import {ServerSDKFactory} from "./sdk-factory.server.js";
 import {initializeSettingsHelper} from "./settings-helper.server.js";
+import {VERSION_INFO} from "../version.js";
 
 /**
  * Server-side plugin executor
  * Handles loading and executing server-side plugins.
  */
-class PluginExecutor {
+export class PluginExecutor {
     public initalized = false;
     private plugins: Map<string, ServerPluginModule> = new Map();
     private hookMappings: Map<string, PluginHookMapping[]> = new Map();
@@ -44,10 +45,7 @@ class PluginExecutor {
             log: this.logger,
             config: config,
             executionContext: null, // Will be set per request
-            pluginExecutor: {
-                executeHook: this.executeHook.bind(this),
-                executeRpc: this.executeRpc.bind(this)
-            }
+            pluginExecutor: this
         });
 
         // Initialize settings helper for backwards compatibility
@@ -271,6 +269,15 @@ class PluginExecutor {
             this.logger.info(`Loaded ${this.plugins.size} plugins.`);
             this.logger.info(`Hook index built: ${this.hookIndex.exact.size} exact hooks, ${this.hookIndex.patterns.size} pattern hooks`);
             this.logger.info(`RPC index built: ${this.rpcIndex.exact.size} exact RPCs, ${this.rpcIndex.patterns.size} pattern RPCs`);
+
+            // Automatically call plugins:loaded hook after plugins are loaded
+            if (this.hasHook('plugins:loaded')) {
+                try {
+                    await this.callProxySystemInitHook();
+                } catch (error) {
+                    this.logger.error('Error calling plugins:loaded hook:', error);
+                }
+            }
         } catch (error) {
             this.logger.error('Error loading plugins:', error);
         }
@@ -298,6 +305,31 @@ class PluginExecutor {
             this.logger.error(`Error loading plugin ${plugin.name}:`, error);
         } finally {
             this.logger.timeEnd(`Loading plugin: ${plugin.name}`);
+        }
+    }
+
+    /**
+     * Call plugins:loaded hook with current version information
+     */
+    private async callProxySystemInitHook() {
+        if (!this.sdkFactory) {
+            this.logger.error('SDK factory not initialized');
+            return;
+        }
+
+        try {
+            // Create a basic SDK for system initialization
+            const sdk = this.sdkFactory.createSDK('plugins:loaded');
+
+            const payload = {
+                currentVersion: VERSION_INFO.version,
+                timestamp: Date.now()
+            };
+
+            this.logger.info(`Calling plugins:loaded hook with version ${payload.currentVersion}`);
+            await this.executeHook('plugins:loaded', sdk, payload);
+        } catch (error) {
+            this.logger.error('Failed to call plugins:loaded hook:', error);
         }
     }
 }

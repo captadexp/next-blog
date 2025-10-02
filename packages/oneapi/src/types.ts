@@ -50,7 +50,7 @@ type APIImpl = {}
 type APIImplConfig = { request: OneApiRequest, response?: OneApiResponse, session?: SessionData | null };
 
 export interface IRouterConfig {
-    createApiImpl?: (config: APIImplConfig) => APIImpl;
+    createApiImpl?: (config: APIImplConfig) => Promise<APIImpl>;
     pathPrefix?: string;
     authHandler?: IAuthHandler;
 }

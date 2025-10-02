@@ -3,6 +3,7 @@
  */
 
 import type {ServerSDK} from '../sdk/server';
+import type {RPCMethods} from './common';
 
 /**
  * Server-side plugin module
@@ -10,24 +11,9 @@ import type {ServerSDK} from '../sdk/server';
  */
 export interface ServerPluginModule {
     hooks?: ServerHooksDefinition
-    rpcs?: PluginRPCs
-}
-
-/**
- * RPC methods that plugins can expose
- */
-export interface PluginRPCs {
-    [rpcName: string]: (sdk: ServerSDK, request: any) => Promise<any>;
-}
-
-/**
- * RPC method definitions (for typed RPC calls)
- */
-export interface RPCMethods {
-    [rpcName: string]: {
-        request: any;
-        response: any;
-    };
+    rpcs?: {
+        [K in keyof RPCMethods]?: (sdk: ServerSDK, request: RPCMethods[K]['request']) => Promise<RPCMethods[K]['response']>
+    }
 }
 
 /**
@@ -180,6 +166,8 @@ export interface ServerHooks {
     'cron:daily': { payload: { timestamp: number }; response: void | { success?: boolean; message?: string } };
 
     // Plugin hooks
+    'plugins:loaded': { payload: SystemInitPayload; response: void | { success?: boolean; message?: string } };
+
     'plugin:beforeInstall': { payload: CrudPayload; response: void | { cancel?: boolean } };
     'plugin:afterInstall': { payload: CrudPayload; response: void };
     'plugin:beforeUninstall': { payload: CrudPayload; response: void | { cancel?: boolean } };
@@ -188,6 +176,10 @@ export interface ServerHooks {
     'plugin:afterEnable': { payload: CrudPayload; response: void };
     'plugin:beforeDisable': { payload: CrudPayload; response: void | { cancel?: boolean } };
     'plugin:afterDisable': { payload: CrudPayload; response: void };
+    'plugin:update': { payload: PluginUpdatePayload; response: void | { success?: boolean; message?: string } };
+
+    // System hooks
+    'system:update': { payload: SystemUpdatePayload; response: void | { success?: boolean; message?: string } };
 
 
     // Generic pattern for any entity (plugins can define custom entities)
@@ -233,6 +225,33 @@ export interface CronPayload {
     executedAt: Date;
     interval: '5-minute' | 'hourly' | 'daily';
     metadata?: Record<string, any>;
+}
+
+/**
+ * Plugin update hook payload
+ */
+export interface PluginUpdatePayload {
+    pluginId: string;
+    fromVersion: string;
+    toVersion: string;
+    data?: any;
+}
+
+/**
+ * System initialization hook payload
+ */
+export interface SystemInitPayload {
+    currentVersion: string;
+    timestamp: number;
+}
+
+/**
+ * System update hook payload
+ */
+export interface SystemUpdatePayload {
+    fromVersion: string;
+    toVersion: string;
+    timestamp: number;
 }
 
 /**

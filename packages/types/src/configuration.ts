@@ -27,7 +27,6 @@ export interface UIConfiguration {
 }
 
 export interface Configuration {
-    byPassSecurity?: boolean;
     callbacks?: ConfigurationCallbacks;
     ui?: UIConfiguration;
     db(): Promise<DatabaseAdapter>;

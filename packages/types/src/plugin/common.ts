@@ -1,4 +1,16 @@
 /**
+ * RPC method definitions (for typed RPC calls)
+ * This is the single source of truth for RPC types used by both client and server
+ * Plugins can augment this interface to add their own RPC methods
+ */
+export interface RPCMethods {
+    [rpcName: string]: {
+        request: any;
+        response: any;
+    };
+}
+
+/**
  * Matches hook names against patterns
  * @param hookName The actual hook name
  * @param pattern The pattern to match against (can include * wildcards)

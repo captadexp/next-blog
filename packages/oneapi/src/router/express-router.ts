@@ -61,7 +61,7 @@ export class ExpressRouter {
                 const sessionData: SessionData = {
                     user,
                     domain: req.get('host') || null,
-                    api: this.config.createApiImpl?.({
+                    api: await this.config.createApiImpl?.({
                         request: req,
                         response: res,
                         session

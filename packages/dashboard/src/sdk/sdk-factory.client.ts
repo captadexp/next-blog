@@ -87,10 +87,23 @@ export class ClientSDKFactory {
             },
 
             // Hook execution with plugin tracking
-            callHook: async (hookName: string, payload: any) => {
+            callRPC: async (hookName, payload) => {
+                console.debug(`[Plugin: ${pluginId}] Calling RPC: ${hookName}`);
+                return this.deps.callHook(String(hookName), payload);
+            },
+
+            // Hook execution with plugin tracking
+            callHook: async (hookName, payload) => {
+                // fixme this calls rpc for now
                 console.debug(`[Plugin: ${pluginId}] Calling hook: ${hookName}`);
-                return this.deps.callHook(hookName, payload);
-            }
+                console.warn(`[Plugin: ${pluginId}] Calling RPC: ${hookName}`);
+                console.warn(`[Plugin: ${pluginId}] use callRPC instead of callHook: ${hookName}`);
+                return this.deps.callHook(String(hookName), payload);
+            },
+
+            get system(): never {
+                throw new Error("not implemented yet")
+            },
         };
 
         return sdk;

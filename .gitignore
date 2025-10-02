@@ -80,3 +80,6 @@ SUGGESTED_PLUGINS.md
 .turbo
 
 apps/test-app/public/plugins
+
+# Auto-generated files
+packages/core/src/version.ts

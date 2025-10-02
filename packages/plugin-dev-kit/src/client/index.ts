@@ -3,7 +3,6 @@ export {
     type ClientSDK,
     type APIClient,
     type Storage,
-    type ClientPluginHook,
     type ClientPluginModule,
     type User,
     type APIResponse,

@@ -4,8 +4,10 @@
 
 import type {BaseSDK, PluginCache, PluginEvents} from './base';
 import type {User} from '../database/entities';
-import type {ClientHooks} from '../plugin';
+import type {ClientHooks} from '../plugin/client';
+import type {RPCMethods} from '../plugin/common';
 import type {APIClient} from '../api';
+import {SystemInfo} from "./server";
 
 // Storage interface for client-side persistence
 export interface Storage {
@@ -48,16 +50,18 @@ export interface ClientSDK extends BaseSDK {
     refresh: () => void;
     navigate?: (path: string) => void; // Optional as not all implementations have it
 
-    // Override callHook with client-specific types
-    // Simplified to single signature since ClientHooks now has string index signature
-    callHook: (hookName: string, payload: any) => Promise<any>;
-}
+    callRPC: <T extends keyof RPCMethods>(
+        method: T,
+        request: RPCMethods[T]['request']
+    ) => Promise<{ code: number, message: string, payload: RPCMethods[T]['response'] }>;
 
-// Type for client-side hook functions
-export type ClientPluginHook<T extends keyof ClientHooks = keyof ClientHooks> = (
-    sdk: ClientSDK,
-    payload: ClientHooks[T]['payload']
-) => Promise<ClientHooks[T]['response']> | ClientHooks[T]['response'];
+    callHook: <T extends keyof ClientHooks>(
+        hookName: T,
+        request: ClientHooks[T]['payload']
+    ) => Promise<{ code: number, message: string, payload: ClientHooks[T]['response'] }>;
+
+    system: SystemInfo;
+}
 
 // JSX Element type for UI rendering
 export type JSXElement = {

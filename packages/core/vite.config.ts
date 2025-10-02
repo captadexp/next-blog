@@ -4,11 +4,42 @@ import {defineConfig} from "vite";
 import * as path from "path";
 import tailwindcss from "@tailwindcss/vite";
 import {viteStaticCopy} from 'vite-plugin-static-copy';
+import {readFileSync, writeFileSync} from 'fs';
+
+// Custom plugin to generate version file
+function versionPlugin() {
+    return {
+        name: 'version-generator',
+        buildStart() {
+            // Read version from package.json
+            const packageJson = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
+            const version = packageJson.version;
+
+            // Create version info object
+            const versionInfo = {
+                version,
+                buildTime: new Date().toISOString(),
+                buildMode: process.env.NODE_ENV || 'development'
+            };
+
+            // Write version file to src for inclusion in build
+            const versionFilePath = path.resolve(__dirname, 'src/version.ts');
+            const versionFileContent = `// Auto-generated file - do not edit manually
+export const VERSION_INFO = ${JSON.stringify(versionInfo, null, 2)} as const;
+`;
+            writeFileSync(versionFilePath, versionFileContent);
+            console.log("version file generated");
+        }
+    };
+}
 
 export default defineConfig(({mode}) => {
 
     return {
         build: {
+            watch: {
+                exclude: ['src/version.ts']
+            },
             lib: {
                 entry: {
                     index: path.resolve(__dirname, 'src/index.ts'),
@@ -52,6 +83,7 @@ export default defineConfig(({mode}) => {
             minify: false,
         },
         plugins: [
+            versionPlugin(),
             tailwindcss(),
             dts({
                 outDir: 'dist',

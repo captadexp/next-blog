@@ -146,6 +146,10 @@ class MockServerSettings implements PluginSettings {
         throw new Error(`Server-side settings not implemented yet. Plugin: ${this.pluginId}`);
     }
 
+    async setGlobal<T = any>(_key: string, _value: T): Promise<void> {
+        throw new Error(`Server-side settings not implemented yet. Plugin: ${this.pluginId}`);
+    }
+
     async getFromPlugin<T = any>(_targetPluginId: string, _key: string): Promise<T | null> {
         throw new Error(`Server-side settings not implemented yet. Plugin: ${this.pluginId}`);
     }
@@ -200,12 +204,21 @@ export function createMockServerSDK(options: {
         db: new MockDatabase(),
         executionContext: mockUser,
         config: mockConfig,
+        system: {
+            version: '2.0.0-mock',
+            buildTime: new Date().toISOString(),
+            buildMode: 'development'
+        },
         pluginId: 'mock-plugin',
         settings: new MockServerSettings('mock-plugin'),
 
-        callHook: async <T, R>(id: string, payload: T): Promise<R> => {
+        callHook: async (id, payload) => {
             console.log('[Mock Server SDK] Hook called:', id, payload);
             return {success: true, hookId: id, received: payload} as any;
+        },
+        callRPC: async (id, payload) => {
+            console.log('[Mock Server SDK] RPC called:', id, payload);
+            return {success: true, rpcId: id, received: payload} as any;
         }
     };
 }

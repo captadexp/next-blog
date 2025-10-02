@@ -3,6 +3,8 @@ import {ServerSettingsHelper} from './settings-helper.server.js';
 import {ServerCacheHelper} from './cache-helper.server.js';
 import {ServerEventsHelper} from './events-helper.server.js';
 import {ServerStorageHelper} from './storage-helper.server.js';
+import {VERSION_INFO} from '../version.js';
+import {PluginExecutor} from "./plugin-executor.server.ts";
 
 /**
  * Dependencies required to create a server SDK instance
@@ -12,10 +14,7 @@ export interface ServerSDKDependencies {
     log: Logger;
     config: ServerConfig;
     executionContext: User | null;
-    pluginExecutor: {
-        executeHook: (hookName: string, sdk: ServerSDK, context: any) => Promise<any>;
-        executeRpc: (rpcName: string, sdk: ServerSDK, context: any) => Promise<any>;
-    };
+    pluginExecutor: PluginExecutor
 }
 
 /**
@@ -66,16 +65,23 @@ export class ServerSDKFactory {
             // Configuration
             config: this.deps.config,
 
+            // System information available at runtime
+            system: {
+                version: VERSION_INFO.version,
+                buildTime: VERSION_INFO.buildTime,
+                buildMode: VERSION_INFO.buildMode
+            },
+
             // Hook execution with plugin tracking
-            callHook: async (hookName: string, payload: any) => {
+            callHook: async (hookName, payload) => {
                 this.deps.log.debug(`Plugin ${pluginId} calling hook: ${hookName}`);
-                return this.deps.pluginExecutor.executeHook(hookName, sdk, payload);
+                return this.deps.pluginExecutor.executeHook(String(hookName), sdk, payload);
             },
 
             // RPC execution with plugin tracking
             callRPC: async (method, request) => {
                 this.deps.log.debug(`Plugin ${pluginId} calling RPC: ${method}`);
-                return this.deps.pluginExecutor.executeRpc(method as any, sdk, request);
+                return this.deps.pluginExecutor.executeRpc(String(method), sdk, request);
             }
         };
 

@@ -74,6 +74,30 @@ export class ServerSettingsHelper implements PluginSettings {
     }
 
     /**
+     * Set a global setting (no plugin prefix)
+     */
+    async setGlobal<T = any>(key: string, value: T): Promise<void> {
+        //fixme we should be using upsert here
+        const existingSetting = await this.db.settings.findOne({
+            key,
+            ownerId: createId.user('global')
+        });
+
+        if (existingSetting) {
+            await this.db.settings.updateOne(
+                {_id: existingSetting._id},
+                {value}
+            );
+        } else {
+            await this.db.settings.create({
+                key,
+                value: value as any,
+                ownerId: createId.user('global')
+            });
+        }
+    }
+
+    /**
      * Get a setting from another plugin
      */
     async getFromPlugin<T = any>(targetPluginId: string, key: string): Promise<T | null> {

@@ -1,8 +1,12 @@
 import type {ClientSDK, JSXElement} from '../sdk/client';
+import type {RPCMethods} from './common';
 
 export interface ClientPluginModule {
-    hooks: ClientHooksDefinition,
     hasSettingsPanel?: boolean;
+    hooks?: ClientHooksDefinition,
+    rpcs?: {
+        [K in keyof RPCMethods]?: (sdk: ClientSDK, request: RPCMethods[K]['request']) => Promise<RPCMethods[K]['response']>
+    }
 }
 
 export interface ClientHooks {

@@ -29,7 +29,7 @@ const fetchInitialReport = async () => {
 
     try {
         // Call the hook without the parameter that might trigger a full scan
-        const response = await pluginState.latestSdk?.callHook('scan-broken-links', {});
+        const response = await pluginState.latestSdk?.callRPC('scan-broken-links', {});
 
         if (response.code === 0) {
             const {code, message, payload}: ScanResponse = response.payload;
@@ -57,7 +57,7 @@ const startScan = async () => {
     pluginState.latestSdk?.refresh();
 
     try {
-        const response = await pluginState.latestSdk?.callHook('scan-broken-links', {
+        const response = await pluginState.latestSdk?.callRPC('scan-broken-links', {
             start_scan: true
         });
 

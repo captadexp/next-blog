@@ -420,6 +420,14 @@ class MockClientSettings implements PluginSettings {
         }
     }
 
+    setGlobal<T = any>(key: string, value: T): void {
+        try {
+            localStorage.setItem(`mock_global_${key}`, JSON.stringify(value));
+        } catch (error) {
+            console.error(`Failed to set mock global setting ${key}:`, error);
+        }
+    }
+
     getFromPlugin<T = any>(targetPluginId: string, key: string): T | null {
         try {
             const value = localStorage.getItem(`mock_plugin_${targetPluginId}_${key}`);
@@ -469,9 +477,14 @@ export function createMockClientSDK(options: {
             console.log('[Mock Client SDK] Refresh requested');
         },
 
-        callHook: async <T, R>(id: string, payload: T): Promise<R> => {
+        callHook: async (id, payload) => {
             console.log('[Mock Client SDK] Hook called:', id, payload);
             return {success: true, hookId: id, received: payload} as any;
+        },
+
+        callRPC: async (id, payload) => {
+            console.log('[Mock Client SDK] RPC called:', id, payload);
+            return {success: true, rpcId: id, received: payload} as any;
         },
 
         storage: new MockStorage(),
@@ -479,6 +492,12 @@ export function createMockClientSDK(options: {
         navigate: (path: string) => {
             console.log('[Mock Client SDK] Navigate to:', path);
             window.history.pushState({}, '', path);
-        }
+        },
+
+        system: {
+            version: '2.0.0-mock',
+            buildTime: new Date().toISOString(),
+            buildMode: 'development'
+        },
     };
 }

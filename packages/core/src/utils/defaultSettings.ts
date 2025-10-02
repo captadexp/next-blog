@@ -1,41 +1,29 @@
-import {createId, DatabaseAdapter, SettingsEntryData} from "@supergrowthai/types/server";
+import type {PluginSettings} from "@supergrowthai/types/server";
 
-// Define default settings with their keys, values, and owner
-export const DEFAULT_SETTINGS: SettingsEntryData[] = [
+// Define default settings with their keys and values
+export const DEFAULT_SETTINGS = [
     {
         key: "BLOG_BASE_DOMAIN",
-        value: "localhost:3000",
-        ownerId: createId.user("system")
+        value: "localhost:3000"
     },
     {
         key: "BLOG_BASE_PATH",
-        value: "/blog/{blog_slug}",
-        ownerId: createId.user("system")
+        value: "/blog/{blog_slug}"
     }
 ];
 
 /**
- * Initialize default settings in the database if they don't exist
- * @param db DatabaseAdapter instance
+ * Initialize default settings using the settings SDK
+ * @param settings PluginSettings instance for system settings
  */
-export async function initializeDefaultSettings(db: DatabaseAdapter): Promise<void> {
-    //todo we could leverage some caching strategy here to avoid doing this round trip everytime
+export async function initializeDefaultSettings(settings: PluginSettings): Promise<void> {
     try {
+        for (const setting of DEFAULT_SETTINGS) {
+            // Check if setting already exists
+            const existingValue = await settings.getGlobal(setting.key);
 
-        const existingSettings = await db.settings.find({});
-
-        const existingSettingsMap = new Map<string, boolean>();
-        existingSettings.forEach(setting => {
-            existingSettingsMap.set(setting.key, true);
-        });
-
-        const settingsToCreate = DEFAULT_SETTINGS.filter(setting => !existingSettingsMap.has(setting.key));
-
-        if (settingsToCreate.length > 0) {
-            console.log(`Creating ${settingsToCreate.length} default settings...`);
-
-            for (const setting of settingsToCreate) {
-                await db.settings.create({...setting, updatedAt: Date.now(), createdAt: Date.now()});
+            if (existingValue === null) {
+                await settings.setGlobal(setting.key, setting.value);
                 console.log(`Created default setting: ${setting.key}`);
             }
         }

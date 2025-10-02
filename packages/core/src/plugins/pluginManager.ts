@@ -56,7 +56,7 @@ async function registerHooks(
 async function registerRpcs(
     db: DatabaseAdapter,
     pluginId: string,
-    rpcs: Record<string, Function> | undefined
+    rpcs: Record<string, Function | undefined> | undefined
 ): Promise<void> {
     if (!rpcs || typeof rpcs !== 'object') return;
     logger.debug(`Registering RPCs for plugin ${pluginId}`);

@@ -4,6 +4,7 @@ export interface PluginSettings {
     get<T = any>(key: string): T | null | Promise<T | null>;
     set<T = any>(key: string, value: T): void | Promise<void>;
     getGlobal<T = any>(key: string): T | null | Promise<T | null>;
+    setGlobal<T = any>(key: string, value: T): void | Promise<void>;
     getFromPlugin<T = any>(pluginId: string, key: string): T | null | Promise<T | null>;
 }
 
@@ -26,7 +27,6 @@ export interface PluginEvents {
 
 export interface BaseSDK {
     executionContext: User | null;
-    callHook: (hookName: string, payload: any) => Promise<any>;
     pluginId: string;
     settings: PluginSettings;
 }
