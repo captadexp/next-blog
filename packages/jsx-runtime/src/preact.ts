@@ -1,4 +1,3 @@
-import {VNode} from './types';
 import {BUTTON_SYMBOL, CARD_SYMBOL, TEXT_SYMBOL} from './components';
 
 // Whitelist of allowed native elements
@@ -61,10 +60,17 @@ export function createRenderer(h: any, Fragment: any) {
      * Renders a VNode tree to framework elements
      * Strict validation - only accepts proper VNodes with $$typeof
      */
-    return function render(vnode: VNode | string | number | null | undefined, ctx: RenderContext = {}): any {
-        // Handle primitives
-        if (!vnode) return null;
+    return function render(vnode: JSX.Node, ctx: RenderContext = {}): any {
+        // Handle primitives and falsy values
+        if (vnode === null || vnode === undefined || vnode === false || vnode === true) return null;
         if (typeof vnode === 'string' || typeof vnode === 'number') return String(vnode);
+        if (typeof vnode === 'bigint') return String(vnode);
+
+        // Handle iterables (arrays and other iterables)
+        if (vnode && typeof vnode === 'object' && Symbol.iterator in vnode) {
+            const items: JSX.Node[] = Array.from(vnode as Iterable<JSX.Node>);
+            return items.map(item => render(item, ctx));
+        }
 
         // Strict VNode validation - must be an object with $$typeof
         if (typeof vnode !== 'object') {
@@ -72,13 +78,16 @@ export function createRenderer(h: any, Fragment: any) {
             throw new Error(`Invalid VNode: expected object with $$typeof, got ${typeof vnode}`);
         }
 
-        if (!vnode.$$typeof || vnode.$$typeof !== Symbol.for('secure.jsx.element')) {
-            console.error('Invalid VNode - missing or invalid $$typeof:', vnode);
+        // At this point, vnode must be JSX.Element or JSX.Portal
+        const elementOrPortal = vnode as JSX.Element | JSX.Portal;
+
+        if (!elementOrPortal.$$typeof || elementOrPortal.$$typeof !== Symbol.for('secure.jsx.element')) {
+            console.error('Invalid VNode - missing or invalid $$typeof:', elementOrPortal);
             throw new Error('Invalid VNode: must have $$typeof: Symbol.for("secure.jsx.element")');
         }
 
         // Extract VNode properties
-        const {type, props = {}} = vnode;
+        const {type, props = {}} = elementOrPortal;
         const {children, ...restProps} = props;
 
         // Handle Fragment

@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+**/dist
+**/.next
+# Only exclude build directories at package root, not in src
+*/build
+*/*/build
+**/.turbo
+.git
+.env
+.env.*
+*.log
+.DS_Store
+coverage
+.vscode
+.idea

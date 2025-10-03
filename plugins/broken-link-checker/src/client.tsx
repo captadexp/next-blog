@@ -105,7 +105,7 @@ const renderPanel = (sdk: ClientSDK) => {
             ) : (
                 <ul>
                     {pluginState.report?.map((link, index) => (
-                        <LinkReport key={`${link.url}-${index}`} linkData={link}/>
+                        <LinkReport linkData={link}/>
                     ))}
                 </ul>
             )}

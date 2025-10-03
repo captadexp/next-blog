@@ -1,7 +1,7 @@
-import {JSX_ELEMENT, JSX_FRAGMENT, PluginRuntime, PluginUtils, VNode} from './types';
+/// <reference path="./global.d.ts" />
+
+import {PluginRuntime, PluginUtils} from './types';
 import {Button, Card, Text} from './components';
-// Use the jsx functions from jsx-runtime.ts to avoid duplication
-import {Fragment, jsx, jsxDEV, jsxs} from './jsx-runtime';
 
 const utils: PluginUtils = {
     classList(...classes) {
@@ -65,7 +65,40 @@ const utils: PluginUtils = {
     }
 };
 
-// Re-export everything needed for the runtime
-export {jsx, jsxs, jsxDEV, Fragment, Card, Button, Text, utils};
-export type {PluginUtils, PluginRuntime, VNode};
-export {JSX_ELEMENT, JSX_FRAGMENT};
+const JSX_ELEMENT = Symbol.for('secure.jsx.element');
+const JSX_FRAGMENT = Symbol.for('secure.jsx.fragment');
+
+function jsx(type: any, props: any, ...childrenRaw: any[]): JSX.Node {
+    const children = childrenRaw.flat();
+
+    if (typeof type === 'function') {
+        const fullProps = {
+            ...props,
+            children: children.length === 1 ? children[0] : children.length > 1 ? children : undefined
+        };
+        return type(fullProps);
+    }
+
+    return {
+        $$typeof: JSX_ELEMENT,
+        type,
+        props: {
+            ...(props || {}),
+            children: children.length === 1 ? children[0] : children.length > 1 ? children : undefined
+        },
+        key: props?.key ?? null
+    };
+}
+
+function jsxs(type: any, props: any, ...children: any[]): JSX.Node {
+    return jsx(type, props, ...children);
+}
+
+function jsxDEV(type: any, props: any, ...children: any[]): JSX.Node {
+    return jsx(type, props, ...children);
+}
+
+export {Card, Button, Text, utils};
+export type {PluginUtils, PluginRuntime};
+export {JSX_ELEMENT, JSX_FRAGMENT, JSX_FRAGMENT as Fragment};
+export {jsx, jsxs, jsxDEV};

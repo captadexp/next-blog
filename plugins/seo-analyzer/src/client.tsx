@@ -382,7 +382,7 @@ function editorSidebarWidget(sdk: any, prev: any, context: any) {
                 {pluginState.analysisResults.length > 0 ? (
                     <>
                         {pluginState.analysisResults.map((item, index) => (
-                            <ChecklistItem key={index} item={item}/>
+                            <ChecklistItem item={item}/>
                         ))}
                         {pluginState.isTyping && <TypingIndicator/>}
                     </>

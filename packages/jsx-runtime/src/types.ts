@@ -1,12 +1,4 @@
-export const JSX_ELEMENT = Symbol.for('secure.jsx.element');
-export const JSX_FRAGMENT = Symbol.for('secure.jsx.fragment');
-
-export interface VNode {
-    $$typeof: symbol;
-    type: string | symbol | Function;
-    props: Record<string, any>;
-    key: string | number | null;
-}
+/// <reference path="./global.d.ts" />
 
 export interface PluginUtils {
     classList(...classes: (string | undefined | null | false)[]): string;
@@ -26,11 +18,11 @@ export interface PluginRuntime {
     Fragment: symbol;
     utils: PluginUtils;
 
-    jsx(type: any, props: any, key?: any): VNode;
+    jsx(type: any, props: any, key?: any): JSX.Node;
 
-    jsxs(type: any, props: any, key?: any): VNode;
+    jsxs(type: any, props: any, key?: any): JSX.Node;
 
-    jsxDEV(type: any, props: any, key?: any): VNode;
+    jsxDEV(type: any, props: any, key?: any): JSX.Node;
 
     Card(props: any): any;
 

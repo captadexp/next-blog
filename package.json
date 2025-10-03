@@ -34,7 +34,7 @@
   },
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "MIT",
-  "packageManager": "bun@1.2.22",
+  "packageManager": "bun@1.2.23",
   "devDependencies": {
     "@typescript/native-preview": "^7.0.0-dev.20250930.1",
     "jsdom": "^27.0.0",

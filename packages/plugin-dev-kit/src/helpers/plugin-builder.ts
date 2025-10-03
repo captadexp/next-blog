@@ -1,11 +1,4 @@
-import type {
-    ClientPluginModule,
-    ClientSDK,
-    JSXElement,
-    PluginManifest,
-    ServerPluginModule,
-    ServerSDK
-} from '@supergrowthai/types';
+import type {ClientPluginModule, ClientSDK, PluginManifest, ServerPluginModule, ServerSDK} from '@supergrowthai/types';
 
 // Import build-time placeholder types
 /// <reference path="./build-env.d.ts" />
@@ -102,8 +95,8 @@ export function defineServer(plugin: ServerPluginModule): ServerPluginModule {
  * });
  */
 export function createComponent<T extends Record<string, any> = {}>(
-    component: (sdk: ClientSDK, context?: T) => JSXElement | null
-): (sdk: ClientSDK, prev?: any, context?: T) => JSXElement | null {
+    component: (sdk: ClientSDK, context?: T) => JSX.Node | null
+): (sdk: ClientSDK, prev?: any, context?: T) => JSX.Node | null {
     return (sdk, _prev, context) => component(sdk, context);
 }
 

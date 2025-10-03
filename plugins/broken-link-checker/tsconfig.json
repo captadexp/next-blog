@@ -14,7 +14,8 @@
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
-    "noEmit": true
+    "noEmit": true,
+    "types": []
   },
   "include": [
     "src"

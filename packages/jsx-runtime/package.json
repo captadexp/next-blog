@@ -5,13 +5,14 @@
   "type": "module",
   "main": "dist/runtime.js",
   "module": "dist/runtime.js",
-  "types": "dist/index.d.ts",
+  "types": "dist/runtime.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "src/global.d.ts"
   ],
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/runtime.d.ts",
       "import": "./dist/runtime.js",
       "default": "./dist/runtime.js"
     },
@@ -32,6 +33,13 @@
       "default": "./dist/plugin-components.js"
     }
   },
+  "typesVersions": {
+    "*": {
+      "jsx-runtime": [
+        "./dist/jsx-runtime.d.ts"
+      ]
+    }
+  },
   "scripts": {
     "clean": "rimraf dist",
     "dev": "concurrently \"vite build --watch\" \"vite build --config vite.config.umd.ts --watch\"",
@@ -41,6 +49,7 @@
   "devDependencies": {
     "concurrently": "^9.2.1",
     "vite": "^7.1.5",
-    "vite-plugin-dts": "^4.5.4"
+    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-static-copy": "^3.1.3"
   }
 }

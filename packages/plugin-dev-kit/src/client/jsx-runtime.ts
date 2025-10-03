@@ -8,7 +8,6 @@ export {
     Fragment,
 
     // Types
-    type VNode,
     type PluginRuntime,
     type PluginUtils,
 
