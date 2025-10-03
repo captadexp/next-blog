@@ -1,5 +1,5 @@
 import dts from "vite-plugin-dts";
-import {defineConfig} from "vite";
+import {defineConfig, PluginOption} from "vite";
 
 import * as path from "path";
 import tailwindcss from "@tailwindcss/vite";
@@ -7,28 +7,37 @@ import {viteStaticCopy} from 'vite-plugin-static-copy';
 import {readFileSync, writeFileSync} from 'fs';
 
 // Custom plugin to generate version file
-function versionPlugin() {
+function versionPlugin(): PluginOption {
+    // Helper function to generate the version file
+    const generateVersionFile = () => {
+        // Read version from package.json
+        const packageJson = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
+        const version = packageJson.version;
+
+        // Create version info object
+        const versionInfo = {
+            version,
+            buildTime: new Date().toISOString(),
+            buildMode: process.env.NODE_ENV || 'development'
+        };
+
+        // Write version file to src for inclusion in build
+        const versionFilePath = path.resolve(__dirname, 'src/version.ts');
+        const versionFileContent = `// Auto-generated file - do not edit manually
+export const VERSION_INFO = ${JSON.stringify(versionInfo, null, 2)} as const;
+`;
+        writeFileSync(versionFilePath, versionFileContent);
+        console.log("version file generated");
+    };
+
+    // Generate immediately when plugin is created
+    generateVersionFile();
+
     return {
         name: 'version-generator',
         buildStart() {
-            // Read version from package.json
-            const packageJson = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
-            const version = packageJson.version;
-
-            // Create version info object
-            const versionInfo = {
-                version,
-                buildTime: new Date().toISOString(),
-                buildMode: process.env.NODE_ENV || 'development'
-            };
-
-            // Write version file to src for inclusion in build
-            const versionFilePath = path.resolve(__dirname, 'src/version.ts');
-            const versionFileContent = `// Auto-generated file - do not edit manually
-export const VERSION_INFO = ${JSON.stringify(versionInfo, null, 2)} as const;
-`;
-            writeFileSync(versionFilePath, versionFileContent);
-            console.log("version file generated");
+            // Regenerate during builds to update buildTime
+            generateVersionFile();
         }
     };
 }
