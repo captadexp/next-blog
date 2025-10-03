@@ -33,6 +33,13 @@
       "default": "./dist/plugin-components.js"
     }
   },
+  "typesVersions": {
+    "*": {
+      "jsx-runtime": [
+        "./dist/jsx-runtime.d.ts"
+      ]
+    }
+  },
   "scripts": {
     "clean": "rimraf dist",
     "dev": "concurrently \"vite build --watch\" \"vite build --config vite.config.umd.ts --watch\"",

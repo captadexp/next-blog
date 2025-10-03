@@ -8,4 +8,4 @@ RUN bun install --frozen-lockfile
 
 RUN bun run build
 
-RUN bun run typecheck
+RUN bun --filter="*" run typecheck
