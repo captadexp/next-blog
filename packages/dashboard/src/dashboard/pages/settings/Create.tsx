@@ -42,6 +42,14 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
                 {value: 'global', label: 'Global (accessible to all plugins)'},
                 {value: 'user', label: 'User (specific to current user)'}
             ]
+        },
+        {
+            key: 'isSecure',
+            label: 'Secure Setting (encrypts value, masks in dashboard)',
+            type: 'select',
+            required: false,
+            value: "",
+            options: [{value: "", label: "False"}, {value: "1", label: "True"}],
         }
     ];
 
@@ -62,7 +70,8 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
         const settingData = {
             key: data.key,
             value: parsedValue,
-            scope: data.scope || 'global'
+            scope: data.scope,
+            isSecure: data.isSecure
         };
 
         return apis.createSetting(settingData);

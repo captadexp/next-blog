@@ -127,6 +127,8 @@ export interface SettingsEntry {
     value: string | boolean | number | boolean[] | string[] | number[];
     ownerId: BrandedId<"User"> | BrandedId<"Plugin">;
     ownerType: 'user' | 'plugin';
+    isSecure?: boolean; // Indicates if this setting contains sensitive data
+    masked?: boolean; // Indicates if the value is masked in the response
     createdAt: number;
     updatedAt: number;
 }
@@ -136,6 +138,7 @@ export interface SettingsEntryData extends Partial<SettingsEntry> {
     value: string | boolean | number | boolean[] | string[] | number[];
     ownerId: BrandedId<"User"> | BrandedId<"Plugin">;
     ownerType: 'user' | 'plugin';
+    isSecure?: boolean;
 }
 
 export interface Comment {

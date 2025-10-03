@@ -205,6 +205,7 @@ class ApiClient implements APIClient {
         key: string;
         value: string | boolean | number | boolean[] | string[] | number[];
         scope?: 'global' | 'user';
+        isSecure?: boolean;
     }): Promise<APIResponse<SettingsEntry>> {
         return this.request<SettingsEntry>('/settings/create', 'POST', data);
     }

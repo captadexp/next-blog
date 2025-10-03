@@ -118,6 +118,7 @@ export interface SettingsAPI {
         key: string;
         value: string | boolean | number | boolean[] | string[] | number[];
         scope?: 'global' | 'user';
+        isSecure?: boolean;
     }): Promise<APIResponse<SettingsEntry>>;
     updateSetting(id: string, data: {
         key?: string;

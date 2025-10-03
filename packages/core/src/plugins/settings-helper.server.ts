@@ -1,6 +1,7 @@
 import type {DatabaseAdapter, PluginSettings} from '@supergrowthai/types/server';
 import {createId} from '@supergrowthai/types/server';
 import {getSystemPluginId} from '../utils/defaultSettings.js';
+import {decrypt, encrypt, isSecureKey} from '../utils/encryption.js';
 
 // Global database reference for backwards compatibility
 let globalDb: DatabaseAdapter | null = null;
@@ -48,7 +49,16 @@ export class ServerSettingsHelper implements PluginSettings {
             ownerType: 'plugin'
         });
 
-        return setting ? (setting.value as T) : null;
+        if (!setting) {
+            return null;
+        }
+
+        // Decrypt the value if it's encrypted
+        if (setting.isSecure) {
+            return decrypt(setting.value) as T;
+        }
+
+        return setting.value as T;
     }
 
     /**
@@ -60,22 +70,27 @@ export class ServerSettingsHelper implements PluginSettings {
         const systemPluginBrandedId = createId.plugin(systemPluginId);
         const prefixedKey = `plugin:${this.pluginId}:${key}`;
 
+        // Check if this should be a secure setting
+        const shouldBeSecure = isSecureKey(key) || isSecureKey(prefixedKey);
+        const finalValue = shouldBeSecure ? encrypt(value) : value;
+
         const existingSetting = await this.db.settings.findOne({
             key: prefixedKey,
-            ownerId: systemPluginBrandedId as any
+            ownerId: systemPluginBrandedId
         });
 
         if (existingSetting) {
             await this.db.settings.updateOne(
                 {_id: existingSetting._id},
-                {value, ownerType: 'plugin'}
+                {value: finalValue, ownerType: 'plugin', isSecure: shouldBeSecure}
             );
         } else {
             await this.db.settings.create({
                 key: prefixedKey,
-                value: value as any,
+                value: finalValue as any,
                 ownerId: systemPluginBrandedId,
-                ownerType: 'plugin'
+                ownerType: 'plugin',
+                isSecure: shouldBeSecure
             });
         }
     }
@@ -92,7 +107,16 @@ export class ServerSettingsHelper implements PluginSettings {
             ownerType: 'plugin'
         });
 
-        return setting ? (setting.value as T) : null;
+        if (!setting) {
+            return null;
+        }
+
+        // Decrypt the value if it's encrypted
+        if (setting.isSecure) {
+            return decrypt(setting.value) as T;
+        }
+
+        return setting.value as T;
     }
 
     /**
@@ -101,6 +125,10 @@ export class ServerSettingsHelper implements PluginSettings {
     async setGlobal<T = any>(key: string, value: T): Promise<void> {
         const systemPluginId = await getSystemPluginId(this.db);
         const pluginId = createId.plugin(systemPluginId);
+
+        // Check if this should be a secure setting
+        const shouldBeSecure = isSecureKey(key);
+        const finalValue = shouldBeSecure ? encrypt(value) : value;
 
         //fixme we should be using upsert here
         const existingSetting = await this.db.settings.findOne({
@@ -111,14 +139,15 @@ export class ServerSettingsHelper implements PluginSettings {
         if (existingSetting) {
             await this.db.settings.updateOne(
                 {_id: existingSetting._id},
-                {value, ownerType: 'plugin'}
+                {value: finalValue, ownerType: 'plugin', isSecure: shouldBeSecure}
             );
         } else {
             await this.db.settings.create({
                 key,
-                value: value as any,
+                value: finalValue as any,
                 ownerId: pluginId,
-                ownerType: 'plugin'
+                ownerType: 'plugin',
+                isSecure: shouldBeSecure
             });
         }
     }
@@ -137,7 +166,16 @@ export class ServerSettingsHelper implements PluginSettings {
             ownerType: 'plugin'
         });
 
-        return setting ? (setting.value as T) : null;
+        if (!setting) {
+            return null;
+        }
+
+        // Decrypt the value if it's encrypted
+        if (setting.isSecure) {
+            return decrypt(setting.value) as T;
+        }
+
+        return setting.value as T;
     }
 
     /**
@@ -152,7 +190,16 @@ export class ServerSettingsHelper implements PluginSettings {
             ownerType: 'user'
         });
 
-        return setting ? (setting.value as T) : null;
+        if (!setting) {
+            return null;
+        }
+
+        // Decrypt the value if it's encrypted
+        if (setting.isSecure) {
+            return decrypt(setting.value) as T;
+        }
+
+        return setting.value as T;
     }
 
     /**
@@ -169,20 +216,25 @@ export class ServerSettingsHelper implements PluginSettings {
 
         const existingSetting = await this.db.settings.findOne({
             key: prefixedKey,
-            ownerId: createId.user(userId) as any
+            ownerId: createId.user(userId)
         });
+
+        // Check if this should be a secure setting
+        const shouldBeSecure = isSecureKey(key) || isSecureKey(prefixedKey);
+        const finalValue = shouldBeSecure ? encrypt(value) : value;
 
         if (existingSetting) {
             await this.db.settings.updateOne(
                 {_id: existingSetting._id},
-                {value, ownerType: 'user'}
+                {value: finalValue, ownerType: 'user', isSecure: shouldBeSecure}
             );
         } else {
             await this.db.settings.create({
                 key: prefixedKey,
-                value: value as any,
+                value: finalValue as any,
                 ownerId: createId.user(userId),
-                ownerType: 'user'
+                ownerType: 'user',
+                isSecure: shouldBeSecure
             });
         }
     }

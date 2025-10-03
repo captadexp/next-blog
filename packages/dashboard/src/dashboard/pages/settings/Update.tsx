@@ -8,6 +8,7 @@ import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 
 interface SettingsEntryWithScope extends SettingsEntry {
     scope?: 'global' | 'user' | 'plugin';
+    masked?: boolean;
 }
 
 const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
@@ -56,17 +57,29 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
             displayValue = JSON.stringify(displayValue, null, 2);
         }
 
-        return [
-            {key: 'id', label: 'ID', type: 'text', value: setting._id, disabled: true},
-            {key: 'key', label: 'Key', type: 'text', value: setting.key, required: true, disabled: true},
-            {
+        // For secure settings, show a password field for new value entry
+        const valueField = setting.isSecure || setting.masked
+            ? {
+                key: 'value',
+                label: 'Value (Secure)',
+                type: 'password',
+                value: '', // Don't show masked value
+                required: true,
+                placeholder: 'Enter new value (existing value is hidden for security)'
+            }
+            : {
                 key: 'value',
                 label: 'Value',
                 type: 'textarea',
                 value: displayValue,
                 required: true,
                 placeholder: 'For arrays or objects, enter valid JSON'
-            },
+            };
+
+        return [
+            {key: 'id', label: 'ID', type: 'text', value: setting._id, disabled: true},
+            {key: 'key', label: 'Key', type: 'text', value: setting.key, required: true, disabled: true},
+            valueField,
             {
                 key: 'scope',
                 label: 'Scope',
@@ -91,6 +104,12 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
 
     // Handler for setting update using the API client directly
     const handleUpdateSetting = async (data: any) => {
+        // Skip update if secure setting with no new value provided
+        if ((setting?.isSecure || setting?.masked) && !data.value) {
+            alert('Please enter a new value for the secure setting');
+            return;
+        }
+
         let parsedValue = data.value;
 
         // Try to parse the value as JSON if it starts with [ or {

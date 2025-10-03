@@ -5,6 +5,7 @@ import type {ApiExtra} from "../types/api.js";
 import type {SettingsEntryData} from "@supergrowthai/types/server";
 import {createId} from "@supergrowthai/types/server";
 import {getSystemPluginId} from "../utils/defaultSettings.js";
+import {encrypt, isSecureKey, maskValue} from "../utils/encryption.js";
 
 // List all settings
 export const getSettings = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
@@ -12,15 +13,24 @@ export const getSettings = secure(async (session: SessionData, request: MinimumR
     const systemPluginId = await getSystemPluginId(db);
     let settings = await db.settings.find({});
 
-    // Add scope information to each setting
+    // Add scope information and mask secure values
     settings = settings.map((setting: any) => {
         const isUserSetting = setting.ownerType === 'user';
         const isSystemPlugin = setting.ownerId === createId.plugin(systemPluginId);
 
-        return {
+        // Mask secure values
+        let maskedSetting = {
             ...setting,
             scope: isUserSetting ? 'user' : (isSystemPlugin ? 'global' : 'plugin')
         };
+
+        if (setting.isSecure) {
+            maskedSetting.value = maskValue(setting.value);
+            maskedSetting.masked = true;
+            maskedSetting.isSecure = true;
+        }
+
+        return maskedSetting;
     });
 
     // Execute hook for list operation
@@ -58,6 +68,16 @@ export const getSettingById = secure(async (session: SessionData, request: Minim
         throw new NotFound(`Setting with id ${settingId} not found`);
     }
 
+    // Mask secure values
+    if (setting.isSecure) {
+        setting = {
+            ...setting,
+            value: maskValue(setting.value),
+            masked: true,
+            isSecure: true
+        };
+    }
+
     // Execute hook for read operation
     if (extra?.callHook) {
         const hookResult = await extra.callHook('setting:onRead', {
@@ -93,6 +113,12 @@ export const createSetting = secure(async (session: SessionData, request: Minimu
         throw new BadRequest("Setting value is required");
     }
 
+    // Check if the key indicates a secure setting
+    // User's explicit choice takes precedence, but we auto-detect if not specified
+    if (settingData.isSecure === undefined) {
+        settingData.isSecure = isSecureKey(settingData.key);
+    }
+
     // Determine owner based on scope (default to global)
     const scope = settingData.scope || 'global';
 
@@ -107,6 +133,11 @@ export const createSetting = secure(async (session: SessionData, request: Minimu
         const systemPluginId = await getSystemPluginId(db);
         settingData.ownerId = createId.plugin(systemPluginId);
         settingData.ownerType = 'plugin';
+    }
+
+    // Encrypt the value if it's a secure setting
+    if (settingData.isSecure) {
+        settingData.value = encrypt(settingData.value);
     }
 
     // Remove scope from data as it's not part of the entity
@@ -162,6 +193,20 @@ export const updateSetting = secure(async (session: SessionData, request: Minimu
     const existingSetting = await db.settings.findOne({_id: settingId});
     if (!existingSetting) {
         throw new NotFound(`Setting with id ${settingId} not found`);
+    }
+
+    // Handle secure settings - if the existing setting is secure, encrypt the new value
+    if (updates.value !== undefined && existingSetting.isSecure) {
+        updates.value = encrypt(updates.value);
+        updates.isSecure = true;
+    }
+
+    // Check if the key indicates this should be secure (for key updates)
+    if (updates.key && isSecureKey(updates.key)) {
+        updates.isSecure = true;
+        if (updates.value !== undefined) {
+            updates.value = encrypt(updates.value);
+        }
     }
 
     // Execute before update hook

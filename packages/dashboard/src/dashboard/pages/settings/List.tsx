@@ -7,6 +7,7 @@ import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 
 interface SettingsEntryWithScope extends SettingsEntry {
     scope?: 'global' | 'user' | 'plugin';
+    masked?: boolean;
 }
 
 interface SettingsListProps {
@@ -54,7 +55,10 @@ const SettingsList: FunctionComponent<SettingsListProps> = () => {
     };
 
     // Format value for display
-    const formatValue = (value: string | boolean | number | boolean[] | string[] | number[]) => {
+    const formatValue = (value: string | boolean | number | boolean[] | string[] | number[], masked?: boolean) => {
+        if (masked) {
+            return '***';
+        }
         if (Array.isArray(value)) {
             return JSON.stringify(value);
         }
@@ -108,8 +112,13 @@ const SettingsList: FunctionComponent<SettingsListProps> = () => {
                                 <>
                                     <ExtensionPoint name="setting-item:before" context={{setting}} />
                                     <tr key={setting._id} className="border-b border-gray-200 hover:bg-gray-50">
-                                    <td className="p-3">{setting.key}</td>
-                                    <td className="p-3">{formatValue(setting.value)}</td>
+                                        <td className="p-3">
+                                            {setting.key}
+                                            {setting.isSecure && (
+                                                <span className="ml-2 text-yellow-600" title="Secure Setting">🔒</span>
+                                            )}
+                                        </td>
+                                        <td className="p-3">{formatValue(setting.value, setting.masked)}</td>
                                         <td className="p-3">
                                             <span className={`px-2 py-1 rounded text-xs font-semibold ${
                                                 setting.scope === 'global' ? 'bg-green-100 text-green-800' :
