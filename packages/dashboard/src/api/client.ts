@@ -204,7 +204,7 @@ class ApiClient implements APIClient {
     async createSetting(data: {
         key: string;
         value: string | boolean | number | boolean[] | string[] | number[];
-        ownerId: string;
+        scope?: 'global' | 'user';
     }): Promise<APIResponse<SettingsEntry>> {
         return this.request<SettingsEntry>('/settings/create', 'POST', data);
     }
@@ -212,7 +212,6 @@ class ApiClient implements APIClient {
     async updateSetting(id: string, data: {
         key?: string;
         value?: string | boolean | number | boolean[] | string[] | number[];
-        ownerId?: string;
     }): Promise<APIResponse<SettingsEntry>> {
         return this.request<SettingsEntry>(`/setting/${id}/update`, 'POST', data);
     }

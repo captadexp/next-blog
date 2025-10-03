@@ -1,33 +1,93 @@
-import type {PluginSettings} from "@supergrowthai/types/server";
+import type {DatabaseAdapter, Plugin, User} from "@supergrowthai/types/server";
 
-// Define default settings with their keys and values
-export const DEFAULT_SETTINGS = [
-    {
-        key: "BLOG_BASE_DOMAIN",
-        value: "localhost:3000"
-    },
-    {
-        key: "BLOG_BASE_PATH",
-        value: "/blog/{blog_slug}"
-    }
-];
+// Cache for system IDs
+let cachedSystemUserId: string | null = null;
+let cachedSystemPluginId: string | null = null;
 
 /**
- * Initialize default settings using the settings SDK
- * @param settings PluginSettings instance for system settings
+ * Get or create the system user
+ * @param db Database adapter
  */
-export async function initializeDefaultSettings(settings: PluginSettings): Promise<void> {
-    try {
-        for (const setting of DEFAULT_SETTINGS) {
-            // Check if setting already exists
-            const existingValue = await settings.getGlobal(setting.key);
+export async function getOrCreateSystemUser(db: DatabaseAdapter): Promise<User> {
+    // Check if system user already exists
+    let systemUser = await db.users.findOne({username: 'system'});
 
-            if (existingValue === null) {
-                await settings.setGlobal(setting.key, setting.value);
-                console.log(`Created default setting: ${setting.key}`);
-            }
-        }
+    if (!systemUser) {
+        // Create system user - let the database generate the ID naturally
+        systemUser = await db.users.create({
+            username: 'system',
+            email: 'system@localhost',
+            password: '', // System user doesn't need a password
+            name: 'System',
+            slug: 'system',
+            bio: 'System user for internal operations',
+            permissions: ['all:all'] // System user has all permissions
+        });
+        console.log('Created system user with ID:', systemUser._id);
+    }
+
+    cachedSystemUserId = systemUser._id;
+    return systemUser;
+}
+
+/**
+ * Get or create the system plugin
+ * @param db Database adapter
+ */
+export async function getOrCreateSystemPlugin(db: DatabaseAdapter): Promise<Plugin> {
+    // Check if system plugin already exists
+    let systemPlugin = await db.plugins.findOne({name: 'system'});
+
+    if (!systemPlugin) {
+        // Create system plugin - let the database generate the ID naturally
+        systemPlugin = await db.plugins.create({
+            name: 'system',
+            description: 'Core system plugin for internal operations',
+            version: '1.0.0',
+            author: 'System',
+            url: 'internal://system',
+            devMode: false
+        });
+        console.log('Created system plugin with ID:', systemPlugin._id);
+    }
+
+    cachedSystemPluginId = systemPlugin._id;
+    return systemPlugin;
+}
+
+/**
+ * Get the system user ID (fetches from DB if not cached)
+ */
+export async function getSystemUserId(db: DatabaseAdapter): Promise<string> {
+    if (cachedSystemUserId) {
+        return cachedSystemUserId;
+    }
+
+    const systemUser = await getOrCreateSystemUser(db);
+    return systemUser._id;
+}
+
+/**
+ * Get the system plugin ID (fetches from DB if not cached)
+ */
+export async function getSystemPluginId(db: DatabaseAdapter): Promise<string> {
+    if (cachedSystemPluginId) {
+        return cachedSystemPluginId;
+    }
+
+    const systemPlugin = await getOrCreateSystemPlugin(db);
+    return systemPlugin._id;
+}
+
+/**
+ * Initialize system components
+ * @param db Database adapter
+ */
+export async function initializeSystem(db: DatabaseAdapter): Promise<void> {
+    try {
+        await getOrCreateSystemUser(db);
+        await getOrCreateSystemPlugin(db);
     } catch (error) {
-        console.error("Error initializing default settings:", error);
+        console.error("Error initializing system components:", error);
     }
 }

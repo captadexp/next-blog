@@ -22,7 +22,7 @@ export const createWithExtras = (configuration: Configuration) => {
                     buildMode: VERSION_INFO.buildMode
                 },
                 pluginId: 'system',
-                settings: new ServerSettingsHelper('system', db),
+                settings: new ServerSettingsHelper('system', db, session.user?._id),
                 callHook: async (hookName, payload) => {
                     return pluginExecutor.executeHook(String(hookName), sdk, payload);
                 },

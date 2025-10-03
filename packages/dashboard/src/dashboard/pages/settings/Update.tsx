@@ -6,9 +6,13 @@ import {useUser} from "../../../context/UserContext";
 import {SettingsEntry} from '@supergrowthai/types';
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 
+interface SettingsEntryWithScope extends SettingsEntry {
+    scope?: 'global' | 'user' | 'plugin';
+}
+
 const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
     const location = useLocation();
-    const [setting, setSetting] = useState<SettingsEntry | null>(null);
+    const [setting, setSetting] = useState<SettingsEntryWithScope | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const {apis} = useUser();
@@ -54,7 +58,7 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
 
         return [
             {key: 'id', label: 'ID', type: 'text', value: setting._id, disabled: true},
-            {key: 'key', label: 'Key', type: 'text', value: setting.key, required: true},
+            {key: 'key', label: 'Key', type: 'text', value: setting.key, required: true, disabled: true},
             {
                 key: 'value',
                 label: 'Value',
@@ -64,12 +68,23 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
                 placeholder: 'For arrays or objects, enter valid JSON'
             },
             {
+                key: 'scope',
+                label: 'Scope',
+                type: 'select',
+                value: setting.scope || 'global',
+                disabled: true, // Scope cannot be changed after creation
+                options: [
+                    {value: 'global', label: 'Global (accessible to all plugins)'},
+                    {value: 'user', label: 'User (specific to current user)'},
+                    {value: 'plugin', label: 'Plugin (specific to a plugin)'}
+                ]
+            },
+            {
                 key: 'ownerId',
-                label: 'Owner',
+                label: 'Owner ID',
                 type: 'text',
                 value: setting.ownerId,
-                required: true,
-                placeholder: 'Enter "system" for system settings or the name of the plugin/package'
+                disabled: true
             }
         ];
     };
@@ -90,8 +105,7 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
 
         const settingData = {
             key: data.key,
-            value: parsedValue,
-            ownerId: data.ownerId
+            value: parsedValue
         };
 
         return apis.updateSetting(id, settingData);

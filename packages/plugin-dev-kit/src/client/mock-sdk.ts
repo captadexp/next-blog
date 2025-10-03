@@ -228,6 +228,7 @@ class MockAPIClient implements APIClient {
             key: 'setting',
             value: 'value',
             ownerId: createBrandedId.user('system'),
+            ownerType: 'user' as const,
             createdAt: Date.now(),
             updatedAt: Date.now()
         });

@@ -3,6 +3,7 @@ import {BadRequest, NotFound} from "@supergrowthai/oneapi";
 import {createId} from "@supergrowthai/types/server";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
+import {getSystemPluginId} from "../utils/defaultSettings.js";
 
 // Get all settings for a specific plugin
 export const getPluginSettings = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
@@ -13,14 +14,22 @@ export const getPluginSettings = secure(async (session: SessionData, request: Mi
     }
 
     const db = await extra.db();
+    const systemPluginId = await getSystemPluginId(db);
 
-    // Get all settings for this plugin
-    const settings = await db.settings.find({ownerId: createId.user(pluginId)});
+    // Get all settings with plugin prefix
+    const settings = await db.settings.find({
+        ownerId: createId.plugin(systemPluginId),
+        ownerType: 'plugin'
+    });
 
-    // Transform to key-value pairs for easier consumption
+    // Filter settings for this specific plugin and transform to key-value pairs
+    const pluginPrefix = `plugin:${pluginId}:`;
     const settingsMap: Record<string, any> = {};
     settings.forEach((setting: any) => {
-        settingsMap[setting.key] = setting.value;
+        if (setting.key.startsWith(pluginPrefix)) {
+            const key = setting.key.substring(pluginPrefix.length);
+            settingsMap[key] = setting.value;
+        }
     });
 
     return {
@@ -40,10 +49,13 @@ export const getPluginSetting = secure(async (session: SessionData, request: Min
     }
 
     const db = await extra.db();
+    const systemPluginId = await getSystemPluginId(db);
+    const prefixedKey = `plugin:${pluginId}:${key}`;
 
     const setting = await db.settings.findOne({
-        ownerId: createId.user(pluginId),
-        key: key
+        ownerId: createId.plugin(systemPluginId),
+        key: prefixedKey,
+        ownerType: 'plugin'
     });
 
     if (!setting) {
@@ -74,11 +86,13 @@ export const setPluginSetting = secure(async (session: SessionData, request: Min
     }
 
     const db = await extra.db();
+    const systemPluginId = await getSystemPluginId(db);
+    const prefixedKey = `plugin:${pluginId}:${key}`;
 
     // Check if setting exists
     const existing = await db.settings.findOne({
-        ownerId: createId.user(pluginId),
-        key: key
+        ownerId: createId.plugin(systemPluginId),
+        key: prefixedKey
     });
 
     let result;
@@ -99,9 +113,10 @@ export const setPluginSetting = secure(async (session: SessionData, request: Min
     } else {
         // Create new setting
         result = await db.settings.create({
-            key,
+            key: prefixedKey,
             value,
-            ownerId: createId.user(pluginId),
+            ownerId: createId.plugin(systemPluginId),
+            ownerType: 'plugin',
             createdAt: Date.now(),
             updatedAt: Date.now()
         });
@@ -129,10 +144,12 @@ export const deletePluginSetting = secure(async (session: SessionData, request: 
     }
 
     const db = await extra.db();
+    const systemPluginId = await getSystemPluginId(db);
+    const prefixedKey = `plugin:${pluginId}:${key}`;
 
     const existing = await db.settings.findOne({
-        ownerId: createId.user(pluginId),
-        key: key
+        ownerId: createId.plugin(systemPluginId),
+        key: prefixedKey
     });
 
     if (!existing) {

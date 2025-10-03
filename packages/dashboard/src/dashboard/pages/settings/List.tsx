@@ -5,6 +5,10 @@ import {useUser} from '../../../context/UserContext';
 import {SettingsEntry} from '@supergrowthai/types';
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 
+interface SettingsEntryWithScope extends SettingsEntry {
+    scope?: 'global' | 'user' | 'plugin';
+}
+
 interface SettingsListProps {
     path?: string;
 }
@@ -12,7 +16,7 @@ interface SettingsListProps {
 const SettingsList: FunctionComponent<SettingsListProps> = () => {
     const location = useLocation();
     const {apis, user, hasPermission} = useUser();
-    const [settings, setSettings] = useState<SettingsEntry[]>([]);
+    const [settings, setSettings] = useState<SettingsEntryWithScope[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -93,7 +97,7 @@ const SettingsList: FunctionComponent<SettingsListProps> = () => {
                             <tr className="bg-gray-100">
                                 <th className="p-3 text-left border-b border-gray-200">Key</th>
                                 <th className="p-3 text-left border-b border-gray-200">Value</th>
-                                <th className="p-3 text-left border-b border-gray-200">Owner</th>
+                                <th className="p-3 text-left border-b border-gray-200">Scope</th>
                                 <th className="p-3 text-left border-b border-gray-200">Created</th>
                                 <th className="p-3 text-left border-b border-gray-200">Updated</th>
                                 <th className="p-3 text-left border-b border-gray-200">Actions</th>
@@ -106,7 +110,15 @@ const SettingsList: FunctionComponent<SettingsListProps> = () => {
                                     <tr key={setting._id} className="border-b border-gray-200 hover:bg-gray-50">
                                     <td className="p-3">{setting.key}</td>
                                     <td className="p-3">{formatValue(setting.value)}</td>
-                                        <td className="p-3">{setting.ownerId}</td>
+                                        <td className="p-3">
+                                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                                                setting.scope === 'global' ? 'bg-green-100 text-green-800' :
+                                                    setting.scope === 'user' ? 'bg-blue-100 text-blue-800' :
+                                                        'bg-purple-100 text-purple-800'
+                                            }`}>
+                                                {setting.scope || 'unknown'}
+                                            </span>
+                                        </td>
                                     <td className="p-3">{formatDate(setting.createdAt)}</td>
                                     <td className="p-3">{formatDate(setting.updatedAt)}</td>
                                     <td className="p-3">

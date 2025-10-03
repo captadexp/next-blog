@@ -117,12 +117,11 @@ export interface SettingsAPI {
     createSetting(data: {
         key: string;
         value: string | boolean | number | boolean[] | string[] | number[];
-        ownerId: string;
+        scope?: 'global' | 'user';
     }): Promise<APIResponse<SettingsEntry>>;
     updateSetting(id: string, data: {
         key?: string;
         value?: string | boolean | number | boolean[] | string[] | number[];
-        ownerId?: string;
     }): Promise<APIResponse<SettingsEntry>>;
 
     deleteSetting(id: string): Promise<APIResponse<null>>;

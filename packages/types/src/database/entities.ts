@@ -125,7 +125,8 @@ export interface SettingsEntry {
     _id: BrandedId<"SettingsEntry">;
     key: string;
     value: string | boolean | number | boolean[] | string[] | number[];
-    ownerId: BrandedId<"User">;
+    ownerId: BrandedId<"User"> | BrandedId<"Plugin">;
+    ownerType: 'user' | 'plugin';
     createdAt: number;
     updatedAt: number;
 }
@@ -133,7 +134,8 @@ export interface SettingsEntry {
 export interface SettingsEntryData extends Partial<SettingsEntry> {
     key: string;
     value: string | boolean | number | boolean[] | string[] | number[];
-    ownerId: BrandedId<"User">;
+    ownerId: BrandedId<"User"> | BrandedId<"Plugin">;
+    ownerType: 'user' | 'plugin';
 }
 
 export interface Comment {

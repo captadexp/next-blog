@@ -33,11 +33,15 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
             placeholder: 'For arrays or objects, enter valid JSON'
         },
         {
-            key: 'ownerId',
-            label: 'Owner',
-            type: 'text',
-            required: true,
-            placeholder: 'Enter "system" for system settings or the name of the plugin/package'
+            key: 'scope',
+            label: 'Scope',
+            type: 'select',
+            required: false,
+            value: 'global',
+            options: [
+                {value: 'global', label: 'Global (accessible to all plugins)'},
+                {value: 'user', label: 'User (specific to current user)'}
+            ]
         }
     ];
 
@@ -58,7 +62,7 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
         const settingData = {
             key: data.key,
             value: parsedValue,
-            ownerId: data.ownerId
+            scope: data.scope || 'global'
         };
 
         return apis.createSetting(settingData);

@@ -2,12 +2,19 @@ import type {PluginSettings} from '@supergrowthai/types/client';
 
 /**
  * Client-side settings helper for plugins using localStorage
+ *
+ * Storage patterns:
+ * - Plugin-specific: plugin_{pluginId}_{key}
+ * - Global: global_{key}
+ * - User-specific: user_{userId}_{key}
  */
 export class ClientSettingsHelper implements PluginSettings {
     private readonly prefix: string;
+    private readonly userId?: string;
 
-    constructor(private readonly pluginId: string) {
+    constructor(private readonly pluginId: string, userId?: string) {
         this.prefix = `plugin_${pluginId}_`;
+        this.userId = userId;
     }
 
     /**
@@ -72,6 +79,52 @@ export class ClientSettingsHelper implements PluginSettings {
     }
 
     /**
+     * Get a user-specific setting from localStorage
+     */
+    getUserSetting<T = any>(userId: string, key: string): T | null {
+        try {
+            const value = localStorage.getItem(`user_${userId}_${key}`);
+            return value ? JSON.parse(value) : null;
+        } catch (error) {
+            console.error(`Failed to get user setting ${key} for user ${userId}:`, error);
+            return null;
+        }
+    }
+
+    /**
+     * Set a user-specific setting in localStorage
+     */
+    setUserSetting<T = any>(userId: string, key: string, value: T): void {
+        try {
+            localStorage.setItem(`user_${userId}_${key}`, JSON.stringify(value));
+        } catch (error) {
+            console.error(`Failed to set user setting ${key} for user ${userId}:`, error);
+        }
+    }
+
+    /**
+     * Get a setting for the current user (if userId was provided in constructor)
+     */
+    getCurrentUserSetting<T = any>(key: string): T | null {
+        if (!this.userId) {
+            console.warn('No userId provided to ClientSettingsHelper');
+            return null;
+        }
+        return this.getUserSetting(this.userId, key);
+    }
+
+    /**
+     * Set a setting for the current user (if userId was provided in constructor)
+     */
+    setCurrentUserSetting<T = any>(key: string, value: T): void {
+        if (!this.userId) {
+            console.warn('No userId provided to ClientSettingsHelper');
+            return;
+        }
+        this.setUserSetting(this.userId, key, value);
+    }
+
+    /**
      * Clear all settings for this plugin (utility method)
      */
     clearAll(): void {
@@ -102,7 +155,9 @@ export class ClientSettingsHelper implements PluginSettings {
 
 /**
  * Create a settings helper bound to a specific plugin ID
+ * @param pluginId The plugin ID
+ * @param userId Optional user ID for user-scoped settings
  */
-export function createSettingsHelper(pluginId: string): PluginSettings {
-    return new ClientSettingsHelper(pluginId);
+export function createSettingsHelper(pluginId: string, userId?: string): PluginSettings {
+    return new ClientSettingsHelper(pluginId, userId);
 }

@@ -3,11 +3,25 @@ import {BadRequest, NotFound} from "@supergrowthai/oneapi";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import type {SettingsEntryData} from "@supergrowthai/types/server";
+import {createId} from "@supergrowthai/types/server";
+import {getSystemPluginId} from "../utils/defaultSettings.js";
 
 // List all settings
 export const getSettings = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
     const db = await extra.db();
+    const systemPluginId = await getSystemPluginId(db);
     let settings = await db.settings.find({});
+
+    // Add scope information to each setting
+    settings = settings.map((setting: any) => {
+        const isUserSetting = setting.ownerType === 'user';
+        const isSystemPlugin = setting.ownerId === createId.plugin(systemPluginId);
+
+        return {
+            ...setting,
+            scope: isUserSetting ? 'user' : (isSystemPlugin ? 'global' : 'plugin')
+        };
+    });
 
     // Execute hook for list operation
     if (extra?.callHook) {
@@ -65,9 +79,11 @@ export const getSettingById = secure(async (session: SessionData, request: Minim
 }, {requirePermission: 'settings:read'});
 
 // Create a new setting
-export const createSetting = secure(async (session: SessionData, request: MinimumRequest<any, Partial<SettingsEntryData>>, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
+export const createSetting = secure(async (session: SessionData, request: MinimumRequest<any, Partial<SettingsEntryData> & {
+    scope?: 'global' | 'user'
+}>, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
     const db = await extra.db();
-    let settingData = request.body as Partial<SettingsEntryData>;
+    let settingData = request.body as Partial<SettingsEntryData> & { scope?: 'global' | 'user' };
 
     if (!settingData.key) {
         throw new BadRequest("Setting key is required");
@@ -77,9 +93,24 @@ export const createSetting = secure(async (session: SessionData, request: Minimu
         throw new BadRequest("Setting value is required");
     }
 
-    if (!settingData.ownerId) {
-        throw new BadRequest("Setting ownerId is required");
+    // Determine owner based on scope (default to global)
+    const scope = settingData.scope || 'global';
+
+    if (scope === 'user') {
+        // User-scoped settings are owned by the current user
+        settingData.ownerId = createId.user(session.user._id);
+        settingData.ownerType = 'user';
+        // Prefix key with user ID to avoid conflicts
+        settingData.key = `user:${session.user._id}:${settingData.key}`;
+    } else {
+        // Global settings are owned by system plugin
+        const systemPluginId = await getSystemPluginId(db);
+        settingData.ownerId = createId.plugin(systemPluginId);
+        settingData.ownerType = 'plugin';
     }
+
+    // Remove scope from data as it's not part of the entity
+    delete (settingData as any).scope;
 
     // Execute before create hook
     if (extra?.callHook) {

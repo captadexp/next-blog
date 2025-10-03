@@ -2,9 +2,8 @@ import {createNextJSRouter} from "@supergrowthai/oneapi/nextjs";
 import type {Configuration} from "@supergrowthai/types/server";
 import {BasicAuthHandler} from "./auth/basic-auth-handler.js";
 import cmsPaths from "./cmsPaths.js";
-import {initializeDefaultSettings} from "./utils/defaultSettings.js";
+import {initializeSystem} from "./utils/defaultSettings.js";
 import pluginExecutor from "./plugins/plugin-executor.server.js";
-import {ServerSettingsHelper} from "./plugins/settings-helper.server.js";
 import {wrapPathObject} from "./utils/withExtras.js";
 
 /**
@@ -25,9 +24,8 @@ const nextBlog = function (configuration: Configuration) {
             const db = await configuration.db();
             await pluginExecutor.initialize(db);
 
-            // Initialize default settings with system settings helper
-            const systemSettings = new ServerSettingsHelper('system', db);
-            await initializeDefaultSettings(systemSettings);
+            // Initialize system components (user and plugin)
+            await initializeSystem(db);
 
             return {
                 db: configuration.db,
