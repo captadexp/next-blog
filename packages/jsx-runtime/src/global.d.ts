@@ -2,10 +2,24 @@ declare global {
     namespace JSX {
         interface Element {
             $$typeof: symbol;
-            type: string | symbol | Function;
-            props: Record<string, any>;
+            type: string | symbol | ComponentType
+            props: any;
             key: string | null;
         }
+
+        interface Portal extends Element {
+            children: Node
+        }
+
+        type Node = | Element
+            | string
+            | number
+            | bigint
+            | Iterable<Node>
+            | Portal
+            | boolean
+            | null
+            | undefined
 
         // Base props that all HTML elements can have
         interface HTMLAttributes {
@@ -44,7 +58,7 @@ declare global {
             'aria-current'?: boolean | 'page' | 'step' | 'location' | 'date' | 'time' | 'true' | 'false';
 
             // Children
-            children?: (Element | IntrinsicElements)[];
+            children?: Node;
         }
 
         // Form-specific attributes
@@ -166,7 +180,21 @@ declare global {
             summary: HTMLAttributes;
             dialog: HTMLAttributes;
         }
+
     }
+
+    type FunctionComponent<P = any> = (props?: P) => JSX.Node | null
+    type FC<P = any> = FunctionComponent<P>
+    type ComponentType<P = any> = FunctionComponent<P>
+
+    namespace React {
+        type Element = JSX.Element
+        type IntrinsicElements = JSX.IntrinsicElements
+    }
+
+    type ReactNode = JSX.Node;
+    type ReactElement = JSX.Element;
+    type ReactPortal = JSX.Portal;
 }
 
 export {};

@@ -17,6 +17,7 @@ export default defineServer({
             return {
                 ...payload,
                 metadata: {
+                    // @ts-ignore
                     ...payload.metadata,
                     createdVia: 'my-plugin'
                 }

@@ -56,17 +56,9 @@ export interface ClientSDK extends BaseSDK {
     system: SystemInfo;
 }
 
-// JSX Element type for UI rendering
-export type JSXElement = {
-    $$typeof: symbol;
-    type: string | symbol | Function;
-    props: Record<string, any>;
-    key: string | number | null;
-} & any
-
 // UI Hook function signature
 export type UIHookFn = (
     sdk: ClientSDK,
     prev?: any,
     context?: Record<string, any>
-) => JSXElement | null;
+) => any | null;

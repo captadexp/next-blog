@@ -18,7 +18,6 @@ export {
     jsxs,
     jsxDEV,
     Fragment,
-    type VNode,
     Card,
     Button,
     Text

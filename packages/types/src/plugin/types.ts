@@ -4,7 +4,7 @@
  */
 
 import type {ServerSDK} from '../sdk/server';
-import type {ClientSDK, JSXElement} from '../sdk/client';
+import {ClientSDK} from '../sdk/client';
 
 /**
  * Hook method definition
@@ -42,7 +42,7 @@ export type ClientHookFunction<T extends HookDefinition = HookDefinition> = (
     sdk: ClientSDK,
     prev?: T['response'],
     context?: Record<string, any>
-) => JSXElement | null;
+) => any | null;
 
 /**
  * RPC function signature for server
