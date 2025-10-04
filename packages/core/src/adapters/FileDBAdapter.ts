@@ -27,6 +27,7 @@ import {
     UserData
 } from "@supergrowthai/types/server";
 import {v4 as uuidv4} from 'uuid';
+import sift from 'sift';
 
 export default class FileDBAdapter implements DatabaseAdapter {
 
@@ -38,12 +39,13 @@ export default class FileDBAdapter implements DatabaseAdapter {
         return {
             findOne: async (filter: Filter<Blog>): Promise<Blog | null> => {
                 const blogs = await this.readData<Blog>('blogs.json');
-                return blogs.find((blog: any) => Object.keys(filter).every((key: any) => blog[key] === (filter as any)[key])) || null;
+                const filtered = blogs.filter(sift(filter));
+                return filtered[0] || null;
             },
 
             find: async (filter: Filter<Blog>): Promise<Blog[]> => {
                 const blogs = await this.readData<Blog>('blogs.json');
-                return blogs.filter((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
+                return blogs.filter(sift(filter));
             },
 
             findById: async (id: string): Promise<Blog | null> => {
@@ -66,7 +68,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             updateOne: async (filter: Filter<Blog>, {_id, ...update}: Filter<Blog>) => {
                 let blogs = await this.readData<Blog>('blogs.json');
-                const blogIndex = blogs.findIndex((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
+                const filtered = blogs.filter(sift(filter));
+                const blogIndex = filtered[0] ? blogs.indexOf(filtered[0]) : -1;
                 if (blogIndex !== -1) {
                     blogs[blogIndex] = {...blogs[blogIndex], ...update, updatedAt: Date.now()};
                     await this.writeData('blogs.json', blogs);
@@ -77,7 +80,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             deleteOne: async (filter: Filter<Blog>) => {
                 let blogs = await this.readData<Blog>('blogs.json');
-                const blogIndex = blogs.findIndex((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
+                const filtered = blogs.filter(sift(filter));
+                const blogIndex = filtered[0] ? blogs.indexOf(filtered[0]) : -1;
 
                 if (blogIndex !== -1) {
                     const duplicate = JSON.parse(JSON.stringify(blogs[blogIndex]));
@@ -91,7 +95,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
             delete: async (filter: Filter<Blog>): Promise<number> => {
                 let blogs = await this.readData<Blog>('blogs.json');
                 const initialLength = blogs.length;
-                blogs = blogs.filter((blog: any) => !Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
+                const toDelete = blogs.filter(sift(filter));
+                blogs = blogs.filter(blog => !toDelete.includes(blog));
                 await this.writeData('blogs.json', blogs);
                 return initialLength - blogs.length;
             },
@@ -101,12 +106,13 @@ export default class FileDBAdapter implements DatabaseAdapter {
     get categories() {
         return {
             findOne: async (filter: Filter<Category>): Promise<Category | null> => {
-                const blogs = await this.readData<Category>('categories.json');
-                return blogs.find((blog: any) => Object.keys(filter).every((key: any) => blog[key] === (filter as any)[key])) || null;
+                const categories = await this.readData<Category>('categories.json');
+                const filtered = categories.filter(sift(filter));
+                return filtered[0] || null;
             },
             find: async (filter: Filter<Category>): Promise<Category[]> => {
-                const blogs = await this.readData<Category>('categories.json');
-                return blogs.filter((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
+                const categories = await this.readData<Category>('categories.json');
+                return categories.filter(sift(filter));
             },
             findById: async (id: string): Promise<Category | null> => {
                 const categories = await this.readData<Category>('categories.json');
@@ -128,7 +134,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             updateOne: async (filter: Filter<Category>, {_id, ...update}: Filter<Category>) => {
                 let categories = await this.readData<Category>('categories.json');
-                const categoryIndex = categories.findIndex((category: any) => Object.keys(filter).every(key => category[key] === (filter as any)[key]));
+                const filtered = categories.filter(sift(filter));
+                const categoryIndex = filtered[0] ? categories.indexOf(filtered[0]) : -1;
                 if (categoryIndex !== -1) {
                     categories[categoryIndex] = {...categories[categoryIndex], ...update};
                     await this.writeData('categories.json', categories);
@@ -138,11 +145,12 @@ export default class FileDBAdapter implements DatabaseAdapter {
             },
             deleteOne: async (filter: Filter<Category>) => {
                 let categories = await this.readData<Category>('categories.json');
-                const blogIndex = categories.findIndex((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
+                const filtered = categories.filter(sift(filter));
+                const categoryIndex = filtered[0] ? categories.indexOf(filtered[0]) : -1;
 
-                if (blogIndex !== -1) {
-                    const duplicate = JSON.parse(JSON.stringify(categories[blogIndex]));
-                    categories = categories.filter((blog: any, index) => index !== blogIndex);
+                if (categoryIndex !== -1) {
+                    const duplicate = JSON.parse(JSON.stringify(categories[categoryIndex]));
+                    categories = categories.filter((category: any, index) => index !== categoryIndex);
                     await this.writeData('categories.json', categories);
                     return duplicate;
                 }
@@ -152,7 +160,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
             delete: async (filter: Filter<Category>): Promise<number> => {
                 let categories = await this.readData<Category>('categories.json');
                 const initialLength = categories.length;
-                categories = categories.filter((category: any) => !Object.keys(filter).every(key => category[key] === (filter as any)[key]));
+                const toDelete = categories.filter(sift(filter));
+                categories = categories.filter(category => !toDelete.includes(category));
                 await this.writeData('categories.json', categories);
                 return initialLength - categories.length;
             },
@@ -162,12 +171,13 @@ export default class FileDBAdapter implements DatabaseAdapter {
     get tags() {
         return {
             findOne: async (filter: Filter<Tag>): Promise<Tag | null> => {
-                const blogs = await this.readData<Tag>('tags.json');
-                return blogs.find((blog: any) => Object.keys(filter).every((key: any) => blog[key] === (filter as any)[key])) || null;
+                const tags = await this.readData<Tag>('tags.json');
+                const filtered = tags.filter(sift(filter));
+                return filtered[0] || null;
             },
             find: async (filter: Filter<Tag>): Promise<Tag[]> => {
-                const blogs = await this.readData<Tag>('tags.json');
-                return blogs.filter((tag: any) => Object.keys(filter).every(key => tag[key] === (filter as any)[key]));
+                const tags = await this.readData<Tag>('tags.json');
+                return tags.filter(sift(filter));
             },
             findById: async (id: string): Promise<Tag | null> => {
                 const tags = await this.readData<Tag>('tags.json');
@@ -189,7 +199,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             updateOne: async (filter: Filter<Tag>, {_id, ...update}: Filter<Tag>) => {
                 let tags = await this.readData<Tag>('tags.json');
-                const tagIndex = tags.findIndex((tag: any) => Object.keys(filter).every(key => tag[key] === (filter as any)[key]));
+                const filtered = tags.filter(sift(filter));
+                const tagIndex = filtered[0] ? tags.indexOf(filtered[0]) : -1;
                 if (tagIndex !== -1) {
                     tags[tagIndex] = {...tags[tagIndex], ...update};
                     await this.writeData('tags.json', tags);
@@ -200,12 +211,12 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             deleteOne: async (filter: Filter<Tag>) => {
                 let tags = await this.readData<Tag>('tags.json');
+                const filtered = tags.filter(sift(filter));
+                const tagIndex = filtered[0] ? tags.indexOf(filtered[0]) : -1;
 
-                const blogIndex = tags.findIndex((blog: any) => Object.keys(filter).every(key => blog[key] === (filter as any)[key]));
-
-                if (blogIndex !== -1) {
-                    const duplicate = JSON.parse(JSON.stringify(tags[blogIndex]));
-                    tags = tags.filter((blog: any, index) => index !== blogIndex);
+                if (tagIndex !== -1) {
+                    const duplicate = JSON.parse(JSON.stringify(tags[tagIndex]));
+                    tags = tags.filter((tag: any, index) => index !== tagIndex);
                     await this.writeData('tags.json', tags);
                     return duplicate;
                 }
@@ -215,7 +226,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
             delete: async (filter: Filter<Tag>): Promise<number> => {
                 let tags = await this.readData<Tag>('tags.json');
                 const initialLength = tags.length;
-                tags = tags.filter((tag: any) => !Object.keys(filter).every(key => tag[key] === (filter as any)[key]));
+                const toDelete = tags.filter(sift(filter));
+                tags = tags.filter(tag => !toDelete.includes(tag));
                 await this.writeData('tags.json', tags);
                 return initialLength - tags.length;
             },
@@ -226,11 +238,12 @@ export default class FileDBAdapter implements DatabaseAdapter {
         return {
             findOne: async (filter: Filter<User>): Promise<User | null> => {
                 const users = await this.readData<User>('users.json');
-                return users.find((user: any) => Object.keys(filter).every((key: any) => user[key] === (filter as any)[key])) || null;
+                const filtered = users.filter(sift(filter));
+                return filtered[0] || null;
             },
             find: async (filter: Filter<User>): Promise<User[]> => {
                 const users = await this.readData<User>('users.json');
-                return users.filter((user: any) => Object.keys(filter).every(key => user[key] === (filter as any)[key]));
+                return users.filter(sift(filter));
             },
             findById: async (id: string): Promise<User | null> => {
                 const users = await this.readData<User>('users.json');
@@ -261,7 +274,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             updateOne: async (filter: Filter<User>, {_id, ...update}: Filter<User>) => {
                 let users = await this.readData<User>('users.json');
-                const userIndex = users.findIndex((user: any) => Object.keys(filter).every(key => user[key] === (filter as any)[key]));
+                const filtered = users.filter(sift(filter));
+                const userIndex = filtered[0] ? users.indexOf(filtered[0]) : -1;
                 if (userIndex !== -1) {
                     users[userIndex] = {...users[userIndex], ...update, updatedAt: Date.now()};
                     await this.writeData('users.json', users);
@@ -272,7 +286,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             deleteOne: async (filter: Filter<User>) => {
                 let users = await this.readData<User>('users.json');
-                const userIndex = users.findIndex((user: any) => Object.keys(filter).every(key => user[key] === (filter as any)[key]));
+                const filtered = users.filter(sift(filter));
+                const userIndex = filtered[0] ? users.indexOf(filtered[0]) : -1;
 
                 if (userIndex !== -1) {
                     const duplicate = JSON.parse(JSON.stringify(users[userIndex]));
@@ -286,7 +301,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
             delete: async (filter: Filter<User>): Promise<number> => {
                 let users = await this.readData<User>('users.json');
                 const initialLength = users.length;
-                users = users.filter((user: any) => !Object.keys(filter).every(key => user[key] === (filter as any)[key]));
+                const toDelete = users.filter(sift(filter));
+                users = users.filter(user => !toDelete.includes(user));
                 await this.writeData('users.json', users);
                 return initialLength - users.length;
             },
@@ -297,11 +313,25 @@ export default class FileDBAdapter implements DatabaseAdapter {
         return {
             findOne: async (filter: Filter<SettingsEntry>): Promise<SettingsEntry | null> => {
                 const settings = await this.readData<SettingsEntry>('settings.json');
-                return settings.find((setting: any) => Object.keys(filter).every((key: any) => setting[key] === (filter as any)[key])) || null;
+                const filtered = settings.filter(sift(filter));
+                return filtered[0] || null;
             },
-            find: async (filter: Filter<SettingsEntry>): Promise<SettingsEntry[]> => {
+            find: async (filter: Filter<SettingsEntry>, options?: {
+                skip?: number,
+                limit?: number
+            }): Promise<SettingsEntry[]> => {
                 const settings = await this.readData<SettingsEntry>('settings.json');
-                return settings.filter((setting: any) => Object.keys(filter).every(key => setting[key] === (filter as any)[key]));
+                let filtered = settings.filter(sift(filter));
+
+                // Apply skip and limit if provided
+                if (options?.skip) {
+                    filtered = filtered.slice(options.skip);
+                }
+                if (options?.limit) {
+                    filtered = filtered.slice(0, options.limit);
+                }
+
+                return filtered;
             },
             findById: async (id: string): Promise<SettingsEntry | null> => {
                 const settings = await this.readData<SettingsEntry>('settings.json');
@@ -324,7 +354,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             updateOne: async (filter: Filter<SettingsEntry>, {_id, ...update}: Filter<SettingsEntry>) => {
                 let settings = await this.readData<SettingsEntry>('settings.json');
-                const settingIndex = settings.findIndex((setting: any) => Object.keys(filter).every(key => setting[key] === (filter as any)[key]));
+                const filtered = settings.filter(sift(filter));
+                const settingIndex = filtered[0] ? settings.indexOf(filtered[0]) : -1;
                 if (settingIndex !== -1) {
                     settings[settingIndex] = {...settings[settingIndex], ...update, updatedAt: Date.now()};
                     await this.writeData('settings.json', settings);
@@ -335,7 +366,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             deleteOne: async (filter: Filter<SettingsEntry>) => {
                 let settings = await this.readData<SettingsEntry>('settings.json');
-                const settingIndex = settings.findIndex((setting: any) => Object.keys(filter).every(key => setting[key] === (filter as any)[key]));
+                const filtered = settings.filter(sift(filter));
+                const settingIndex = filtered[0] ? settings.indexOf(filtered[0]) : -1;
 
                 if (settingIndex !== -1) {
                     const duplicate = JSON.parse(JSON.stringify(settings[settingIndex]));
@@ -349,7 +381,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
             delete: async (filter: Filter<SettingsEntry>): Promise<number> => {
                 let settings = await this.readData<SettingsEntry>('settings.json');
                 const initialLength = settings.length;
-                settings = settings.filter((setting: any) => !Object.keys(filter).every(key => setting[key] === (filter as any)[key]));
+                const toDelete = settings.filter(sift(filter));
+                settings = settings.filter(setting => !toDelete.includes(setting));
                 await this.writeData('settings.json', settings);
                 return initialLength - settings.length;
             },
@@ -360,11 +393,12 @@ export default class FileDBAdapter implements DatabaseAdapter {
         return {
             findOne: async (filter: Filter<Plugin>): Promise<Plugin | null> => {
                 const plugins = await this.readData<Plugin>('plugins.json');
-                return plugins.find((plugin: any) => Object.keys(filter).every((key: any) => plugin[key] === (filter as any)[key])) || null;
+                const filtered = plugins.filter(sift(filter));
+                return filtered[0] || null;
             },
             find: async (filter: Filter<Plugin>): Promise<Plugin[]> => {
                 const plugins = await this.readData<Plugin>('plugins.json');
-                return plugins.filter((plugin: any) => Object.keys(filter).every(key => plugin[key] === (filter as any)[key]));
+                return plugins.filter(sift(filter));
             },
             findById: async (id: string): Promise<Plugin | null> => {
                 const plugins = await this.readData<Plugin>('plugins.json');
@@ -386,7 +420,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             updateOne: async (filter: Filter<Plugin>, {_id, ...update}: Filter<Plugin>) => {
                 let plugins = await this.readData<Plugin>('plugins.json');
-                const pluginIndex = plugins.findIndex((plugin: any) => Object.keys(filter).every(key => plugin[key] === (filter as any)[key]));
+                const filtered = plugins.filter(sift(filter));
+                const pluginIndex = filtered[0] ? plugins.indexOf(filtered[0]) : -1;
                 if (pluginIndex !== -1) {
                     plugins[pluginIndex] = {...plugins[pluginIndex], ...update, updatedAt: Date.now()};
                     await this.writeData('plugins.json', plugins);
@@ -397,7 +432,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             deleteOne: async (filter: Filter<Plugin>) => {
                 let plugins = await this.readData<Plugin>('plugins.json');
-                const pluginIndex = plugins.findIndex((plugin: any) => Object.keys(filter).every(key => plugin[key] === (filter as any)[key]));
+                const filtered = plugins.filter(sift(filter));
+                const pluginIndex = filtered[0] ? plugins.indexOf(filtered[0]) : -1;
 
                 if (pluginIndex !== -1) {
                     const duplicate = JSON.parse(JSON.stringify(plugins[pluginIndex]));
@@ -411,7 +447,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
             delete: async (filter: Filter<Plugin>): Promise<number> => {
                 let plugins = await this.readData<Plugin>('plugins.json');
                 const initialLength = plugins.length;
-                plugins = plugins.filter((plugin: any) => !Object.keys(filter).every(key => plugin[key] === (filter as any)[key]));
+                const toDelete = plugins.filter(sift(filter));
+                plugins = plugins.filter(plugin => !toDelete.includes(plugin));
                 await this.writeData('plugins.json', plugins);
                 return initialLength - plugins.length;
             },
@@ -424,11 +461,12 @@ export default class FileDBAdapter implements DatabaseAdapter {
         return {
             findOne: async (filter: Filter<PluginHookMapping>): Promise<PluginHookMapping | null> => {
                 const mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
-                return mappings.find((mapping: any) => Object.keys(filter).every((key: any) => mapping[key] === (filter as any)[key])) || null;
+                const filtered = mappings.filter(sift(filter));
+                return filtered[0] || null;
             },
             find: async (filter: Filter<PluginHookMapping>): Promise<PluginHookMapping[]> => {
                 const mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
-                return mappings.filter((mapping: any) => Object.keys(filter).every(key => mapping[key] === (filter as any)[key]));
+                return mappings.filter(sift(filter));
             },
             findById: async (id: string): Promise<PluginHookMapping | null> => {
                 const mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
@@ -451,7 +489,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             updateOne: async (filter: Filter<PluginHookMapping>, {_id, ...update}: Filter<PluginHookMapping>) => {
                 let mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
-                const mappingIndex = mappings.findIndex((mapping: any) => Object.keys(filter).every(key => mapping[key] === (filter as any)[key]));
+                const filtered = mappings.filter(sift(filter));
+                const mappingIndex = filtered[0] ? mappings.indexOf(filtered[0]) : -1;
                 if (mappingIndex !== -1) {
                     mappings[mappingIndex] = {...mappings[mappingIndex], ...update, updatedAt: Date.now()};
                     await this.writeData('plugin-hook-mappings.json', mappings);
@@ -462,7 +501,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             deleteOne: async (filter: Filter<PluginHookMapping>) => {
                 let mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
-                const mappingIndex = mappings.findIndex((mapping: any) => Object.keys(filter).every(key => mapping[key] === (filter as any)[key]));
+                const filtered = mappings.filter(sift(filter));
+                const mappingIndex = filtered[0] ? mappings.indexOf(filtered[0]) : -1;
 
                 if (mappingIndex !== -1) {
                     const duplicate = JSON.parse(JSON.stringify(mappings[mappingIndex]));
@@ -476,7 +516,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
             delete: async (filter: Filter<PluginHookMapping>): Promise<number> => {
                 let mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
                 const initialLength = mappings.length;
-                mappings = mappings.filter((mapping: any) => !Object.keys(filter).every(key => mapping[key] === (filter as any)[key]));
+                const toDelete = mappings.filter(sift(filter));
+                mappings = mappings.filter(mapping => !toDelete.includes(mapping));
                 await this.writeData('plugin-hook-mappings.json', mappings);
                 return initialLength - mappings.length;
             },
@@ -487,11 +528,12 @@ export default class FileDBAdapter implements DatabaseAdapter {
         return {
             findOne: async (filter: Filter<Comment>): Promise<Comment | null> => {
                 const comments = await this.readData<Comment>('comments.json');
-                return comments.find((comment: any) => Object.keys(filter).every((key: any) => comment[key] === (filter as any)[key])) || null;
+                const filtered = comments.filter(sift(filter));
+                return filtered[0] || null;
             },
             find: async (filter: Filter<Comment>): Promise<Comment[]> => {
                 const comments = await this.readData<Comment>('comments.json');
-                return comments.filter((comment: any) => Object.keys(filter).every(key => comment[key] === (filter as any)[key]));
+                return comments.filter(sift(filter));
             },
             findById: async (id: string): Promise<Comment | null> => {
                 const comments = await this.readData<Comment>('comments.json');
@@ -514,7 +556,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             updateOne: async (filter: Filter<Comment>, {_id, ...update}: Filter<Comment>) => {
                 let comments = await this.readData<Comment>('comments.json');
-                const commentIndex = comments.findIndex((comment: any) => Object.keys(filter).every(key => comment[key] === (filter as any)[key]));
+                const filtered = comments.filter(sift(filter));
+                const commentIndex = filtered[0] ? comments.indexOf(filtered[0]) : -1;
                 if (commentIndex !== -1) {
                     comments[commentIndex] = {...comments[commentIndex], ...update, updatedAt: Date.now()};
                     await this.writeData('comments.json', comments);
@@ -525,7 +568,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             deleteOne: async (filter: Filter<Comment>) => {
                 let comments = await this.readData<Comment>('comments.json');
-                const commentIndex = comments.findIndex((comment: any) => Object.keys(filter).every(key => comment[key] === (filter as any)[key]));
+                const filtered = comments.filter(sift(filter));
+                const commentIndex = filtered[0] ? comments.indexOf(filtered[0]) : -1;
 
                 if (commentIndex !== -1) {
                     const duplicate = JSON.parse(JSON.stringify(comments[commentIndex]));
@@ -539,7 +583,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
             delete: async (filter: Filter<Comment>): Promise<number> => {
                 let comments = await this.readData<Comment>('comments.json');
                 const initialLength = comments.length;
-                comments = comments.filter((comment: any) => !Object.keys(filter).every(key => comment[key] === (filter as any)[key]));
+                const toDelete = comments.filter(sift(filter));
+                comments = comments.filter(comment => !toDelete.includes(comment));
                 await this.writeData('comments.json', comments);
                 return initialLength - comments.length;
             },
@@ -550,11 +595,12 @@ export default class FileDBAdapter implements DatabaseAdapter {
         return {
             findOne: async (filter: Filter<Revision>): Promise<Revision | null> => {
                 const revisions = await this.readData<Revision>('revisions.json');
-                return revisions.find((revision: any) => Object.keys(filter).every((key: any) => revision[key] === (filter as any)[key])) || null;
+                const filtered = revisions.filter(sift(filter));
+                return filtered[0] || null;
             },
             find: async (filter: Filter<Revision>): Promise<Revision[]> => {
                 const revisions = await this.readData<Revision>('revisions.json');
-                return revisions.filter((revision: any) => Object.keys(filter).every(key => revision[key] === (filter as any)[key]));
+                return revisions.filter(sift(filter));
             },
             findById: async (id: string): Promise<Revision | null> => {
                 const revisions = await this.readData<Revision>('revisions.json');
@@ -577,7 +623,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             updateOne: async (filter: Filter<Revision>, {_id, ...update}: Filter<Revision>) => {
                 let revisions = await this.readData<Revision>('revisions.json');
-                const revisionIndex = revisions.findIndex((revision: any) => Object.keys(filter).every(key => revision[key] === (filter as any)[key]));
+                const filtered = revisions.filter(sift(filter));
+                const revisionIndex = filtered[0] ? revisions.indexOf(filtered[0]) : -1;
                 if (revisionIndex !== -1) {
                     revisions[revisionIndex] = {...revisions[revisionIndex], ...update};
                     await this.writeData('revisions.json', revisions);
@@ -588,7 +635,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             deleteOne: async (filter: Filter<Revision>) => {
                 let revisions = await this.readData<Revision>('revisions.json');
-                const revisionIndex = revisions.findIndex((revision: any) => Object.keys(filter).every(key => revision[key] === (filter as any)[key]));
+                const filtered = revisions.filter(sift(filter));
+                const revisionIndex = filtered[0] ? revisions.indexOf(filtered[0]) : -1;
 
                 if (revisionIndex !== -1) {
                     const duplicate = JSON.parse(JSON.stringify(revisions[revisionIndex]));
@@ -602,7 +650,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
             delete: async (filter: Filter<Revision>): Promise<number> => {
                 let revisions = await this.readData<Revision>('revisions.json');
                 const initialLength = revisions.length;
-                revisions = revisions.filter((revision: any) => !Object.keys(filter).every(key => revision[key] === (filter as any)[key]));
+                const toDelete = revisions.filter(sift(filter));
+                revisions = revisions.filter(revision => !toDelete.includes(revision));
                 await this.writeData('revisions.json', revisions);
                 return initialLength - revisions.length;
             },
@@ -613,11 +662,12 @@ export default class FileDBAdapter implements DatabaseAdapter {
         return {
             findOne: async (filter: Filter<Media>): Promise<Media | null> => {
                 const media = await this.readData<Media>('media.json');
-                return media.find((item: any) => Object.keys(filter).every((key: any) => item[key] === (filter as any)[key])) || null;
+                const filtered = media.filter(sift(filter));
+                return filtered[0] || null;
             },
             find: async (filter: Filter<Media>): Promise<Media[]> => {
                 const media = await this.readData<Media>('media.json');
-                return media.filter((item: any) => Object.keys(filter).every(key => item[key] === (filter as any)[key]));
+                return media.filter(sift(filter));
             },
             findById: async (id: string): Promise<Media | null> => {
                 const media = await this.readData<Media>('media.json');
@@ -640,7 +690,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             updateOne: async (filter: Filter<Media>, {_id, ...update}: Filter<Media>) => {
                 let media = await this.readData<Media>('media.json');
-                const itemIndex = media.findIndex((item: any) => Object.keys(filter).every(key => item[key] === (filter as any)[key]));
+                const filtered = media.filter(sift(filter));
+                const itemIndex = filtered[0] ? media.indexOf(filtered[0]) : -1;
                 if (itemIndex !== -1) {
                     media[itemIndex] = {...media[itemIndex], ...update, updatedAt: Date.now()};
                     await this.writeData('media.json', media);
@@ -651,7 +702,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
 
             deleteOne: async (filter: Filter<Media>) => {
                 let media = await this.readData<Media>('media.json');
-                const itemIndex = media.findIndex((item: any) => Object.keys(filter).every(key => item[key] === (filter as any)[key]));
+                const filtered = media.filter(sift(filter));
+                const itemIndex = filtered[0] ? media.indexOf(filtered[0]) : -1;
 
                 if (itemIndex !== -1) {
                     const duplicate = JSON.parse(JSON.stringify(media[itemIndex]));
@@ -665,7 +717,8 @@ export default class FileDBAdapter implements DatabaseAdapter {
             delete: async (filter: Filter<Media>): Promise<number> => {
                 let media = await this.readData<Media>('media.json');
                 const initialLength = media.length;
-                media = media.filter((item: any) => !Object.keys(filter).every(key => item[key] === (filter as any)[key]));
+                const toDelete = media.filter(sift(filter));
+                media = media.filter(item => !toDelete.includes(item));
                 await this.writeData('media.json', media);
                 return initialLength - media.length;
             },
