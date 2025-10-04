@@ -1,4 +1,4 @@
-import type {PluginStorage} from '@supergrowthai/types/server';
+import type {StorageAdapter} from '@supergrowthai/types/server';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import {createHash} from 'crypto';
@@ -7,10 +7,10 @@ import {createHash} from 'crypto';
 const STORAGE_BASE = process.env.PLUGIN_STORAGE_PATH || './plugin-storage';
 
 /**
- * Server-side storage helper for plugins with automatic fingerprinting
+ * Local filesystem storage adapter
  * Each plugin gets its own isolated directory
  */
-export class ServerStorageHelper implements PluginStorage {
+export class LocalStorageAdapter implements StorageAdapter {
     private readonly storageDir: string;
 
     constructor(private readonly pluginId: string) {

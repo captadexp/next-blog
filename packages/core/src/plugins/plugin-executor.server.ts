@@ -11,6 +11,7 @@ import pluginManager from "./pluginManager.js";
 import {ServerSDKFactory} from "./sdk-factory.server.js";
 import {initializeSettingsHelper} from "./settings-helper.server.js";
 import {VERSION_INFO} from "../version.js";
+import {getSystemPluginId} from "../utils/defaultSettings.js";
 
 /**
  * Server-side plugin executor
@@ -220,7 +221,7 @@ export class PluginExecutor {
             }
 
             // Create plugin-specific SDK using the factory
-            const pluginSDK = this.sdkFactory!.createSDK(mapping.pluginId);
+            const pluginSDK = await this.sdkFactory!.createSDK(mapping.pluginId);
 
             const result = await module[type][hookName](pluginSDK, context);
             updateContext(result);
@@ -317,14 +318,14 @@ export class PluginExecutor {
      * Call plugins:loaded hook with current version information
      */
     private async callProxySystemInitHook() {
-        if (!this.sdkFactory) {
-            this.logger.error('SDK factory not initialized');
+        if (!this.sdkFactory || !this.db) {
+            this.logger.error('SDK factory or database not initialized');
             return;
         }
 
         try {
-            // Create a basic SDK for system initialization
-            const sdk = this.sdkFactory.createSDK('plugins:loaded');
+            const systemPluginId = await getSystemPluginId(this.db);
+            const sdk = await this.sdkFactory.createSDK(systemPluginId);
 
             const payload = {
                 currentVersion: VERSION_INFO.version,

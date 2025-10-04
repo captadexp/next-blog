@@ -25,12 +25,12 @@ export interface ServerSDK extends BaseSDK {
     system: SystemInfo;
     cache?: PluginCache;
     events?: PluginEvents;
-    storage?: PluginStorage;
+    storage?: StorageAdapter;
     callRPC: CallServerRPCFunction<RPCMethods>;
     callHook: CallServerHookFunction<ServerHooks>;
 }
 
-export interface PluginStorage {
+export interface StorageAdapter {
     save(path: string, content: Buffer | Uint8Array | string): Promise<string>;
 
     read(path: string): Promise<Buffer>;

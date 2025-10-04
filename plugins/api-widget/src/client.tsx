@@ -103,7 +103,7 @@ function DashboardWidget(sdk: ClientSDK) {
 
             if (response.code === 0 && response.payload && response.payload.length > 0) {
                 // Get the latest blog post (last item in array)
-                const latestBlog = response.payload.at(-1);
+                const latestBlog = response.payload[response.payload.length - 1];
                 if (latestBlog) {
                     currentSdk.notify("Latest blog loaded");
                     pluginState.cachedData = latestBlog;

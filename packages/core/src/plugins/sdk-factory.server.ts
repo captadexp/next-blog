@@ -2,7 +2,7 @@ import type {DatabaseAdapter, Logger, ServerConfig, ServerSDK, User} from '@supe
 import {ServerSettingsHelper} from './settings-helper.server.js';
 import {ServerCacheHelper} from './cache-helper.server.js';
 import {ServerEventsHelper} from './events-helper.server.js';
-import {ServerStorageHelper} from './storage-helper.server.js';
+import {StorageFactory} from '../storage/storage-factory.js';
 import {VERSION_INFO} from '../version.js';
 import {PluginExecutor} from "./plugin-executor.server.ts";
 
@@ -29,12 +29,12 @@ export class ServerSDKFactory {
      * Create an SDK instance for a specific plugin
      * All operations performed through this SDK will be automatically scoped to the plugin
      */
-    createSDK(pluginId: string): ServerSDK {
+    async createSDK(pluginId: string): Promise<ServerSDK> {
         // Create plugin-specific helpers
         const settingsHelper = new ServerSettingsHelper(pluginId, this.deps.db);
         const cacheHelper = new ServerCacheHelper(pluginId);
         const eventsHelper = new ServerEventsHelper(pluginId);
-        const storageHelper = new ServerStorageHelper(pluginId);
+        const storageHelper = await StorageFactory.create(pluginId, this.deps.db);
 
         // Create the SDK with plugin fingerprinting
         const sdk: ServerSDK = {

@@ -1,4 +1,5 @@
 import type {DatabaseAdapter, Plugin, User} from "@supergrowthai/types/server";
+import {StorageFactory} from "../storage/storage-factory.ts";
 
 // Cache for system IDs
 let cachedSystemUserId: string | null = null;
@@ -87,6 +88,9 @@ export async function initializeSystem(db: DatabaseAdapter): Promise<void> {
     try {
         await getOrCreateSystemUser(db);
         await getOrCreateSystemPlugin(db);
+
+        // Initialize storage settings
+        await StorageFactory.initializeDefaultSettings(db);
     } catch (error) {
         console.error("Error initializing system components:", error);
     }
