@@ -68,33 +68,39 @@ export class NextJSRouter {
                 // Create normalized request
                 const url = new URL(request.url);
                 const query = Object.fromEntries(url.searchParams.entries());
+
+                // Check if handler wants raw body (no parsing)
+                const shouldParseBody = handler.config?.parseBody !== false;
+
                 let body: any = null;
 
-                try {
-                    if (request.method !== 'GET' && request.method !== 'HEAD') {
-                        const contentType = request.headers.get('content-type');
-                        if (contentType?.includes('application/json')) {
-                            body = await request.json();
-                        } else if (contentType?.includes('multipart/form-data')) {
-                            /*
-                            (property) BodyMixin.formData: () => Promise<FormData>
-                            @deprecated — This method is not recommended for parsing multipart/form-data bodies in server environments. It is recommended to use a library such as @fastify/busboy   as follows:
-                            @example
-                            import { Busboy } from '@fastify/busboy'
-                            import { Readable } from 'node:stream'
-                            const response = await fetch('...')
-                            const busboy = new Busboy({ headers: { 'content-type': response.headers.get('content-type') } })
-                            // handle events emitted from `busboy`
-                            Readable.fromWeb(response.body).pipe(busboy)
-                            */
-                            body = await request.formData();
-                        } else if (contentType?.includes('application/x-www-form-urlencoded')) {
-                            const text = await request.text();
-                            body = Object.fromEntries(new URLSearchParams(text));
+                if (shouldParseBody) {
+                    try {
+                        if (request.method !== 'GET' && request.method !== 'HEAD') {
+                            const contentType = request.headers.get('content-type');
+                            if (contentType?.includes('application/json')) {
+                                body = await request.json();
+                            } else if (contentType?.includes('multipart/form-data')) {
+                                /*
+                                (property) BodyMixin.formData: () => Promise<FormData>
+                                @deprecated — This method is not recommended for parsing multipart/form-data bodies in server environments. It is recommended to use a library such as @fastify/busboy   as follows:
+                                @example
+                                import { Busboy } from '@fastify/busboy'
+                                import { Readable } from 'node:stream'
+                                const response = await fetch('...')
+                                const busboy = new Busboy({ headers: { 'content-type': response.headers.get('content-type') } })
+                                // handle events emitted from `busboy`
+                                Readable.fromWeb(response.body).pipe(busboy)
+                                */
+                                body = await request.formData();
+                            } else if (contentType?.includes('application/x-www-form-urlencoded')) {
+                                const text = await request.text();
+                                body = Object.fromEntries(new URLSearchParams(text));
+                            }
                         }
+                    } catch {
+                        // If body parsing fails, continue with empty body
                     }
-                } catch {
-                    // If body parsing fails, continue with empty body
                 }
 
                 const cookiesObj = (await cookies())

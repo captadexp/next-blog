@@ -18,7 +18,8 @@ const CreateUser: FunctionComponent<CreateUserProps> = () => {
         'categories:list', 'categories:read', 'categories:create', 'categories:update', 'categories:delete',
         'tags:list', 'tags:read', 'tags:create', 'tags:update', 'tags:delete',
         'users:list', 'users:read', 'users:create', 'users:update', 'users:delete',
-        'blogs:all', 'categories:all', 'tags:all', 'users:all',
+        'media:list', 'media:read', 'media:create', 'media:update', 'media:delete',
+        'blogs:all', 'categories:all', 'tags:all', 'users:all', 'media:all',
         'all:list', 'all:read', 'all:create', 'all:update', 'all:delete', 'all:all'
     ]);
 

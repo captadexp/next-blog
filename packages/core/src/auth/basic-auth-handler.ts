@@ -20,7 +20,8 @@ async function createDefaultAdminUser(db: DatabaseAdapter, password: string): Pr
         'blogs:all', 'blogs:list', 'blogs:read', 'blogs:create', 'blogs:update', 'blogs:delete',
         'categories:all', 'categories:list', 'categories:read', 'categories:create', 'categories:update', 'categories:delete',
         'tags:all', 'tags:list', 'tags:read', 'tags:create', 'tags:update', 'tags:delete',
-        'users:all', 'users:list', 'users:read', 'users:create', 'users:update', 'users:delete'
+        'users:all', 'users:list', 'users:read', 'users:create', 'users:update', 'users:delete',
+        'media:all', 'media:list', 'media:read', 'media:create', 'media:update', 'media:delete'
     ];
 
     // Hash the password

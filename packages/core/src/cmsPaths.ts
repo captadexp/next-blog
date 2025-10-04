@@ -4,6 +4,7 @@ import {DashboardPage} from "@supergrowthai/next-blog-dashboard";
 import {
     createBlog,
     createCategory,
+    createMedia,
     createPlugin,
     createSetting,
     createTag,
@@ -13,6 +14,7 @@ import {
     cronHourly,
     deleteBlog,
     deleteCategory,
+    deleteMedia,
     deletePlugin,
     deletePluginSetting,
     deleteSetting,
@@ -25,6 +27,8 @@ import {
     getCategoryById,
     getConfig,
     getCurrentUser,
+    getMedia,
+    getMediaById,
     getPluginById,
     getPluginHookMappings,
     getPlugins,
@@ -41,9 +45,11 @@ import {
     updateBlog,
     updateBlogMetadata,
     updateCategory,
+    updateMedia,
     updateSetting,
     updateTag,
-    updateUser
+    updateUser,
+    uploadMedia
 } from "./api";
 import {handleStaticFileRequest} from "./utils/staticFileHandler.js";
 
@@ -159,6 +165,17 @@ const cmsPaths: PathObject = {
             '5-min': methodHandler({GET: cron5Minute}),
             'hourly': methodHandler({GET: cronHourly}),
             'daily': methodHandler({GET: cronDaily})
+        },
+        media: {
+            '*': methodHandler({GET: getMedia}),
+            ':id': methodHandler({GET: getMediaById, POST: updateMedia}),
+            'create': methodHandler({POST: createMedia}),
+            'upload': {
+                ':mediaId': uploadMedia // No methodHandler wrapper - handles its own methods and has parseBody: false
+            },
+            delete: {
+                ':id': methodHandler({POST: deleteMedia})
+            }
         }
     },
     dashboard: {

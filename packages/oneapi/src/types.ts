@@ -25,12 +25,21 @@ export interface SessionData {
     session?: any;
 }
 
+// Configuration for OneAPI functions
+export interface OneApiFunctionConfig {
+    parseBody?: boolean; // Whether to parse request body (default: true)
+    maxBodySize?: number; // Maximum body size in bytes (optional)
+}
+
 // Support both standard OneApiFunctionResponse and raw Response objects (for static files, etc)
-export type OneApiFunction<EXTRA = any, HEADERS = any, BODY = any, QUERY = any, RPayload = any> = (
-    session: SessionData,
-    request: MinimumRequest<HEADERS, BODY, QUERY>,
-    extra: EXTRA
-) => Promise<OneApiFunctionResponse<RPayload> | Response | NextResponse>;
+export type OneApiFunction<EXTRA = any, HEADERS = any, BODY = any, QUERY = any, RPayload = any> = {
+    (
+        session: SessionData,
+        request: MinimumRequest<HEADERS, BODY, QUERY>,
+        extra: EXTRA
+    ): Promise<OneApiFunctionResponse<RPayload> | Response | NextResponse>;
+    config?: OneApiFunctionConfig;
+};
 
 export interface OneApiFunctionResponse<T = any> {
     code: number;

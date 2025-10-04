@@ -2,6 +2,7 @@ import type {
     Blog,
     BlogStatus,
     Category,
+    Media,
     Permission,
     Plugin,
     PluginHookMapping,
@@ -21,7 +22,9 @@ export interface APIResponse<T = any> {
 
 export interface BlogAPI {
     getBlogs(): Promise<APIResponse<Blog[]>>;
+
     getBlog(id: string): Promise<APIResponse<Blog>>;
+
     createBlog(data: {
         title: string;
         slug: string;
@@ -46,13 +49,17 @@ export interface BlogAPI {
     }): Promise<APIResponse<Blog>>;
 
     updateBlogMetadata(id: string, metadata: Record<string, any>): Promise<APIResponse<Blog>>;
+
     deleteBlog(id: string): Promise<APIResponse<null>>;
 }
 
 export interface UserAPI {
     getUsers(): Promise<APIResponse<User[]>>;
+
     getUser(id: string): Promise<APIResponse<User>>;
+
     getCurrentUser(): Promise<APIResponse<User>>;
+
     createUser(data: {
         username: string;
         email: string;
@@ -78,7 +85,9 @@ export interface UserAPI {
 
 export interface CategoryAPI {
     getCategories(): Promise<APIResponse<Category[]>>;
+
     getCategory(id: string): Promise<APIResponse<Category>>;
+
     createCategory(data: {
         name: string;
         description: string;
@@ -96,12 +105,14 @@ export interface CategoryAPI {
 
 export interface TagAPI {
     getTags(): Promise<APIResponse<Tag[]>>;
+
     getTag(id: string): Promise<APIResponse<Tag>>;
 
     createTag(data: {
         name: string;
         slug: string;
     }): Promise<APIResponse<Tag>>;
+
     updateTag(id: string, data: {
         name?: string;
         slug?: string;
@@ -112,6 +123,7 @@ export interface TagAPI {
 
 export interface SettingsAPI {
     getSettings(): Promise<APIResponse<SettingsEntry[]>>;
+
     getSetting(id: string): Promise<APIResponse<SettingsEntry>>;
 
     createSetting(data: {
@@ -120,6 +132,7 @@ export interface SettingsAPI {
         scope?: 'global' | 'user';
         isSecure?: boolean;
     }): Promise<APIResponse<SettingsEntry>>;
+
     updateSetting(id: string, data: {
         key?: string;
         value?: string | boolean | number | boolean[] | string[] | number[];
@@ -130,11 +143,13 @@ export interface SettingsAPI {
 
 export interface PluginAPI {
     getPlugins(): Promise<APIResponse<Plugin[]>>;
+
     getPlugin(id: string): Promise<APIResponse<Plugin>>;
 
     createPlugin(data: {
         url: string;
     }): Promise<APIResponse<Plugin>>;
+
     updatePlugin(id: string, data: {
         name?: string;
         description?: string;
@@ -144,10 +159,13 @@ export interface PluginAPI {
     }): Promise<APIResponse<Plugin>>;
 
     deletePlugin(id: string): Promise<APIResponse<null>>;
+
     reinstallPlugin(id: string): Promise<APIResponse<{ clearCache: boolean }>>;
+
     getPluginHookMappings(params?: {
         type: 'client' | 'server' | 'rpc'
     }): Promise<APIResponse<PluginHookMapping[]>>;
+
     callPluginHook<TPayload = any, TResponse = any>(
         hookName: string,
         payload: TPayload
@@ -156,13 +174,53 @@ export interface PluginAPI {
 
 export interface AuthAPI {
     login(username: string, password: string): Promise<APIResponse<User>>;
+
     logout(): Promise<APIResponse<null>>;
+
     checkPermission(permission: Permission): Promise<APIResponse<boolean>>;
+
     getAllPermissions(): Promise<APIResponse<Permission[]>>;
 }
 
 export interface ConfigAPI {
     getConfig(): Promise<APIResponse<UIConfiguration>>;
+}
+
+export interface MediaAPI {
+    getMedia(params?: {
+        mimeType?: string;
+        userId?: string;
+        limit?: number;
+        offset?: number;
+    }): Promise<APIResponse<Media[]>>;
+
+    getMediaById(id: string): Promise<APIResponse<Media>>;
+
+    createMedia(data: {
+        filename: string;
+        url: string;
+        mimeType: string;
+        size?: number;
+        dimensions?: {
+            width: number;
+            height: number;
+        };
+        metadata?: Record<string, any>;
+    }): Promise<APIResponse<Media>>;
+
+    updateMedia(id: string, data: {
+        filename?: string;
+        url?: string;
+        mimeType?: string;
+        size?: number;
+        dimensions?: {
+            width: number;
+            height: number;
+        };
+        metadata?: Record<string, any>;
+    }): Promise<APIResponse<Media>>;
+
+    deleteMedia(id: string): Promise<APIResponse<null>>;
 }
 
 // Combined API Client interface
@@ -173,7 +231,8 @@ export interface APIClient extends BlogAPI,
     SettingsAPI,
     PluginAPI,
     AuthAPI,
-    ConfigAPI {
+    ConfigAPI,
+    MediaAPI {
     // Token management for the client
     setToken?(token: string): void;
 

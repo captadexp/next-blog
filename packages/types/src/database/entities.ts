@@ -251,7 +251,7 @@ export interface PluginHookMappingData extends Partial<PluginHookMapping> {
 
 // Permission system types
 export type PermissionType = 'list' | 'read' | 'create' | 'update' | 'delete' | 'all';
-export type EntityType = 'all' | 'blogs' | 'categories' | 'tags' | 'users' | 'settings' | 'plugins';
+export type EntityType = 'all' | 'blogs' | 'categories' | 'tags' | 'users' | 'settings' | 'plugins' | 'media';
 export type Permission = `${EntityType}:${PermissionType}`;
 
 export const PERMISSION_WEIGHTS = {
@@ -270,6 +270,7 @@ export const PERMISSION_WEIGHTS = {
         'users': 40,
         'settings': 50,
         'plugins': 60,
+        'media': 70,
         'all': 100
     }
 } as const;

@@ -44,10 +44,18 @@ export class ExpressRouter {
                     user = await this.config.authHandler.getUser(req as any, res as any);
                 }
 
+                // Check if handler wants raw body (no parsing)
+                const shouldParseBody = handler.config?.parseBody !== false;
+
+                // For Express, body parsing is typically done by middleware before this point
+                // If parseBody is false, we need to access the raw body
+                // Note: This requires that body-parser middleware is configured conditionally
+                let body = shouldParseBody ? req.body : undefined;
+
                 // Normalize request
                 const normalizedRequest: MinimumRequest = {
                     query: req.query,
-                    body: req.body,
+                    body,
                     method: req.method as any,
                     headers: req.headers,
                     cookies: req.cookies,

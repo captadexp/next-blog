@@ -3,6 +3,7 @@ import type {
     APIResponse,
     Blog,
     Category,
+    Media,
     Permission,
     Plugin,
     PluginHookMapping,
@@ -264,6 +265,53 @@ class ApiClient implements APIClient {
 
     async callPluginHook<TPayload = any, TResponse = any>(hookName: string, payload: TPayload): Promise<TResponse> {
         return this.request<any>(`/plugin/rpc/${hookName}`, 'POST', payload) as any;
+    }
+
+    // Media APIs
+    async getMedia(params?: {
+        mimeType?: string;
+        userId?: string;
+        limit?: number;
+        offset?: number;
+    }): Promise<APIResponse<Media[]>> {
+        const queryString = params ? '?' + new URLSearchParams(params as any).toString() : '';
+        return this.request<Media[]>(`/media${queryString}`);
+    }
+
+    async getMediaById(id: string): Promise<APIResponse<Media>> {
+        return this.request<Media>(`/media/${id}`);
+    }
+
+    async createMedia(data: {
+        filename: string;
+        url: string;
+        mimeType: string;
+        size?: number;
+        dimensions?: {
+            width: number;
+            height: number;
+        };
+        metadata?: Record<string, any>;
+    }): Promise<APIResponse<Media>> {
+        return this.request<Media>('/media/create', 'POST', data);
+    }
+
+    async updateMedia(id: string, data: {
+        filename?: string;
+        url?: string;
+        mimeType?: string;
+        size?: number;
+        dimensions?: {
+            width: number;
+            height: number;
+        };
+        metadata?: Record<string, any>;
+    }): Promise<APIResponse<Media>> {
+        return this.request<Media>(`/media/${id}`, 'POST', data);
+    }
+
+    async deleteMedia(id: string): Promise<APIResponse<null>> {
+        return this.request<null>(`/media/delete/${id}`, 'POST');
     }
 
     private async request<T>(

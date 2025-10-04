@@ -342,6 +342,55 @@ class MockAPIClient implements APIClient {
         });
     }
 
+    // Media APIs
+    async getMedia(params?: {
+        mimeType?: string;
+        userId?: string;
+        limit?: number;
+        offset?: number;
+    }) {
+        console.log('[Mock Client API] getMedia', params);
+        return this.mockResponse([]);
+    }
+
+    async getMediaById(id: string) {
+        console.log('[Mock Client API] getMediaById', id);
+        return this.mockResponse({
+            _id: createBrandedId.media(id),
+            filename: 'mock-image.jpg',
+            url: 'http://example.com/image.jpg',
+            mimeType: 'image/jpeg',
+            userId: createBrandedId.user('1'),
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        });
+    }
+
+    async createMedia(data: any) {
+        console.log('[Mock Client API] createMedia', data);
+        return this.mockResponse({
+            _id: createBrandedId.media(Date.now().toString()),
+            ...data,
+            userId: createBrandedId.user('1'),
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        });
+    }
+
+    async updateMedia(id: string, data: any) {
+        console.log('[Mock Client API] updateMedia', id, data);
+        return this.mockResponse({
+            _id: createBrandedId.media(id),
+            ...data,
+            updatedAt: Date.now()
+        });
+    }
+
+    async deleteMedia(id: string) {
+        console.log('[Mock Client API] deleteMedia', id);
+        return this.mockResponse(null);
+    }
+
     // Token management
     setToken(token: string) {
         console.log('[Mock Client API] Token set:', token);
