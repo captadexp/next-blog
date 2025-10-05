@@ -193,6 +193,7 @@ export interface Media {
     description?: string;
     width?: number;
     height?: number;
+    size?: number;
 
     // Video specific
     duration?: number;  // seconds

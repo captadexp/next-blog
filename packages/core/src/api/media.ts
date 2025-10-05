@@ -1,8 +1,9 @@
 import secure from '../utils/secureInternal.js';
 import {NotFound, Success, ValidationError} from '../utils/errors.js';
 import {StorageFactory} from '../storage/storage-factory.js';
-import {v4 as uuidv4} from 'uuid';
 import path from 'path';
+import type {OneApiFunction} from "@supergrowthai/oneapi/types";
+import {ApiExtra} from "../types/api.ts";
 
 export const getMedia = secure(async (session, request, extra) => {
     const db = await extra.db();
@@ -52,8 +53,8 @@ export const createMedia = secure(async (session, request, extra) => {
     const db = await extra.db();
     const data = request.body as any;
 
-    if (!data.filename || !data.url || !data.mimeType) {
-        throw new ValidationError('filename, url, and mimeType are required');
+    if (!data.filename || !data.mimeType) {
+        throw new ValidationError('filename and mimeType are required');
     }
 
     const mediaData = {
@@ -89,7 +90,7 @@ export const updateMedia = secure(async (session, request, extra) => {
 
     await extra.callHook('media:onUpdate:before', {media: existingMedia, updates: data});
 
-    const updatedMedia = await db.media.update(id, data);
+    const updatedMedia = await db.media.updateOne({_id: id}, data);
 
     await extra.callHook('media:onUpdate:after', {media: updatedMedia});
 
@@ -150,7 +151,7 @@ export const deleteMedia = secure(async (session, request, extra) => {
     throw new Success('Media deleted successfully', null);
 }, {requirePermission: 'media:delete'});
 
-export const uploadMedia = secure(async (session, request, extra) => {
+const uploadMediaHandler: OneApiFunction<ApiExtra> = async (session, request, extra) => {
     const db = await extra.db();
     const storageAdapter = await StorageFactory.create('system', db);
 
@@ -162,19 +163,20 @@ export const uploadMedia = secure(async (session, request, extra) => {
 
     const contentType = request.headers['content-type'] || '';
 
-    // Handle streaming multipart upload with busboy
+    // Handle streaming multipart upload
     if (contentType.includes('multipart/form-data')) {
-        // For now, we'll use the built-in FormData parsing since busboy requires additional setup
-        // In production, you'd want to install and use @fastify/busboy for true streaming
+        // Get mediaId from path params
+        const mediaId = request._params?.mediaId;
 
-        // Check if it's a Next.js request (which has formData method)
+        if (!mediaId) {
+            throw new ValidationError('Media ID is required in URL');
+        }
+
+        // Since parseBody is false, we handle the raw stream
         if ('formData' in rawRequest && typeof rawRequest.formData === 'function') {
-            // Since parseBody is false, we need to handle the raw stream
-            // This is a simplified implementation - in production use busboy
             const formData = await rawRequest.formData();
             const file = formData.get('file') as File;
-            const mediaId = formData.get('mediaId') as string || uuidv4();
-            const storagePath = formData.get('storagePath') as string;
+            const storagePath = formData.get('storagePath') as string; // optional
 
             if (!file) {
                 throw new ValidationError('No file provided');
@@ -191,13 +193,10 @@ export const uploadMedia = secure(async (session, request, extra) => {
             // Get the URL for the uploaded file
             const fileUrl = await storageAdapter.getUrl(finalPath);
 
-            // Create media record in database
-            const media = await db.media.create({
-                filename: file.name,
+            // Update the existing media record with the URL
+            const media = await db.media.updateOne({_id: mediaId}, {
                 url: fileUrl || `/storage/${finalPath}`,
-                mimeType: file.type,
-                size: buffer.length,
-                userId: session.user.id
+                size: buffer.length
             });
 
             await extra.callHook('media:onUpload:after', {media});
@@ -210,15 +209,20 @@ export const uploadMedia = secure(async (session, request, extra) => {
 
     // Handle raw binary upload (for direct PUT requests)
     else if (request.method === 'PUT') {
+        const mediaId = request._params?.mediaId;
         const url = new URL(request.url);
-        const pathParts = url.pathname.split('/');
-        const mediaId = pathParts[pathParts.indexOf('upload') + 1] || uuidv4();
 
         // Get filename from query params or generate one
         const filename = url.searchParams.get('filename') || `upload_${mediaId}`;
         const mimeType = contentType || 'application/octet-stream';
 
         const storagePath = `media/${mediaId}/${filename}`;
+
+        // Get raw request for streaming
+        const rawRequest = request._request;
+        if (!rawRequest) {
+            throw new ValidationError('Invalid request: raw request not available');
+        }
 
         // Check if body is available (Next.js specific)
         if ('body' in rawRequest && rawRequest.body) {
@@ -257,7 +261,7 @@ export const uploadMedia = secure(async (session, request, extra) => {
     }
 
     throw new ValidationError('Unsupported upload method');
-}, {requirePermission: 'media:create'});
+};
+uploadMediaHandler.config = {parseBody: false};
 
-// Mark uploadMedia to not parse body for streaming
-uploadMedia.config = {parseBody: false};
+export const uploadMedia = secure(uploadMediaHandler, {requirePermission: 'media:create'});

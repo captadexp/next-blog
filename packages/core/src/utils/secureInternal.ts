@@ -1,4 +1,4 @@
-import type {MinimumRequest, OneApiFunction, OneApiFunctionResponse, SessionData} from "@supergrowthai/oneapi/types";
+import type {MinimumRequest, OneApiFunction, SessionData} from "@supergrowthai/oneapi/types";
 import type {Permission} from "@supergrowthai/types/server";
 import {hasAllPermissions, hasAnyPermission, hasPermission} from "./permissions.js";
 
@@ -20,7 +20,7 @@ export default function secure(
     fn: OneApiFunction,
     options?: SecureOptions
 ): OneApiFunction {
-    return async (session: SessionData, request: MinimumRequest, extra: any) => {
+    const wrappedFn = async (session: SessionData, request: MinimumRequest, extra: any) => {
         // Check if user is authenticated
         if (!session.user) {
             return {
@@ -60,4 +60,9 @@ export default function secure(
         // All permission checks passed, execute the original function
         return fn(session, request, extra);
     };
+
+    // Copy all properties from original function to wrapped function
+    Object.assign(wrappedFn, fn);
+
+    return wrappedFn;
 }

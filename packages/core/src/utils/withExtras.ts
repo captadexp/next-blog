@@ -8,7 +8,7 @@ import {VERSION_INFO} from "../version.js";
 
 export const createWithExtras = (configuration: Configuration) => {
     return (fn: OneApiFunction<ApiExtra>): OneApiFunction => {
-        return async (session: SessionData, request: MinimumRequest, extra) => {
+        const wrappedFn = async (session: SessionData, request: MinimumRequest, extra: any) => {
             // Initialize SDK for internal use
             const db = await configuration.db();
             const sdk: ServerSDK = {
@@ -48,6 +48,11 @@ export const createWithExtras = (configuration: Configuration) => {
 
             return fn(session, request, enhancedExtra);
         };
+
+        // Copy all properties from original function to wrapped function
+        Object.assign(wrappedFn, fn);
+
+        return wrappedFn;
     };
 };
 
