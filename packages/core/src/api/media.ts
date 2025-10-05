@@ -12,7 +12,12 @@ export const getMedia = secure(async (session, request, extra) => {
 
     const query: any = {};
     if (params.mimeType) {
-        query.mimeType = {$regex: params.mimeType};
+        const mimeTypes = params.mimeType.split(',').map(type => type.trim());
+        if (mimeTypes.length > 1) {
+            query.mimeType = {$in: mimeTypes};
+        } else {
+            query.mimeType = {$regex: mimeTypes[0]};
+        }
     }
     if (params.userId) {
         query.userId = params.userId;
@@ -193,9 +198,13 @@ const uploadMediaHandler: OneApiFunction<ApiExtra> = async (session, request, ex
             // Get the URL for the uploaded file
             const fileUrl = await storageAdapter.getUrl(finalPath);
 
+            if (!fileUrl) {
+                throw new ValidationError('Failed to get URL for uploaded file');
+            }
+
             // Update the existing media record with the URL
             const media = await db.media.updateOne({_id: mediaId}, {
-                url: fileUrl || `/storage/${finalPath}`,
+                url: fileUrl,
                 size: buffer.length
             });
 
@@ -212,8 +221,13 @@ const uploadMediaHandler: OneApiFunction<ApiExtra> = async (session, request, ex
         const mediaId = request._params?.mediaId;
         const url = new URL(request.url);
 
-        // Get filename from query params or generate one
-        const filename = url.searchParams.get('filename') || `upload_${mediaId}`;
+        // Get filename from query params
+        const filename = url.searchParams.get('filename');
+
+        if (!filename) {
+            throw new ValidationError('Filename is required in query parameters');
+        }
+
         const mimeType = contentType || 'application/octet-stream';
 
         const storagePath = `media/${mediaId}/${filename}`;
@@ -243,10 +257,14 @@ const uploadMediaHandler: OneApiFunction<ApiExtra> = async (session, request, ex
             // Get the URL for the uploaded file
             const fileUrl = await storageAdapter.getUrl(storagePath);
 
+            if (!fileUrl) {
+                throw new ValidationError('Failed to get URL for uploaded file');
+            }
+
             // Create media record
             const media = await db.media.create({
                 filename,
-                url: fileUrl || `/storage/${storagePath}`,
+                url: fileUrl,
                 mimeType,
                 size: buffer.length,
                 userId: session.user.id
