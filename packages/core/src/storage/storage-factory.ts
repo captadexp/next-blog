@@ -2,6 +2,7 @@ import type {DatabaseAdapter, StorageAdapter} from '@supergrowthai/types/server'
 import {createId} from '@supergrowthai/types/server';
 import {LocalStorageAdapter} from './LocalStorageAdapter.js';
 import {S3StorageAdapter} from './S3StorageAdapter.js';
+import {decrypt} from '../utils/encryption.js';
 
 /**
  * Factory for creating appropriate storage adapters based on configuration
@@ -29,9 +30,14 @@ export class StorageFactory {
                 }
             });
 
-            // Convert array to key-value map for easy access
+            // Convert array to key-value map for easy access, decrypting secure values
             const settingsMap = storageSettings.reduce((acc, setting) => {
-                acc[setting.key] = setting.value;
+                // Decrypt secure settings
+                if (setting.isSecure && setting.value) {
+                    acc[setting.key] = decrypt(setting.value);
+                } else {
+                    acc[setting.key] = setting.value;
+                }
                 return acc;
             }, {} as Record<string, any>);
 

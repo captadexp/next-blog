@@ -1,5 +1,9 @@
+import "./pollyfill.js"
 import type {StorageAdapter} from '@supergrowthai/types/server';
 import {createHash} from 'crypto';
+import {S3} from '@aws-sdk/client-s3';
+import {Upload} from '@aws-sdk/lib-storage';
+
 
 interface S3Config {
     accessKey: string;
@@ -10,11 +14,11 @@ interface S3Config {
 }
 
 /**
- * S3 storage adapter with dynamic imports
+ * S3 storage adapter with static imports
  * Provides cloud storage capabilities with automatic path scoping
  */
 export class S3StorageAdapter implements StorageAdapter {
-    private s3Client: any = null;
+    private readonly s3: S3;
     private readonly fullBasePath: string;
 
     constructor(
@@ -26,14 +30,21 @@ export class S3StorageAdapter implements StorageAdapter {
         this.fullBasePath = this.config.basePath
             ? `${this.config.basePath}/${safePluginId}`
             : safePluginId;
+
+        // Initialize S3 client
+        this.s3 = new S3({
+            region: this.config.region,
+            credentials: {
+                accessKeyId: this.config.accessKey,
+                secretAccessKey: this.config.secretKey
+            }
+        });
     }
 
     /**
      * Save a file to S3
      */
     async save(path: string, content: Buffer | Uint8Array | string): Promise<string> {
-        await this.ensureS3Client();
-
         const key = this.getS3Key(path);
 
         // Convert content to Buffer
@@ -46,14 +57,17 @@ export class S3StorageAdapter implements StorageAdapter {
             buffer = content;
         }
 
-        const command = new (this as any).Commands.PutObjectCommand({
-            Bucket: this.config.bucket,
-            Key: key,
-            Body: buffer,
-            ContentType: this.getContentType(path)
+        const upload = new Upload({
+            client: this.s3,
+            params: {
+                Bucket: this.config.bucket,
+                Key: key,
+                Body: buffer,
+                ContentType: this.getContentType(path)
+            }
         });
 
-        await this.s3Client.send(command);
+        await upload.done();
         return path;
     }
 
@@ -61,25 +75,21 @@ export class S3StorageAdapter implements StorageAdapter {
      * Read a file from S3
      */
     async read(path: string): Promise<Buffer> {
-        await this.ensureS3Client();
-
         const key = this.getS3Key(path);
 
-        const command = new (this as any).Commands.GetObjectCommand({
-            Bucket: this.config.bucket,
-            Key: key
-        });
-
         try {
-            const response = await this.s3Client.send(command);
-            const stream = response.Body;
+            const response = await this.s3.getObject({
+                Bucket: this.config.bucket,
+                Key: key
+            });
 
-            // Convert stream to Buffer
-            const chunks: Uint8Array[] = [];
-            for await (const chunk of stream) {
-                chunks.push(chunk);
+            if (!response.Body) {
+                throw new Error(`File not found: ${path}`);
             }
-            return Buffer.concat(chunks);
+
+            // Convert Body to string then to Buffer
+            const bodyStr = await response.Body.transformToString();
+            return Buffer.from(bodyStr);
         } catch (error: any) {
             if (error.name === 'NoSuchKey') {
                 throw new Error(`File not found: ${path}`);
@@ -92,24 +102,18 @@ export class S3StorageAdapter implements StorageAdapter {
      * Delete a file from S3
      */
     async delete(path: string): Promise<void> {
-        await this.ensureS3Client();
-
         const key = this.getS3Key(path);
 
-        const command = new (this as any).Commands.DeleteObjectCommand({
+        await this.s3.deleteObject({
             Bucket: this.config.bucket,
             Key: key
         });
-
-        await this.s3Client.send(command);
     }
 
     /**
      * List files in S3
      */
     async list(prefix?: string): Promise<string[]> {
-        await this.ensureS3Client();
-
         const searchPrefix = prefix
             ? `${this.fullBasePath}/${prefix}`
             : this.fullBasePath;
@@ -118,20 +122,20 @@ export class S3StorageAdapter implements StorageAdapter {
         let continuationToken: string | undefined;
 
         do {
-            const command = new (this as any).Commands.ListObjectsV2Command({
+            const response = await this.s3.listObjectsV2({
                 Bucket: this.config.bucket,
                 Prefix: searchPrefix,
                 ContinuationToken: continuationToken
             });
 
-            const response = await this.s3Client.send(command);
-
             if (response.Contents) {
                 for (const object of response.Contents) {
-                    // Remove base path from the key to return relative paths
-                    const relativePath = object.Key.substring(this.fullBasePath.length + 1);
-                    if (relativePath) {
-                        files.push(relativePath);
+                    if (object.Key) {
+                        // Remove base path from the key to return relative paths
+                        const relativePath = object.Key.substring(this.fullBasePath.length + 1);
+                        if (relativePath) {
+                            files.push(relativePath);
+                        }
                     }
                 }
             }
@@ -146,17 +150,13 @@ export class S3StorageAdapter implements StorageAdapter {
      * Check if file exists in S3
      */
     async exists(path: string): Promise<boolean> {
-        await this.ensureS3Client();
-
         const key = this.getS3Key(path);
 
-        const command = new (this as any).Commands.HeadObjectCommand({
-            Bucket: this.config.bucket,
-            Key: key
-        });
-
         try {
-            await this.s3Client.send(command);
+            await this.s3.headObject({
+                Bucket: this.config.bucket,
+                Key: key
+            });
             return true;
         } catch (error: any) {
             if (error.name === 'NotFound' || error.name === 'NoSuchKey') {
@@ -179,47 +179,6 @@ export class S3StorageAdapter implements StorageAdapter {
 
         // Return the S3 URL (assumes bucket is public or using CloudFront)
         return `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${key}`;
-    }
-
-    /**
-     * Initialize S3 client lazily with dynamic import
-     */
-    private async ensureS3Client() {
-        if (this.s3Client) return this.s3Client;
-
-        try {
-            // Dynamic import of AWS SDK S3 client
-            const {
-                S3Client,
-                PutObjectCommand,
-                GetObjectCommand,
-                DeleteObjectCommand,
-                ListObjectsV2Command,
-                HeadObjectCommand
-            } =
-                await import('@aws-sdk/client-s3');
-
-            this.s3Client = new S3Client({
-                region: this.config.region,
-                credentials: {
-                    accessKeyId: this.config.accessKey,
-                    secretAccessKey: this.config.secretKey
-                }
-            });
-
-            // Store command constructors for later use
-            (this as any).Commands = {
-                PutObjectCommand,
-                GetObjectCommand,
-                DeleteObjectCommand,
-                ListObjectsV2Command,
-                HeadObjectCommand
-            };
-
-            return this.s3Client;
-        } catch (error) {
-            throw new Error(`Failed to initialize S3 client: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
     }
 
     /**
