@@ -25,7 +25,8 @@ export class StorageFactory {
                         'storage:s3:secret_key',
                         'storage:s3:region',
                         'storage:s3:bucket',
-                        'storage:s3:base_path'
+                        'storage:s3:base_path',
+                        'storage:s3:cdn_hostname'
                     ]
                 }
             });
@@ -48,6 +49,7 @@ export class StorageFactory {
                 const region = settingsMap['storage:s3:region'];
                 const bucket = settingsMap['storage:s3:bucket'];
                 const basePath = settingsMap['storage:s3:base_path'];
+                const cdnHostname = settingsMap['storage:s3:cdn_hostname'];
 
                 if (!accessKey || !secretKey || !region || !bucket) {
                     console.warn('S3 storage configured but missing required settings!');
@@ -59,7 +61,8 @@ export class StorageFactory {
                     secretKey: String(secretKey),
                     region: String(region),
                     bucket: String(bucket),
-                    basePath: basePath ? String(basePath) : undefined
+                    basePath: basePath ? String(basePath) : undefined,
+                    cdnHostname: cdnHostname ? String(cdnHostname) : undefined
                 });
             }
         } catch (error) {
@@ -120,6 +123,12 @@ export class StorageFactory {
                     key: 'storage:s3:base_path',
                     value: 'plugin-storage',
                     description: 'Base path in S3 bucket for plugin storage',
+                    isSecure: false
+                },
+                {
+                    key: 'storage:s3:cdn_hostname',
+                    value: '',
+                    description: 'CDN hostname for S3 URLs (e.g., cdn.example.com)',
                     isSecure: false
                 }
             ];

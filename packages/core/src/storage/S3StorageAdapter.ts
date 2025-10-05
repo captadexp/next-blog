@@ -11,6 +11,7 @@ interface S3Config {
     region: string;
     bucket: string;
     basePath?: string;
+    cdnHostname?: string;
 }
 
 /**
@@ -176,6 +177,11 @@ export class S3StorageAdapter implements StorageAdapter {
         }
 
         const key = this.getS3Key(path);
+
+        // Use CDN hostname if configured, otherwise use default S3 URL
+        if (this.config.cdnHostname) {
+            return `https://${this.config.cdnHostname}/${key}`;
+        }
 
         // Return the S3 URL (assumes bucket is public or using CloudFront)
         return `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${key}`;
