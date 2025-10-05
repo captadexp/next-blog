@@ -44,8 +44,8 @@ export class StorageFactory {
                 const basePath = settingsMap['storage:s3:base_path'];
 
                 if (!accessKey || !secretKey || !region || !bucket) {
-                    console.warn('S3 storage configured but missing required settings, falling back to local storage');
-                    return new LocalStorageAdapter(pluginId);
+                    console.warn('S3 storage configured but missing required settings!');
+                    throw new Error('S3 storage configured but missing required settings!')
                 }
 
                 return new S3StorageAdapter(pluginId, {
