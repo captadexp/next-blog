@@ -25,10 +25,10 @@ export const getSettings = secure(async (session: SessionData, request: MinimumR
         };
 
         if (setting.isSecure) {
-            maskedSetting.value = maskValue(setting.value);
-            maskedSetting.masked = true;
-            maskedSetting.isSecure = true;
+            const masked = typeof setting.value === 'string' ? maskValue(setting.value) : '********';
+            maskedSetting = {...maskedSetting, value: masked, masked: true, isSecure: true};
         }
+
 
         return maskedSetting;
     });
@@ -70,13 +70,10 @@ export const getSettingById = secure(async (session: SessionData, request: Minim
 
     // Mask secure values
     if (setting.isSecure) {
-        setting = {
-            ...setting,
-            value: maskValue(setting.value),
-            masked: true,
-            isSecure: true
-        };
+        const masked = typeof setting.value === 'string' ? maskValue(setting.value) : '********';
+        setting = {...setting, value: masked, masked: true, isSecure: true};
     }
+
 
     // Execute hook for read operation
     if (extra?.callHook) {
@@ -100,68 +97,64 @@ export const getSettingById = secure(async (session: SessionData, request: Minim
 
 // Create a new setting
 export const createSetting = secure(async (session: SessionData, request: MinimumRequest<any, Partial<SettingsEntryData> & {
-    scope?: 'global' | 'user'
+    scope?: 'global' | 'user',
+    masked?: boolean
 }>, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
     const db = await extra.db();
-    let settingData = request.body as Partial<SettingsEntryData> & { scope?: 'global' | 'user' };
+    let settingData = request.body as Partial<SettingsEntryData> & { scope?: 'global' | 'user', masked?: boolean };
 
-    if (!settingData.key) {
-        throw new BadRequest("Setting key is required");
-    }
+    if (!settingData.key) throw new BadRequest("Setting key is required");
+    if (settingData.value === undefined) throw new BadRequest("Setting value is required");
+    if (settingData.masked === true) throw new BadRequest("Masked placeholder not allowed for create");
 
-    if (settingData.value === undefined) {
-        throw new BadRequest("Setting value is required");
-    }
+    // Force secure if key looks secure (prevents accidental plaintext) — tiny policy hardening
+    // (If you must keep "explicit choice wins", remove the next line.)
+    if (isSecureKey(settingData.key)) settingData.isSecure = true;
 
-    // Check if the key indicates a secure setting
-    // User's explicit choice takes precedence, but we auto-detect if not specified
-    if (settingData.isSecure === undefined) {
-        settingData.isSecure = isSecureKey(settingData.key);
-    }
+    if (settingData.isSecure === undefined) settingData.isSecure = isSecureKey(settingData.key);
 
-    // Determine owner based on scope (default to global)
     const scope = settingData.scope || 'global';
-
     if (scope === 'user') {
-        // User-scoped settings are owned by the current user
         settingData.ownerId = createId.user(session.user._id);
         settingData.ownerType = 'user';
-        // Prefix key with user ID to avoid conflicts
         settingData.key = `user:${session.user._id}:${settingData.key}`;
     } else {
-        // Global settings are owned by system plugin
         const systemPluginId = await getSystemPluginId(db);
         settingData.ownerId = createId.plugin(systemPluginId);
         settingData.ownerType = 'plugin';
     }
 
-    // Encrypt the value if it's a secure setting
     if (settingData.isSecure) {
-        settingData.value = encrypt(settingData.value);
+        settingData.value = encrypt(settingData.value as any);
     }
 
-    // Remove scope from data as it's not part of the entity
     delete (settingData as any).scope;
+    delete (settingData as any).masked; // never persist
 
-    // Execute before create hook
     if (extra?.callHook) {
         const beforeResult = await extra.callHook('setting:beforeCreate', {
             entity: 'setting',
             operation: 'create',
             data: settingData
         });
-        if (beforeResult?.data) {
-            settingData = beforeResult.data;
-        }
+        if (beforeResult?.data) settingData = beforeResult.data;
     }
 
-    // Set timestamps
     settingData.createdAt = Date.now();
     settingData.updatedAt = Date.now();
 
-    const setting = await db.settings.create(<SettingsEntryData>settingData);
+    let setting = await db.settings.create(<SettingsEntryData>settingData);
 
-    // Execute after create hook
+    // Mask secure value in response
+    if (setting?.isSecure) {
+        setting = {
+            ...setting,
+            value: typeof setting.value === 'string' ? maskValue(setting.value) : '********',
+            masked: true,
+            isSecure: true
+        };
+    }
+
     if (extra?.callHook) {
         await extra.callHook('setting:afterCreate', {
             entity: 'setting',
@@ -171,42 +164,48 @@ export const createSetting = secure(async (session: SessionData, request: Minimu
         });
     }
 
-    return {
-        code: 0,
-        message: "Setting created successfully",
-        payload: setting
-    };
+    return {code: 0, message: "Setting created successfully", payload: setting};
 }, {requirePermission: 'settings:create'});
 
 // Update a setting
 export const updateSetting = secure(async (session: SessionData, request: MinimumRequest<any, Partial<SettingsEntryData>>, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
     const settingId = request._params?.id;
-    const updates = request.body as Partial<SettingsEntryData>;
-
-    if (!settingId) {
-        throw new BadRequest("Setting ID is required");
-    }
+    if (!settingId) throw new BadRequest("Setting ID is required");
 
     const db = await extra.db();
-
-    // Check if setting exists first
     const existingSetting = await db.settings.findOne({_id: settingId});
-    if (!existingSetting) {
-        throw new NotFound(`Setting with id ${settingId} not found`);
+    if (!existingSetting) throw new NotFound(`Setting with id ${settingId} not found`);
+
+    // Allowlist fields only
+    const reqBody = request.body as Partial<SettingsEntryData> & { masked?: boolean };
+    const updates: Partial<SettingsEntryData> = {};
+    if (typeof reqBody.key !== 'undefined') updates.key = reqBody.key;
+    if (typeof reqBody.value !== 'undefined') updates.value = reqBody.value;
+
+    // Ignore value if client signals it's masked (prevents double-encrypting mask text)
+    if (reqBody.masked === true) {
+        delete updates.value;
     }
 
-    // Handle secure settings - if the existing setting is secure, encrypt the new value
-    if (updates.value !== undefined && existingSetting.isSecure) {
-        updates.value = encrypt(updates.value);
-        updates.isSecure = true;
-    }
+    // Caller cannot toggle these
+    delete (reqBody as any).isSecure;
+    delete (reqBody as any).ownerId;
+    delete (reqBody as any).ownerType;
+    delete (reqBody as any).createdAt;
 
-    // Check if the key indicates this should be secure (for key updates)
-    if (updates.key && isSecureKey(updates.key)) {
-        updates.isSecure = true;
-        if (updates.value !== undefined) {
-            updates.value = encrypt(updates.value);
+    // Handle secure settings
+    const keyBecomesSecure = !!updates.key && isSecureKey(updates.key);
+    const alreadySecure = !!existingSetting.isSecure;
+
+    if (typeof updates.value !== 'undefined') {
+        if (alreadySecure || keyBecomesSecure) {
+            updates.isSecure = true;
+            updates.value = encrypt(updates.value as any);
         }
+    } else if (keyBecomesSecure) {
+        // Encrypt existing plaintext if key change makes it secure
+        updates.isSecure = true;
+        updates.value = encrypt(existingSetting.value);
     }
 
     // Execute before update hook
@@ -219,17 +218,25 @@ export const updateSetting = secure(async (session: SessionData, request: Minimu
             data: updates,
             previousData: existingSetting
         });
-        if (beforeResult?.data) {
-            finalUpdates = beforeResult.data;
-        }
+        if (beforeResult?.data) finalUpdates = beforeResult.data;
     }
 
-    // Update timestamp
     finalUpdates.updatedAt = Date.now();
 
-    const setting = await db.settings.updateOne({_id: settingId}, finalUpdates);
+    await db.settings.updateOne({_id: settingId}, finalUpdates);
+    // Re-fetch the updated doc to return the actual record
+    let setting = await db.settings.findOne({_id: settingId});
 
-    // Execute after update hook
+    // Mask secure values in response
+    if (setting?.isSecure) {
+        setting = {
+            ...setting,
+            value: typeof setting.value === 'string' ? maskValue(setting.value) : '********',
+            masked: true,
+            isSecure: true
+        };
+    }
+
     if (extra?.callHook) {
         await extra.callHook('setting:afterUpdate', {
             entity: 'setting',
@@ -240,11 +247,7 @@ export const updateSetting = secure(async (session: SessionData, request: Minimu
         });
     }
 
-    return {
-        code: 0,
-        message: "Setting updated successfully",
-        payload: setting
-    };
+    return {code: 0, message: "Setting updated successfully", payload: setting};
 }, {requirePermission: 'settings:update'});
 
 // Delete a setting
