@@ -11,12 +11,13 @@ export default defineServer({
             sdk.log.info('System initialization - checking version...');
 
             try {
+
                 // Read current version from SDK system
                 const currentVersion = sdk.system.version;
 
                 // Get stored system version and migration flag from global settings
-                const storedVersion = await sdk.settings.getGlobal('system-version');
-                const hasMigrated = await sdk.settings.getGlobal('system-has-migrated');
+                const storedVersion = await sdk.settings.getGlobal('system:update:version');
+                const hasMigrated = await sdk.settings.getGlobal('system:update:has-migrated');
 
                 sdk.log.info(`[Detection] storedVersion: ${storedVersion}, currentVersion: ${currentVersion}, hasMigrated: ${hasMigrated}`);
 
@@ -25,20 +26,20 @@ export default defineServer({
                     sdk.log.info(`[System Update] Version change detected: ${storedVersion || 'unknown'} → ${currentVersion}`);
 
                     // Set migration flag to false when version changes
-                    await sdk.settings.setGlobal('system-has-migrated', false);
+                    await sdk.settings.setGlobal('system:update:has-migrated', false);
 
                     // Store the target version that needs migration (not the migrated version)
-                    await sdk.settings.setGlobal('system-target-version', currentVersion);
+                    await sdk.settings.setGlobal('system:update:target-version', currentVersion);
 
                     // Store update detection timestamp
-                    await sdk.settings.setGlobal('system-update-detected-at', Date.now());
+                    await sdk.settings.setGlobal('system:update:detected-at', Date.now());
 
                     sdk.log.info(`[System Update] Migration required - system-has-migrated set to false, target version: ${currentVersion}`);
                 } else if (storedVersion === currentVersion) {
                     // Optionally ensure system-has-migrated is true if versions match
                     if (hasMigrated === false) {
                         // This shouldn't normally happen, but ensure consistency
-                        await sdk.settings.setGlobal('system-has-migrated', true);
+                        await sdk.settings.setGlobal('system:update:has-migrated', true);
                     }
                 }
 
@@ -58,7 +59,7 @@ export default defineServer({
             // Add actual migration logic here when needed
 
             // Store update timestamp (this is separate from version management)
-            await sdk.settings.setGlobal('system-last-update-at', payload.timestamp);
+            await sdk.settings.setGlobal('system:update:last-update-at', payload.timestamp);
 
             sdk.log.info(`[Migration stop] Successfully migrated from ${payload.fromVersion} to ${payload.toVersion}`);
 
@@ -73,10 +74,10 @@ export default defineServer({
 
             try {
                 // Read all values - NO WRITES in this RPC
-                const storedVersion = await sdk.settings.getGlobal('system-version');
+                const storedVersion = await sdk.settings.getGlobal('system:update:version');
                 const currentVersion = sdk.system.version;
-                const hasMigrated = await sdk.settings.getGlobal('system-has-migrated');
-                const targetVersion = await sdk.settings.getGlobal('system-target-version');
+                const hasMigrated = await sdk.settings.getGlobal('system:update:has-migrated');
+                const targetVersion = await sdk.settings.getGlobal('system:update:target-version');
 
                 // Compute migration needed: either version mismatch OR hasMigrated is false
                 const migrationNeeded = (storedVersion !== currentVersion) || (hasMigrated === false);
@@ -124,9 +125,9 @@ export default defineServer({
 
             try {
                 // Re-read fresh state to avoid stale decisions
-                const storedVersion = await sdk.settings.getGlobal('system-version') || '0.0.0';
+                const storedVersion = await sdk.settings.getGlobal('system:update:version') || '0.0.0';
                 const currentVersion = sdk.system.version;
-                const hasMigrated = await sdk.settings.getGlobal('system-has-migrated');
+                const hasMigrated = await sdk.settings.getGlobal('system:update:has-migrated');
 
                 sdk.log.info(`[Migration check] storedVersion: ${storedVersion}, currentVersion: ${currentVersion}, hasMigrated: ${hasMigrated}`);
 
@@ -155,15 +156,15 @@ export default defineServer({
                     });
 
                     // On success (and only then), atomically update all flags
-                    // Only now do we update system-version to the current version
-                    await sdk.settings.setGlobal('system-version', currentVersion);
-                    await sdk.settings.setGlobal('system-has-migrated', true);
+                    // Only now do we update system:update:version to the current version
+                    await sdk.settings.setGlobal('system:update:version', currentVersion);
+                    await sdk.settings.setGlobal('system:update:has-migrated', true);
 
                     // Clear target version since migration is complete
-                    await sdk.settings.setGlobal('system-target-version', null);
+                    await sdk.settings.setGlobal('system:update:target-version', null);
 
                     // Store migration timestamp
-                    await sdk.settings.setGlobal('system-last-migration-at', Date.now());
+                    await sdk.settings.setGlobal('system:update:last-migration-at', Date.now());
 
                     sdk.log.info(`[Migration stop] Successfully migrated from ${storedVersion} to ${currentVersion}`);
 
@@ -195,8 +196,8 @@ export default defineServer({
             } catch (error) {
                 sdk.log.error('Error running system migration:', error);
                 // On failure: ensure hasMigrated stays/becomes false
-                // Leave system-version unchanged
-                await sdk.settings.setGlobal('system-has-migrated', false);
+                // Leave system:update:version unchanged
+                await sdk.settings.setGlobal('system:update:has-migrated', false);
 
                 const payload: SystemMigrationResult = {
                     migrated: false,
