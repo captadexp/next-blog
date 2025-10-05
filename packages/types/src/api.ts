@@ -221,6 +221,8 @@ export interface MediaAPI {
     }): Promise<APIResponse<Media>>;
 
     deleteMedia(id: string): Promise<APIResponse<null>>;
+
+    uploadMediaFile(mediaId: string, file: File): Promise<APIResponse<Media>>;
 }
 
 // Combined API Client interface

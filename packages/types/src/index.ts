@@ -8,3 +8,4 @@ export * from './sdk/client';
 export * from './sdk/server';
 export * from './events';
 export * from './configuration';
+export * from './intent';

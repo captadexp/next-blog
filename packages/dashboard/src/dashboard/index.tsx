@@ -41,6 +41,7 @@ import PluginPanel from './pages/plugins/Panel';
 
 import {Toaster} from 'react-hot-toast';
 import {PluginProvider} from '../context/PluginContext';
+import {IntentProvider} from '../intent';
 
 // Main Dashboard App
 function DashboardApp() {
@@ -64,8 +65,9 @@ function DashboardApp() {
             <>
                 <UserProvider>
                     <PluginProvider>
-                        <Layout currentPath={currentPath}>
-                            <Router onRouteChange={handleRouteChange}>
+                        <IntentProvider>
+                            <Layout currentPath={currentPath}>
+                                <Router onRouteChange={handleRouteChange}>
 
                                 {/* Home route */}
                                 <Route path="/api/next-blog/dashboard" component={Home}/>
@@ -104,6 +106,7 @@ function DashboardApp() {
                                 <Route default component={() => <div>Not Found</div>}/>
                             </Router>
                         </Layout>
+                        </IntentProvider>
                     </PluginProvider>
                 </UserProvider>
                 <Toaster/>

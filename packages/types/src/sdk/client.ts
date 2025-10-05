@@ -49,6 +49,8 @@ export interface ClientSDK extends BaseSDK {
     refresh: () => void;
     navigate?: (path: string) => void; // Optional as not all implementations have it
 
+    startIntent: <T, R>(intentType: string, payload: T) => Promise<R>;
+
     callRPC: CallClientRPCFunction<RPCMethods>;
 
     callHook: CallClientHookFunction<ClientHooks>;

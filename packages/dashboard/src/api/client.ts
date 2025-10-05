@@ -314,6 +314,20 @@ class ApiClient implements APIClient {
         return this.request<null>(`/media/delete/${id}`, 'POST');
     }
 
+    async uploadMediaFile(mediaId: string, file: File): Promise<APIResponse<Media>> {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${this.baseUrl}/media/upload/${mediaId}`, {
+            method: 'POST',
+            credentials: 'include',
+            body: formData
+        });
+
+        const result = await response.json();
+        return result as APIResponse<Media>;
+    }
+
     private async request<T>(
         endpoint: string,
         method: 'GET' | 'POST' = 'GET',

@@ -1,4 +1,13 @@
-import type {APIClient, APIResponse, BrandedId, ClientSDK, PluginSettings, Storage, User} from '@supergrowthai/types';
+import type {
+    APIClient,
+    APIResponse,
+    BrandedId,
+    ClientSDK,
+    Media,
+    PluginSettings,
+    Storage,
+    User
+} from '@supergrowthai/types';
 
 // Import createId for creating branded IDs
 const createBrandedId = {
@@ -391,6 +400,23 @@ class MockAPIClient implements APIClient {
         return this.mockResponse(null);
     }
 
+    async uploadMediaFile(mediaId: string, file: File) {
+        console.log('[Mock Client API] uploadMediaFile', mediaId, file.name);
+        const mockMedia: Media = {
+            _id: createBrandedId.media(mediaId),
+            filename: file.name,
+            url: URL.createObjectURL(file),
+            mimeType: file.type,
+            metadata: {
+                size: file.size
+            },
+            userId: createBrandedId.user('user-1'),
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+        };
+        return this.mockResponse(mockMedia);
+    }
+
     // Token management
     setToken(token: string) {
         console.log('[Mock Client API] Token set:', token);
@@ -525,6 +551,17 @@ export function createMockClientSDK(options: {
 
         refresh: () => {
             console.log('[Mock Client SDK] Refresh requested');
+        },
+
+        startIntent: async <T, R>(intentType: string, payload: T): Promise<R> => {
+            console.log('[Mock Client SDK] Intent started:', intentType, payload);
+            // Mock implementation - returns null for cancelled intents
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    console.log('[Mock Client SDK] Intent resolved:', intentType);
+                    resolve(null as R);
+                }, 100);
+            });
         },
 
         callHook: async (id, payload) => {

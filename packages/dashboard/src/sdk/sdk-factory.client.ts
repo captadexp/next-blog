@@ -101,6 +101,47 @@ export class ClientSDKFactory {
                 return this.deps.callHook(String(hookName), payload);
             },
 
+            startIntent: <T, R>(intentType: string, payload: T): Promise<R> => {
+                console.debug(`[Plugin: ${pluginId}] Starting intent: ${intentType}`);
+
+                return new Promise((resolve, reject) => {
+                    const requestId = `${pluginId}-${intentType}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
+                    const handleResponse = (event: Event) => {
+                        const customEvent = event as CustomEvent;
+                        const response = customEvent.detail;
+                        cleanup();
+
+                        if (response.success) {
+                            resolve(response.payload as R);
+                        } else if (response.cancelled) {
+                            resolve(null as R);
+                        } else {
+                            reject(new Error(response.error || 'Intent failed'));
+                        }
+                    };
+
+                    const cleanup = () => {
+                        window.removeEventListener(`intent:response:${requestId}`, handleResponse);
+                        clearTimeout(timeoutId);
+                    };
+
+                    const timeoutId = setTimeout(() => {
+                        cleanup();
+                        reject(new Error('Intent timeout'));
+                    }, 60 * 60 * 1000);
+
+                    // Listen to request-specific response channel
+                    window.addEventListener(`intent:response:${requestId}`, handleResponse);
+
+                    // Dispatch intent request
+                    window.dispatchEvent(new CustomEvent('intent:request', {
+                        detail: {requestId, intentType, payload},
+                        bubbles: true
+                    }));
+                });
+            },
+
             get system(): never {
                 throw new Error("not implemented yet")
             },
