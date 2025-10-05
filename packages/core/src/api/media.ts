@@ -134,7 +134,8 @@ export const deleteMedia = secure(async (session, request, extra) => {
             if (mediaIndex !== -1) {
                 storagePath = media.url.substring(mediaIndex + 1);
             } else {
-                storagePath = `media/${media._id}/${path.basename(media.url)}`;
+                const ext = path.extname(media.url);
+                storagePath = `media/${media._id}${ext}`;
             }
         } else {
             // Fallback: construct path from ID and filename
@@ -192,7 +193,8 @@ const uploadMediaHandler: OneApiFunction<ApiExtra> = async (session, request, ex
             const buffer = Buffer.from(arrayBuffer);
 
             // Save to storage
-            const finalPath = storagePath || `media/${mediaId}/${file.name}`;
+            const ext = path.extname(file.name);
+            const finalPath = storagePath || `media/${mediaId}${ext}`;
             await storageAdapter.save(finalPath, buffer);
 
             // Get the URL for the uploaded file
@@ -230,7 +232,8 @@ const uploadMediaHandler: OneApiFunction<ApiExtra> = async (session, request, ex
 
         const mimeType = contentType || 'application/octet-stream';
 
-        const storagePath = `media/${mediaId}/${filename}`;
+        const ext = path.extname(filename);
+        const storagePath = `media/${mediaId}${ext}`;
 
         // Get raw request for streaming
         const rawRequest = request._request;
