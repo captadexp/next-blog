@@ -33,10 +33,10 @@ export default function contentObjectToEditorJS(contentObject: ContentObject | s
     if (typeof contentObject === "string") {
         // Convert string to a paragraph block
         normalizedContent = {
-            version: 1, 
+            version: 1,
             content: [{
-                name: "Paragraph", 
-                version: 1, 
+                name: "Paragraph",
+                version: 1,
                 data: [{name: "Text", version: 1, data: contentObject}]
             }]
         };
@@ -88,7 +88,7 @@ export default function contentObjectToEditorJS(contentObject: ContentObject | s
                 editorJSContent.blocks.push({
                     id: (Math.random() * 1e32).toString(36),
                     type: 'image',
-                    data: {src: item.data.src, alt: item.data.alt},
+                    data: {src: item.data.src, alt: item.data.alt, mediaId: item.data.mediaId},
                 })
                 break
 
@@ -113,7 +113,7 @@ export default function contentObjectToEditorJS(contentObject: ContentObject | s
                     }
                 })
                 break
-            
+
             case 'Quote':
                 editorJSContent.blocks.push({
                     id: (Math.random() * 1e32).toString(36),
@@ -124,7 +124,7 @@ export default function contentObjectToEditorJS(contentObject: ContentObject | s
                     }
                 })
                 break
-            
+
             case 'Code':
                 editorJSContent.blocks.push({
                     id: (Math.random() * 1e32).toString(36),

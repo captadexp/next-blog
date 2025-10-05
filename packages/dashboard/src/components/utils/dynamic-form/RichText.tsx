@@ -5,6 +5,7 @@ import {memo} from "preact/compat"
 import contentObjectToEditorJS from './htmlToJson/contentobject-to-editorjs';
 import editorJSToContentObject from './htmlToJson/editorjs-to-contentobject';
 import type {OutputBlockData} from '@editorjs/editorjs';
+import ImageSelectorTool from './editorjs-tools/ImageSelectorTool.ts';
 
 interface RichTextProps {
     field: DynamicFormFieldType;
@@ -24,14 +25,13 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
             try {
                 // Wait for EditorJS to be available
                 const EditorJS = (window as any).EditorJS;
-                
+
                 if (!EditorJS || !editorRef.current || editorInstanceRef.current) return;
 
                 // Get available tools
                 const Header = (window as any).Header;
                 const List = (window as any).List;
                 const Quote = (window as any).Quote;
-                const SimpleImage = (window as any).SimpleImage;
                 const Table = (window as any).Table;
                 const InlineCode = (window as any).InlineCode;
 
@@ -52,7 +52,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
 
                 // Build tools config
                 const tools: any = {};
-                
+
                 if (Header) {
                     tools.header = {
                         class: Header,
@@ -62,7 +62,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                         }
                     };
                 }
-                
+
                 if (List) {
                     tools.list = {
                         class: List,
@@ -72,15 +72,19 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                         }
                     };
                 }
-                
+
                 if (Quote) {
                     tools.quote = Quote;
                 }
-                
-                if (SimpleImage) {
-                    tools.image = SimpleImage;
-                }
-                
+
+                // Add our custom image selector tool
+                tools.image = {
+                    class: ImageSelectorTool,
+                    config: {
+                        placeholder: 'Click to select an image from your media library'
+                    }
+                };
+
                 if (Table) {
                     tools.table = {
                         class: Table,
@@ -91,7 +95,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                         }
                     };
                 }
-                
+
                 if (InlineCode) {
                     tools.inlineCode = InlineCode;
                 }
@@ -150,7 +154,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
 
                 // Load tools in parallel
                 const toolPromises = [];
-                
+
                 if (!(window as any).Header) {
                     toolPromises.push(new Promise((resolve) => {
                         const script = document.createElement('script');
@@ -163,7 +167,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                         document.head.appendChild(script);
                     }));
                 }
-                
+
                 if (!(window as any).List) {
                     toolPromises.push(new Promise((resolve) => {
                         const script = document.createElement('script');
@@ -176,7 +180,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                         document.head.appendChild(script);
                     }));
                 }
-                
+
                 if (!(window as any).Quote) {
                     toolPromises.push(new Promise((resolve) => {
                         const script = document.createElement('script');
@@ -189,20 +193,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                         document.head.appendChild(script);
                     }));
                 }
-                
-                if (!(window as any).SimpleImage) {
-                    toolPromises.push(new Promise((resolve) => {
-                        const script = document.createElement('script');
-                        script.src = 'https://cdn.jsdelivr.net/npm/@editorjs/simple-image@latest';
-                        script.onload = resolve;
-                        script.onerror = () => {
-                            console.warn('Failed to load SimpleImage tool');
-                            resolve(null);
-                        };
-                        document.head.appendChild(script);
-                    }));
-                }
-                
+
                 if (!(window as any).Table) {
                     toolPromises.push(new Promise((resolve) => {
                         const script = document.createElement('script');
@@ -215,7 +206,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                         document.head.appendChild(script);
                     }));
                 }
-                
+
                 if (!(window as any).InlineCode) {
                     toolPromises.push(new Promise((resolve) => {
                         const script = document.createElement('script');
@@ -231,7 +222,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
 
                 // Wait for all tools to load
                 await Promise.all(toolPromises);
-                
+
                 // Initialize editor after a small delay
                 if (mounted) {
                     setTimeout(initEditor, 100);

@@ -46,7 +46,8 @@ export default function editorJSToContentObject(content: OutputData): ContentObj
                     version: 1,
                     data: {
                         src: item.data.src,
-                        alt: item.data.alt
+                        alt: item.data.alt,
+                        mediaId: item.data.mediaId
                     }
                 })
                 break
