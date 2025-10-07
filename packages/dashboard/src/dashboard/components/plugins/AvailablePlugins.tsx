@@ -23,14 +23,9 @@ export const AvailablePlugins = () => {
     const {route} = useLocation();
     const {plugins: installedPlugins} = usePlugins();
     const [installingPlugin, setInstallingPlugin] = useState<string | null>(null);
-    const [availablePlugins, setAvailablePlugins] = useState<AvailablePlugin[]>([]);
+    const [remotePlugins, setRemotePlugins] = useState<AvailablePlugin[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-
-    // Create a map of installed plugin IDs for quick lookup
-    const installedPluginIds = useMemo(() => {
-        return new Set(installedPlugins.map(p => p.name.toLowerCase().replace(/\s+/g, '-')));
-    }, [installedPlugins]);
 
     useEffect(() => {
         const fetchAvailablePlugins = async () => {
@@ -38,7 +33,7 @@ export const AvailablePlugins = () => {
                 const response = await fetch('https://next-blog-test-app.vercel.app/plugins/available.json');
                 if (response.ok) {
                     const data = await response.json();
-                    setAvailablePlugins(data.plugins || []);
+                    setRemotePlugins(data.plugins || []);
                 }
             } catch (err) {
                 console.error('Failed to fetch available plugins:', err);
@@ -50,12 +45,26 @@ export const AvailablePlugins = () => {
         fetchAvailablePlugins();
     }, []);
 
+    const allPlugins = useMemo(() => {
+        const merged = new Map<string, AvailablePlugin>();
+        installedPlugins.forEach(p => merged.set(p.name, p as AvailablePlugin));
+        remotePlugins.forEach(p => {
+            if (!merged.has(p.name)) {
+                merged.set(p.name, p);
+            }
+        });
+        return Array.from(merged.values());
+    }, [installedPlugins, remotePlugins]);
+
+    const installedPluginIds = useMemo(() => {
+        return new Set(installedPlugins.map(p => p.name));
+    }, [installedPlugins]);
+
     const handleInstall = async (plugin: AvailablePlugin) => {
         setInstallingPlugin(plugin.id);
         setError(null);
 
         try {
-            // Construct the full URL for the plugin
             const pluginUrl = plugin.files.plugin;
             const response = await api.createPlugin({url: pluginUrl});
             if (response.code === 0) {
@@ -81,7 +90,7 @@ export const AvailablePlugins = () => {
         );
     }
 
-    if (availablePlugins.length === 0) {
+    if (allPlugins.length === 0) {
         return null;
     }
 
@@ -96,8 +105,8 @@ export const AvailablePlugins = () => {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                {availablePlugins.map((plugin) => {
-                    const isInstalled = installedPluginIds.has(plugin.id);
+                {allPlugins.map((plugin) => {
+                    const isInstalled = installedPluginIds.has(plugin.name);
                     return (
                         <div key={plugin.id}
                              className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col h-48">

@@ -3,10 +3,11 @@ import {useUser} from '../../../context/UserContext';
 import {Plugin} from '@supergrowthai/types';
 import {usePlugins} from "../../../context/PluginContext.tsx";
 import {useLocation} from "preact-iso";
-import {useEffect} from "preact/hooks";
+import {useEffect, useState} from "preact/hooks";
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
+import {AvailablePlugins} from "../../components/plugins/AvailablePlugins.tsx";
 
-const PluginsList = () => {
+const InstalledPlugins = () => {
     const {hasPermission, hasAllPermissions, apis: api} = useUser();
     const {plugins, loadedPlugins, status: pluginStatus, hardReloadPlugins} = usePlugins();
     const location = useLocation();
@@ -119,15 +120,7 @@ const PluginsList = () => {
         <ExtensionZone name="plugins-list" page="plugins" data={plugins}>
             <div className="p-4">
                 <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold">Plugins</h1>
-                    {hasPermission('plugins:create') && (
-                        <a
-                            href="/api/next-blog/dashboard/plugins/create"
-                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                        >
-                            Add New Plugin
-                        </a>
-                    )}
+                    <h1 className="text-2xl font-bold">Installed Plugins</h1>
                 </div>
 
                 <ExtensionPoint name="plugins-list-toolbar" context={{plugins, loadedPlugins}}/>
@@ -149,16 +142,16 @@ const PluginsList = () => {
                                 <tbody>
                                 {plugins.map((plugin: any) => (
                                     <>
-                                        <ExtensionPoint name="plugin-item:before" context={{plugin}} />
+                                        <ExtensionPoint name="plugin-item:before" context={{plugin}}/>
                                         <tr key={plugin._id} className="hover:bg-gray-50">
-                                        {columns.map((column) => (
-                                            <td key={column.accessor} className="py-2 px-4 border-b">
-                                                {column.cell ? column.cell(plugin) : plugin[column.accessor]}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                    <ExtensionPoint name="plugin-item:after" context={{plugin}} />
-                                </>
+                                            {columns.map((column) => (
+                                                <td key={column.accessor} className="py-2 px-4 border-b">
+                                                    {column.cell ? column.cell(plugin) : plugin[column.accessor]}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                        <ExtensionPoint name="plugin-item:after" context={{plugin}}/>
+                                    </>
                                 ))}
                                 </tbody>
                             </table>
@@ -169,5 +162,138 @@ const PluginsList = () => {
         </ExtensionZone>
     );
 };
+
+const CreatePlugin = () => {
+    const {apis: api} = useUser();
+    const {route} = useLocation();
+    const [loading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
+    const [url, setUrl] = useState<string>('');
+
+    const handleSubmit = async (e: any) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+
+        try {
+            const response = await api.createPlugin({url});
+            if (response.code === 0) {
+                route('/api/next-blog/dashboard/plugins?r=1');
+            } else {
+                setError(response.message || 'Failed to create plugin');
+            }
+        } catch (err) {
+            setError('An error occurred while creating the plugin');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="container mx-auto px-4 py-8">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-semibold">Install Plugin</h2>
+            </div>
+
+            {error && (
+                <div className="p-4 mb-4 bg-red-100 text-red-800 rounded-md flex justify-between items-center">
+                    <span>{error}</span>
+                    <button
+                        onClick={() => setError(null)}
+                        className="text-red-600 hover:text-red-800"
+                    >
+                        ×
+                    </button>
+                </div>
+            )}
+
+            {/* Custom URL Section */}
+            <div className="bg-white p-6 rounded-lg shadow-md">
+                <h3 className="text-lg font-semibold mb-4">Install from URL</h3>
+                <form onSubmit={handleSubmit}>
+                    <div className="mb-4">
+                        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="url">
+                            Plugin URL
+                        </label>
+                        <input
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            id="url"
+                            type="text"
+                            name="url"
+                            value={url}
+                            onChange={(e: any) => setUrl(e.target.value)}
+                            placeholder="https://example.com/plugin.js"
+                            required
+                        />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <button
+                            type="button"
+                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 disabled:opacity-50"
+                            onClick={() => route('/api/next-blog/dashboard/plugins')}
+                            disabled={loading}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <span className="flex items-center">
+                                    <div className="inline-block animate-spin h-4 w-4 border-t-2 border-b-2 border-white rounded-full mr-2"></div>
+                                    Installing...
+                                </span>
+                            ) : (
+                                'Install Plugin'
+                            )}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+
+const PluginsList = () => {
+    const [activeTab, setActiveTab] = useState('installed');
+
+    return (
+        <div className="p-4">
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold">Plugins</h1>
+                <div className="flex border-b">
+                    <button
+                        className={`px-4 py-2 ${activeTab === 'installed' ? 'border-b-2 border-blue-500' : ''}`}
+                        onClick={() => setActiveTab('installed')}
+                    >
+                        Installed
+                    </button>
+                    <button
+                        className={`px-4 py-2 ${activeTab === 'all' ? 'border-b-2 border-blue-500' : ''}`}
+                        onClick={() => setActiveTab('all')}
+                    >
+                        All
+                    </button>
+                    <button
+                        className={`px-4 py-2 ${activeTab === 'install' ? 'border-b-2 border-blue-500' : ''}`}
+                        onClick={() => setActiveTab('install')}
+                    >
+                        Install
+                    </button>
+                </div>
+            </div>
+            <div className="pt-4">
+                {activeTab === 'installed' && <InstalledPlugins />}
+                {activeTab === 'all' && <AvailablePlugins />}
+                {activeTab === 'install' && <CreatePlugin />}
+            </div>
+        </div>
+    );
+}
 
 export default PluginsList;
