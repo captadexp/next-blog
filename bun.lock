@@ -5,13 +5,13 @@
       "name": "@plugins/next-blog-workspace",
       "dependencies": {
         "rimraf": "^6.0.1",
-        "vite": "^7.1.7",
+        "vite": "^7.1.9",
       },
       "devDependencies": {
-        "@typescript/native-preview": "^7.0.0-dev.20250930.1",
+        "@typescript/native-preview": "^7.0.0-dev.20251008.1",
         "jsdom": "^27.0.0",
         "turbo": "^2.5.8",
-        "typescript": "^5.9.2",
+        "typescript": "^5.9.3",
       },
     },
     "apps/test-app": {
