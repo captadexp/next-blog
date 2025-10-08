@@ -40,6 +40,9 @@ jobs:
       - name: Build packages
         run: bun run build
 
+      - name: Build plugins
+        run: bun --filter="./plugins/*" run build
+
       - name: Run typecheck
         run: |
           bun --filter="*" run typecheck
