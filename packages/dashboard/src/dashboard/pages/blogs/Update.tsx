@@ -231,7 +231,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                                     />
                                 </div>
                                 <div className="w-full md:w-1/3 lg:w-1/4 flex-shrink-0">
-                                    <div className="sticky top-6">
+                                    <div className="sticky flex flex-col gap-2">
                                         <ExtensionPoint name="editor-sidebar-widget" context={pluginContext}/>
                                     </div>
                                 </div>
