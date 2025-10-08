@@ -107,7 +107,12 @@ export async function watchPlugin(options: PluginWatchOptions) {
         watchers.push(build(config));
     }
 
-    await Promise.all(watchers);
+    const watchPromises = watchers.map(async (watchPromise) => {
+        const watcher = await watchPromise;
+        return watcher;
+    });
+
+    await Promise.all(watchPromises);
 }
 
 export async function devServer(options: PluginDevOptions) {

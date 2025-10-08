@@ -55,9 +55,12 @@
     "glob": "^11.0.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.1.11",
     "@types/node": "^24.5.2",
     "bun-types": "^1.2.22",
+    "postcss": "^8.4.49",
     "rimraf": "^6.0.1",
+    "tailwindcss": "^4.1.11",
     "typescript": "^5.7.3",
     "vite-plugin-dts": "^4.5.4"
   },

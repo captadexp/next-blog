@@ -26,12 +26,15 @@ export default defineConfig({
 
                 // External libraries
                 '@vitejs/plugin-react',
+                '@tailwindcss/vite',
                 'chalk',
                 'commander',
                 'esbuild',
                 'glob',
+                'postcss',
                 'react',
                 'react-dom',
+                'tailwindcss',
                 'vite',
 
                 // Node.js builtin modules

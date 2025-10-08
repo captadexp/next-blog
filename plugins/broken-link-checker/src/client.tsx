@@ -4,6 +4,7 @@ import {LinkReport} from './components/LinkReport';
 import {ScanButton} from './components/ScanButton';
 import {StatusIndicator} from './components/StatusIndicator';
 import {defineClient} from "@supergrowthai/plugin-dev-kit";
+import './styles.css';
 
 // Plugin state management
 const pluginState: PluginState = {

@@ -1,180 +1,14 @@
-import {defineConfig, type Plugin, type UserConfig} from 'vite';
+import {defineConfig, type UserConfig} from 'vite';
 import {resolve} from 'path';
 import {existsSync, readFileSync} from 'fs';
 import type {ViteConfigOptions} from './types.js';
-
-/**
- * Creates a plugin that removes variable assignments from IIFE output
- * Transforms `var Name = (function(){})()` to `(function(){})()`
- */
-function createIifeWrapperPlugin(): Plugin {
-    return {
-        name: 'wrap-iife',
-        generateBundle(_options, bundle) {
-            for (const fileName in bundle) {
-                if (bundle[fileName].type === 'chunk') {
-                    bundle[fileName].code = bundle[fileName].code.replace(
-                        /^var\s+\w+\s*=\s*/,
-                        ''
-                    );
-                }
-            }
-        }
-    };
-}
-
-/**
- * Creates a plugin that injects CSS into the IIFE for client builds
- */
-function createCssInjectionPlugin(): Plugin {
-    return {
-        name: 'css-inject-iife',
-        async generateBundle(_options, bundle) {
-            // Find CSS and JS files in the bundle
-            let cssContent = '';
-            let jsFileName = '';
-            let cssFileName = '';
-
-            for (const fileName in bundle) {
-                const chunk = bundle[fileName];
-                if (chunk.type === 'asset' && fileName.endsWith('.css')) {
-                    cssContent = chunk.source as string;
-                    cssFileName = fileName;
-                } else if (chunk.type === 'chunk' && fileName.endsWith('.js')) {
-                    jsFileName = fileName;
-                }
-            }
-
-            // If we have both CSS and JS, inject CSS into JS
-            if (cssContent && jsFileName && bundle[jsFileName].type === 'chunk') {
-                const jsChunk = bundle[jsFileName] as any;
-
-                // Create CSS injection code
-                const cssInjectionCode = `
-// Inject CSS
-if (typeof document !== "undefined") {
-    const style = document.createElement("style");
-    style.textContent = ${JSON.stringify(cssContent)};
-    document.head.appendChild(style);
-}
-
-`;
-
-                // Insert CSS injection at the beginning of the IIFE, after "use strict"
-                const originalCode = jsChunk.code;
-                jsChunk.code = jsChunk.code.replace(
-                    /(function\(\)\s*{\s*"use strict";\s*)/,
-                    `$1${cssInjectionCode}`
-                );
-
-                if (originalCode === jsChunk.code) {
-                    // Try alternative pattern
-                    jsChunk.code = jsChunk.code.replace(
-                        /(\(function\(\)\s*{\s*"use strict";\s*)/,
-                        `$1${cssInjectionCode}`
-                    );
-                }
-
-                // Remove the CSS file from bundle since it's now inlined
-                if (cssFileName) {
-                    delete bundle[cssFileName];
-                }
-            }
-        },
-        async writeBundle(options, _bundle) {
-            // Alternative approach: read CSS file after it's written and update JS file
-            const fs = await import('fs');
-            const path = await import('path');
-
-            if (!options.dir) return;
-
-            const cssFilePath = path.resolve(options.dir, 'json-ld-structured-data.css');
-            const jsFilePath = path.resolve(options.dir, 'client.js');
-
-            try {
-                if (fs.existsSync(cssFilePath) && fs.existsSync(jsFilePath)) {
-                    const cssContent = fs.readFileSync(cssFilePath, 'utf-8');
-                    let jsContent = fs.readFileSync(jsFilePath, 'utf-8');
-
-                    // Create CSS injection code
-                    const cssInjectionCode = `
-// Inject CSS
-if (typeof document !== "undefined") {
-    const style = document.createElement("style");
-    style.textContent = ${JSON.stringify(cssContent)};
-    document.head.appendChild(style);
-}
-
-`;
-
-                    // Insert CSS injection at the beginning of the IIFE, after "use strict"
-                    const originalCode = jsContent;
-                    jsContent = jsContent.replace(
-                        /(function\(\)\s*{\s*"use strict";\s*)/,
-                        `$1${cssInjectionCode}`
-                    );
-
-                    if (originalCode === jsContent) {
-                        // Try alternative pattern
-                        jsContent = jsContent.replace(
-                            /(\(function\(\)\s*{\s*"use strict";\s*)/,
-                            `$1${cssInjectionCode}`
-                        );
-                    }
-
-                    if (originalCode !== jsContent) {
-                        fs.writeFileSync(jsFilePath, jsContent);
-                        fs.unlinkSync(cssFilePath);
-                    }
-                }
-            } catch (error) {
-                // Silently handle errors - CSS might already be processed
-            }
-        }
-    };
-}
-
-/**
- * Creates a plugin that generates TypeScript declarations for CSS modules
- */
-function createCssModuleTypesPlugin(root: string): Plugin {
-    return {
-        name: 'css-module-types',
-        buildStart() {
-            const fs = require('fs');
-            const path = require('path');
-
-            // Create a global CSS modules declaration file
-            const cssModulesDeclaration = `// Auto-generated CSS modules type declarations
-declare module '*.module.css' {
-  const classes: { readonly [key: string]: string };
-  export default classes;
-}
-`;
-            const declarationPath = path.resolve(root, 'src', 'css-modules.d.ts');
-            fs.writeFileSync(declarationPath, cssModulesDeclaration);
-        }
-    };
-}
-
-/**
- * Creates a plugin that injects the actual version from package.json
- */
-function createVersionInjectionPlugin(pluginEntryPath: string, version: string): Plugin {
-    const normalizedEntry = resolve(pluginEntryPath);
-    return {
-        name: 'version-inject',
-        transform(code: string, id: string) {
-            if (resolve(id) === normalizedEntry) {
-                return code.replace(
-                    /version:\s*['"`][\d.]+['"`]/g,
-                    `version: '${version}'`
-                );
-            }
-            return null;
-        },
-    };
-}
+import tailwindcss from '@tailwindcss/vite';
+import {
+    createCssInjectionPlugin,
+    createCssModuleTypesPlugin,
+    createIifeWrapperPlugin,
+    createVersionInjectionPlugin
+} from './plugins';
 
 
 /**
@@ -306,9 +140,15 @@ export function createViteConfig(options: ViteConfigOptions): UserConfig {
         }
 
         case 'client': {
+            const cssInjectionPlugin = createCssInjectionPlugin();
+            const clientPlugins = [createCssModuleTypesPlugin(root), wrapIifePlugin, cssInjectionPlugin];
+
+            const tailwindPlugin = tailwindcss();
+            clientPlugins.unshift(...tailwindPlugin);
+
             return defineConfig({
                 ...baseConfig,
-                plugins: [createCssModuleTypesPlugin(root), createCssInjectionPlugin(), wrapIifePlugin],
+                plugins: clientPlugins,
                 build: {
                     ...baseConfig.build,
                     ...createIifeBuildConfig(

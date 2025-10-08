@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "next-blog build",
-    "dev": "next-blog dev",
+    "dev": "next-blog dev --port 61805",
     "watch": "next-blog watch",
     "typecheck": "tsc --noEmit"
   },
