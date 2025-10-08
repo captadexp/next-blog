@@ -31,5 +31,8 @@
   },
   "dependencies": {
     "iron-session": "^8.0.4"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

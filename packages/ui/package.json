@@ -30,6 +30,9 @@
     "blogging",
     "ui"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "ISC",
   "dependencies": {
