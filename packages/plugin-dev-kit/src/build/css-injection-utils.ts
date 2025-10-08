@@ -3,7 +3,7 @@
  */
 export function makeCssInjectionCode(css: string): string {
     return `
-// Inject CSS hello
+// Inject CSS
 if (typeof document !== "undefined") {
   const style = document.createElement("style");
   style.textContent = ${JSON.stringify(css)};

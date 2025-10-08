@@ -32,24 +32,42 @@ export function createCssInjectionPlugin(): Plugin {
 
             if (cssFiles.length === 0) return;
 
-            // Read the CSS content
-            const cssPath = join(outputDir, cssFiles[0]);
             const jsPath = join(outputDir, jsFileName);
+            if (!existsSync(jsPath)) return;
 
-            if (!existsSync(cssPath) || !existsSync(jsPath)) return;
+            // Read and combine all CSS files
+            let combinedCss = '';
+            const cssFilePaths: string[] = [];
 
-            const cssContent = readFileSync(cssPath, 'utf-8');
+            for (const cssFile of cssFiles) {
+                const cssPath = join(outputDir, cssFile);
+                if (existsSync(cssPath)) {
+                    const cssContent = readFileSync(cssPath, 'utf-8');
+                    // Add a comment separator between different CSS files for debugging
+                    if (combinedCss) {
+                        combinedCss += '\n\n';
+                    }
+                    combinedCss += cssContent;
+                    cssFilePaths.push(cssPath);
+                }
+            }
+
+            if (!combinedCss) return;
+
             const jsContent = readFileSync(jsPath, 'utf-8');
 
-            const processedCss = await processCssIfNeeded(cssContent, cssPath);
+            // Process combined CSS (for Tailwind directives if present)
+            const processedCss = await processCssIfNeeded(combinedCss, outputDir);
             const injection = makeCssInjectionCode(processedCss);
             const {code, changed} = injectIntoIifeAfterUseStrict(jsContent, injection);
 
             if (!changed) return;
 
-            // Write the modified JS file and remove the CSS file
+            // Write the modified JS file and remove all CSS files
             writeFileSync(jsPath, code);
-            unlinkSync(cssPath);
+            for (const cssPath of cssFilePaths) {
+                unlinkSync(cssPath);
+            }
         }
     };
 }
