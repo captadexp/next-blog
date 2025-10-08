@@ -1,7 +1,7 @@
 import {extractTextFromContent, getWordCount} from '@supergrowthai/plugin-dev-kit/content';
-import type {Article} from '../types/core-types.js';
+import type {Article, Organization, Person} from '../types/core-types.js';
 import type {MergeContext} from '../types/plugin-types.js';
-import {getFieldValue} from '../utils/field-utils.js';
+import {getFieldValue, generateAuthorField} from '../utils/field-utils.js';
 import {getImages} from '../utils/image-utils.js';
 
 /**
@@ -15,7 +15,7 @@ export function generateArticleSchema(context: MergeContext, schemaType: string)
 
     const article: Article = {
         '@context': 'https://schema.org',
-        '@type': schemaType as any,
+        '@type': schemaType as Article['@type'],
         headline: getFieldValue('headline', context) || blogData.title,
         url: canonicalUrl,
         mainEntityOfPage: canonicalUrl
@@ -28,30 +28,9 @@ export function generateArticleSchema(context: MergeContext, schemaType: string)
     }
 
     // Author
-    const authorOverride = overrides.custom?.author;
-    if (overrides.overrides?.author && authorOverride?.length) {
-        if (authorOverride.length === 1) {
-            const auth = authorOverride[0];
-            article.author = {
-                '@type': auth.type === 'organization' ? 'Organization' : 'Person',
-                name: auth.name || '',
-                ...(auth.url && {url: auth.url}),
-                ...(auth.image && {image: auth.image})
-            } as any;
-        } else {
-            article.author = authorOverride.map(auth => ({
-                '@type': auth.type === 'organization' ? 'Organization' : 'Person',
-                name: auth.name || '',
-                ...(auth.url && {url: auth.url}),
-                ...(auth.image && {image: auth.image})
-            })) as any;
-        }
-    } else if (blogData.author) {
-        article.author = {
-            '@type': 'Person',
-            name: blogData.author.username,
-            ...(blogData.author.profile?.website && {url: blogData.author.profile.website})
-        };
+    const author = generateAuthorField(context);
+    if (author) {
+        article.author = author;
     }
 
     // Publisher

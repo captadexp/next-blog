@@ -27,20 +27,43 @@ export function useBlogSidebarHook(sdk: ClientSDK, prev: any, context: any) {
     const debouncedGeneratePreview = sdk.utils!.debounce(async (sdk: ClientSDK, overrides: BlogJsonLdOverrides) => {
         try {
             if (!state.currentBlogId) return;
+
+            // Cancel previous request if still pending
+            if (state.currentPreviewRequest) {
+                state.currentPreviewRequest.abort();
+            }
+
+            // Create new abort controller for this request
+            const abortController = new AbortController();
+            updatePluginState({currentPreviewRequest: abortController});
+
             const response = await sdk.callRPC('jsonLd:generatePreview', {
                 blogId: state.currentBlogId,
                 overrides
             });
+
+            // Check if request was aborted
+            if (abortController.signal.aborted) {
+                return;
+            }
+
             const {jsonLd, validation} = response.payload.payload;
             updatePluginState({
                 jsonPreview: JSON.stringify(jsonLd, null, 2),
-                validationErrors: validation?.errors || []
+                validationErrors: validation?.errors || [],
+                currentPreviewRequest: null
             });
         } catch (error) {
-            console.error('Failed to generate preview:', error);
+            // Don't show error if request was aborted
+            if (error instanceof DOMException && error.name === 'AbortError') {
+                return;
+            }
+
+            sdk.log.error('Failed to generate preview:', error);
             updatePluginState({
                 jsonPreview: 'Error generating preview',
-                validationErrors: []
+                validationErrors: [],
+                currentPreviewRequest: null
             });
         }
         sdk.refresh();
@@ -56,7 +79,7 @@ export function useBlogSidebarHook(sdk: ClientSDK, prev: any, context: any) {
             });
             sdk.notify('JSON-LD settings saved', 'success');
         } catch (error) {
-            console.error('Failed to save blog overrides:', error);
+            sdk.log.error('Failed to save blog overrides:', error);
             sdk.notify('Failed to save JSON-LD settings', 'error');
         }
     }, 2000);
@@ -137,20 +160,43 @@ export function useBlogSidebarHook(sdk: ClientSDK, prev: any, context: any) {
     const generatePreview = async (sdk: ClientSDK, overrides: BlogJsonLdOverrides = currentOverrides) => {
         try {
             if (!state.currentBlogId) return;
+
+            // Cancel previous request if still pending
+            if (state.currentPreviewRequest) {
+                state.currentPreviewRequest.abort();
+            }
+
+            // Create new abort controller for this request
+            const abortController = new AbortController();
+            updatePluginState({currentPreviewRequest: abortController});
+
             const response = await sdk.callRPC('jsonLd:generatePreview', {
                 blogId: state.currentBlogId,
                 overrides
             });
+
+            // Check if request was aborted
+            if (abortController.signal.aborted) {
+                return;
+            }
+
             const {jsonLd, validation} = response.payload.payload;
             updatePluginState({
                 jsonPreview: JSON.stringify(jsonLd, null, 2),
-                validationErrors: validation?.errors || []
+                validationErrors: validation?.errors || [],
+                currentPreviewRequest: null
             });
         } catch (error) {
-            console.error('Failed to generate preview:', error);
+            // Don't show error if request was aborted
+            if (error instanceof DOMException && error.name === 'AbortError') {
+                return;
+            }
+
+            sdk.log.error('Failed to generate preview:', error);
             updatePluginState({
                 jsonPreview: 'Error generating preview',
-                validationErrors: []
+                validationErrors: [],
+                currentPreviewRequest: null
             });
         }
         sdk.refresh();

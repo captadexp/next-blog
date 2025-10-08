@@ -68,7 +68,7 @@ declare module '@supergrowthai/types/plugin' {
                 code: 0 | -1;
                 message: string;
                 payload: {
-                    jsonLd: JsonLdOutput | null;
+                    jsonLd: JsonLdOutput | JsonLdOutput[] | null;
                     validation: ValidationResult;
                 };
             };
@@ -82,7 +82,7 @@ declare module '@supergrowthai/types/plugin' {
                 code: 0 | -1;
                 message: string;
                 payload: {
-                    jsonLd: JsonLdOutput | null;
+                    jsonLd: JsonLdOutput | JsonLdOutput[] | null;
                 };
             };
         };

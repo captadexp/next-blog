@@ -1,5 +1,6 @@
 import type {BlogJsonLdOverrides, SchemaType} from '../types/plugin-types.js';
 import {getSchemaTypeDefinition} from '../schema/schema-definitions.js';
+import {StepsEditor} from './StepsEditor.js';
 
 interface FieldOverridesProps {
     schemaType: SchemaType;
@@ -157,135 +158,10 @@ export function FieldOverrides({
                                         ))}
                                     </select>
                                 ) : field.type === 'array' && field.key === 'steps' ? (
-                                    <div>
-                                        <div style={{
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            marginBottom: '0.75rem'
-                                        }}>
-                                            <span style={{
-                                                fontSize: '0.875rem',
-                                                fontWeight: '500'
-                                            }}>Steps</span>
-                                            <button
-                                                onClick={() => {
-                                                    const currentSteps = Array.isArray(customValue) ? customValue : [];
-                                                    const newSteps = [...currentSteps, {text: '', name: ''}];
-                                                    onCustomValueChange(field.key, newSteps);
-                                                }}
-                                                style={{
-                                                    padding: '0.25rem 0.5rem',
-                                                    fontSize: '0.75rem',
-                                                    backgroundColor: '#3b82f6',
-                                                    color: 'white',
-                                                    border: 'none',
-                                                    borderRadius: '0.25rem',
-                                                    cursor: 'pointer'
-                                                }}
-                                            >
-                                                + Add Step
-                                            </button>
-                                        </div>
-                                        {(Array.isArray(customValue) ? customValue : []).map((step: any, index: number) => (
-                                            <div
-                                                key={index.toString()}
-                                                style={{
-                                                    border: '1px solid #e5e7eb',
-                                                    borderRadius: '0.25rem',
-                                                    padding: '0.75rem',
-                                                    marginBottom: '0.75rem'
-                                                }}
-                                            >
-                                                <div style={{
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center',
-                                                    marginBottom: '0.5rem'
-                                                }}>
-                                                    <span style={{
-                                                        fontSize: '0.875rem',
-                                                        fontWeight: '500'
-                                                    }}>Step {index + 1}</span>
-                                                    <button
-                                                        onClick={() => {
-                                                            const currentSteps = Array.isArray(customValue) ? customValue : [];
-                                                            const newSteps = currentSteps.filter((_: any, i: number) => i !== index);
-                                                            onCustomValueChange(field.key, newSteps);
-                                                        }}
-                                                        style={{
-                                                            padding: '0.25rem',
-                                                            fontSize: '0.75rem',
-                                                            backgroundColor: '#ef4444',
-                                                            color: 'white',
-                                                            border: 'none',
-                                                            borderRadius: '0.25rem',
-                                                            cursor: 'pointer'
-                                                        }}
-                                                    >
-                                                        ✕
-                                                    </button>
-                                                </div>
-                                                <div style={{marginBottom: '0.5rem'}}>
-                                                    <label style={{
-                                                        display: 'block',
-                                                        fontSize: '0.75rem',
-                                                        marginBottom: '0.25rem'
-                                                    }}>Step Title (Optional)</label>
-                                                    <input
-                                                        type="text"
-                                                        value={step.name || ''}
-                                                        onChange={(e) => {
-                                                            const currentSteps = Array.isArray(customValue) ? customValue : [];
-                                                            const newSteps = [...currentSteps];
-                                                            newSteps[index] = {
-                                                                ...newSteps[index],
-                                                                name: e.target.value
-                                                            };
-                                                            onCustomValueChange(field.key, newSteps);
-                                                        }}
-                                                        placeholder="e.g., Preparation"
-                                                        style={{
-                                                            width: '100%',
-                                                            padding: '0.5rem',
-                                                            border: '1px solid #d1d5db',
-                                                            borderRadius: '0.25rem',
-                                                            outline: 'none'
-                                                        }}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label style={{
-                                                        display: 'block',
-                                                        fontSize: '0.75rem',
-                                                        marginBottom: '0.25rem'
-                                                    }}>Instructions *</label>
-                                                    <textarea
-                                                        value={step.text || ''}
-                                                        onChange={(e) => {
-                                                            const currentSteps = Array.isArray(customValue) ? customValue : [];
-                                                            const newSteps = [...currentSteps];
-                                                            newSteps[index] = {
-                                                                ...newSteps[index],
-                                                                text: e.target.value
-                                                            };
-                                                            onCustomValueChange(field.key, newSteps);
-                                                        }}
-                                                        placeholder="Detailed instructions for this step..."
-                                                        rows={3}
-                                                        style={{
-                                                            width: '100%',
-                                                            padding: '0.5rem',
-                                                            border: '1px solid #d1d5db',
-                                                            borderRadius: '0.25rem',
-                                                            outline: 'none',
-                                                            resize: 'vertical'
-                                                        }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    <StepsEditor
+                                        steps={Array.isArray(customValue) ? customValue : []}
+                                        onChange={(steps) => onCustomValueChange(field.key, steps)}
+                                    />
                                 ) : (
                                     <input
                                         type={field.type === 'url' ? 'url' : field.type === 'date' ? 'date' : 'text'}

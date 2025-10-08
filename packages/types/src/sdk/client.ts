@@ -2,7 +2,7 @@
  * Client-side SDK interface for browser plugins
  */
 
-import type {BaseSDK, PluginCache, PluginEvents} from './base';
+import type {BaseSDK, Logger, PluginCache, PluginEvents} from './base';
 import type {User} from '../database/entities';
 import type {CallClientHookFunction, CallClientRPCFunction, ClientHooks, RPCMethods} from '../plugin';
 import type {APIClient} from '../api';
@@ -38,6 +38,7 @@ export interface ClientSDKUtils {
 
 // Client SDK extending base SDK with client-specific features
 export interface ClientSDK extends BaseSDK {
+    log: Logger;
     // Client-specific properties
     apis: APIClient;
     user: User | null;

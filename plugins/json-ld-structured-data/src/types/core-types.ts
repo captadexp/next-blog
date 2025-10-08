@@ -1,13 +1,10 @@
 // Core JSON-LD and Schema.org type definitions
-
-// Base JSON-LD structure
 export interface JsonLdBase {
     '@context': string | string[];
     '@type': string;
     '@id'?: string;
 }
 
-// Common schema.org types
 export type SchemaType =
     | 'Article'
     | 'NewsArticle'
@@ -17,14 +14,11 @@ export type SchemaType =
     | 'Recipe'
     | 'FAQPage'
     | 'Review'
-    | 'Product'
-    | 'Event'
     | 'Organization'
     | 'WebSite'
     | 'WebPage'
     | 'BreadcrumbList';
 
-// Organization schema
 export interface Organization extends JsonLdBase {
     '@type': 'Organization';
     name: string;
@@ -37,7 +31,6 @@ export interface Organization extends JsonLdBase {
     email?: string;
 }
 
-// Website schema
 export interface WebSite extends JsonLdBase {
     '@type': 'WebSite';
     name: string;
@@ -48,7 +41,6 @@ export interface WebSite extends JsonLdBase {
     inLanguage?: string;
 }
 
-// Search action for website
 export interface SearchAction {
     '@type': 'SearchAction';
     target: {
@@ -58,13 +50,12 @@ export interface SearchAction {
     'query-input': string;
 }
 
-// Article types
 export interface Article extends JsonLdBase {
     '@type': 'Article' | 'NewsArticle' | 'BlogPosting' | 'TechArticle';
     headline: string;
     description?: string;
     image?: ImageObject | ImageObject[] | string | string[];
-    author?: Person | Person[] | Organization | Organization[];
+    author?: Person | Person[] | Organization | Organization[] | (Person | Organization)[];
     publisher?: Organization;
     datePublished?: string;
     dateModified?: string;
@@ -79,13 +70,12 @@ export interface Article extends JsonLdBase {
     inLanguage?: string;
 }
 
-// HowTo schema
 export interface HowTo extends JsonLdBase {
     '@type': 'HowTo';
     name: string;
     description?: string;
     image?: ImageObject | ImageObject[] | string | string[];
-    author?: Person | Person[] | Organization | Organization[];
+    author?: Person | Person[] | Organization | Organization[] | (Person | Organization)[];
     datePublished?: string;
     dateModified?: string;
     totalTime?: string;
@@ -94,8 +84,8 @@ export interface HowTo extends JsonLdBase {
     tool?: string | string[] | HowToTool | HowToTool[];
     supply?: string | string[] | HowToSupply | HowToSupply[];
     step?: HowToStep | HowToStep[];
-    estimatedCost?: string | MonetaryAmount;
-    yield?: string | QuantitativeValue;
+    estimatedCost?: string;
+    yield?: string;
 }
 
 export interface HowToStep {
@@ -116,7 +106,42 @@ export interface HowToSupply {
     name: string;
 }
 
-// FAQ schema
+export interface Recipe extends JsonLdBase {
+    '@type': 'Recipe';
+    name: string;
+    description?: string;
+    image?: ImageObject | ImageObject[] | string | string[];
+    author?: Person | Person[] | Organization | Organization[] | (Person | Organization)[];
+    datePublished?: string;
+    dateModified?: string;
+    recipeCategory?: string;
+    recipeCuisine?: string;
+    prepTime?: string;
+    cookTime?: string;
+    totalTime?: string;
+    recipeYield?: string;
+    nutrition?: NutritionInformation;
+    recipeIngredient?: string[];
+    recipeInstructions?: (CreativeWork | string)[];
+}
+
+export interface NutritionInformation {
+    '@type': 'NutritionInformation';
+    calories?: number | string;
+    carbohydrateContent?: string;
+    proteinContent?: string;
+    fatContent?: string;
+    fiberContent?: string;
+    sugarContent?: string;
+    sodiumContent?: string;
+}
+
+export interface CreativeWork {
+    '@type': 'CreativeWork';
+    text?: string;
+    name?: string;
+}
+
 export interface FAQPage extends JsonLdBase {
     '@type': 'FAQPage';
     mainEntity: Question | Question[];
@@ -134,7 +159,6 @@ export interface Answer {
     author?: Person | Organization;
 }
 
-// Review schema
 export interface Review extends JsonLdBase {
     '@type': 'Review';
     itemReviewed: Thing;
@@ -152,7 +176,6 @@ export interface Rating {
     worstRating?: number | string;
 }
 
-// Person schema
 export interface Person {
     '@type': 'Person';
     name: string;
@@ -165,7 +188,6 @@ export interface Person {
     email?: string;
 }
 
-// Image object
 export interface ImageObject {
     '@type': 'ImageObject';
     url: string;
@@ -175,7 +197,6 @@ export interface ImageObject {
     description?: string;
 }
 
-// Address
 export interface PostalAddress {
     '@type': 'PostalAddress';
     streetAddress?: string;
@@ -185,7 +206,6 @@ export interface PostalAddress {
     addressCountry?: string;
 }
 
-// Generic Thing
 export interface Thing {
     '@type': string;
     name?: string;
@@ -195,7 +215,6 @@ export interface Thing {
     sameAs?: string[];
 }
 
-// WebPage
 export interface WebPage extends JsonLdBase {
     '@type': 'WebPage';
     name?: string;
@@ -205,26 +224,14 @@ export interface WebPage extends JsonLdBase {
     inLanguage?: string;
 }
 
-// Utility types
-export interface MonetaryAmount {
-    '@type': 'MonetaryAmount';
-    currency: string;
-    value: number | string;
-}
 
-export interface QuantitativeValue {
-    '@type': 'QuantitativeValue';
-    value: number | string;
-    unitText?: string;
-}
-
-// Final JSON-LD output type
 export type JsonLdOutput =
     | Organization
     | WebSite
     | Article
     | HowTo
+    | Recipe
     | FAQPage
     | Review
     | Thing
-    | Array<Organization | WebSite | Article | HowTo | FAQPage | Review | Thing>;
+    | Array<Organization | WebSite | Article | HowTo | Recipe | FAQPage | Review | Thing>;

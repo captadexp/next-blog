@@ -20,7 +20,7 @@ export function getImages(context: MergeContext): string[] {
             return blogData.featuredImage ? [blogData.featuredImage] : [];
         case 'first':
             const contentImages = extractImagesFromContent(blogData.content);
-            return contentImages.length > 0 ? [contentImages[0] as any] : [];
+            return contentImages.length > 0 ? [(contentImages[0] as any).url || contentImages[0].src || String(contentImages[0])] : [];
         case 'none':
         default:
             return [];

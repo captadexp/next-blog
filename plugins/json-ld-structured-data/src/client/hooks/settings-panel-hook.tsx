@@ -29,7 +29,7 @@ export function useSettingsPanelHook(sdk: ClientSDK, prev: any, context: any) {
             });
             sdk.notify('Settings saved successfully', 'success');
         } catch (error) {
-            console.error('Failed to save settings:', error);
+            sdk.log.error('Failed to save settings:', error);
             sdk.notify('Failed to save settings', 'error');
         }
 

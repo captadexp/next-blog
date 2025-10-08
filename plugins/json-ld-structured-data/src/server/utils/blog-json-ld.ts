@@ -6,7 +6,6 @@ import {transformBlogData} from './data-transform.js';
 const GLOBAL_SETTINGS_KEY = 'jsonLd:globalSettings';
 const BLOG_OVERRIDES_PREFIX = 'jsonLd:blogOverrides:';
 
-// Helper function to generate JSON-LD for a specific blog
 export async function generateBlogJsonLd(sdk: ServerSDK, blogId: string, forceRegenerate = false): Promise<any> {
     const cacheKey = `jsonLd:generated:${blogId}`;
 

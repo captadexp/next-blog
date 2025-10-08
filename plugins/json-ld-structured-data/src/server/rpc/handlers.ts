@@ -1,9 +1,10 @@
 import {ServerPluginModule, ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
-import type {BlogJsonLdOverrides, GlobalJsonLdSettings, MergeContext} from '../../types/plugin-types.js';
+import type {BlogJsonLdOverrides, GlobalJsonLdSettings, MergeContext, BlogData} from '../../types/plugin-types.js';
 import {generateJsonLd} from '../../json-ld-merger.js';
 import {validateJsonLd} from '../../validation/validators.js';
 import {generateBlogJsonLd} from '../utils/blog-json-ld.js';
 import {transformBlogData} from '../utils/data-transform.js';
+import {sanitizeJsonLd} from '../utils/input-validation.js';
 
 const GLOBAL_SETTINGS_KEY = 'jsonLd:globalSettings';
 const BLOG_OVERRIDES_PREFIX = 'jsonLd:blogOverrides:';
@@ -205,8 +206,9 @@ export const rpcHandlers: ServerPluginModule["rpcs"] = {
             };
 
             for (const blog of blogs) {
+                const blogData = blog as any;
                 try {
-                    const jsonLd = await generateBlogJsonLd(sdk, (blog as any).id);
+                    const jsonLd = await generateBlogJsonLd(sdk, blogData.id);
                     if (jsonLd) {
                         const validation = validateJsonLd(jsonLd, 'Article'); // Default type for validation
 
@@ -222,8 +224,8 @@ export const rpcHandlers: ServerPluginModule["rpcs"] = {
 
                         if (!validation.valid || validation.warnings.length > 0) {
                             results.issues.push({
-                                blogId: (blog as any).id,
-                                title: (blog as any).title,
+                                blogId: blogData.id,
+                                title: blogData.title,
                                 errors: validation.errors,
                                 warnings: validation.warnings
                             });
@@ -232,8 +234,8 @@ export const rpcHandlers: ServerPluginModule["rpcs"] = {
                 } catch (error: any) {
                     results.invalid++;
                     results.issues.push({
-                        blogId: (blog as any).id,
-                        title: (blog as any).title,
+                        blogId: blogData.id,
+                        title: blogData.title,
                         errors: [{field: 'general', message: error?.message || 'Unknown error'}],
                         warnings: []
                     });

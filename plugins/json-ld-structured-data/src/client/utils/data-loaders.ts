@@ -42,7 +42,7 @@ export const loadBlogData = utils.debounce(async (sdk: ClientSDK, context: { blo
             });
         }
     } catch (error) {
-        console.error('Failed to load blog data:', error);
+        sdk.log.error('Failed to load blog data:', error);
         setBlogOverrides(context.blogId, {
             '@type': 'Article',
             overrides: {},
@@ -65,7 +65,7 @@ export const loadGlobalSettings = utils.throttle(async (sdk: ClientSDK,) => {
             isLoadingSettings: false
         });
     } catch (error) {
-        console.error('Failed to load global settings:', error);
+        sdk.log.error('Failed to load global settings:', error);
         updatePluginState({
             globalSettings: {},
             isLoadingSettings: false

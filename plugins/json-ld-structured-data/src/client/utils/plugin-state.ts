@@ -12,6 +12,7 @@ export interface PluginState {
     showPreview: boolean;
     validationErrors: Array<{ field: string; message: string }>;
     initialized: boolean;
+    currentPreviewRequest: AbortController | null;
 }
 
 export const pluginState: PluginState = {
@@ -25,7 +26,8 @@ export const pluginState: PluginState = {
     jsonPreview: '',
     showPreview: false,
     validationErrors: [],
-    initialized: false
+    initialized: false,
+    currentPreviewRequest: null
 };
 
 export function getPluginState(): PluginState {
@@ -33,7 +35,9 @@ export function getPluginState(): PluginState {
 }
 
 export function updatePluginState(updates: Partial<PluginState>): void {
-    Object.assign(pluginState, updates);
+    Object.entries(updates).forEach(([key, value]) => {
+        (pluginState as any)[key] = value;
+    });
 }
 
 export function getBlogOverrides(blogId: string): BlogJsonLdOverrides {
@@ -45,5 +49,8 @@ export function getBlogOverrides(blogId: string): BlogJsonLdOverrides {
 }
 
 export function setBlogOverrides(blogId: string, overrides: BlogJsonLdOverrides): void {
-    pluginState.blogOverrides[blogId] = overrides;
+    pluginState.blogOverrides = {
+        ...pluginState.blogOverrides,
+        [blogId]: overrides
+    };
 }

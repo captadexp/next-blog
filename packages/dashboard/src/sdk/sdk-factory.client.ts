@@ -3,6 +3,7 @@ import {ClientSettingsHelper} from './settings-helper.client';
 import {ClientCacheHelper} from './cache-helper.client';
 import {ClientEventsHelper} from './events-helper.client';
 import toast from 'react-hot-toast';
+import Logger, {LogLevel} from "../utils/Logger";
 
 /**
  * Dependencies required to create a client SDK instance
@@ -10,6 +11,7 @@ import toast from 'react-hot-toast';
 export interface ClientSDKDependencies {
     apis: APIClient;
     user: User | null;
+    log: Logger;
     utils?: any;
     callHook: (hookName: string, payload: any) => Promise<any>;
 }
@@ -39,6 +41,8 @@ export class ClientSDKFactory {
         const sdk: ClientSDK = {
             // Plugin identity - baked into every operation
             pluginId,
+
+            log: this.createScopedLogger(pluginId),
 
             // Execution context
             executionContext: this.deps.user,
@@ -196,6 +200,23 @@ export class ClientSDKFactory {
             }
         }) as APIClient;
     }
+
+    /**
+     * Create a logger that automatically includes plugin context
+     */
+    private createScopedLogger(pluginId: string) {
+        const originalLogger = this.deps.log;
+        const prefix = `[Plugin: ${pluginId}]`;
+
+        return {
+            debug: (...args: any[]) => originalLogger.debug(prefix, ...args),
+            info: (...args: any[]) => originalLogger.info(prefix, ...args),
+            warn: (...args: any[]) => originalLogger.warn(prefix, ...args),
+            error: (...args: any[]) => originalLogger.error(prefix, ...args),
+            time: (label: string) => originalLogger.time?.(`${prefix} ${label}`),
+            timeEnd: (label: string) => originalLogger.timeEnd?.(`${prefix} ${label}`)
+        };
+    }
 }
 
 /**
@@ -209,6 +230,7 @@ export function createClientSDK(
     callHook: (hookName: string, payload: any) => Promise<any>,
     onRefresh?: () => void
 ): ClientSDK {
-    const factory = new ClientSDKFactory({apis, user, utils, callHook});
+    const logger = new Logger('PluginExecutor', LogLevel.ERROR);
+    const factory = new ClientSDKFactory({apis, log: logger, user, utils, callHook});
     return factory.createSDK(pluginId, onRefresh);
 }

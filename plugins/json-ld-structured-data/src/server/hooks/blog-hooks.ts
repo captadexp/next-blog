@@ -1,5 +1,6 @@
 import {ServerPluginModule, ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
 import {generateBlogJsonLd} from '../utils/blog-json-ld.js';
+import {sanitizeJsonLd} from '../utils/input-validation.js';
 
 const BLOG_OVERRIDES_PREFIX = 'jsonLd:blogOverrides:';
 
@@ -39,8 +40,8 @@ export const blogHooks: ServerPluginModule["hooks"] = {
             const jsonLd = await generateBlogJsonLd(sdk, blogId);
 
             if (jsonLd) {
-                // Inject into head
-                const jsonLdScript = `<script type="application/ld+json">${JSON.stringify(jsonLd, null, 0)}</script>`;
+                // Inject into head with sanitization
+                const jsonLdScript = `<script type="application/ld+json">${sanitizeJsonLd(jsonLd)}</script>`;
 
                 // Add to existing head content or create new head section
                 if (payload.head) {

@@ -12,7 +12,7 @@ export function generateReviewSchema(context: MergeContext): Review {
         '@context': 'https://schema.org',
         '@type': 'Review',
         itemReviewed: {
-            '@type': (overrides.custom?.itemType as any) || 'Thing',
+            '@type': overrides.custom?.itemType || 'Thing',
             name: overrides.custom?.itemName || 'Unknown Item'
         }
     };
