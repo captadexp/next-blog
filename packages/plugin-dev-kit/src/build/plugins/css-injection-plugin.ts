@@ -7,7 +7,9 @@ import {join} from 'path';
  * Creates a plugin that injects CSS into the IIFE for client builds,
  * processing through TailwindCSS when directives are present.
  */
-export function createCssInjectionPlugin(): Plugin {
+export function createCssInjectionPlugin(config?: { mode?: string }): Plugin {
+    const isProduction = config?.mode === 'production';
+
     return {
         name: 'css-inject-iife',
 
@@ -63,10 +65,12 @@ export function createCssInjectionPlugin(): Plugin {
 
             if (!changed) return;
 
-            // Write the modified JS file and remove all CSS files
+            // Write the modified JS file and remove CSS files only in production
             writeFileSync(jsPath, code);
-            for (const cssPath of cssFilePaths) {
-                unlinkSync(cssPath);
+            if (isProduction) {
+                for (const cssPath of cssFilePaths) {
+                    unlinkSync(cssPath);
+                }
             }
         }
     };
