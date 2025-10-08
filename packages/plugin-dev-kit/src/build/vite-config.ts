@@ -135,6 +135,29 @@ if (typeof document !== "undefined") {
 }
 
 /**
+ * Creates a plugin that generates TypeScript declarations for CSS modules
+ */
+function createCssModuleTypesPlugin(root: string): Plugin {
+    return {
+        name: 'css-module-types',
+        buildStart() {
+            const fs = require('fs');
+            const path = require('path');
+
+            // Create a global CSS modules declaration file
+            const cssModulesDeclaration = `// Auto-generated CSS modules type declarations
+declare module '*.module.css' {
+  const classes: { readonly [key: string]: string };
+  export default classes;
+}
+`;
+            const declarationPath = path.resolve(root, 'src', 'css-modules.d.ts');
+            fs.writeFileSync(declarationPath, cssModulesDeclaration);
+        }
+    };
+}
+
+/**
  * Creates a plugin that injects the actual version from package.json
  */
 function createVersionInjectionPlugin(pluginEntryPath: string, version: string): Plugin {
@@ -285,7 +308,7 @@ export function createViteConfig(options: ViteConfigOptions): UserConfig {
         case 'client': {
             return defineConfig({
                 ...baseConfig,
-                plugins: [createCssInjectionPlugin(), wrapIifePlugin],
+                plugins: [createCssModuleTypesPlugin(root), createCssInjectionPlugin(), wrapIifePlugin],
                 build: {
                     ...baseConfig.build,
                     ...createIifeBuildConfig(

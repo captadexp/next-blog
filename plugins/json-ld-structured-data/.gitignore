@@ -6,3 +6,7 @@ dist/*
 *.log
 .DS_Store
 bun.lockb
+
+# Auto-generated CSS module type declarations
+*.module.css.d.ts
+src/css-modules.d.ts
