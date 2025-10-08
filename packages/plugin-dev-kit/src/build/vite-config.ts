@@ -24,6 +24,117 @@ function createIifeWrapperPlugin(): Plugin {
 }
 
 /**
+ * Creates a plugin that injects CSS into the IIFE for client builds
+ */
+function createCssInjectionPlugin(): Plugin {
+    return {
+        name: 'css-inject-iife',
+        async generateBundle(_options, bundle) {
+            // Find CSS and JS files in the bundle
+            let cssContent = '';
+            let jsFileName = '';
+            let cssFileName = '';
+
+            for (const fileName in bundle) {
+                const chunk = bundle[fileName];
+                if (chunk.type === 'asset' && fileName.endsWith('.css')) {
+                    cssContent = chunk.source as string;
+                    cssFileName = fileName;
+                } else if (chunk.type === 'chunk' && fileName.endsWith('.js')) {
+                    jsFileName = fileName;
+                }
+            }
+
+            // If we have both CSS and JS, inject CSS into JS
+            if (cssContent && jsFileName && bundle[jsFileName].type === 'chunk') {
+                const jsChunk = bundle[jsFileName] as any;
+
+                // Create CSS injection code
+                const cssInjectionCode = `
+// Inject CSS
+if (typeof document !== "undefined") {
+    const style = document.createElement("style");
+    style.textContent = ${JSON.stringify(cssContent)};
+    document.head.appendChild(style);
+}
+
+`;
+
+                // Insert CSS injection at the beginning of the IIFE, after "use strict"
+                const originalCode = jsChunk.code;
+                jsChunk.code = jsChunk.code.replace(
+                    /(function\(\)\s*{\s*"use strict";\s*)/,
+                    `$1${cssInjectionCode}`
+                );
+
+                if (originalCode === jsChunk.code) {
+                    // Try alternative pattern
+                    jsChunk.code = jsChunk.code.replace(
+                        /(\(function\(\)\s*{\s*"use strict";\s*)/,
+                        `$1${cssInjectionCode}`
+                    );
+                }
+
+                // Remove the CSS file from bundle since it's now inlined
+                if (cssFileName) {
+                    delete bundle[cssFileName];
+                }
+            }
+        },
+        async writeBundle(options, _bundle) {
+            // Alternative approach: read CSS file after it's written and update JS file
+            const fs = await import('fs');
+            const path = await import('path');
+
+            if (!options.dir) return;
+
+            const cssFilePath = path.resolve(options.dir, 'json-ld-structured-data.css');
+            const jsFilePath = path.resolve(options.dir, 'client.js');
+
+            try {
+                if (fs.existsSync(cssFilePath) && fs.existsSync(jsFilePath)) {
+                    const cssContent = fs.readFileSync(cssFilePath, 'utf-8');
+                    let jsContent = fs.readFileSync(jsFilePath, 'utf-8');
+
+                    // Create CSS injection code
+                    const cssInjectionCode = `
+// Inject CSS
+if (typeof document !== "undefined") {
+    const style = document.createElement("style");
+    style.textContent = ${JSON.stringify(cssContent)};
+    document.head.appendChild(style);
+}
+
+`;
+
+                    // Insert CSS injection at the beginning of the IIFE, after "use strict"
+                    const originalCode = jsContent;
+                    jsContent = jsContent.replace(
+                        /(function\(\)\s*{\s*"use strict";\s*)/,
+                        `$1${cssInjectionCode}`
+                    );
+
+                    if (originalCode === jsContent) {
+                        // Try alternative pattern
+                        jsContent = jsContent.replace(
+                            /(\(function\(\)\s*{\s*"use strict";\s*)/,
+                            `$1${cssInjectionCode}`
+                        );
+                    }
+
+                    if (originalCode !== jsContent) {
+                        fs.writeFileSync(jsFilePath, jsContent);
+                        fs.unlinkSync(cssFilePath);
+                    }
+                }
+            } catch (error) {
+                // Silently handle errors - CSS might already be processed
+            }
+        }
+    };
+}
+
+/**
  * Creates a plugin that injects the actual version from package.json
  */
 function createVersionInjectionPlugin(pluginEntryPath: string, version: string): Plugin {
@@ -174,7 +285,7 @@ export function createViteConfig(options: ViteConfigOptions): UserConfig {
         case 'client': {
             return defineConfig({
                 ...baseConfig,
-                plugins: [wrapIifePlugin],
+                plugins: [createCssInjectionPlugin(), wrapIifePlugin],
                 build: {
                     ...baseConfig.build,
                     ...createIifeBuildConfig(
@@ -186,6 +297,7 @@ export function createViteConfig(options: ViteConfigOptions): UserConfig {
                             '@supergrowthai/jsx-runtime'
                         ]
                     ),
+                    cssCodeSplit: false,
                 },
                 esbuild: {
                     jsx: 'transform',

@@ -532,6 +532,8 @@ export function createMockClientSDK(options: {
     };
 
     return {
+        // @ts-ignore
+        log: null,
         apis: new MockAPIClient(),
         user: mockUser,
         executionContext: mockUser,
