@@ -53,12 +53,12 @@ export const ExtensionZone: FunctionComponent<ExtensionZoneProps> = ({
                 hookName={`${name}:before`}
                 context={context}
             />
-
+            <div className={"h-2"}/>
             {/* Main content */}
             <div data-zone={name} className={className}>
                 {children}
             </div>
-
+            <div className={"h-2"}/>
             {/* Extension point after content */}
             <PluginSlot
                 hookName={`${name}:after`}

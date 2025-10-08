@@ -9,7 +9,6 @@ export {
 
     // Types
     type PluginRuntime,
-    type PluginUtils,
 
     // Symbols
     JSX_ELEMENT,

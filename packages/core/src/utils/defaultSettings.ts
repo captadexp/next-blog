@@ -1,4 +1,4 @@
-import type {DatabaseAdapter, Plugin, User} from "@supergrowthai/types/server";
+import {BrandedId, createId, DatabaseAdapter, Plugin, User} from "@supergrowthai/types/server";
 import {StorageFactory} from "../storage/storage-factory.ts";
 
 // Cache for system IDs
@@ -59,9 +59,9 @@ export async function getOrCreateSystemPlugin(db: DatabaseAdapter): Promise<Plug
 /**
  * Get the system user ID (fetches from DB if not cached)
  */
-export async function getSystemUserId(db: DatabaseAdapter): Promise<string> {
+export async function getSystemUserId(db: DatabaseAdapter): Promise<BrandedId<"User">> {
     if (cachedSystemUserId) {
-        return cachedSystemUserId;
+        return createId.user(cachedSystemUserId);
     }
 
     const systemUser = await getOrCreateSystemUser(db);
@@ -71,9 +71,9 @@ export async function getSystemUserId(db: DatabaseAdapter): Promise<string> {
 /**
  * Get the system plugin ID (fetches from DB if not cached)
  */
-export async function getSystemPluginId(db: DatabaseAdapter): Promise<string> {
+export async function getSystemPluginId(db: DatabaseAdapter): Promise<BrandedId<"Plugin">> {
     if (cachedSystemPluginId) {
-        return cachedSystemPluginId;
+        return createId.plugin(cachedSystemPluginId);
     }
 
     const systemPlugin = await getOrCreateSystemPlugin(db);

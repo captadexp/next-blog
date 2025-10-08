@@ -254,6 +254,13 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
         }
     }, [disabled]);
 
+    useEffect(() => {
+        console.log("RichText Mounted")
+        return () => {
+            console.log("RichText unmounted")
+        }
+    }, []);
+
     return (
         <div className="w-full mb-4">
             <label

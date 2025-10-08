@@ -22,6 +22,7 @@ const ALLOWED_NATIVE_ELEMENTS = [
 
 // Whitelist of allowed props for native elements  
 const ALLOWED_PROPS = [
+    'key',
     // Common attributes
     'className', 'class', 'id', 'style', 'title', 'role', 'tabIndex',
     // Interactive attributes

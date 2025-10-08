@@ -1,22 +1,11 @@
 /// <reference path="./global.d.ts" />
 
-export interface PluginUtils {
-    classList(...classes: (string | undefined | null | false)[]): string;
 
-    styles(styles: Record<string, string | number>): string;
-
-    debounce<T extends (...args: any[]) => any>(fn: T, delay: number): T;
-
-    throttle<T extends (...args: any[]) => any>(fn: T, delay: number): T;
-
-    formatDate(date: Date | string | number, format?: string): string;
-
-    formatNumber(num: number, options?: Intl.NumberFormatOptions): string;
-}
+import {ClientSDKUtils} from "@supergrowthai/types";
 
 export interface PluginRuntime {
     Fragment: symbol;
-    utils: PluginUtils;
+    utils: ClientSDKUtils;
 
     jsx(type: any, props: any, key?: any): JSX.Node;
 

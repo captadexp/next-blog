@@ -22,14 +22,18 @@ export interface Storage {
 // Notification options
 export type NotificationStatus = 'success' | 'error' | 'info' | 'warning';
 
-// Utility functions available to plugins
 export interface ClientSDKUtils {
-    debounce: <T extends (...args: any[]) => any>(
-        func: T,
-        delay: number
-    ) => (...args: Parameters<T>) => void;
+    classList(...classes: (string | undefined | null | false)[]): string;
 
-    [key: string]: any; // Allow for additional utilities
+    styles(styles: Record<string, string | number>): string;
+
+    debounce<T extends (...args: any[]) => any>(fn: T, delay: number): T;
+
+    throttle<T extends (...args: any[]) => any>(fn: T, delay: number): T;
+
+    formatDate(date: Date | string | number, format?: string): string;
+
+    formatNumber(num: number, options?: Intl.NumberFormatOptions): string;
 }
 
 // Client SDK extending base SDK with client-specific features

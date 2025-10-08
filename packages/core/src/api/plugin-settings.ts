@@ -1,6 +1,5 @@
 import type {MinimumRequest, OneApiFunctionResponse, SessionData} from "@supergrowthai/oneapi/types";
 import {BadRequest, NotFound} from "@supergrowthai/oneapi";
-import {createId} from "@supergrowthai/types/server";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import {getSystemPluginId} from "../utils/defaultSettings.js";
@@ -18,7 +17,7 @@ export const getPluginSettings = secure(async (session: SessionData, request: Mi
 
     // Get all settings with plugin prefix
     const settings = await db.settings.find({
-        ownerId: createId.plugin(systemPluginId),
+        ownerId: systemPluginId,
         ownerType: 'plugin'
     });
 
@@ -53,7 +52,7 @@ export const getPluginSetting = secure(async (session: SessionData, request: Min
     const prefixedKey = `plugin:${pluginId}:${key}`;
 
     const setting = await db.settings.findOne({
-        ownerId: createId.plugin(systemPluginId),
+        ownerId: systemPluginId,
         key: prefixedKey,
         ownerType: 'plugin'
     });
@@ -91,7 +90,7 @@ export const setPluginSetting = secure(async (session: SessionData, request: Min
 
     // Check if setting exists
     const existing = await db.settings.findOne({
-        ownerId: createId.plugin(systemPluginId),
+        ownerId: systemPluginId,
         key: prefixedKey
     });
 
@@ -115,7 +114,7 @@ export const setPluginSetting = secure(async (session: SessionData, request: Min
         result = await db.settings.create({
             key: prefixedKey,
             value,
-            ownerId: createId.plugin(systemPluginId),
+            ownerId: systemPluginId,
             ownerType: 'plugin',
             createdAt: Date.now(),
             updatedAt: Date.now()
@@ -148,7 +147,7 @@ export const deletePluginSetting = secure(async (session: SessionData, request: 
     const prefixedKey = `plugin:${pluginId}:${key}`;
 
     const existing = await db.settings.findOne({
-        ownerId: createId.plugin(systemPluginId),
+        ownerId: systemPluginId,
         key: prefixedKey
     });
 

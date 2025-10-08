@@ -1,0 +1,20 @@
+{
+  "name": "json-ld-structured-data",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "next-blog build",
+    "dev": "next-blog dev --port 60108",
+    "watch": "next-blog watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@supergrowthai/plugin-dev-kit": "workspace:*",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0"
+  },
+  "nextBlog": {
+    "baseUrl": "http://localhost:3248/plugins/json-ld-structured-data",
+    "devBaseUrl": "http://localhost:3001"
+  }
+}

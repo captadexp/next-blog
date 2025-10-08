@@ -23,6 +23,8 @@ declare global {
 
         // Base props that all HTML elements can have
         interface HTMLAttributes {
+            key?: string;
+
             // Common attributes
             className?: string;
             class?: string;

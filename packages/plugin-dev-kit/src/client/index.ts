@@ -22,3 +22,5 @@ export {
     Button,
     Text
 } from '@supergrowthai/jsx-runtime';
+
+export {type PluginRuntime} from '@supergrowthai/jsx-runtime';

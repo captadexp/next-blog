@@ -1,9 +1,10 @@
 /// <reference path="./global.d.ts" />
 
-import {PluginRuntime, PluginUtils} from './types';
+import type {PluginRuntime} from './types';
 import {Button, Card, Text} from './components';
+import type {ClientSDKUtils} from "@supergrowthai/types";
 
-const utils: PluginUtils = {
+const utils: ClientSDKUtils = {
     classList(...classes) {
         return classes.filter(Boolean).join(' ');
     },
@@ -99,6 +100,6 @@ function jsxDEV(type: any, props: any, ...children: any[]): JSX.Node {
 }
 
 export {Card, Button, Text, utils};
-export type {PluginUtils, PluginRuntime};
+export type {PluginRuntime};
 export {JSX_ELEMENT, JSX_FRAGMENT, JSX_FRAGMENT as Fragment};
 export {jsx, jsxs, jsxDEV};

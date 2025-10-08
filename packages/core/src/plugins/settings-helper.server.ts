@@ -40,12 +40,11 @@ export class ServerSettingsHelper implements PluginSettings {
      * Plugin settings are stored with system plugin ownership but prefixed keys
      */
     async get<T = any>(key: string): Promise<T | null> {
-        const systemPluginId = await getSystemPluginId(this.db);
         const prefixedKey = `plugin:${this.pluginId}:${key}`;
 
         const setting = await this.db.settings.findOne({
             key: prefixedKey,
-            ownerId: createId.plugin(systemPluginId),
+            ownerId: createId.plugin(this.pluginId),
             ownerType: 'plugin'
         });
 
@@ -66,8 +65,7 @@ export class ServerSettingsHelper implements PluginSettings {
      * Plugin settings are stored with system plugin ownership but prefixed keys
      */
     async set<T = any>(key: string, value: T): Promise<void> {
-        const systemPluginId = await getSystemPluginId(this.db);
-        const systemPluginBrandedId = createId.plugin(systemPluginId);
+        const pluginBrandedId = createId.plugin(this.pluginId);
         const prefixedKey = `plugin:${this.pluginId}:${key}`;
 
         // Check if this should be a secure setting
@@ -76,7 +74,7 @@ export class ServerSettingsHelper implements PluginSettings {
 
         const existingSetting = await this.db.settings.findOne({
             key: prefixedKey,
-            ownerId: systemPluginBrandedId
+            ownerId: pluginBrandedId
         });
 
         if (existingSetting) {
@@ -88,7 +86,7 @@ export class ServerSettingsHelper implements PluginSettings {
             await this.db.settings.create({
                 key: prefixedKey,
                 value: finalValue as any,
-                ownerId: systemPluginBrandedId,
+                ownerId: pluginBrandedId,
                 ownerType: 'plugin',
                 isSecure: shouldBeSecure
             });
