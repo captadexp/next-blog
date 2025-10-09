@@ -4,6 +4,15 @@
 
 import type {RPCMethods} from './common';
 import type {ServerHooksDefinition, ServerRPCsDefinition} from './types';
+import type {
+    LlmsData,
+    RobotsData,
+    RssData,
+    SeoHookPayload,
+    SeoHookPayloadWithDb,
+    SitemapData,
+    SitemapIndexData
+} from '../seo';
 
 /**
  * Server-side plugin module
@@ -178,6 +187,28 @@ export interface ServerHooks extends Record<string, { payload?: any; response: a
 
     // System hooks
     'system:update': { payload: SystemUpdatePayload; response: void | { success?: boolean; message?: string } };
+
+    // SEO hooks
+    'seo:sitemap': {
+        payload: SeoHookPayloadWithDb;
+        response: void | { data: SitemapData };
+    };
+    'seo:sitemap-index': {
+        payload: SeoHookPayload;
+        response: void | { data: SitemapIndexData };
+    };
+    'seo:robots.txt': {
+        payload: SeoHookPayload;
+        response: void | { data: RobotsData };
+    };
+    'seo:llms.txt': {
+        payload: SeoHookPayloadWithDb;
+        response: void | { data: LlmsData };
+    };
+    'seo:rss': {
+        payload: SeoHookPayloadWithDb;
+        response: void | { data: RssData };
+    };
 }
 
 export type HookAction =

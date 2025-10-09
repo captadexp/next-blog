@@ -46,7 +46,7 @@ const pluginState: PluginState = {
 };
 
 // Component for checklist items
-function ChecklistItem({item}: { key: string, item: AnalysisResult }) {
+function ChecklistItem({item}: { item: AnalysisResult }) {
     const colorMap: Record<string, string> = {
         good: 'bg-green-500',
         ok: 'bg-yellow-500',
@@ -382,7 +382,7 @@ function editorSidebarWidget(sdk: any, prev: any, context: any) {
                 {pluginState.analysisResults.length > 0 ? (
                     <>
                         {pluginState.analysisResults.map((item, index) => (
-                            <ChecklistItem key={index.toString()} item={item}/>
+                            <ChecklistItem item={item}/>
                         ))}
                         {pluginState.isTyping && <TypingIndicator/>}
                     </>

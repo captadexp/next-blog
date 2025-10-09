@@ -9,7 +9,7 @@ export class NextJsIronSessionHandler extends IronSessionAuthHandler {
         super(config);
     }
 
-    async getIronSession(req: OneApiRequest, res?: OneApiResponse | null): Promise<IronSession<IronSessionData>> {
+    async getIronSession(_req: OneApiRequest, _res?: OneApiResponse | null): Promise<IronSession<IronSessionData>> {
         return getIronSession<IronSessionData>(await cookies(), this.sessionOptions)
     }
 }

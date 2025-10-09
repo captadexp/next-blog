@@ -9,3 +9,4 @@ export * from './sdk/server';
 export * from './events';
 export * from './configuration';
 export * from './intent';
+export * from './seo';
