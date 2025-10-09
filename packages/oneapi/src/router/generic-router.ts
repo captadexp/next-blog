@@ -46,7 +46,11 @@ export class GenericRouter {
                 user = userResult;
             }
 
-            const query = Object.fromEntries(url.searchParams.entries());
+            const query: Record<string, string> = {};
+            url.searchParams.forEach((value, key) => {
+                query[key] = value;
+            });
+
             const shouldParseBody = handler.config?.parseBody !== false;
             let body: any = null;
 
@@ -59,7 +63,12 @@ export class GenericRouter {
                         body = await request.formData();
                     } else if (contentType?.includes('application/x-www-form-urlencoded')) {
                         const text = await request.text();
-                        body = Object.fromEntries(new URLSearchParams(text));
+                        const searchParams = new URLSearchParams(text);
+                        const formData: Record<string, string> = {};
+                        searchParams.forEach((value, key) => {
+                            formData[key] = value;
+                        });
+                        body = formData;
                     }
                 } catch {
                     // Continue with null body if parsing fails

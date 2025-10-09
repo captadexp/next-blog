@@ -46,7 +46,7 @@ export abstract class IronSessionAuthHandler implements IAuthHandler {
             password: config.password,
             cookieName: config.cookieName,
             cookieOptions: {
-                secure: config.cookieOptions?.secure ?? process.env.NODE_ENV === 'production',
+                secure: config.cookieOptions?.secure ?? false,
                 httpOnly: config.cookieOptions?.httpOnly ?? true,
                 sameSite: config.cookieOptions?.sameSite ?? 'lax',
                 maxAge: config.cookieOptions?.maxAge,
