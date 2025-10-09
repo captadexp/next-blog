@@ -1,9 +1,7 @@
-import type {IAuthHandler} from './auth/auth-handler';
-import {NextRequest, NextResponse} from "next/server";
-import {Request, Response as ExpressResponse} from "express";
+import type {IAuthHandler} from './auth/auth-handler.js';
 
-export type OneApiRequest = NextRequest | Request
-export type OneApiResponse = (NextResponse | ExpressResponse) & { setHeader(key: string, value: string): void };
+export type OneApiRequest = Request & { [key: string]: any };
+export type OneApiResponse = Response & { setHeader(key: string, value: string): void };
 
 export interface MinimumRequest<HEADERS = any, BODY = any, QUERY = any> {
     query: QUERY;
@@ -37,7 +35,7 @@ export type OneApiFunction<EXTRA = any, HEADERS = any, BODY = any, QUERY = any, 
         session: SessionData,
         request: MinimumRequest<HEADERS, BODY, QUERY>,
         extra: EXTRA
-    ): Promise<OneApiFunctionResponse<RPayload> | Response | NextResponse>;
+    ): Promise<OneApiFunctionResponse<RPayload> | Response>;
     config?: OneApiFunctionConfig;
 };
 

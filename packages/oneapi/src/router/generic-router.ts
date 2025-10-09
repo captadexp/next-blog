@@ -1,0 +1,160 @@
+import {getCachedMatch} from '../parse-path.js';
+import {BadRequest, Exception, Forbidden, NotFound, Success, UnAuthorised} from '../errors.js';
+import {IRouterConfig, MinimumRequest, OneApiResponse, PathObject, SessionData} from '../types.js';
+
+export interface GenericRouterConfig extends IRouterConfig {
+}
+
+export class GenericRouter {
+    constructor(
+        private pathObject: PathObject,
+        private config: GenericRouterConfig = {}
+    ) {
+    }
+
+    async handle(request: Request): Promise<Response> {
+        try {
+            const url = new URL(request.url);
+            const pathname = this.config.pathPrefix
+                ? url.pathname.replace(this.config.pathPrefix, '')
+                : url.pathname;
+
+            const {params, handler, templatePath} = getCachedMatch(this.pathObject, pathname);
+
+            console.log("Generic =>", request.method, templatePath, params, "executing:", !!handler);
+
+            if (!handler) {
+                throw new NotFound();
+            }
+
+            const headersForResponse: Record<string, string> = {};
+            const patchedResponse: OneApiResponse = new Response() as any;
+            patchedResponse.setHeader = (k: string, v: string) => {
+                headersForResponse[k] = v;
+            };
+
+            let session = null;
+            let user = null;
+
+            if (this.config.authHandler) {
+                const authResult = await this.config.authHandler.getSession(request as any, patchedResponse);
+                if (authResult instanceof Response) return authResult;
+                session = authResult;
+
+                const userResult = await this.config.authHandler.getUser(request as any, patchedResponse);
+                if (userResult instanceof Response) return userResult;
+                user = userResult;
+            }
+
+            const query = Object.fromEntries(url.searchParams.entries());
+            const shouldParseBody = handler.config?.parseBody !== false;
+            let body: any = null;
+
+            if (shouldParseBody && request.method !== 'GET' && request.method !== 'HEAD') {
+                try {
+                    const contentType = request.headers.get('content-type');
+                    if (contentType?.includes('application/json')) {
+                        body = await request.json();
+                    } else if (contentType?.includes('multipart/form-data')) {
+                        body = await request.formData();
+                    } else if (contentType?.includes('application/x-www-form-urlencoded')) {
+                        const text = await request.text();
+                        body = Object.fromEntries(new URLSearchParams(text));
+                    }
+                } catch {
+                    // Continue with null body if parsing fails
+                }
+            }
+
+            const cookieHeader = request.headers.get('cookie') || '';
+            const cookies = Object.fromEntries(
+                cookieHeader.split(';').map(c => {
+                    const [key, ...val] = c.trim().split('=');
+                    return [key, val.join('=')];
+                }).filter(([k]) => k)
+            );
+
+            const headers: Record<string, string> = {};
+            request.headers.forEach((value, key) => {
+                headers[key] = value;
+            });
+
+            const normalizedRequest: MinimumRequest = {
+                query,
+                body,
+                method: request.method as any,
+                headers,
+                cookies,
+                url: request.url,
+                _request: request as any,
+                _response: patchedResponse,
+                _params: params
+            };
+
+            const sessionData: SessionData = {
+                user,
+                domain: request.headers.get('host'),
+                api: await this.config.createApiImpl?.({
+                    request: request as any,
+                    session,
+                    response: patchedResponse
+                }) || null,
+                authHandler: this.config.authHandler,
+                session
+            };
+
+            const response = await handler(sessionData, normalizedRequest, {});
+
+            if (response instanceof Response) {
+                return response;
+            }
+
+            if ('code' in response && 'message' in response) {
+                const httpStatus = this.getHttpStatus(response.code);
+                return Response.json(response, {
+                    status: httpStatus,
+                    headers: headersForResponse
+                });
+            }
+
+            return Response.json(response, {headers: headersForResponse});
+
+        } catch (e) {
+            return this.handleError(e);
+        }
+    }
+
+    private getHttpStatus(code: number): number {
+        if (code === 0) return 200;
+        if (code >= 100 && code < 600) return code;
+        if (code < 0) return 200;
+        return 500;
+    }
+
+    private handleError(e: any): Response {
+        if (e instanceof UnAuthorised) {
+            return Response.json({code: e.code, message: e.message}, {status: 401});
+        } else if (e instanceof Forbidden) {
+            return Response.json({code: e.code, message: e.message}, {status: 403});
+        } else if (e instanceof NotFound) {
+            return Response.json({code: e.code, message: e.message}, {status: 404});
+        } else if (e instanceof BadRequest) {
+            return Response.json({code: e.code, message: e.message}, {status: 400});
+        } else if (e instanceof Success) {
+            return Response.json({code: e.code, message: e.message, payload: e.payload}, {status: 200});
+        } else if (e instanceof Exception) {
+            const httpCode = this.getHttpStatus(e.code);
+            return Response.json({code: e.code, message: e.message}, {status: httpCode});
+        } else {
+            console.error("Unhandled error:", e);
+            return Response.json({
+                code: 500,
+                message: `Internal Server Error: ${e instanceof Error ? e.message : String(e)}`
+            }, {status: 500});
+        }
+    }
+}
+
+export function createGenericRouter(pathObject: PathObject, config?: GenericRouterConfig) {
+    return new GenericRouter(pathObject, config);
+}

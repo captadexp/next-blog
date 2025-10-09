@@ -5,8 +5,8 @@
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./express": "./src/router/express-router.ts",
-    "./nextjs": "./src/router/nextjs-router.ts",
+    "./express": "./src/express.ts",
+    "./nextjs": "./src/nextjs.ts",
     "./errors": "./src/errors.ts",
     "./types": "./src/types.ts"
   },

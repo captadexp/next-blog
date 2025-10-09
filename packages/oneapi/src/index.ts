@@ -1,24 +1,26 @@
 /**
  * @supergrowthai/oneapi
  *
- * Universal API router for Express and Next.js
+ * Universal API router - framework agnostic core
  *
- * Usage:
- * - For Express: import from '@supergrowthai/oneapi/express'
- * - For Next.js: import from '@supergrowthai/oneapi/nextjs'
+ * For framework-specific implementations:
+ * - Express: import from '@supergrowthai/oneapi/express'
+ * - Next.js: import from '@supergrowthai/oneapi/nextjs'
  */
 
 // Error classes
-export * from './errors';
+export * from './errors.js';
 
 // Type definitions
-export * from './types';
+export * from './types.js';
 
 // Path parsing utilities
-export * from './parse-path';
+export * from './parse-path.js';
 
-// Authentication handlers
-export * from './auth/auth-handler';
-export * from './auth/iron-session-handler';
-export * from './auth/express-iron-session-handler'
-export * from './auth/nextjs-iron-session-handler'
+// Generic router
+export {GenericRouter, createGenericRouter} from './router/generic-router.js';
+
+// Authentication base classes
+export * from './auth/auth-handler.js';
+export * from './auth/iron-session-handler.js';
+export {GenericIronSessionHandler} from './auth/generic-iron-session-handler.js';
