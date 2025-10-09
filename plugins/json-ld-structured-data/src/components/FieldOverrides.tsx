@@ -22,17 +22,9 @@ export function FieldOverrides({
     }
 
     return (
-        <div style={{marginBottom: '1.5rem'}}>
-            <h4 style={{
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                marginBottom: '1rem'
-            }}>Field Overrides</h4>
-            <p style={{
-                fontSize: '0.75rem',
-                color: '#4b5563',
-                marginBottom: '1rem'
-            }}>
+        <div className="mb-6">
+            <h4 className="text-sm font-medium mb-4">Field Overrides</h4>
+            <p className="text-xs text-gray-600 mb-4">
                 Toggle field overrides to customize specific values. Unchecked fields will use automatic
                 values derived from your blog content and global settings.
             </p>
@@ -44,59 +36,24 @@ export function FieldOverrides({
                 return (
                     <div
                         key={field.key}
-                        style={{
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '0.25rem',
-                            padding: '0.75rem',
-                            marginBottom: '1rem'
-                        }}
+                        className="border border-gray-200 rounded p-3 mb-4"
                     >
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            marginBottom: '0.5rem'
-                        }}>
-                            <label style={{
-                                fontSize: '0.875rem',
-                                fontWeight: '500'
-                            }}>{field.label}</label>
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.5rem'
-                            }}>
-                                <span style={{
-                                    fontSize: '0.75rem',
-                                    color: '#6b7280'
-                                }}>
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="text-sm font-medium">{field.label}</label>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-500">
                                     {isOverridden ? 'Custom' : 'Auto'}
                                 </span>
                                 <button
                                     onClick={() => onOverrideToggle(field.key, !isOverridden)}
-                                    style={{
-                                        position: 'relative',
-                                        display: 'inline-flex',
-                                        height: '1.25rem',
-                                        width: '2.25rem',
-                                        alignItems: 'center',
-                                        borderRadius: '9999px',
-                                        backgroundColor: isOverridden ? '#3b82f6' : '#d1d5db',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        transition: 'background-color 0.2s'
-                                    }}
+                                    className={`relative inline-flex h-5 w-9 items-center rounded-full border-none cursor-pointer transition-colors duration-200 ${
+                                        isOverridden ? 'bg-blue-500' : 'bg-gray-300'
+                                    }`}
                                 >
                                     <span
-                                        style={{
-                                            display: 'inline-block',
-                                            height: '0.75rem',
-                                            width: '0.75rem',
-                                            borderRadius: '50%',
-                                            backgroundColor: 'white',
-                                            transform: isOverridden ? 'translateX(1.25rem)' : 'translateX(0.25rem)',
-                                            transition: 'transform 0.2s'
-                                        }}
+                                        className={`inline-block h-3 w-3 rounded-full bg-white transition-transform duration-200 ${
+                                            isOverridden ? 'translate-x-5' : 'translate-x-1'
+                                        }`}
                                     />
                                 </button>
                             </div>
@@ -110,42 +67,13 @@ export function FieldOverrides({
                                         onChange={(e) => onCustomValueChange(field.key, e.target.value)}
                                         placeholder={field.placeholder}
                                         rows={3}
-                                        style={{
-                                            width: '100%',
-                                            padding: '0.5rem',
-                                            border: '1px solid #d1d5db',
-                                            borderRadius: '0.25rem',
-                                            outline: 'none',
-                                            resize: 'vertical'
-                                        }}
-                                        onFocus={(e) => {
-                                            e.target.style.borderColor = '#3b82f6';
-                                            e.target.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.5)';
-                                        }}
-                                        onBlur={(e) => {
-                                            e.target.style.borderColor = '#d1d5db';
-                                            e.target.style.boxShadow = 'none';
-                                        }}
+                                        className="w-full p-2 border border-gray-300 rounded outline-none resize-y focus:border-blue-500 focus:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]"
                                     />
                                 ) : field.type === 'select' ? (
                                     <select
                                         value={customValue}
                                         onChange={(e) => onCustomValueChange(field.key, e.target.value)}
-                                        style={{
-                                            width: '100%',
-                                            padding: '0.5rem',
-                                            border: '1px solid #d1d5db',
-                                            borderRadius: '0.25rem',
-                                            outline: 'none'
-                                        }}
-                                        onFocus={(e) => {
-                                            e.target.style.borderColor = '#3b82f6';
-                                            e.target.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.5)';
-                                        }}
-                                        onBlur={(e) => {
-                                            e.target.style.borderColor = '#d1d5db';
-                                            e.target.style.boxShadow = 'none';
-                                        }}
+                                        className="w-full p-2 border border-gray-300 rounded outline-none focus:border-blue-500 focus:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]"
                                     >
                                         <option value="">Select...</option>
                                         {field.options?.map(option => (
@@ -168,32 +96,14 @@ export function FieldOverrides({
                                         value={customValue}
                                         onChange={(e) => onCustomValueChange(field.key, e.target.value)}
                                         placeholder={field.placeholder}
-                                        style={{
-                                            width: '100%',
-                                            padding: '0.5rem',
-                                            border: '1px solid #d1d5db',
-                                            borderRadius: '0.25rem',
-                                            outline: 'none'
-                                        }}
-                                        onFocus={(e) => {
-                                            e.target.style.borderColor = '#3b82f6';
-                                            e.target.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.5)';
-                                        }}
-                                        onBlur={(e) => {
-                                            e.target.style.borderColor = '#d1d5db';
-                                            e.target.style.boxShadow = 'none';
-                                        }}
+                                        className="w-full p-2 border border-gray-300 rounded outline-none focus:border-blue-500 focus:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]"
                                     />
                                 )}
                             </div>
                         )}
 
                         {field.description && (
-                            <p style={{
-                                fontSize: '0.75rem',
-                                color: '#6b7280',
-                                marginTop: '0.25rem'
-                            }}>{field.description}</p>
+                            <p className="text-xs text-gray-500 mt-1">{field.description}</p>
                         )}
                     </div>
                 );

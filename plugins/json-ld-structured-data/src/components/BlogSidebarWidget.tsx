@@ -38,47 +38,15 @@ export function BlogSidebarWidget({
     }
 
     return (
-        <div style={{
-            padding: '1rem',
-            border: '1px solid #e5e7eb',
-            borderRadius: '0.5rem',
-            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-            backgroundColor: 'white'
-        }}>
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '1rem'
-            }}>
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center'
-                }}>
-                    <span style={{
-                        fontSize: '1.125rem',
-                        marginRight: '0.5rem'
-                    }}>🏷️</span>
-                    <h3 style={{
-                        fontSize: '1.125rem',
-                        fontWeight: '600'
-                    }}>JSON-LD Structured Data</h3>
+        <div className="p-4 border border-gray-200 rounded-lg shadow-sm bg-white">
+            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                    <span className="text-lg mr-2">🏷️</span>
+                    <h3 className="text-lg font-semibold">JSON-LD Structured Data</h3>
                 </div>
                 <button
                     onClick={onPreviewToggle}
-                    style={{
-                        paddingLeft: '0.75rem',
-                        paddingRight: '0.75rem',
-                        paddingTop: '0.25rem',
-                        paddingBottom: '0.25rem',
-                        fontSize: '0.875rem',
-                        backgroundColor: '#f3f4f6',
-                        borderRadius: '0.25rem',
-                        border: 'none',
-                        cursor: 'pointer'
-                    }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = '#e5e7eb'}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+                    className="px-3 py-1 text-sm bg-gray-100 rounded border-none cursor-pointer hover:bg-gray-200"
                 >
                     {showPreview ? 'Hide Preview' : 'Show Preview'}
                 </button>
@@ -107,21 +75,7 @@ export function BlogSidebarWidget({
 
             <button
                 onClick={onSave}
-                style={{
-                    width: '100%',
-                    paddingLeft: '1rem',
-                    paddingRight: '1rem',
-                    paddingTop: '0.5rem',
-                    paddingBottom: '0.5rem',
-                    backgroundColor: '#3b82f6',
-                    color: 'white',
-                    borderRadius: '0.25rem',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s'
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = '#2563eb'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = '#3b82f6'}
+                className="w-full px-4 py-2 bg-blue-500 text-white rounded border-none cursor-pointer transition-colors duration-200 hover:bg-blue-600"
             >
                 Save JSON-LD Settings
             </button>

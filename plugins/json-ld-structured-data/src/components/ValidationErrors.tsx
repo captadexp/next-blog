@@ -13,30 +13,13 @@ export function ValidationErrors({errors}: ValidationErrorsProps) {
     }
 
     return (
-        <div style={{
-            marginBottom: '1rem',
-            padding: '0.75rem',
-            backgroundColor: '#fef2f2',
-            border: '1px solid #fecaca',
-            borderRadius: '0.25rem'
-        }}>
-            <h4 style={{
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                color: '#991b1b',
-                marginBottom: '0.5rem'
-            }}>Validation Errors:</h4>
-            <ul style={{
-                fontSize: '0.75rem',
-                color: '#b91c1c',
-                listStyle: 'none',
-                margin: 0,
-                padding: 0
-            }}>
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded">
+            <h4 className="text-sm font-medium text-red-800 mb-2">Validation Errors:</h4>
+            <ul className="text-xs text-red-700 list-none m-0 p-0">
                 {errors.map((error, index) => (
                     <li
                         key={index.toString()}
-                        style={{marginBottom: '0.25rem'}}
+                        className="mb-1"
                     >
                         • {error.field}: {error.message}
                     </li>

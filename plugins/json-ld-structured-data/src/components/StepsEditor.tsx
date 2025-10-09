@@ -1,5 +1,3 @@
-import styles from './StepsEditor.module.css';
-
 interface Step {
     name?: string;
     text: string;
@@ -29,12 +27,12 @@ export function StepsEditor({ steps, onChange }: StepsEditorProps) {
     };
 
     return (
-        <div className={styles.container}>
-            <div className={styles.header}>
-                <span className={styles.label}>Steps</span>
+        <div className="w-full">
+            <div className="flex justify-between mb-3">
+                <span className="text-sm font-medium">Steps</span>
                 <button
                     onClick={addStep}
-                    className={styles.addButton}
+                    className="px-2 py-1 text-xs bg-blue-500 text-white border-none rounded cursor-pointer hover:bg-blue-600"
                 >
                     + Add Step
                 </button>
@@ -43,20 +41,20 @@ export function StepsEditor({ steps, onChange }: StepsEditorProps) {
             {steps.map((step, index) => (
                 <div
                     key={index.toString()}
-                    className={styles.step}
+                    className="border border-gray-200 rounded p-3 mb-3"
                 >
-                    <div className={styles.stepHeader}>
-                        <span className={styles.stepTitle}>Step {index + 1}</span>
+                    <div className="flex justify-between mb-2">
+                        <span className="text-sm font-medium">Step {index + 1}</span>
                         <button
                             onClick={() => removeStep(index)}
-                            className={styles.removeButton}
+                            className="px-1 py-1 text-xs bg-red-500 text-white border-none rounded cursor-pointer hover:bg-red-600"
                         >
                             ✕
                         </button>
                     </div>
 
-                    <div className={styles.field}>
-                        <label className={styles.fieldLabel}>
+                    <div className="mb-2">
+                        <label className="block text-xs mb-1">
                             Step Title (Optional)
                         </label>
                         <input
@@ -64,12 +62,12 @@ export function StepsEditor({ steps, onChange }: StepsEditorProps) {
                             value={step.name || ''}
                             onChange={(e) => updateStep(index, 'name', e.target.value)}
                             placeholder="e.g., Preparation"
-                            className={styles.input}
+                            className="w-full p-2 border border-gray-300 rounded outline-none focus:border-blue-500 focus:shadow-[0_0_0_1px_#3b82f6]"
                         />
                     </div>
 
-                    <div className={styles.field}>
-                        <label className={styles.fieldLabel}>
+                    <div className="mb-2">
+                        <label className="block text-xs mb-1">
                             Instructions *
                         </label>
                         <textarea
@@ -77,15 +75,15 @@ export function StepsEditor({ steps, onChange }: StepsEditorProps) {
                             onChange={(e) => updateStep(index, 'text', e.target.value)}
                             placeholder="Detailed instructions for this step..."
                             rows={3}
-                            className={styles.textarea}
+                            className="w-full p-2 border border-gray-300 rounded outline-none resize-y focus:border-blue-500 focus:shadow-[0_0_0_1px_#3b82f6]"
                         />
                     </div>
                 </div>
             ))}
 
             {steps.length === 0 && (
-                <div className={styles.emptyState}>
-                    <p className={styles.emptyStateText}>
+                <div className="p-8 text-center border-2 border-dashed border-gray-300 rounded-lg text-gray-500">
+                    <p className="m-0 text-sm">
                         No steps added yet. Click "Add Step" to get started.
                     </p>
                 </div>

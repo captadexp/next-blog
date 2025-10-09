@@ -2,6 +2,7 @@ import {defineClient} from '@supergrowthai/plugin-dev-kit';
 import type {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
 import type {SystemMigrationResult, SystemUpdateStatus} from './types';
 import './types';
+import "./styles.css"
 
 interface PluginState {
     systemStatus: SystemUpdateStatus | null;

@@ -1,5 +1,6 @@
 import {defineClient} from "@supergrowthai/plugin-dev-kit";
 import {extractTextFromContent, getWordCount} from "@supergrowthai/plugin-dev-kit/content";
+import "./styles.css"
 
 interface AnalysisResult {
     label: string;

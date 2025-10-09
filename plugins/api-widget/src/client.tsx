@@ -1,5 +1,6 @@
 import type {ClientSDK} from "@supergrowthai/plugin-dev-kit/client";
 import {defineClient} from "@supergrowthai/plugin-dev-kit";
+import "./styles.css"
 
 // Type definitions for API responses and data structures
 interface Blog {

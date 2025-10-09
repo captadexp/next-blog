@@ -12,46 +12,17 @@ export function JsonPreview({ jsonPreview, sdk }: JsonPreviewProps) {
     };
 
     return (
-        <div style={{marginBottom: '1.5rem'}}>
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginBottom: '0.5rem'
-            }}>
-                <h4 style={{
-                    fontSize: '0.875rem',
-                    fontWeight: '500'
-                }}>JSON-LD Preview</h4>
+        <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium">JSON-LD Preview</h4>
                 <button
                     onClick={handleCopy}
-                    style={{
-                        paddingLeft: '0.5rem',
-                        paddingRight: '0.5rem',
-                        paddingTop: '0.25rem',
-                        paddingBottom: '0.25rem',
-                        fontSize: '0.75rem',
-                        backgroundColor: '#f3f4f6',
-                        borderRadius: '0.25rem',
-                        border: 'none',
-                        cursor: 'pointer'
-                    }}
-                    onMouseEnter={(e) => e.target.style.backgroundColor = '#e5e7eb'}
-                    onMouseLeave={(e) => e.target.style.backgroundColor = '#f3f4f6'}
+                    className="px-2 py-1 text-xs bg-gray-100 rounded border-none cursor-pointer hover:bg-gray-200"
                 >
                     Copy
                 </button>
             </div>
-            <pre style={{
-                backgroundColor: '#f9fafb',
-                padding: '0.75rem',
-                borderRadius: '0.25rem',
-                fontSize: '0.75rem',
-                overflowX: 'auto',
-                maxHeight: '16rem',
-                margin: 0,
-                border: '1px solid #e5e7eb'
-            }}>
+            <pre className="bg-gray-50 p-3 rounded text-xs overflow-x-auto max-h-64 m-0 border border-gray-200">
                 {jsonPreview || 'Generating preview...'}
             </pre>
         </div>

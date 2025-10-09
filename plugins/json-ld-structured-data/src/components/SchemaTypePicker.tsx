@@ -11,31 +11,12 @@ export function SchemaTypePicker({ selectedType, onTypeChange }: SchemaTypePicke
     const schemaTypeDefinition = getSchemaTypeDefinition(selectedType);
 
     return (
-        <div style={{marginBottom: '1.5rem'}}>
-            <label style={{
-                display: 'block',
-                fontSize: '0.875rem',
-                fontWeight: '500',
-                marginBottom: '0.5rem'
-            }}>Content Type</label>
+        <div className="mb-6">
+            <label className="block text-sm font-medium mb-2">Content Type</label>
             <select
                 value={selectedType}
                 onChange={(e) => onTypeChange(e.target.value as SchemaType)}
-                style={{
-                    width: '100%',
-                    padding: '0.5rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '0.25rem',
-                    outline: 'none'
-                }}
-                onFocus={(e) => {
-                    e.target.style.borderColor = '#3b82f6';
-                    e.target.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.5)';
-                }}
-                onBlur={(e) => {
-                    e.target.style.borderColor = '#d1d5db';
-                    e.target.style.boxShadow = 'none';
-                }}
+                className="w-full p-2 border border-gray-300 rounded outline-none focus:border-blue-500 focus:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]"
             >
                 {schemaTypes.map(type => (
                     <option
@@ -47,11 +28,7 @@ export function SchemaTypePicker({ selectedType, onTypeChange }: SchemaTypePicke
                 ))}
             </select>
             {schemaTypeDefinition && (
-                <p style={{
-                    fontSize: '0.75rem',
-                    color: '#6b7280',
-                    marginTop: '0.25rem'
-                }}>{schemaTypeDefinition.description}</p>
+                <p className="text-xs text-gray-500 mt-1">{schemaTypeDefinition.description}</p>
             )}
         </div>
     );
