@@ -101,6 +101,11 @@ export const deletePlugin = secure(async (session: SessionData, request: Minimum
             throw new NotFound(`Plugin with id ${pluginId} not found`);
         }
 
+        // Prevent deletion of system plugin
+        if (existing.isSystem) {
+            throw new BadRequest("System plugin cannot be deleted");
+        }
+
         await pluginManager.deletePluginAndMappings(db, pluginId);
         logger.info(`Plugin ${pluginId} deleted successfully`);
 
@@ -136,6 +141,11 @@ export const reinstallPlugin = secure(async (session: SessionData, request: Mini
         if (!existing) {
             logger.warn(`Reinstall failed, not found: ${pluginId}`);
             throw new NotFound(`Plugin with id ${pluginId} not found`);
+        }
+
+        // Prevent reinstall of system plugin
+        if (existing.isSystem) {
+            throw new BadRequest("System plugin cannot be reinstalled");
         }
 
         await pluginManager.deletePluginAndMappings(db, pluginId);

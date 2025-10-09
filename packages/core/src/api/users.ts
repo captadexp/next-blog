@@ -1,4 +1,4 @@
-import type {MinimumRequest, OneApiFunctionResponse, SessionData} from "@supergrowthai/oneapi/types";
+import type {MinimumRequest, SessionData} from "@supergrowthai/oneapi/types";
 import {Permission, User, UserData} from "@supergrowthai/types/server";
 import crypto from "../utils/crypto.js";
 import secure from "../utils/secureInternal.js";
@@ -167,6 +167,11 @@ export const updateUser = secure(async (session: SessionData, request: MinimumRe
         throw new NotFound("User not found");
     }
 
+    // Prevent editing of system user
+    if (existingUser.isSystem) {
+        throw new BadRequest("System user cannot be edited");
+    }
+
     // Execute before update hook
     if (extra?.callHook) {
         const beforeResult = await extra.callHook('user:beforeUpdate', {
@@ -232,6 +237,11 @@ export const deleteUser = secure(async (session: SessionData, request: MinimumRe
     const existingUser = await db.users.findById(userId!);
     if (!existingUser) {
         throw new NotFound("User not found");
+    }
+
+    // Prevent deletion of system user
+    if (existingUser.isSystem) {
+        throw new BadRequest("System user cannot be deleted");
     }
 
     // Execute before delete hook

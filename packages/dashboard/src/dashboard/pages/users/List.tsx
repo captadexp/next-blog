@@ -119,7 +119,7 @@ const UserList = () => {
                                             <td className="py-2 px-4 border-b">{formatPermissions(user.permissions)}</td>
                                             <td className="py-2 px-4 border-b">
                                                 <div className="flex space-x-2">
-                                                    {hasPermission('users:update') && (
+                                                    {hasPermission('users:update') && !user.isSystem && (
                                                         <a
                                                             href={`/api/next-blog/dashboard/users/${user._id}`}
                                                             className="text-blue-500 hover:text-blue-700"
@@ -127,7 +127,7 @@ const UserList = () => {
                                                             Edit
                                                         </a>
                                                     )}
-                                                    {hasPermission('users:delete') && (
+                                                    {hasPermission('users:delete') && !user.isSystem && (
                                                         <button
                                                             onClick={() => handleDeleteUser(user._id)}
                                                             className="text-red-500 hover:text-red-700"

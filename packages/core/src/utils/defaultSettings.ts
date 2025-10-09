@@ -22,7 +22,8 @@ export async function getOrCreateSystemUser(db: DatabaseAdapter): Promise<User> 
             name: 'System',
             slug: 'system',
             bio: 'System user for internal operations',
-            permissions: ['all:all'] // System user has all permissions
+            permissions: ['all:all'], // System user has all permissions
+            isSystem: true
         });
         console.log('Created system user with ID:', systemUser._id);
     }
@@ -47,7 +48,8 @@ export async function getOrCreateSystemPlugin(db: DatabaseAdapter): Promise<Plug
             version: '1.0.0',
             author: 'System',
             url: 'internal://system',
-            devMode: false
+            devMode: false,
+            isSystem: true
         });
         console.log('Created system plugin with ID:', systemPlugin._id);
     }

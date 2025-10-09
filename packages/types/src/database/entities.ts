@@ -107,6 +107,7 @@ export interface User {
     slug: string;
     bio: string;
     permissions: Permission[];
+    isSystem?: boolean;
     createdAt: number;
     updatedAt: number;
 }
@@ -225,6 +226,7 @@ export interface Plugin {
     server?: { type: 'url'; url: string; };
     client?: { type: 'url'; url: string; };
     devMode?: boolean;
+    isSystem?: boolean;
     createdAt: number;
     updatedAt: number;
 }

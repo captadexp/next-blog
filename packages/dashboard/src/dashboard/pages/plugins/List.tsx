@@ -75,7 +75,7 @@ const PluginsList = () => {
                                 Settings
                             </button>
                         )}
-                        {hasAllPermissions(['plugins:create', 'plugins:delete']) && (
+                        {hasAllPermissions(['plugins:create', 'plugins:delete']) && !plugin.isSystem && (
                             <button
                                 className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
                                 onClick={() => handleReinstall(plugin._id)}
@@ -83,7 +83,7 @@ const PluginsList = () => {
                                 Reinstall
                             </button>
                         )}
-                        {hasPermission('plugins:delete') && (
+                        {hasPermission('plugins:delete') && !plugin.isSystem && (
                             <button
                                 className="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700"
                                 onClick={() => handleDelete(plugin._id)}
