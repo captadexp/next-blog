@@ -1,6 +1,10 @@
 import {defineClient} from "@supergrowthai/plugin-dev-kit";
+import {PluginRuntime} from "@supergrowthai/plugin-dev-kit/client";
 import {extractTextFromContent, getWordCount} from "@supergrowthai/plugin-dev-kit/content";
 import "./styles.css"
+
+// Get global utils
+const {utils} = (window as any).PluginRuntime as PluginRuntime;
 
 interface AnalysisResult {
     label: string;
@@ -26,8 +30,6 @@ interface PluginState {
     blogId: string | null;
     focusKeyword: string;
     analysisResults: AnalysisResult[];
-    debouncedRunAnalysis: any;
-    debouncedPersistMetadata: any;
 }
 
 // This state persists between re-renders triggered by sdk.refresh()
@@ -41,12 +43,10 @@ const pluginState: PluginState = {
     blogId: null,
     focusKeyword: '',
     analysisResults: [],
-    debouncedRunAnalysis: null,
-    debouncedPersistMetadata: null,
 };
 
 // Component for checklist items
-function ChecklistItem({item}: { item: AnalysisResult }) {
+function ChecklistItem({item}: { key: string, item: AnalysisResult }) {
     const colorMap: Record<string, string> = {
         good: 'bg-green-500',
         ok: 'bg-yellow-500',
@@ -111,21 +111,29 @@ function LoadingState() {
     );
 }
 
-// Main widget function with all logic inside to prevent tree shaking
-function editorSidebarWidget(sdk: any, prev: any, context: any) {
-    pluginState.latestSdk = sdk;
-    pluginState.latestContext = context;
+// Core analysis function
+async function runAnalysisCore() {
+    pluginState.isTyping = false;
+    const {latestSdk: sdk, latestContext: context, focusKeyword} = pluginState;
 
-    // Utils functions - moved inside to prevent tree shaking
-    const utils = {
-        calculateKeywordDensity(text: string, keyword: string, wordCount: number): number {
-            if (!text || !keyword || wordCount === 0) return 0;
-            const keywordCount = (text.toLowerCase().match(new RegExp(`\\b${keyword.toLowerCase()}\\b`, 'g')) || []).length;
-            return ((keywordCount / wordCount) * 100);
-        },
+    if (!sdk || !context) return;
+
+    const contentObject = context.editor.getContent();
+    const textContent = extractTextFromContent(contentObject);
+    const title = context.editor.getTitle();
+    const wordCount = getWordCount(contentObject);
+    const keyword = focusKeyword.trim().toLowerCase();
+
+    const analysisData: AnalysisData = {text: textContent, title, keyword, wordCount, contentObject};
+
+    // Utils functions
+    const calculateKeywordDensity = (text: string, keyword: string, wordCount: number): number => {
+        if (!text || !keyword || wordCount === 0) return 0;
+        const keywordCount = (text.toLowerCase().match(new RegExp(`\\b${keyword.toLowerCase()}\\b`, 'g')) || []).length;
+        return ((keywordCount / wordCount) * 100);
     };
 
-    // Check functions - moved inside to prevent tree shaking
+    // Check functions
     const CHECKS = {
         keywordInTitle: (data: AnalysisData): AnalysisResult => {
             const result: AnalysisResult = {
@@ -147,16 +155,16 @@ function editorSidebarWidget(sdk: any, prev: any, context: any) {
             const result: AnalysisResult = {
                 label: "Keyword in First Paragraph",
                 status: 'bad',
-                advice: 'Add your keyword near the beginning of your content.'
+                advice: 'Use your keyword in the first paragraph.'
             };
             if (!data.keyword) {
                 result.advice = 'Set a focus keyword to check this.';
                 return result;
             }
-            const first10Percent = data.text.substring(0, Math.floor(data.text.length * 0.1)).toLowerCase();
-            if (first10Percent.includes(data.keyword)) {
+            const firstParagraph = data.text.split('\n\n')[0] || '';
+            if (firstParagraph.toLowerCase().includes(data.keyword)) {
                 result.status = 'good';
-                result.advice = 'Well done! The keyword appears early on.';
+                result.advice = 'Perfect! The keyword appears early in the content.';
             }
             return result;
         },
@@ -164,37 +172,36 @@ function editorSidebarWidget(sdk: any, prev: any, context: any) {
             const result: AnalysisResult = {
                 label: "Keyword Density",
                 status: 'bad',
-                advice: 'Set a focus keyword to check this.'
+                advice: ''
             };
-            if (!data.keyword) return result;
-
-            const density = utils.calculateKeywordDensity(data.text, data.keyword, data.wordCount);
-            const densityStr = density.toFixed(2);
-
-            if (density > 0.5 && density < 2.5) {
-                result.status = 'good';
-                result.advice = `Density is ${densityStr}%. Perfect!`;
-            } else if (density > 0) {
-                result.status = 'ok';
-                result.advice = `Density is ${densityStr}%. Aim for a value between 0.5% and 2.5%.`;
+            if (!data.keyword) {
+                result.advice = 'Set a focus keyword to check density.';
+                return result;
+            }
+            const density = calculateKeywordDensity(data.text, data.keyword, data.wordCount);
+            if (density > 2.5) {
+                result.status = 'bad';
+                result.advice = `Keyword density is ${density.toFixed(1)}%. Try to reduce it to below 2.5%.`;
+            } else if (density < 0.5) {
+                result.status = 'bad';
+                result.advice = `Keyword density is ${density.toFixed(1)}%. Consider using the keyword more often.`;
             } else {
-                result.advice = `Current density is 0%. Add the keyword a few times in the content.`;
+                result.status = 'good';
+                result.advice = `Keyword density is ${density.toFixed(1)}%. Perfect!`;
             }
             return result;
         },
         contentLength: (data: AnalysisData): AnalysisResult => {
-            const {wordCount} = data;
             const result: AnalysisResult = {
                 label: "Content Length",
                 status: 'bad',
-                advice: `Your content is ${wordCount} words. Aim for at least 300 words.`
+                advice: ''
             };
-            if (wordCount >= 600) {
+            if (data.wordCount < 300) {
+                result.advice = `Your content is ${data.wordCount} words. Aim for at least 300 words.`;
+            } else {
                 result.status = 'good';
-                result.advice = `Content is ${wordCount} words long. Fantastic!`;
-            } else if (wordCount >= 300) {
-                result.status = 'ok';
-                result.advice = `Content is ${wordCount} words long. This is a good length.`;
+                result.advice = `${data.wordCount} words. Good length for SEO!`;
             }
             return result;
         },
@@ -249,61 +256,57 @@ function editorSidebarWidget(sdk: any, prev: any, context: any) {
         },
     };
 
-    async function runAnalysis() {
-        pluginState.isTyping = false;
-        const {latestSdk: sdk, latestContext: context, focusKeyword} = pluginState;
+    const syncResults = [
+        CHECKS.keywordLength(analysisData),
+        CHECKS.contentLength(analysisData),
+        CHECKS.keywordInTitle(analysisData),
+        CHECKS.keywordInFirstParagraph(analysisData),
+        CHECKS.keywordDensity(analysisData),
+    ];
 
-        if (!sdk || !context) return;
+    const asyncChecks = [CHECKS.readability(analysisData, sdk)];
 
-        const contentObject = context.editor.getContent();
-        const textContent = extractTextFromContent(contentObject);
-        const title = context.editor.getTitle();
-        const wordCount = getWordCount(contentObject);
-        const keyword = focusKeyword.trim().toLowerCase();
+    pluginState.analysisResults = [...syncResults, ...asyncChecks.map(() => ({
+        label: "Readability Score", status: 'loading' as const, advice: 'Analyzing...'
+    }))];
+    sdk.refresh();
 
-        const analysisData: AnalysisData = {text: textContent, title, keyword, wordCount, contentObject};
+    const asyncResults = await Promise.all(asyncChecks)
+        .then(results => {
+            return results;
+        })
+        .catch(console.error);
 
-        const syncResults = [
-            CHECKS.keywordLength(analysisData),
-            CHECKS.contentLength(analysisData),
-            CHECKS.keywordInTitle(analysisData),
-            CHECKS.keywordInFirstParagraph(analysisData),
-            CHECKS.keywordDensity(analysisData),
-        ];
+    pluginState.analysisResults = [...syncResults, ...(asyncResults || [])];
+    sdk.refresh();
+}
 
-        const asyncChecks = [CHECKS.readability(analysisData, sdk)];
+// Core persist metadata function
+async function persistMetadataCore(sdk: any, context: any) {
+    if (pluginState.isSaving) return;
+    pluginState.isSaving = true;
+    sdk.refresh();
 
-        pluginState.analysisResults = [...syncResults, ...asyncChecks.map(() => ({
-            label: "Readability Score", status: 'loading' as const, advice: 'Analyzing...'
-        }))];
-        sdk.refresh();
+    const seoAnalyzerMetadata = {focusKeyword: pluginState.focusKeyword};
 
-        const asyncResults = await Promise.all(asyncChecks)
-            .then(results => {
-                return results;
-            })
-            .catch(console.error);
-
-        pluginState.analysisResults = [...syncResults, ...(asyncResults || [])];
-        sdk.refresh();
+    try {
+        await sdk.apis.updateBlogMetadata(context.blogId, {seoAnalyzer: seoAnalyzerMetadata});
+    } catch (err) {
+        console.error("Failed to save metadata:", err);
     }
 
-    async function persistMetadata(sdk: any, context: any) {
-        if (pluginState.isSaving) return;
-        pluginState.isSaving = true;
-        sdk.refresh();
+    pluginState.isSaving = false;
+    sdk.refresh();
+}
 
-        const seoAnalyzerMetadata = {focusKeyword: pluginState.focusKeyword};
+// Create debounced functions at module level using global utils
+const debouncedRunAnalysis = utils.debounce(runAnalysisCore, 1500);
+const debouncedPersistMetadata = utils.debounce(persistMetadataCore, 1500);
 
-        try {
-            await sdk.apis.updateBlogMetadata(context.blogId, {seoAnalyzer: seoAnalyzerMetadata});
-        } catch (err) {
-            console.error("Failed to save metadata:", err);
-        }
-
-        pluginState.isSaving = false;
-        sdk.refresh();
-    }
+// Main widget function with all logic inside to prevent tree shaking
+function editorSidebarWidget(sdk: any, prev: any, context: any) {
+    pluginState.latestSdk = sdk;
+    pluginState.latestContext = context;
 
     async function initializePlugin(sdk: any, context: any) {
         if (pluginState.blogId !== context.blogId) {
@@ -320,18 +323,15 @@ function editorSidebarWidget(sdk: any, prev: any, context: any) {
             const seoMetadata = blog.metadata?.seoAnalyzer || {};
             pluginState.focusKeyword = seoMetadata.focusKeyword || '';
 
-            pluginState.debouncedRunAnalysis = sdk.utils.debounce(runAnalysis, 1500);
-            pluginState.debouncedPersistMetadata = sdk.utils.debounce(persistMetadata, 1500);
-
             context.on('content:change', () => {
                 pluginState.isTyping = true;
                 sdk.refresh();
-                pluginState.debouncedRunAnalysis();
+                debouncedRunAnalysis();
             });
 
             pluginState.isLoading = false;
             pluginState.initiated = true;
-            await runAnalysis();
+            await runAnalysisCore();
 
         } catch (err: any) {
             console.error("Failed to initialize SEO Analyzer:", err);
@@ -349,8 +349,8 @@ function editorSidebarWidget(sdk: any, prev: any, context: any) {
     async function handleKeywordChange(newKeyword: string, sdk: any, context: any) {
         pluginState.focusKeyword = newKeyword;
         sdk.refresh();
-        pluginState.debouncedRunAnalysis();
-        pluginState.debouncedPersistMetadata(sdk, context);
+        debouncedRunAnalysis();
+        debouncedPersistMetadata(sdk, context);
     }
 
     // Initialize plugin
@@ -382,7 +382,7 @@ function editorSidebarWidget(sdk: any, prev: any, context: any) {
                 {pluginState.analysisResults.length > 0 ? (
                     <>
                         {pluginState.analysisResults.map((item, index) => (
-                            <ChecklistItem item={item}/>
+                            <ChecklistItem key={index.toString()} item={item}/>
                         ))}
                         {pluginState.isTyping && <TypingIndicator/>}
                     </>
