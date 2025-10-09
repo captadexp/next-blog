@@ -12,7 +12,7 @@ interface PluginContextType {
     status: 'idle' | 'initializing' | 'ready' | 'error';
     plugins: Plugin[];
     loadedPlugins: Map<string, ClientPluginModule>;
-    getHookFunctions: (hookName: string) => { pluginId: string, hookFn: UIHookFn }[];
+    getHookFunctions: (hookName: string) => { pluginId: string, hookFn: UIHookFn, manifestId: string }[];
     callHook: <T, R>(pluginId: string, hookName: string, payload: T) => Promise<R>;
     callRPC: <T, R>(pluginId: string, hookName: string, payload: T) => Promise<R>;
     reloadPlugins: () => Promise<void>;
@@ -171,10 +171,14 @@ export const PluginProvider: FunctionComponent = ({children}) => {
             });
     }, [doLoadAll]);
 
-    const getHookFunctions = useCallback((hookName: string): { pluginId: string, hookFn: UIHookFn }[] => {
+    const getHookFunctions = useCallback((hookName: string): {
+        pluginId: string,
+        hookFn: UIHookFn,
+        manifestId: string
+    }[] => {
         logger.debug(`getHookFunctions called for hook: "${hookName}"`);
 
-        const functions: { pluginId: string, hookFn: UIHookFn }[] = [];
+        const functions: { pluginId: string, hookFn: UIHookFn, manifestId: string }[] = [];
         const seenPlugins = new Set<string>(); // Avoid duplicate plugins
 
         // O(1) exact match lookup
@@ -183,7 +187,12 @@ export const PluginProvider: FunctionComponent = ({children}) => {
             logger.debug(`Found ${exactMatches.length} exact matches for "${hookName}"`);
             exactMatches.forEach(match => {
                 if (!seenPlugins.has(match.pluginId)) {
-                    functions.push(match);
+                    // Find the plugin to get its manifest ID
+                    const plugin = plugins.find(p => p._id === match.pluginId);
+                    if (!plugin) {
+                        throw new Error(`Plugin with ID ${match.pluginId} not found in plugins list`);
+                    }
+                    functions.push({...match, manifestId: plugin.id});
                     seenPlugins.add(match.pluginId);
                 }
             });
@@ -201,7 +210,12 @@ export const PluginProvider: FunctionComponent = ({children}) => {
                     hooks.forEach(hook => {
                         if (!seenPlugins.has(hook.pluginId)) {
                             logger.debug(`Hook "${hookName}" matches zone pattern "${pattern}"`);
-                            functions.push({pluginId: hook.pluginId, hookFn: hook.hookFn});
+                            // Find the plugin to get its manifest ID
+                            const plugin = plugins.find(p => p._id === hook.pluginId);
+                            if (!plugin) {
+                                throw new Error(`Plugin with ID ${hook.pluginId} not found in plugins list`);
+                            }
+                            functions.push({pluginId: hook.pluginId, hookFn: hook.hookFn, manifestId: plugin.id});
                             seenPlugins.add(hook.pluginId);
                         }
                     });
@@ -210,7 +224,12 @@ export const PluginProvider: FunctionComponent = ({children}) => {
                 hooks.forEach(hook => {
                     if (!seenPlugins.has(hook.pluginId)) {
                         logger.debug(`Hook "${hookName}" matches pattern "${pattern}"`);
-                        functions.push({pluginId: hook.pluginId, hookFn: hook.hookFn});
+                        // Find the plugin to get its manifest ID
+                        const plugin = plugins.find(p => p._id === hook.pluginId);
+                        if (!plugin) {
+                            throw new Error(`Plugin with ID ${hook.pluginId} not found in plugins list`);
+                        }
+                        functions.push({pluginId: hook.pluginId, hookFn: hook.hookFn, manifestId: plugin.id});
                         seenPlugins.add(hook.pluginId);
                     }
                 });
@@ -219,7 +238,7 @@ export const PluginProvider: FunctionComponent = ({children}) => {
 
         logger.debug(`Returning ${functions.length} hook implementations for "${hookName}"`);
         return functions;
-    }, [hookIndex]);
+    }, [hookIndex, plugins]);
 
     const callHook = useCallback(async (pluginId: string, hookName: string, payload: any): Promise<any> => {
         return apis.callPluginHook(pluginId, hookName, payload);

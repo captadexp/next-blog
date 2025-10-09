@@ -140,7 +140,7 @@ export function createViteConfig(options: ViteConfigOptions): UserConfig {
         }
 
         case 'client': {
-            const cssInjectionPlugin = createCssInjectionPlugin({mode});
+            const cssInjectionPlugin = createCssInjectionPlugin({mode, root});
             const clientPlugins = [createCssModuleTypesPlugin(root), wrapIifePlugin, cssInjectionPlugin];
 
             const tailwindPlugin = tailwindcss();

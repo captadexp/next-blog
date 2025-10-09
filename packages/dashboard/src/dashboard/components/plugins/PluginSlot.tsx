@@ -135,13 +135,17 @@ export const PluginSlot: FunctionComponent<PluginSlotProps> = (props) => {
 
     return (
         <Fragment>
-            {hookFunctions.map(({pluginId, hookFn}) => PluginHost({
-                pluginId,
-                hookFn,
-                callHook: (name, payload) => callHook(pluginId, name, payload),
-                callRPC: (name, payload) => callRPC(pluginId, name, payload),
-                context: enhancedContext
-            }))}
+            {hookFunctions.map(({pluginId, hookFn, manifestId}) => (
+                <div key={pluginId} className={`plugin-${manifestId}`}>
+                    {PluginHost({
+                        pluginId,
+                        hookFn,
+                        callHook: (name, payload) => callHook(pluginId, name, payload),
+                        callRPC: (name, payload) => callRPC(pluginId, name, payload),
+                        context: enhancedContext
+                    })}
+                </div>
+            ))}
         </Fragment>
     );
 };

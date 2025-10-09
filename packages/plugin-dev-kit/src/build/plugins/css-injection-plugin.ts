@@ -4,11 +4,42 @@ import {existsSync, readdirSync, readFileSync, unlinkSync, writeFileSync} from '
 import {join} from 'path';
 
 /**
+ * Reads the plugin manifest to get the plugin ID
+ */
+function getPluginId(root: string): string | null {
+    try {
+        // Look for plugin manifest in various paths
+        const possiblePaths = [
+            join(root, 'src', 'index.ts'),
+            join(root, 'src', 'index.js'),
+            join(root, 'index.ts'),
+            join(root, 'index.js')
+        ];
+
+        for (const manifestPath of possiblePaths) {
+            if (existsSync(manifestPath)) {
+                const content = readFileSync(manifestPath, 'utf-8');
+                // Look for plugin ID in definePlugin call
+                const idMatch = content.match(/id:\s*['"]([\w-]+)['"]/);
+                if (idMatch) {
+                    return idMatch[1];
+                }
+            }
+        }
+        return null;
+    } catch (err) {
+        console.warn('Failed to read plugin ID from manifest:', err);
+        return null;
+    }
+}
+
+/**
  * Creates a plugin that injects CSS into the IIFE for client builds,
  * processing through TailwindCSS when directives are present.
  */
-export function createCssInjectionPlugin(config?: { mode?: string }): Plugin {
-    const isProduction = config?.mode === 'production';
+export function createCssInjectionPlugin(config: { mode?: string, root: string }): Plugin {
+    const isProduction = config.mode === 'production';
+    const root = config.root;
 
     return {
         name: 'css-inject-iife',
@@ -58,9 +89,12 @@ export function createCssInjectionPlugin(config?: { mode?: string }): Plugin {
 
             const jsContent = readFileSync(jsPath, 'utf-8');
 
-            // Process combined CSS (for Tailwind directives if present)
-            const processedCss = await processCssIfNeeded(combinedCss, outputDir);
-            const injection = makeCssInjectionCode(processedCss);
+            // Get plugin ID for scoping
+            const pluginId = getPluginId(root);
+
+            // Process combined CSS (for Tailwind directives if present, then scope to plugin)
+            const processedCss = await processCssIfNeeded(combinedCss, outputDir, pluginId || undefined);
+            const injection = makeCssInjectionCode(processedCss, pluginId || undefined);
             const {code, changed} = injectIntoIifeAfterUseStrict(jsContent, injection);
 
             if (!changed) return;
