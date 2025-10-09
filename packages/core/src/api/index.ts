@@ -8,3 +8,4 @@ export * from './plugins.js';
 export * from './plugin-settings.js';
 export * from './cron.js';
 export * from './media.js';
+export * from './seo.js';

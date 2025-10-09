@@ -27,6 +27,7 @@ import {
     getCategoryById,
     getConfig,
     getCurrentUser,
+    getLlmsTxt,
     getMedia,
     getMediaById,
     getPluginById,
@@ -34,8 +35,12 @@ import {
     getPlugins,
     getPluginSetting,
     getPluginSettings,
+    getRobotsTxt,
+    getRssFeed,
     getSettingById,
     getSettings,
+    getSitemap,
+    getSitemapIndex,
     getTagById,
     getTags,
     getUser,
@@ -171,11 +176,18 @@ const cmsPaths: PathObject = {
             ':id': methodHandler({GET: getMediaById, POST: updateMedia}),
             'create': methodHandler({POST: createMedia}),
             'upload': {
-                ':mediaId': uploadMedia // No methodHandler wrapper - handles its own methods and has parseBody: false
+                ':mediaId': uploadMedia
             },
             delete: {
                 ':id': methodHandler({POST: deleteMedia})
             }
+        },
+        seo: {
+            'sitemap.xml': methodHandler({GET: getSitemap}),
+            'sitemap-index.xml': methodHandler({GET: getSitemapIndex}),
+            'robots.txt': methodHandler({GET: getRobotsTxt}),
+            'llms.txt': methodHandler({GET: getLlmsTxt}),
+            'rss.xml': methodHandler({GET: getRssFeed})
         }
     },
     dashboard: {
