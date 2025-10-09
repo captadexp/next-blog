@@ -95,7 +95,7 @@ const CreateUser: FunctionComponent<CreateUserProps> = () => {
     };
 
     return (
-        <ExtensionZone name="user-create" page="users" entity="user">
+        <ExtensionZone name="user-create" context={{zone: 'user-create', page: 'users', entity: 'user'}}>
             <div className="max-w-4xl mx-auto p-2 md:p-6">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-semibold">Create New User</h2>
@@ -109,7 +109,7 @@ const CreateUser: FunctionComponent<CreateUserProps> = () => {
 
                 <ExtensionPoint name="user-create-form:toolbar" context={{fields: getFormFields(), availablePermissions}}/>
 
-                <ExtensionZone name="user-create-form" page="users" entity="user" data={{fields: getFormFields(), availablePermissions}}>
+                <ExtensionZone name="user-create-form" context={{zone: 'user-create-form', page: 'users', entity: 'user', data: {fields: getFormFields(), availablePermissions}}}>
                     <div className="bg-white p-6 rounded-lg shadow-md">
                         <DynamicForm
                             id="createUser"

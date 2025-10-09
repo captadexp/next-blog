@@ -53,7 +53,7 @@ const TagsList: FunctionComponent<TagsListProps> = () => {
     };
 
     return (
-        <ExtensionZone name="tags-list" page="tags" data={tags}>
+        <ExtensionZone name="tags-list" context={{zone: 'tags-list', page: 'tags', data: tags}}>
             <div className="flex justify-between items-center mb-5">
                 <h2 className="text-xl font-semibold m-0">Tags</h2>
                 <a
@@ -79,7 +79,7 @@ const TagsList: FunctionComponent<TagsListProps> = () => {
             ) : tags.length === 0 ? (
                 <p>No tags found. Create your first tag!</p>
             ) : (
-                <ExtensionZone name="tags-table" page="tags" data={tags}>
+                <ExtensionZone name="tags-table" context={{zone: 'tags-table', page: 'tags', data: tags}}>
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
                             <thead>

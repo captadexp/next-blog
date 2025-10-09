@@ -141,7 +141,7 @@ const UpdateUser: FunctionComponent<UpdateUserProps> = ({id: propId}) => {
     // The permissions are now handled within the DynamicForm via the PermissionsField component
 
     return (
-        <ExtensionZone name="user-update" page="users" entity="user" data={{user, loading, error, availablePermissions}}>
+        <ExtensionZone name="user-update" context={{zone: 'user-update', page: 'users', entity: 'user', data: {user, loading, error, availablePermissions}}}>
             <div className="max-w-4xl mx-auto p-2 md:p-6">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-semibold">Update User</h2>
@@ -167,7 +167,7 @@ const UpdateUser: FunctionComponent<UpdateUserProps> = ({id: propId}) => {
                     <>
                         <ExtensionPoint name="user-update-form:toolbar" context={{user, fields: getFormFields(), availablePermissions}}/>
                         
-                        <ExtensionZone name="user-update-form" page="users" entity="user" data={{user, fields: getFormFields(), availablePermissions}}>
+                        <ExtensionZone name="user-update-form" context={{zone: 'user-update-form', page: 'users', entity: 'user', data: {user, fields: getFormFields(), availablePermissions}}}>
                             <div className="bg-white p-6 rounded-lg shadow-md mb-6">
                                 <DynamicForm
                                     id="updateUser"

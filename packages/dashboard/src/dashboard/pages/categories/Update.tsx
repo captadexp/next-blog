@@ -68,7 +68,7 @@ const UpdateCategory: FunctionComponent<UpdateCategoryProps> = ({id}) => {
     };
 
     return (
-        <ExtensionZone name="category-update" page="categories" entity="category" data={{category, loading, error}}>
+        <ExtensionZone name="category-update" context={{zone: 'category-update', page: 'categories', entity: 'category', data: {category, loading, error}}}>
             <div className="max-w-4xl mx-auto p-2 md:p-6">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-semibold">Update Category</h2>
@@ -94,7 +94,7 @@ const UpdateCategory: FunctionComponent<UpdateCategoryProps> = ({id}) => {
                     <>
                         <ExtensionPoint name="category-update-form:toolbar" context={{category, fields: getFormFields()}}/>
                         
-                        <ExtensionZone name="category-update-form" page="categories" entity="category" data={{category, fields: getFormFields()}}>
+                        <ExtensionZone name="category-update-form" context={{zone: 'category-update-form', page: 'categories', entity: 'category', data: {category, fields: getFormFields()}}}>
                             <div className="bg-white p-6 rounded-lg shadow-md">
                                 <DynamicForm
                                     id="updateCategory"

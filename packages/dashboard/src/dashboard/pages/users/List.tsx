@@ -77,7 +77,7 @@ const UserList = () => {
     }
 
     return (
-        <ExtensionZone name="users-list" page="users" data={users}>
+        <ExtensionZone name="users-list" context={{zone: 'users-list', page: 'users', data: users}}>
             <div className="p-4">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold">Users</h1>
@@ -96,7 +96,7 @@ const UserList = () => {
                 {users.length === 0 ? (
                     <div className="text-gray-500">No users found.</div>
                 ) : (
-                    <ExtensionZone name="user-table" page="users" data={users}>
+                    <ExtensionZone name="user-table" context={{zone: 'user-table', page: 'users', data: users}}>
                         <div className="overflow-x-auto">
                             <table className="min-w-full bg-white border border-gray-200">
                                 <thead>

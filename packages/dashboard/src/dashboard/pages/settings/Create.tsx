@@ -86,7 +86,7 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
     }
 
     return (
-        <ExtensionZone name="setting-create" page="settings" entity="setting">
+        <ExtensionZone name="setting-create" context={{zone: 'setting-create', page: 'settings', entity: 'setting'}}>
             <div className="max-w-4xl mx-auto p-2 md:p-6">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-semibold">Create New Setting</h2>
@@ -107,7 +107,7 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
                         Error: {error}
                     </div>
                 ) : (
-                    <ExtensionZone name="setting-create-form" page="settings" entity="setting" data={{fields}}>
+                    <ExtensionZone name="setting-create-form" context={{zone: 'setting-create-form', page: 'settings', entity: 'setting', data: {fields}}}>
                         <div className="bg-white p-6 rounded-lg shadow-md">
                             <DynamicForm
                                 id="createSetting"

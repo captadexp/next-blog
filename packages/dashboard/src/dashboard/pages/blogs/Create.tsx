@@ -215,7 +215,7 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
                     Error: {error}
                 </div>
             ) : (
-                <ExtensionZone name="blog-create-form" page="blogs" entity="blog">
+                <ExtensionZone name="blog-create-form" context={{zone: 'blog-create-form', page: 'blogs', entity: 'blog'}}>
                     <div className="bg-white p-6 rounded-lg shadow-md">
                         <DynamicForm
                             id="createBlog"

@@ -4,11 +4,7 @@ import {PluginSlot} from './plugins/PluginSlot';
 interface ExtensionZoneProps {
     name: string;
     children: any;
-    // Additional context to pass to plugins
-    page?: string;
-    entity?: string;
-    data?: any;
-    actions?: Record<string, Function>;
+    context?: Record<string, any>;
     className?: string;
 }
 
@@ -29,22 +25,9 @@ interface ExtensionZoneProps {
 export const ExtensionZone: FunctionComponent<ExtensionZoneProps> = ({
                                                                          name,
                                                                          children,
-                                                                         page,
-                                                                         entity,
-                                                                         data,
-                                                                         actions,
-                                                                         className,
-                                                                         ...additionalContext
+                                                                         context,
+                                                                         className
                                                                      }) => {
-    // Build context object for plugins
-    const context = {
-        zone: name,
-        page,
-        entity,
-        data,
-        actions,
-        ...additionalContext
-    };
 
     return (
         <>

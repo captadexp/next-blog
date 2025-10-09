@@ -54,7 +54,7 @@ const CategoriesList: FunctionComponent<CategoriesListProps> = () => {
     };
 
     return (
-        <ExtensionZone name="categories-list" page="categories" data={categories}>
+        <ExtensionZone name="categories-list" context={{zone: 'categories-list', page: 'categories', data: categories}}>
             <div className="flex justify-between items-center mb-5">
                 <h2 className="text-xl font-semibold m-0">Categories</h2>
                 <a
@@ -80,7 +80,7 @@ const CategoriesList: FunctionComponent<CategoriesListProps> = () => {
             ) : categories.length === 0 ? (
                 <p>No categories found. Create your first category!</p>
             ) : (
-                <ExtensionZone name="categories-table" page="categories" data={categories}>
+                <ExtensionZone name="categories-table" context={{zone: 'categories-table', page: 'categories', data: categories}}>
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
                             <thead>

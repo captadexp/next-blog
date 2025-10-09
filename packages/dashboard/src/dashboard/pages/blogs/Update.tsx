@@ -67,8 +67,13 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
 
     // --- PLUGIN CONTEXT ---
     const pluginContext = useMemo(() => {
-        if (!formData) return {};
+        if (!formData || !blog) return {};
         return {
+            zone: 'editor-sidebar-widget',
+            page: 'blogs',
+            entity: 'blog',
+            data: blog,
+            actions: undefined,
             blogId: id,
             contentOwnerId: blog?.userId,
             editor: {
@@ -218,7 +223,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
             {loading ? <p>Loading blog data...</p> : error ?
                 <div className="p-4 bg-red-100 text-red-800 rounded">Error: {error}</div> : !blog || !formData ?
                     <div className="p-4 bg-yellow-100 text-yellow-800 rounded">Blog not found</div> : (
-                        <ExtensionZone name="blog-update-form" page="blogs" entity="blog" data={blog}>
+                        <ExtensionZone name="blog-update-form" context={pluginContext}>
                             <div className="flex flex-col md:flex-row gap-8">
                                 <div className="flex-grow bg-white p-6 rounded-lg shadow-md">
                                     <DynamicForm
