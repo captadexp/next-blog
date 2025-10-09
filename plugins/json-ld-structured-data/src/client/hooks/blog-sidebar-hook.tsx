@@ -1,88 +1,101 @@
-import {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
+import {ClientSDK, PluginRuntime} from '@supergrowthai/plugin-dev-kit/client';
 import {BlogSidebarWidget} from '../../components/index.js';
 import type {BlogJsonLdOverrides, SchemaType} from '../../types/plugin-types.js';
-import {getBlogOverrides, getPluginState, setBlogOverrides, updatePluginState} from '../utils/plugin-state.js';
+import {getBlogOverrides, setBlogOverrides} from '../utils/plugin-state.js';
 import {loadBlogData, loadGlobalSettings} from '../utils/data-loaders.js';
 import {getSchemaTypeDefinition} from '../../schema/schema-definitions.js';
 
-export function useBlogSidebarHook(sdk: ClientSDK, prev: any, context: any) {
-    const state = getPluginState();
+// Get global utils
+const {utils} = (window as any).PluginRuntime as PluginRuntime;
 
-    // Initialize blog data loading
-    if (!state.initialized || state.currentBlogId !== context?.blogId) {
-        if (!state.initialized) {
-            updatePluginState({initialized: true});
-            loadGlobalSettings(sdk);
-        }
+// Local state for this hook - minimal and focused
+interface BlogSidebarState {
+    currentBlogId: string | null;
+    jsonPreview: string;
+    showPreview: boolean;
+    isGeneratingPreview: boolean;
+    showFieldOverrides: boolean;
+    validationErrors: Array<{ field: string; message: string }>;
+    currentPreviewRequest: AbortController | null;
+}
 
-        if (state.currentBlogId !== context?.blogId) {
-            updatePluginState({currentBlogId: context?.blogId});
-            loadBlogData(sdk, context);
-        }
+const state: BlogSidebarState = {
+    currentBlogId: null,
+    jsonPreview: '',
+    showPreview: false,
+    isGeneratingPreview: false,
+    showFieldOverrides: true,
+    validationErrors: [],
+    currentPreviewRequest: null
+};
+
+// Core preview generation logic
+async function generatePreviewCore(sdk: ClientSDK, blogId: string, overrides: BlogJsonLdOverrides) {
+    // Cancel previous request
+    if (state.currentPreviewRequest) {
+        state.currentPreviewRequest.abort();
     }
 
-    const currentOverrides = getBlogOverrides(state.currentBlogId || '');
+    const abortController = new AbortController();
+    state.currentPreviewRequest = abortController;
+    state.isGeneratingPreview = true;
+    sdk.refresh();
 
-    // Debounced preview generation to avoid excessive API calls
-    const debouncedGeneratePreview = sdk.utils!.debounce(async (sdk: ClientSDK, overrides: BlogJsonLdOverrides) => {
-        try {
-            if (!state.currentBlogId) return;
+    try {
+        const response = await sdk.callRPC('jsonLd:generatePreview', {
+            blogId,
+            overrides
+        });
 
-            // Cancel previous request if still pending
-            if (state.currentPreviewRequest) {
-                state.currentPreviewRequest.abort();
-            }
+        if (abortController.signal.aborted) return;
 
-            // Create new abort controller for this request
-            const abortController = new AbortController();
-            updatePluginState({currentPreviewRequest: abortController});
-
-            const response = await sdk.callRPC('jsonLd:generatePreview', {
-                blogId: state.currentBlogId,
-                overrides
-            });
-
-            // Check if request was aborted
-            if (abortController.signal.aborted) {
-                return;
-            }
-
-            const {jsonLd, validation} = response.payload.payload;
-            updatePluginState({
-                jsonPreview: JSON.stringify(jsonLd, null, 2),
-                validationErrors: validation?.errors || [],
-                currentPreviewRequest: null
-            });
-        } catch (error) {
-            // Don't show error if request was aborted
-            if (error instanceof DOMException && error.name === 'AbortError') {
-                return;
-            }
-
-            sdk.log.error('Failed to generate preview:', error);
-            updatePluginState({
-                jsonPreview: 'Error generating preview',
-                validationErrors: [],
-                currentPreviewRequest: null
-            });
+        const {jsonLd, validation} = response.payload.payload;
+        state.jsonPreview = JSON.stringify(jsonLd, null, 2);
+        state.validationErrors = validation?.errors || [];
+        state.currentPreviewRequest = null;
+        state.isGeneratingPreview = false;
+    } catch (error) {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+            state.jsonPreview = 'Error generating preview';
+            state.validationErrors = [];
+            state.currentPreviewRequest = null;
+            state.isGeneratingPreview = false;
         }
-        sdk.refresh();
-    }, 1500);
+    }
+    sdk.refresh();
+}
 
-    // Throttled save function to prevent rapid clicking
-    const throttledSave = sdk.utils!.throttle(async () => {
-        if (!state.currentBlogId) return;
-        try {
-            await sdk.callRPC('jsonLd:saveBlogOverrides', {
-                blogId: state.currentBlogId,
-                overrides: currentOverrides
-            });
-            sdk.notify('JSON-LD settings saved', 'success');
-        } catch (error) {
-            sdk.log.error('Failed to save blog overrides:', error);
-            sdk.notify('Failed to save JSON-LD settings', 'error');
-        }
-    }, 2000);
+// Core save logic
+async function saveBlogOverridesCore(sdk: ClientSDK, blogId: string, overrides: BlogJsonLdOverrides) {
+    try {
+        await sdk.callRPC('jsonLd:saveBlogOverrides', {
+            blogId,
+            overrides
+        });
+        sdk.notify('JSON-LD settings saved', 'success');
+    } catch (error) {
+        sdk.notify('Failed to save JSON-LD settings', 'error');
+        throw error;
+    }
+}
+
+// Create debounced/throttled functions once at module level
+const debouncedGeneratePreview = utils.debounce(generatePreviewCore, 1500);
+const throttledSave = utils.throttle(saveBlogOverridesCore, 2000);
+
+export function useBlogSidebarHook(sdk: ClientSDK, prev: any, context: any) {
+    if (!context?.blogId) {
+        throw new Error('Blog context is required');
+    }
+
+    // Simple initialization check
+    if (state.currentBlogId !== context.blogId) {
+        state.currentBlogId = context.blogId;
+        loadGlobalSettings(sdk);
+        loadBlogData(sdk, context);
+    }
+
+    const currentOverrides = getBlogOverrides(context.blogId);
 
     const handleTypeChange = (newType: SchemaType) => {
         const newSchemaDefinition = getSchemaTypeDefinition(newType);
@@ -126,9 +139,9 @@ export function useBlogSidebarHook(sdk: ClientSDK, prev: any, context: any) {
             custom: preservedCustom
         };
 
-        setBlogOverrides(state.currentBlogId || '', updatedOverrides);
+        setBlogOverrides(context.blogId, updatedOverrides);
         sdk.refresh();
-        debouncedGeneratePreview(sdk, updatedOverrides);
+        debouncedGeneratePreview(sdk, context.blogId, updatedOverrides);
     };
 
     const handleOverrideToggle = (field: string, enabled: boolean) => {
@@ -139,9 +152,9 @@ export function useBlogSidebarHook(sdk: ClientSDK, prev: any, context: any) {
                 [field]: enabled
             }
         };
-        setBlogOverrides(state.currentBlogId || '', updatedOverrides);
+        setBlogOverrides(context.blogId, updatedOverrides);
         sdk.refresh();
-        debouncedGeneratePreview(sdk, updatedOverrides);
+        debouncedGeneratePreview(sdk, context.blogId, updatedOverrides);
     };
 
     const handleCustomValueChange = (field: string, value: any) => {
@@ -152,79 +165,44 @@ export function useBlogSidebarHook(sdk: ClientSDK, prev: any, context: any) {
                 [field]: value
             }
         };
-        setBlogOverrides(state.currentBlogId || '', updatedOverrides);
+        setBlogOverrides(context.blogId, updatedOverrides);
         sdk.refresh();
-        debouncedGeneratePreview(sdk, updatedOverrides);
+        debouncedGeneratePreview(sdk, context.blogId, updatedOverrides);
     };
-
-    const generatePreview = async (sdk: ClientSDK, overrides: BlogJsonLdOverrides = currentOverrides) => {
-        try {
-            if (!state.currentBlogId) return;
-
-            // Cancel previous request if still pending
-            if (state.currentPreviewRequest) {
-                state.currentPreviewRequest.abort();
-            }
-
-            // Create new abort controller for this request
-            const abortController = new AbortController();
-            updatePluginState({currentPreviewRequest: abortController});
-
-            const response = await sdk.callRPC('jsonLd:generatePreview', {
-                blogId: state.currentBlogId,
-                overrides
-            });
-
-            // Check if request was aborted
-            if (abortController.signal.aborted) {
-                return;
-            }
-
-            const {jsonLd, validation} = response.payload.payload;
-            updatePluginState({
-                jsonPreview: JSON.stringify(jsonLd, null, 2),
-                validationErrors: validation?.errors || [],
-                currentPreviewRequest: null
-            });
-        } catch (error) {
-            // Don't show error if request was aborted
-            if (error instanceof DOMException && error.name === 'AbortError') {
-                return;
-            }
-
-            sdk.log.error('Failed to generate preview:', error);
-            updatePluginState({
-                jsonPreview: 'Error generating preview',
-                validationErrors: [],
-                currentPreviewRequest: null
-            });
-        }
-        sdk.refresh();
-    };
-
-    const saveBlogOverrides = throttledSave;
 
     const handlePreviewToggle = () => {
-        updatePluginState({showPreview: !state.showPreview});
-        if (!state.showPreview) {
-            generatePreview(sdk);
+        state.showPreview = !state.showPreview;
+        if (state.showPreview) {
+            debouncedGeneratePreview(sdk, context.blogId, currentOverrides);
         }
         sdk.refresh();
+    };
+
+    const handleFieldOverridesToggle = () => {
+        state.showFieldOverrides = !state.showFieldOverrides;
+        sdk.refresh();
+    };
+
+    const handleSave = () => {
+        throttledSave(sdk, context.blogId, currentOverrides);
     };
 
     return (
         <BlogSidebarWidget
             sdk={sdk}
-            isLoading={state.isLoadingBlogData || state.isLoadingSettings}
+            isLoading={false}
             currentOverrides={currentOverrides}
             jsonPreview={state.jsonPreview}
             showPreview={state.showPreview}
+            isGeneratingPreview={state.isGeneratingPreview}
+            showFieldOverrides={state.showFieldOverrides}
             validationErrors={state.validationErrors}
             onTypeChange={handleTypeChange}
             onOverrideToggle={handleOverrideToggle}
             onCustomValueChange={handleCustomValueChange}
             onPreviewToggle={handlePreviewToggle}
-            onSave={saveBlogOverrides}
+            onFieldOverridesToggle={handleFieldOverridesToggle}
+            onSave={handleSave}
         />
     );
 }

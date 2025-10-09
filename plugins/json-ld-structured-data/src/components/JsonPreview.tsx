@@ -2,10 +2,11 @@ import {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
 
 interface JsonPreviewProps {
     jsonPreview: string;
+    isGeneratingPreview: boolean;
     sdk: ClientSDK;
 }
 
-export function JsonPreview({ jsonPreview, sdk }: JsonPreviewProps) {
+export function JsonPreview({jsonPreview, isGeneratingPreview, sdk}: JsonPreviewProps) {
     const handleCopy = () => {
         navigator.clipboard.writeText(jsonPreview);
         sdk.notify('JSON-LD copied to clipboard', 'success');
@@ -23,7 +24,7 @@ export function JsonPreview({ jsonPreview, sdk }: JsonPreviewProps) {
                 </button>
             </div>
             <pre className="bg-gray-50 p-3 rounded text-xs overflow-x-auto max-h-64 m-0 border border-gray-200">
-                {jsonPreview || 'Generating preview...'}
+                {isGeneratingPreview ? 'Generating preview...' : (jsonPreview || 'Click "Show Preview" to generate')}
             </pre>
         </div>
     );

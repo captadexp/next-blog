@@ -13,7 +13,7 @@ export default defineClient({
         'system:plugin:settings-panel': useSettingsPanelHook,
 
         // Below Blog Editor form on update page
-        'blog-update-form:after': useBlogSidebarHook
+        'editor-sidebar-widget': useBlogSidebarHook
     },
     hasSettingsPanel: true
 });

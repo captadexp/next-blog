@@ -50,9 +50,13 @@ function PluginHost({pluginId, hookFn, context, callHook, callRPC}: {
     }, [apis, user, pluginId, callHook, callRPC]);
 
 
-    // Execute the plugin's hook function
-    logger.debug(`Executing hook for plugin "${pluginId}"`);
-    const uiTree = hookFn(sdk, null, context);
+    let uiTree: any = null;
+    try {
+        logger.debug(`Executing hook for plugin "${pluginId}"`);
+        uiTree = hookFn(sdk, null, context);
+    } catch (e: any) {
+        logger.error(`Executing hook for plugin "${pluginId}" Failed:`, e?.message?.toString());
+    }
 
     if (!uiTree) {
         logger.debug(`Plugin "${pluginId}" returned null`);

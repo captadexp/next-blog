@@ -23,7 +23,6 @@ export function FieldOverrides({
 
     return (
         <div className="mb-6">
-            <h4 className="text-sm font-medium mb-4">Field Overrides</h4>
             <p className="text-xs text-gray-600 mb-4">
                 Toggle field overrides to customize specific values. Unchecked fields will use automatic
                 values derived from your blog content and global settings.

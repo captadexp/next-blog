@@ -1,47 +1,14 @@
-import type {BlogJsonLdOverrides, GlobalJsonLdSettings} from '../../types/plugin-types.js';
+// This file only handles blog overrides storage
+import type {BlogJsonLdOverrides} from '../../types/plugin-types.js';
 
-export interface PluginState {
-    globalSettings: GlobalJsonLdSettings;
-    blogOverrides: Record<string, BlogJsonLdOverrides>;
-    isLoadingSettings: boolean;
-    isSavingSettings: boolean;
-    isLoadingBlogData: boolean;
-    currentBlogId: string | null;
-    currentBlogData: any;
-    jsonPreview: string;
-    showPreview: boolean;
-    validationErrors: Array<{ field: string; message: string }>;
-    initialized: boolean;
-    currentPreviewRequest: AbortController | null;
-}
-
-export const pluginState: PluginState = {
-    globalSettings: {},
-    blogOverrides: {},
-    isLoadingSettings: false,
-    isSavingSettings: false,
-    isLoadingBlogData: false,
-    currentBlogId: null,
-    currentBlogData: null,
-    jsonPreview: '',
-    showPreview: false,
-    validationErrors: [],
-    initialized: false,
-    currentPreviewRequest: null
-};
-
-export function getPluginState(): PluginState {
-    return pluginState;
-}
-
-export function updatePluginState(updates: Partial<PluginState>): void {
-    Object.entries(updates).forEach(([key, value]) => {
-        (pluginState as any)[key] = value;
-    });
-}
+// Simple storage for blog-specific overrides
+const blogOverrides: Record<string, BlogJsonLdOverrides> = {};
 
 export function getBlogOverrides(blogId: string): BlogJsonLdOverrides {
-    return pluginState.blogOverrides[blogId] || {
+    if (!blogId) {
+        throw new Error('Blog ID is required');
+    }
+    return blogOverrides[blogId] || {
         '@type': 'Article',
         overrides: {},
         custom: {}
@@ -49,8 +16,8 @@ export function getBlogOverrides(blogId: string): BlogJsonLdOverrides {
 }
 
 export function setBlogOverrides(blogId: string, overrides: BlogJsonLdOverrides): void {
-    pluginState.blogOverrides = {
-        ...pluginState.blogOverrides,
-        [blogId]: overrides
-    };
+    if (!blogId) {
+        throw new Error('Blog ID is required');
+    }
+    blogOverrides[blogId] = overrides;
 }

@@ -12,11 +12,14 @@ interface BlogSidebarWidgetProps {
     currentOverrides: BlogJsonLdOverrides;
     jsonPreview: string;
     showPreview: boolean;
+    isGeneratingPreview: boolean;
+    showFieldOverrides: boolean;
     validationErrors: Array<{ field: string; message: string }>;
     onTypeChange: (type: SchemaType) => void;
     onOverrideToggle: (field: string, enabled: boolean) => void;
     onCustomValueChange: (field: string, value: any) => void;
     onPreviewToggle: () => void;
+    onFieldOverridesToggle: () => void;
     onSave: () => void;
 }
 
@@ -26,11 +29,14 @@ export function BlogSidebarWidget({
                                       currentOverrides,
                                       jsonPreview,
                                       showPreview,
+                                      isGeneratingPreview,
+                                      showFieldOverrides,
                                       validationErrors,
                                       onTypeChange,
                                       onOverrideToggle,
                                       onCustomValueChange,
                                       onPreviewToggle,
+                                      onFieldOverridesToggle,
                                       onSave
                                   }: BlogSidebarWidgetProps) {
     if (isLoading) {
@@ -59,16 +65,31 @@ export function BlogSidebarWidget({
 
             <ValidationErrors errors={validationErrors}/>
 
-            <FieldOverrides
-                schemaType={currentOverrides['@type'] || 'Article'}
-                overrides={currentOverrides}
-                onOverrideToggle={onOverrideToggle}
-                onCustomValueChange={onCustomValueChange}
-            />
+            <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-sm font-medium">Field Overrides</h4>
+                    <button
+                        onClick={onFieldOverridesToggle}
+                        className="px-3 py-1 text-sm bg-gray-100 rounded border-none cursor-pointer hover:bg-gray-200"
+                    >
+                        {showFieldOverrides ? 'Hide' : 'Show'}
+                    </button>
+                </div>
+
+                {showFieldOverrides && (
+                    <FieldOverrides
+                        schemaType={currentOverrides['@type'] || 'Article'}
+                        overrides={currentOverrides}
+                        onOverrideToggle={onOverrideToggle}
+                        onCustomValueChange={onCustomValueChange}
+                    />
+                )}
+            </div>
 
             {showPreview && (
                 <JsonPreview
                     jsonPreview={jsonPreview}
+                    isGeneratingPreview={isGeneratingPreview}
                     sdk={sdk}
                 />
             )}
