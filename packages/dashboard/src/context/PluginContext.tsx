@@ -13,8 +13,8 @@ interface PluginContextType {
     plugins: Plugin[];
     loadedPlugins: Map<string, ClientPluginModule>;
     getHookFunctions: (hookName: string) => { pluginId: string, hookFn: UIHookFn }[];
-    callHook: <T, R>(hookName: string, payload: T) => Promise<R>;
-    callRPC: <T, R>(hookName: string, payload: T) => Promise<R>;
+    callHook: <T, R>(pluginId: string, hookName: string, payload: T) => Promise<R>;
+    callRPC: <T, R>(pluginId: string, hookName: string, payload: T) => Promise<R>;
     reloadPlugins: () => Promise<void>;
     hardReloadPlugins: () => Promise<void>;
 }
@@ -221,12 +221,12 @@ export const PluginProvider: FunctionComponent = ({children}) => {
         return functions;
     }, [hookIndex]);
 
-    const callHook = useCallback(async (hookName: string, payload: any): Promise<any> => {
-        return apis.callPluginHook(hookName, payload);
+    const callHook = useCallback(async (pluginId: string, hookName: string, payload: any): Promise<any> => {
+        return apis.callPluginHook(pluginId, hookName, payload);
     }, [apis]);
 
-    const callRPC = useCallback(async (hookName: string, payload: any): Promise<any> => {
-        return apis.callPluginRPC(hookName, payload);
+    const callRPC = useCallback(async (pluginId: string, hookName: string, payload: any): Promise<any> => {
+        return apis.callPluginRPC(pluginId, hookName, payload);
     }, [apis]);
 
     const value = useMemo(() => ({

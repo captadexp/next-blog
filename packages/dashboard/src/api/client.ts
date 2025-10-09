@@ -13,7 +13,7 @@ import type {
     User
 } from '@supergrowthai/types';
 
-class ApiClient implements APIClient {
+class ApiClientImpl implements APIClient {
     private readonly baseUrl: string;
     private token: string | null = null;
 
@@ -263,12 +263,12 @@ class ApiClient implements APIClient {
         return this.request<PluginHookMapping[]>(`/plugin-hooks?${endpoint}`);
     }
 
-    async callPluginHook<TPayload = any, TResponse = any>(hookName: string, payload: TPayload): Promise<TResponse> {
-        return this.request<any>(`/plugin/hook/${hookName}`, 'POST', payload) as any;
+    async callPluginHook<TPayload = any, TResponse = any>(pluginId: string, hookName: string, payload: TPayload): Promise<TResponse> {
+        return this.request<any>(`/plugin/hook/${hookName}`, 'POST', payload, {"X-Calling-Plugin-Id": pluginId}) as any;
     }
 
-    async callPluginRPC<TPayload = any, TResponse = any>(rpcName: string, payload: TPayload): Promise<TResponse> {
-        return this.request<any>(`/plugin/rpc/${rpcName}`, 'POST', payload) as any;
+    async callPluginRPC<TPayload = any, TResponse = any>(pluginId: string, rpcName: string, payload: TPayload): Promise<TResponse> {
+        return this.request<any>(`/plugin/rpc/${rpcName}`, 'POST', payload, {"X-Calling-Plugin-Id": pluginId}) as any;
     }
 
     // Media APIs
@@ -332,14 +332,16 @@ class ApiClient implements APIClient {
         return result as APIResponse<Media>;
     }
 
-    private async request<T>(
+    private async request<TResponsePayload, BODY = any, HEADERS = any>(
         endpoint: string,
         method: 'GET' | 'POST' = 'GET',
-        body?: any
-    ): Promise<APIResponse<T>> {
+        body?: BODY,
+        extraHeaders?: HEADERS
+    ): Promise<APIResponse<TResponsePayload>> {
         const url = `${this.baseUrl}${endpoint}`;
 
         const headers: HeadersInit = {
+            ...extraHeaders,
             'Content-Type': 'application/json',
         };
 
@@ -359,7 +361,7 @@ class ApiClient implements APIClient {
 
         try {
             const response = await fetch(url, options);
-            const data: APIResponse<T> = await response.json();
+            const data: APIResponse<TResponsePayload> = await response.json();
 
             return data;
         } catch (error) {
@@ -373,4 +375,4 @@ class ApiClient implements APIClient {
 }
 
 // Export the class for instantiation in the context
-export default ApiClient;
+export default ApiClientImpl;

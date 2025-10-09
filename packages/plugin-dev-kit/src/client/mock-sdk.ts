@@ -304,8 +304,13 @@ class MockAPIClient implements APIClient {
         return this.mockResponse([]);
     }
 
-    async callPluginHook<T, R>(hookName: string, payload: T): Promise<R> {
-        console.log('[Mock Client API] callPluginHook', hookName, payload);
+    async callPluginHook<T, R>(pluginId: string, hookName: string, payload: T): Promise<R> {
+        console.log('[Mock Client API] callPluginHook', pluginId, hookName, payload);
+        return {success: true, hookName, received: payload} as any;
+    }
+
+    async callPluginRPC<T, R>(pluginId: string, hookName: string, payload: T): Promise<R> {
+        console.log('[Mock Client API] callPluginHook', pluginId, hookName, payload);
         return {success: true, hookName, received: payload} as any;
     }
 

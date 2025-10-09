@@ -1,7 +1,7 @@
 import {createContext, h} from 'preact';
 import {useContext, useEffect, useState} from 'preact/hooks';
 import {EntityType, Permission, PermissionType, UIConfiguration, User} from '@supergrowthai/types';
-import ApiClient from '../api/client';
+import ApiClientImpl from '../api/client';
 import {useMemo} from "react";
 
 interface UserContextType {
@@ -15,10 +15,10 @@ interface UserContextType {
     hasPermission: (permission: Permission) => boolean;
     hasAnyPermission: (permissions: Permission[]) => boolean;
     hasAllPermissions: (permissions: Permission[]) => boolean;
-    apis: ApiClient; // API client instance
+    apis: ApiClientImpl; // API client instance
 }
 
-const defaultApiClient = new ApiClient("/api/next-blog/api/");
+const defaultApiClient = new ApiClientImpl("/api/next-blog/api/");
 
 const UserContext = createContext<UserContextType>({
     user: null,
@@ -38,7 +38,7 @@ const UserContext = createContext<UserContextType>({
 
 export const UserProvider = ({children}: { children: any }) => {
     // Initialize the API client
-    const apiClient = useMemo(() => new ApiClient("/api/next-blog/api"), []);
+    const apiClient = useMemo(() => new ApiClientImpl("/api/next-blog/api"), []);
 
     const [user, setUser] = useState<User | null>(null);
     const [config, setConfig] = useState<UIConfiguration | null>(null);

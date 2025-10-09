@@ -280,7 +280,6 @@ function editorSidebarWidget(sdk: any, prev: any, context: any) {
 
         const asyncResults = await Promise.all(asyncChecks)
             .then(results => {
-                console.log(results);
                 return results;
             })
             .catch(console.error);

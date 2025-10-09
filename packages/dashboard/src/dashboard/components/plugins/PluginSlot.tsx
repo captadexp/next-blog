@@ -47,7 +47,7 @@ function PluginHost({pluginId, hookFn, context, callHook, callRPC}: {
                 setRefreshKey(Date.now());
             }
         );
-    }, [apis, user, pluginId, callHook]);
+    }, [apis, user, pluginId, callHook, callRPC]);
 
 
     // Execute the plugin's hook function
@@ -138,8 +138,8 @@ export const PluginSlot: FunctionComponent<PluginSlotProps> = (props) => {
             {hookFunctions.map(({pluginId, hookFn}) => PluginHost({
                 pluginId,
                 hookFn,
-                callHook,
-                callRPC,
+                callHook: (name, payload) => callHook(pluginId, name, payload),
+                callRPC: (name, payload) => callRPC(pluginId, name, payload),
                 context: enhancedContext
             }))}
         </Fragment>

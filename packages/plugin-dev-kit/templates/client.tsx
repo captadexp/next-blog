@@ -58,7 +58,7 @@ export default defineClient({
                                 onClick={async () => {
                                     // Call server RPC
                                     try {
-                                        const response = await sdk.callHook('myPlugin:getData', {});
+                                        const response = await sdk.callRPC('myPlugin:getData', {});
                                         sdk.notify('Data loaded successfully', 'success');
                                     } catch (error) {
                                         sdk.notify('Failed to load data', 'error');
