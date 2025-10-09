@@ -10,6 +10,8 @@ import {wrapPathObject} from "./utils/withExtras.js";
  * Main CMS function that creates the API route handlers
  */
 const nextBlog = function (configuration: Configuration) {
+    const {pathPrefix = "/api/next-blog/"} = configuration;
+
     // Create auth handler
     const authHandler = new BasicAuthHandler(configuration.db);
 
@@ -17,7 +19,7 @@ const nextBlog = function (configuration: Configuration) {
 
     // Create a single router for all methods
     const router = createNextJSRouter(wrappedPaths, {
-        pathPrefix: "/api/next-blog/",
+        pathPrefix,
         authHandler,
         createApiImpl: async ({request, session, response}) => {
             // Initialize database and plugins

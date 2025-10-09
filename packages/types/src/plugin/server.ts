@@ -13,6 +13,7 @@ import type {
     SitemapData,
     SitemapIndexData
 } from '../seo';
+import type {ContentObject} from "@supergrowthai/plugin-dev-kit/content";
 
 /**
  * Server-side plugin module
@@ -28,7 +29,10 @@ export interface ServerPluginModule {
  */
 export interface ServerHooks extends Record<string, { payload?: any; response: any }> {
     // Blog hooks
-    'blog:beforeCreate': { payload: { title: string; content: string; data?: any }; response: void | { data?: any } };
+    'blog:beforeCreate': {
+        payload: { title: string; content: ContentObject; data?: any };
+        response: void | { data?: any }
+    };
     'blog:afterCreate': { payload: { blogId: string; data?: any }; response: void };
     'blog:beforeUpdate': {
         payload: { blogId: string; updates: any; previousData?: any };
@@ -191,23 +195,23 @@ export interface ServerHooks extends Record<string, { payload?: any; response: a
     // SEO hooks
     'seo:sitemap': {
         payload: SeoHookPayloadWithDb;
-        response: void | { data: SitemapData };
+        response: void | { data: SitemapData } | Response;
     };
     'seo:sitemap-index': {
         payload: SeoHookPayload;
-        response: void | { data: SitemapIndexData };
+        response: void | { data: SitemapIndexData } | Response;
     };
     'seo:robots.txt': {
         payload: SeoHookPayload;
-        response: void | { data: RobotsData };
+        response: void | { data: RobotsData } | Response;
     };
     'seo:llms.txt': {
         payload: SeoHookPayloadWithDb;
-        response: void | { data: LlmsData };
+        response: void | { data: LlmsData } | Response;
     };
     'seo:rss': {
         payload: SeoHookPayloadWithDb;
-        response: void | { data: RssData };
+        response: void | { data: RssData } | Response;
     };
 }
 

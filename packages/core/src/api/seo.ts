@@ -20,6 +20,12 @@ export async function getSitemap(session: SessionData, request: MinimumRequest, 
         request
     });
 
+    // Check if plugin returned a direct Response (for streaming, redirects, etc.)
+    if (hookResult instanceof Response) {
+        return hookResult;
+    }
+
+    // Handle traditional data response
     const sitemapData = hookResult?.data || {
         urlset: {
             '@_xmlns': 'http://www.sitemaps.org/schemas/sitemap/0.9',
@@ -48,6 +54,12 @@ export async function getSitemapIndex(session: SessionData, request: MinimumRequ
         request
     });
 
+    // Check if plugin returned a direct Response (for streaming, redirects, etc.)
+    if (hookResult instanceof Response) {
+        return hookResult;
+    }
+
+
     const sitemapIndexData = hookResult?.data || {
         sitemapindex: {
             '@_xmlns': 'http://www.sitemaps.org/schemas/sitemap/0.9',
@@ -75,6 +87,12 @@ export async function getRobotsTxt(session: SessionData, request: MinimumRequest
         siteUrl,
         request
     });
+
+    // Check if plugin returned a direct Response (for streaming, redirects, etc.)
+    if (hookResult instanceof Response) {
+        return hookResult;
+    }
+
 
     const robotsData = hookResult?.data || {
         rules: [
@@ -126,6 +144,12 @@ export async function getLlmsTxt(session: SessionData, request: MinimumRequest, 
         request
     });
 
+    // Check if plugin returned a direct Response (for streaming, redirects, etc.)
+    if (hookResult instanceof Response) {
+        return hookResult;
+    }
+
+
     const llmsData = hookResult?.data || {sections: []};
 
     const content = llmsData.sections?.map((section: any) =>
@@ -152,6 +176,12 @@ export async function getRssFeed(session: SessionData, request: MinimumRequest, 
         db,
         request
     });
+
+    // Check if plugin returned a direct Response (for streaming, redirects, etc.)
+    if (hookResult instanceof Response) {
+        return hookResult;
+    }
+
 
     const rssData = hookResult?.data || {
         rss: {

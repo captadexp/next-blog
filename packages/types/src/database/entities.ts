@@ -1,4 +1,5 @@
 import {BrandedId, Hydrated} from '../type-base-hydration';
+import type {ContentObject} from "@supergrowthai/plugin-dev-kit/content";
 
 export type BlogStatus = 'draft' | 'pending' | 'private' | 'published' | 'trash';
 
@@ -6,7 +7,7 @@ export interface Blog {
     _id: BrandedId<"Blog">;
     title: string;
     slug: string;
-    content: string;
+    content: ContentObject;
     categoryId: BrandedId<"Category">;
     tagIds: BrandedId<"Tag">[];
     userId: BrandedId<"User">;
@@ -23,7 +24,7 @@ export interface Blog {
 export interface BlogData extends Partial<Blog> {
     title: string;
     slug: string;
-    content: string;
+    content: ContentObject;
     categoryId: BrandedId<"Category">;
     tagIds: BrandedId<"Tag">[];
     userId: BrandedId<"User">;
