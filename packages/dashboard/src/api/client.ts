@@ -264,7 +264,11 @@ class ApiClient implements APIClient {
     }
 
     async callPluginHook<TPayload = any, TResponse = any>(hookName: string, payload: TPayload): Promise<TResponse> {
-        return this.request<any>(`/plugin/rpc/${hookName}`, 'POST', payload) as any;
+        return this.request<any>(`/plugin/hook/${hookName}`, 'POST', payload) as any;
+    }
+
+    async callPluginRPC<TPayload = any, TResponse = any>(rpcName: string, payload: TPayload): Promise<TResponse> {
+        return this.request<any>(`/plugin/rpc/${rpcName}`, 'POST', payload) as any;
     }
 
     // Media APIs

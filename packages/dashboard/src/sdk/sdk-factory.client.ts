@@ -14,6 +14,7 @@ export interface ClientSDKDependencies {
     log: Logger;
     utils?: any;
     callHook: (hookName: string, payload: any) => Promise<any>;
+    callRPC: (hookName: string, payload: any) => Promise<any>;
 }
 
 /**
@@ -228,9 +229,10 @@ export function createClientSDK(
     user: User | null,
     utils: any,
     callHook: (hookName: string, payload: any) => Promise<any>,
+    callRPC: (hookName: string, payload: any) => Promise<any>,
     onRefresh?: () => void
 ): ClientSDK {
     const logger = new Logger('PluginExecutor', LogLevel.ERROR);
-    const factory = new ClientSDKFactory({apis, log: logger, user, utils, callHook});
+    const factory = new ClientSDKFactory({apis, log: logger, user, utils, callHook, callRPC});
     return factory.createSDK(pluginId, onRefresh);
 }

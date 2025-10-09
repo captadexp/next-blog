@@ -13,8 +13,8 @@ interface PluginContextType {
     plugins: Plugin[];
     loadedPlugins: Map<string, ClientPluginModule>;
     getHookFunctions: (hookName: string) => { pluginId: string, hookFn: UIHookFn }[];
-    hasHook: (hookName: string) => boolean;
     callHook: <T, R>(hookName: string, payload: T) => Promise<R>;
+    callRPC: <T, R>(hookName: string, payload: T) => Promise<R>;
     reloadPlugins: () => Promise<void>;
     hardReloadPlugins: () => Promise<void>;
 }
@@ -221,31 +221,12 @@ export const PluginProvider: FunctionComponent = ({children}) => {
         return functions;
     }, [hookIndex]);
 
-    const hasHook = useCallback((hookName: string): boolean => {
-        // Quick O(1) check for exact match
-        if (hookIndex.exact.has(hookName)) {
-            return true;
-        }
-
-        // Check patterns
-        for (const pattern of hookIndex.patterns.keys()) {
-            if (hookName.includes(':') && pattern.includes(':')) {
-                const [hookZone, hookPosition] = hookName.split(':');
-                const [patternZone, patternPosition] = pattern.split(':');
-                if ((patternZone === '*' || patternZone === hookZone) &&
-                    (patternPosition === '*' || patternPosition === hookPosition)) {
-                    return true;
-                }
-            } else if (matchesHookPattern(hookName, pattern)) {
-                return true;
-            }
-        }
-
-        return false;
-    }, [hookIndex]);
-
     const callHook = useCallback(async (hookName: string, payload: any): Promise<any> => {
         return apis.callPluginHook(hookName, payload);
+    }, [apis]);
+
+    const callRPC = useCallback(async (hookName: string, payload: any): Promise<any> => {
+        return apis.callPluginRPC(hookName, payload);
     }, [apis]);
 
     const value = useMemo(() => ({
@@ -253,11 +234,11 @@ export const PluginProvider: FunctionComponent = ({children}) => {
         plugins,
         loadedPlugins,
         getHookFunctions,
-        hasHook,
         callHook,
+        callRPC,
         reloadPlugins,
         hardReloadPlugins
-    }), [status, plugins, loadedPlugins, getHookFunctions, hasHook, callHook, reloadPlugins, hardReloadPlugins]);
+    }), [status, plugins, loadedPlugins, getHookFunctions, callHook, reloadPlugins, hardReloadPlugins]);
 
     return <PluginContext.Provider value={value}>{children}</PluginContext.Provider>;
 };

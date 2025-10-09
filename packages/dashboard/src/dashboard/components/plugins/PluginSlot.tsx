@@ -18,11 +18,12 @@ const logger = new Logger('PluginSystem', LogLevel.INFO);
  * A single, stateful host for one plugin's UI. It manages the refresh
  * cycle and renders the UI Tree provided by the plugin.
  */
-function PluginHost({pluginId, hookFn, context, callHook}: {
+function PluginHost({pluginId, hookFn, context, callHook, callRPC}: {
     pluginId: string,
     hookFn: UIHookFn,
     context?: Record<string, any>,
     callHook<T, R>(id: string, payload: T): Promise<R>
+    callRPC<T, R>(id: string, payload: T): Promise<R>
 }) {
     // This host's state is just a number to trigger re-renders when a plugin calls refresh().
     const [refreshKey, setRefreshKey] = useState(0);
@@ -40,6 +41,7 @@ function PluginHost({pluginId, hookFn, context, callHook}: {
             user,
             utils,
             callHook,
+            callRPC,
             () => {
                 logger.debug(`Refresh requested by plugin "${pluginId}"`);
                 setRefreshKey(Date.now());
@@ -87,7 +89,7 @@ interface PluginSlotProps {
  */
 export const PluginSlot: FunctionComponent<PluginSlotProps> = (props) => {
     const {hookName: providedHookName, page, position, entity, section, context, pluginFilter} = props;
-    const {getHookFunctions, status, callHook} = usePlugins();
+    const {getHookFunctions, status, callHook, callRPC} = usePlugins();
 
     // Generate hook name from pattern if not provided directly
     const hookName = useMemo(() => {
@@ -137,6 +139,7 @@ export const PluginSlot: FunctionComponent<PluginSlotProps> = (props) => {
                 pluginId,
                 hookFn,
                 callHook,
+                callRPC,
                 context: enhancedContext
             }))}
         </Fragment>
