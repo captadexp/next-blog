@@ -216,6 +216,7 @@ export interface MediaData extends Partial<Media> {
 // Plugin entity stored in database
 export interface Plugin {
     _id: BrandedId<"Plugin">;
+    id: string;
     name: string;
     description: string;
     version: string;

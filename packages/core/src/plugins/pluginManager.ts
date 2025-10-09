@@ -81,6 +81,13 @@ async function deletePluginAndMappings(db: DatabaseAdapter, pluginId: string): P
 
 async function installPlugin(db: DatabaseAdapter, url: string): Promise<any> {
     const manifest = await loadPluginManifest(url);
+
+    // Check for existing plugin with same manifest ID
+    const existing = await db.plugins.findOne({id: manifest.id});
+    if (existing) {
+        throw new ValidationError(`Plugin with id '${manifest.id}' is already installed`);
+    }
+
     const creation = await db.plugins.create({
         ...manifest,
         url,

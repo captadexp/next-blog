@@ -268,6 +268,7 @@ class MockAPIClient implements APIClient {
         console.log('[Mock Client API] getPlugin', id);
         return this.mockResponse({
             _id: id,
+            id: 'mock-plugin-id',
             name: 'Plugin',
             version: '1.0.0',
             description: 'A plugin',
