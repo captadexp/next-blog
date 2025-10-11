@@ -1,148 +1,119 @@
 import {defineClient} from '@supergrowthai/plugin-dev-kit';
 import type {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
+import {useState, useEffect} from '@supergrowthai/plugin-dev-kit/client';
 import type {SystemMigrationResult, SystemUpdateStatus} from './types';
 import './types';
 import "./styles.css"
 
-interface PluginState {
-    systemStatus: SystemUpdateStatus | null;
-    migrationResult: SystemMigrationResult | null;
-    isChecking: boolean;
-    isMigrating: boolean;
-    error: string | null;
-    latestSdk: ClientSDK | null;
-}
-
-// Plugin state management
-const pluginState: PluginState = {
-    systemStatus: null,
-    migrationResult: null,
-    isChecking: false,
-    isMigrating: false,
-    error: null,
-    latestSdk: null,
-};
-
-const fetchInitialStatus = async () => {
-    // Prevent multiple initial fetches
-    if (
-        pluginState.isChecking ||
-        pluginState.systemStatus !== null ||
-        pluginState.error !== null
-    ) {
-        return;
-    }
-
-    pluginState.isChecking = true;
-    pluginState.latestSdk?.refresh();
-
-    try {
-        const response = await pluginState.latestSdk?.callRPC('system-update-manager:checkSystemUpdate', {});
-
-        if (response?.code === 0) {
-            const {payload} = response.payload;
-            pluginState.systemStatus = payload;
-
-            // Clear old migration result when checking
-            if (!payload?.migrationNeeded) {
-                pluginState.migrationResult = null;
-            }
-        } else {
-            throw new Error(response?.message || 'Failed to check status');
-        }
-    } catch (err: any) {
-        pluginState.error = `Failed to fetch initial status: ${err.message}`;
-        console.error('Initial status check failed:', err);
-    } finally {
-        pluginState.isChecking = false;
-        pluginState.latestSdk?.refresh();
-    }
-};
-
-const checkForUpdates = async () => {
-    if (pluginState.isChecking) return;
-
-    pluginState.isChecking = true;
-    pluginState.error = null;
-    pluginState.latestSdk?.refresh();
-
-    try {
-        const response = await pluginState.latestSdk?.callRPC('system-update-manager:checkSystemUpdate', {});
-
-        if (response?.code === 0) {
-            const {payload} = response.payload;
-            pluginState.systemStatus = payload;
-
-            // Clear old migration result when checking
-            if (!payload?.migrationNeeded) {
-                pluginState.migrationResult = null;
-            }
-
-            if (payload?.migrationNeeded) {
-                pluginState.latestSdk?.notify('Migration needed for new version', 'warning');
-            } else {
-                pluginState.latestSdk?.notify('System is up to date', 'info');
-            }
-        } else {
-            throw new Error(response?.message || 'Failed to check for updates');
-        }
-    } catch (err: any) {
-        pluginState.error = `Update check failed: ${err.message}`;
-        pluginState.latestSdk?.notify(pluginState.error, 'error');
-    } finally {
-        pluginState.isChecking = false;
-        pluginState.latestSdk?.refresh();
-    }
-};
-
-const runMigration = async () => {
-    if (pluginState.isMigrating) return;
-
-    pluginState.isMigrating = true;
-    pluginState.isChecking = true;
-    pluginState.error = null;
-    pluginState.latestSdk?.refresh();
-
-    try {
-        const response = await pluginState.latestSdk?.callRPC('system-update-manager:runSystemMigration', {});
-
-        if (response?.code === 0) {
-            const {payload} = response.payload;
-            pluginState.migrationResult = payload;
-
-            if (payload?.migrated) {
-                pluginState.latestSdk?.notify(
-                    `Migration completed: ${payload.fromVersion} → ${payload.toVersion}`,
-                    'success'
-                );
-                // Re-check status after successful migration
-                pluginState.systemStatus = null;
-                pluginState.error = null;
-                // Small delay to ensure state propagation
-                setTimeout(() => fetchInitialStatus(), 100);
-            } else {
-                pluginState.latestSdk?.notify(payload?.reason || 'No migration needed', 'info');
-            }
-        } else {
-            throw new Error(response?.message || 'Migration failed');
-        }
-    } catch (err: any) {
-        pluginState.error = `Migration failed: ${err.message}`;
-        pluginState.latestSdk?.notify(pluginState.error, 'error');
-    } finally {
-        pluginState.isMigrating = false;
-        pluginState.isChecking = false;
-        pluginState.latestSdk?.refresh();
-    }
-};
-
 const renderPanel = (sdk: ClientSDK) => {
-    pluginState.latestSdk = sdk;
+    const [systemStatus, setSystemStatus] = useState<SystemUpdateStatus | null>(null);
+    const [migrationResult, setMigrationResult] = useState<SystemMigrationResult | null>(null);
+    const [isChecking, setIsChecking] = useState(true);
+    const [isMigrating, setIsMigrating] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    // Trigger initial status fetch
-    setTimeout(() => fetchInitialStatus(), 0);
+    // Fetch initial status on mount
+    useEffect(() => {
+        const fetchInitialStatus = async () => {
+            try {
+                const response = await sdk.callRPC('system-update-manager:checkSystemUpdate', {});
 
-    const {systemStatus, migrationResult, isChecking, isMigrating, error} = pluginState;
+                if (response?.code === 0) {
+                    const {payload} = response.payload;
+                    setSystemStatus(payload);
+
+                    // Clear old migration result when checking
+                    if (!payload?.migrationNeeded) {
+                        setMigrationResult(null);
+                    }
+                } else {
+                    throw new Error(response?.message || 'Failed to check status');
+                }
+            } catch (err: any) {
+                setError(`Failed to fetch initial status: ${err.message}`);
+                console.error('Initial status check failed:', err);
+            } finally {
+                setIsChecking(false);
+            }
+        };
+
+        fetchInitialStatus();
+    }, [sdk]);
+
+    const checkForUpdates = async () => {
+        if (isChecking) return;
+
+        setIsChecking(true);
+        setError(null);
+
+        try {
+            const response = await sdk.callRPC('system-update-manager:checkSystemUpdate', {});
+
+            if (response?.code === 0) {
+                const {payload} = response.payload;
+                setSystemStatus(payload);
+
+                // Clear old migration result when checking
+                if (!payload?.migrationNeeded) {
+                    setMigrationResult(null);
+                }
+
+                if (payload?.migrationNeeded) {
+                    sdk.notify('Migration needed for new version', 'warning');
+                } else {
+                    sdk.notify('System is up to date', 'info');
+                }
+            } else {
+                throw new Error(response?.message || 'Failed to check for updates');
+            }
+        } catch (err: any) {
+            const errorMsg = `Update check failed: ${err.message}`;
+            setError(errorMsg);
+            sdk.notify(errorMsg, 'error');
+        } finally {
+            setIsChecking(false);
+        }
+    };
+
+    const runMigration = async () => {
+        if (isMigrating) return;
+
+        setIsMigrating(true);
+        setIsChecking(true);
+        setError(null);
+
+        try {
+            const response = await sdk.callRPC('system-update-manager:runSystemMigration', {});
+
+            if (response?.code === 0) {
+                const {payload} = response.payload;
+                setMigrationResult(payload);
+
+                if (payload?.migrated) {
+                    sdk.notify(
+                        `Migration completed: ${payload.fromVersion} → ${payload.toVersion}`,
+                        'success'
+                    );
+                    // Re-check status after successful migration
+                    setSystemStatus(null);
+                    setError(null);
+                    // Re-fetch status after migration
+                    await checkForUpdates();
+                } else {
+                    sdk.notify(payload?.reason || 'No migration needed', 'info');
+                }
+            } else {
+                throw new Error(response?.message || 'Migration failed');
+            }
+        } catch (err: any) {
+            const errorMsg = `Migration failed: ${err.message}`;
+            setError(errorMsg);
+            sdk.notify(errorMsg, 'error');
+        } finally {
+            setIsMigrating(false);
+            setIsChecking(false);
+        }
+    };
 
     return (
         <div className="container mx-auto p-6">
