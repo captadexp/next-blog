@@ -1,4 +1,5 @@
-import {ClientSDK, useState} from '@supergrowthai/plugin-dev-kit/client';
+import type {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
+import {useState} from '@supergrowthai/plugin-dev-kit/client';
 import type {PluginStatus} from '../utils/types.js';
 import {addTopic, removeTopic} from '../utils/actions.js';
 

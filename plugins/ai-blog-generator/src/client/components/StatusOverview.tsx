@@ -1,4 +1,3 @@
-import React from 'react';
 import type {PluginStatus} from '../utils/types.js';
 import {formatLastGenerated} from '../utils/formatters.js';
 

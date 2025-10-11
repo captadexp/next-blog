@@ -1,4 +1,5 @@
-import {ClientSDK, useEffect, useState} from '@supergrowthai/plugin-dev-kit/client';
+import type {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
+import {useEffect, useState} from '@supergrowthai/plugin-dev-kit/client';
 import type {AIProvider, BlogGenerationSettings, PluginStatus} from '../utils/types.js';
 import {setApiKey} from '../utils/actions.js';
 
