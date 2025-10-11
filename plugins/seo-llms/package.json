@@ -1,5 +1,5 @@
 {
-  "name": "seo-llms",
+  "name": "@plugins/seo-llms",
   "version": "1.0.0",
   "type": "module",
   "scripts": {

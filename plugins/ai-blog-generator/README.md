@@ -202,7 +202,7 @@ The plugin includes comprehensive error handling:
 ### Building
 
 ```bash
-cd plugins/gemini-blog-generator
+cd plugins/ai-blog-generator
 bun run build
 ```
 

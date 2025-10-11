@@ -52,7 +52,19 @@
       },
       "default": "./dist/index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": {
+        "types": "./dist/types/index.d.ts",
+        "default": "./dist/types/index.js"
+      },
+      "require": {
+        "types": "./dist/types/index.d.ts",
+        "default": "./dist/types/index.js"
+      },
+      "default": "./dist/types/index.js"
+    }
   },
   "publishConfig": {
     "access": "public"
@@ -78,11 +90,13 @@
   "devDependencies": {
     "@supergrowthai/next-blog-dashboard": "workspace:*",
     "@supergrowthai/types": "workspace:*",
+    "@supergrowthai/oneapi": "workspace:*",
     "vite-plugin-static-copy": "^3.1.1",
     "@types/mongodb": "^4.0.7",
     "@types/node": "^24.5.2",
     "@types/uuid": "^10.0.0",
     "vite": "^7.1.5",
-    "vite-plugin-dts": "^4.5.4"
+    "vite-plugin-dts": "^4.5.4",
+    "@tailwindcss/vite": "^4.1.14"
   }
 }

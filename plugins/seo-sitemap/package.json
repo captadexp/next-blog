@@ -1,5 +1,5 @@
 {
-  "name": "seo-sitemap",
+  "name": "@plugins/seo-sitemap",
   "version": "1.0.0",
   "type": "module",
   "scripts": {

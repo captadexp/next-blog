@@ -55,6 +55,7 @@ export default defineConfig(({mode}) => {
                 entry: {
                     index: path.resolve(__dirname, 'src/index.ts'),
                     'adapters/index': path.resolve(__dirname, 'src/adapters/index.ts'),
+                    'types/index': path.resolve(__dirname, 'src/types/index.ts'),
                 },
                 fileName: (format, entryName) => `${entryName}.js`,
                 formats: ["es"],
