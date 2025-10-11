@@ -17,10 +17,19 @@ export {
     jsx,
     jsxs,
     jsxDEV,
-    Fragment,
-    Card,
-    Button,
-    Text
+    Fragment
 } from '@supergrowthai/jsx-runtime';
 
 export {type PluginRuntime} from '@supergrowthai/jsx-runtime';
+
+// Export React/Preact hooks from the host
+export {
+    useState,
+    useEffect,
+    useMemo,
+    useCallback,
+    useRef,
+    useContext,
+    useReducer,
+    useLayoutEffect
+} from './hooks';

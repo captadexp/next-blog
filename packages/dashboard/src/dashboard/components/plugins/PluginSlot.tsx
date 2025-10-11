@@ -1,6 +1,6 @@
 import {Fragment, FunctionComponent, h} from "preact";
 import {usePlugins} from "../../../context/PluginContext.tsx";
-import {useMemo, useState} from "preact/hooks";
+import {useCallback, useContext, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState} from "preact/hooks";
 import {useUser} from "../../../context/UserContext.tsx";
 import Logger, {LogLevel} from "../../../utils/Logger.ts";
 import {createRenderer} from "@supergrowthai/jsx-runtime/preact";
@@ -8,8 +8,18 @@ import {createClientSDK} from "../../../sdk/sdk-factory.client";
 import {UIHookFn} from "@supergrowthai/types";
 import {ClientSDK} from "@supergrowthai/types/client";
 
-// Create the renderer once with Preact's h and Fragment
-const render = createRenderer(h, Fragment);
+// Create the renderer once with Preact's h, Fragment, and hooks
+const hooks = {
+    useState,
+    useEffect,
+    useMemo,
+    useCallback,
+    useRef,
+    useContext,
+    useReducer,
+    useLayoutEffect
+};
+const render = createRenderer(h, Fragment, hooks);
 
 const logger = new Logger('PluginSystem', LogLevel.INFO);
 

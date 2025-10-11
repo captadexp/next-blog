@@ -14,11 +14,6 @@ export {
     JSX_ELEMENT,
     JSX_FRAGMENT,
 
-    // Components
-    Card,
-    Button,
-    Text,
-
     // Utilities
     utils
 } from '@supergrowthai/jsx-runtime';

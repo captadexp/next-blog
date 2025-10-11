@@ -53,8 +53,13 @@ interface RenderContext {
  * Creates a renderer function for the given framework
  * @param h - The framework's createElement function
  * @param Fragment - The framework's Fragment component
+ * @param hooks - Optional hooks object containing useState, useEffect, etc.
  */
-export function createRenderer(h: any, Fragment: any) {
+export function createRenderer(h: any, Fragment: any, hooks: any) {
+    // Make hooks available globally via window.PluginRuntime if provided
+    if (hooks && typeof window !== 'undefined' && (window as any).PluginRuntime) {
+        Object.assign((window as any).PluginRuntime, hooks);
+    }
     /**
      * Renders a VNode tree to framework elements
      * Strict validation - only accepts proper VNodes with $$typeof
