@@ -9,13 +9,13 @@ export function transformBlogData(blog: any): BlogData {
         excerpt: blog.excerpt,
         featuredImage: blog.featuredImage,
         author: blog.author,
-        categories: blog.categories || [],
-        tags: blog.tags || [],
+        categories: blog.categories,
+        tags: blog.tags,
         createdAt: blog.createdAt,
         updatedAt: blog.updatedAt,
         publishedAt: blog.publishedAt,
         status: blog.status,
         slug: blog.slug,
-        metadata: blog.metadata || {}
+        metadata: blog.metadata
     };
 }

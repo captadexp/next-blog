@@ -1,6 +1,12 @@
 import {extractImagesFromContent} from '@supergrowthai/plugin-dev-kit/content';
 import type {MergeContext} from '../types/plugin-types.js';
 
+interface ExtractedImage {
+    src: string;
+    alt?: string;
+    url?: string;
+}
+
 /**
  * Get images based on policy and overrides
  */
@@ -19,8 +25,17 @@ export function getImages(context: MergeContext): string[] {
         case 'featured':
             return blogData.featuredImage ? [blogData.featuredImage] : [];
         case 'first':
-            const contentImages = extractImagesFromContent(blogData.content);
-            return contentImages.length > 0 ? [(contentImages[0] as any).url || contentImages[0].src || String(contentImages[0])] : [];
+            const contentImages = extractImagesFromContent(blogData.content) as (string | ExtractedImage)[];
+            if (contentImages.length > 0) {
+                const firstImage = contentImages[0];
+                if (typeof firstImage === 'string') {
+                    return [firstImage];
+                } else if (firstImage && typeof firstImage === 'object') {
+                    const img = firstImage as ExtractedImage;
+                    return [img.url || img.src || ''].filter(Boolean);
+                }
+            }
+            return [];
         case 'none':
         default:
             return [];

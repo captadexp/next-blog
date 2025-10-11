@@ -1,10 +1,7 @@
 import {defineClient} from '@supergrowthai/plugin-dev-kit';
-import {injectStyles, useBlogSidebarHook, useSettingsPanelHook} from './client/index.js';
+import {useBlogSidebarHook, useSettingsPanelHook} from './client/index.js';
 import './types/rpc-types.js';
 import './styles.css';
-
-// Initialize styles
-injectStyles();
 
 // Client-side hooks that run in the browser
 export default defineClient({

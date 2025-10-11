@@ -1,103 +1,91 @@
-import {ClientSDK, PluginRuntime} from '@supergrowthai/plugin-dev-kit/client';
-import {BlogSidebarWidget} from '../../components/index.js';
-import type {BlogJsonLdOverrides, SchemaType} from '../../types/plugin-types.js';
-import {getBlogOverrides, setBlogOverrides} from '../utils/plugin-state.js';
-import {loadBlogData, loadGlobalSettings} from '../utils/data-loaders.js';
-import {getSchemaTypeDefinition} from '../../schema/schema-definitions.js';
+import { useState, useEffect, useCallback, useRef } from '@supergrowthai/plugin-dev-kit/client';
+import { BlogSidebarWidget } from '../../components/index.js';
+import type { BlogJsonLdOverrides, SchemaType } from '../../types/plugin-types.js';
+import { getSchemaTypeDefinition } from '../../schema/schema-definitions.js';
 
-// Get global utils
-const {utils} = (window as any).PluginRuntime as PluginRuntime;
-
-// Local state for this hook - minimal and focused
-interface BlogSidebarState {
-    currentBlogId: string | null;
-    jsonPreview: string;
-    showPreview: boolean;
-    isGeneratingPreview: boolean;
-    showFieldOverrides: boolean;
-    validationErrors: Array<{ field: string; message: string }>;
-    currentPreviewRequest: AbortController | null;
-}
-
-const state: BlogSidebarState = {
-    currentBlogId: null,
-    jsonPreview: '',
-    showPreview: false,
-    isGeneratingPreview: false,
-    showFieldOverrides: true,
-    validationErrors: [],
-    currentPreviewRequest: null
-};
-
-// Core preview generation logic
-async function generatePreviewCore(sdk: ClientSDK, blogId: string, overrides: BlogJsonLdOverrides) {
-    // Cancel previous request
-    if (state.currentPreviewRequest) {
-        state.currentPreviewRequest.abort();
+export function useBlogSidebarHook(sdk: any, prev: any, context: any) {
+    if (!context.blogId) {
+        throw new Error('Blog ID is required');
     }
 
-    const abortController = new AbortController();
-    state.currentPreviewRequest = abortController;
-    state.isGeneratingPreview = true;
-    sdk.refresh();
+    const [overrides, setOverrides] = useState<BlogJsonLdOverrides | null>(null);
+    const [jsonPreview, setJsonPreview] = useState<string | null>(null);
+    const [showPreview, setShowPreview] = useState(false);
+    const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+    const [showFieldOverrides, setShowFieldOverrides] = useState(true);
+    const [validationErrors, setValidationErrors] = useState<Array<{ field: string; message: string }>>([]);
 
-    try {
-        const response = await sdk.callRPC('jsonLd:generatePreview', {
-            blogId,
-            overrides
-        });
+    const abortControllerRef = useRef<AbortController | null>(null);
+    const prevBlogIdRef = useRef<string | null>(null);
 
-        if (abortController.signal.aborted) return;
+    const loadBlogData = useCallback(async () => {
+        const response = await sdk.callRPC('jsonLd:getBlogOverrides', { blogId: context.blogId });
+        setOverrides(response.payload);
+    }, [context.blogId, sdk]);
 
-        const {jsonLd, validation} = response.payload.payload;
-        state.jsonPreview = JSON.stringify(jsonLd, null, 2);
-        state.validationErrors = validation?.errors || [];
-        state.currentPreviewRequest = null;
-        state.isGeneratingPreview = false;
-    } catch (error) {
-        if (!(error instanceof DOMException && error.name === 'AbortError')) {
-            state.jsonPreview = 'Error generating preview';
-            state.validationErrors = [];
-            state.currentPreviewRequest = null;
-            state.isGeneratingPreview = false;
+    useEffect(() => {
+        if (prevBlogIdRef.current !== context.blogId) {
+            prevBlogIdRef.current = context.blogId;
+            loadBlogData();
         }
-    }
-    sdk.refresh();
-}
+    }, [context.blogId, loadBlogData]);
 
-// Core save logic
-async function saveBlogOverridesCore(sdk: ClientSDK, blogId: string, overrides: BlogJsonLdOverrides) {
-    try {
-        await sdk.callRPC('jsonLd:saveBlogOverrides', {
-            blogId,
-            overrides
-        });
-        sdk.notify('JSON-LD settings saved', 'success');
-    } catch (error) {
-        sdk.notify('Failed to save JSON-LD settings', 'error');
-        throw error;
-    }
-}
+    // Debounced preview generation
+    const generatePreview = useCallback(
+        sdk.utils.debounce(async (blogId: string, currentOverrides: BlogJsonLdOverrides) => {
+            // Cancel previous request
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
 
-// Create debounced/throttled functions once at module level
-const debouncedGeneratePreview = utils.debounce(generatePreviewCore, 1500);
-const throttledSave = utils.throttle(saveBlogOverridesCore, 2000);
+            const abortController = new AbortController();
+            abortControllerRef.current = abortController;
+            setIsGeneratingPreview(true);
 
-export function useBlogSidebarHook(sdk: ClientSDK, prev: any, context: any) {
-    if (!context?.blogId) {
-        throw new Error('Blog context is required');
-    }
+            try {
+                const response = await sdk.callRPC('jsonLd:generatePreview', {
+                    blogId,
+                    overrides: currentOverrides
+                });
 
-    // Simple initialization check
-    if (state.currentBlogId !== context.blogId) {
-        state.currentBlogId = context.blogId;
-        loadGlobalSettings(sdk);
-        loadBlogData(sdk, context);
-    }
+                if (abortController.signal.aborted) return;
 
-    const currentOverrides = getBlogOverrides(context.blogId);
+                const { jsonLd, validation } = response.payload.payload;
+                setJsonPreview(JSON.stringify(jsonLd, null, 2));
+                setValidationErrors(validation.errors);
+            } catch (error) {
+                if (!(error instanceof DOMException && error.name === 'AbortError')) {
+                    throw error;
+                }
+            } finally {
+                setIsGeneratingPreview(false);
+                abortControllerRef.current = null;
+            }
+        }, 1500),
+        [sdk]
+    );
 
-    const handleTypeChange = (newType: SchemaType) => {
+    // Save overrides with throttling
+    const saveOverrides = useCallback(
+        sdk.utils.throttle(async (blogId: string, currentOverrides: BlogJsonLdOverrides) => {
+            await sdk.callRPC('jsonLd:saveBlogOverrides', {
+                blogId,
+                overrides: currentOverrides
+            });
+        }, 2000),
+        [sdk]
+    );
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
+    }, []);
+
+    const handleTypeChange = useCallback((newType: SchemaType) => {
         const newSchemaDefinition = getSchemaTypeDefinition(newType);
         if (!newSchemaDefinition) return;
 
@@ -108,15 +96,17 @@ export function useBlogSidebarHook(sdk: ClientSDK, prev: any, context: any) {
         const preservedOverrides: Record<string, boolean> = {};
         const preservedCustom: Record<string, any> = {};
 
+        if (!overrides) return;
+
         // Preserve compatible overrides
-        Object.entries(currentOverrides.overrides || {}).forEach(([key, value]) => {
+        Object.entries(overrides.overrides || {}).forEach(([key, value]) => {
             if (newFieldKeys.has(key)) {
                 preservedOverrides[key] = value;
             }
         });
 
         // Preserve compatible custom values
-        Object.entries(currentOverrides.custom || {}).forEach(([key, value]) => {
+        Object.entries(overrides.custom || {}).forEach(([key, value]) => {
             if (newFieldKeys.has(key)) {
                 preservedCustom[key] = value;
             }
@@ -124,7 +114,6 @@ export function useBlogSidebarHook(sdk: ClientSDK, prev: any, context: any) {
 
         // For HowTo type, initialize important fields as overridden by default
         if (newType === 'HowTo') {
-            // Initialize steps field as overridden with empty array if not already set
             if (!preservedOverrides.steps) {
                 preservedOverrides.steps = true;
                 if (!preservedCustom.steps) {
@@ -139,64 +128,68 @@ export function useBlogSidebarHook(sdk: ClientSDK, prev: any, context: any) {
             custom: preservedCustom
         };
 
-        setBlogOverrides(context.blogId, updatedOverrides);
-        sdk.refresh();
-        debouncedGeneratePreview(sdk, context.blogId, updatedOverrides);
-    };
+        setOverrides(updatedOverrides);
+        generatePreview(context.blogId, updatedOverrides);
+    }, [overrides, context.blogId, generatePreview]);
 
-    const handleOverrideToggle = (field: string, enabled: boolean) => {
+    const handleOverrideToggle = useCallback((field: string, enabled: boolean) => {
+        if (!overrides) return;
+
         const updatedOverrides = {
-            ...currentOverrides,
+            ...overrides,
             overrides: {
-                ...currentOverrides.overrides,
+                ...overrides.overrides,
                 [field]: enabled
             }
         };
-        setBlogOverrides(context.blogId, updatedOverrides);
-        sdk.refresh();
-        debouncedGeneratePreview(sdk, context.blogId, updatedOverrides);
-    };
+        setOverrides(updatedOverrides);
+        generatePreview(context.blogId, updatedOverrides);
+    }, [overrides, context.blogId, generatePreview]);
 
-    const handleCustomValueChange = (field: string, value: any) => {
+    const handleCustomValueChange = useCallback((field: string, value: any) => {
+        if (!overrides) return;
+
         const updatedOverrides = {
-            ...currentOverrides,
+            ...overrides,
             custom: {
-                ...currentOverrides.custom,
+                ...overrides.custom,
                 [field]: value
             }
         };
-        setBlogOverrides(context.blogId, updatedOverrides);
-        sdk.refresh();
-        debouncedGeneratePreview(sdk, context.blogId, updatedOverrides);
-    };
+        setOverrides(updatedOverrides);
+        generatePreview(context.blogId, updatedOverrides);
+    }, [overrides, context.blogId, generatePreview]);
 
-    const handlePreviewToggle = () => {
-        state.showPreview = !state.showPreview;
-        if (state.showPreview) {
-            debouncedGeneratePreview(sdk, context.blogId, currentOverrides);
+    const handlePreviewToggle = useCallback(() => {
+        const newShowPreview = !showPreview;
+        setShowPreview(newShowPreview);
+        if (newShowPreview) {
+            generatePreview(context.blogId, overrides);
         }
-        sdk.refresh();
-    };
+    }, [showPreview, context.blogId, overrides, generatePreview]);
 
-    const handleFieldOverridesToggle = () => {
-        state.showFieldOverrides = !state.showFieldOverrides;
-        sdk.refresh();
-    };
+    const handleFieldOverridesToggle = useCallback(() => {
+        setShowFieldOverrides(!showFieldOverrides);
+    }, [showFieldOverrides]);
 
-    const handleSave = () => {
-        throttledSave(sdk, context.blogId, currentOverrides);
-    };
+    const handleSave = useCallback(() => {
+        saveOverrides(context.blogId, overrides);
+    }, [context.blogId, overrides, saveOverrides]);
+
+    if (!overrides) {
+        return null;
+    }
 
     return (
         <BlogSidebarWidget
             sdk={sdk}
             isLoading={false}
-            currentOverrides={currentOverrides}
-            jsonPreview={state.jsonPreview}
-            showPreview={state.showPreview}
-            isGeneratingPreview={state.isGeneratingPreview}
-            showFieldOverrides={state.showFieldOverrides}
-            validationErrors={state.validationErrors}
+            currentOverrides={overrides}
+            jsonPreview={jsonPreview || ''}
+            showPreview={showPreview}
+            isGeneratingPreview={isGeneratingPreview}
+            showFieldOverrides={showFieldOverrides}
+            validationErrors={validationErrors}
             onTypeChange={handleTypeChange}
             onOverrideToggle={handleOverrideToggle}
             onCustomValueChange={handleCustomValueChange}

@@ -1,71 +1,53 @@
-import {ClientSDK, PluginRuntime} from '@supergrowthai/plugin-dev-kit/client';
-import {GlobalSettingsPanel} from '../../components/index.js';
-import type {GlobalJsonLdSettings} from '../../types/plugin-types.js';
+import { useState, useEffect, useCallback } from '@supergrowthai/plugin-dev-kit/client';
+import { GlobalSettingsPanel } from '../../components/index.js';
+import type { GlobalJsonLdSettings } from '../../types/plugin-types.js';
 
-// Get global utils
-const {utils} = (window as any).PluginRuntime as PluginRuntime;
+export function useSettingsPanelHook(sdk: any, prev: any, context: any) {
+    const [settings, setSettings] = useState<GlobalJsonLdSettings | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
-// Local state for settings panel - minimal and focused
-interface SettingsPanelState {
-    settings: GlobalJsonLdSettings;
-    initialized: boolean;
-}
+    // Load settings on mount
+    useEffect(() => {
+        const loadSettings = async () => {
+            const response = await sdk.callRPC('jsonLd:getGlobalSettings', {});
+            setSettings(response.payload.payload.settings);
+        };
 
-const state: SettingsPanelState = {
-    settings: {},
-    initialized: false
-};
+        loadSettings();
+    }, [sdk]);
 
-async function loadSettings(sdk: ClientSDK) {
-    try {
-        const response = await sdk.callRPC('jsonLd:getGlobalSettings', {});
-        state.settings = response.payload.payload.settings || {};
-        sdk.refresh();
-    } catch (error) {
-        // Fail fast
-        throw error;
+    // Throttled save function
+    const saveSettings = useCallback(
+        sdk.utils.throttle(async (newSettings: GlobalJsonLdSettings) => {
+            setIsSaving(true);
+            await sdk.callRPC('jsonLd:saveGlobalSettings', {
+                settings: newSettings
+            });
+            setIsSaving(false);
+        }, 2000),
+        [sdk]
+    );
+
+    const handleSettingsChange = useCallback((newSettings: GlobalJsonLdSettings) => {
+        setSettings(newSettings);
+    }, []);
+
+    const handleSave = useCallback(() => {
+        return saveSettings(settings);
+    }, [settings, saveSettings]);
+
+    if (!settings) {
+        return null;
     }
-}
-
-async function saveSettingsCore(sdk: ClientSDK, settings: GlobalJsonLdSettings) {
-    try {
-        await sdk.callRPC('jsonLd:saveGlobalSettings', {
-            settings
-        });
-        sdk.notify('Settings saved successfully', 'success');
-    } catch (error) {
-        sdk.notify('Failed to save settings', 'error');
-        throw error;
-    }
-}
-
-// Create throttled save function at module level
-const throttledSaveSettings = utils.throttle(saveSettingsCore, 2000);
-
-export function useSettingsPanelHook(sdk: ClientSDK, prev: any, context: any) {
-    // Simple initialization
-    if (!state.initialized) {
-        state.initialized = true;
-        loadSettings(sdk);
-    }
-
-    const handleSettingsChange = (newSettings: GlobalJsonLdSettings) => {
-        state.settings = newSettings;
-        sdk.refresh();
-    };
-
-    const handleSave = () => {
-        return throttledSaveSettings(sdk, state.settings);
-    };
 
     return (
         <GlobalSettingsPanel
             sdk={sdk}
-            settings={state.settings}
+            settings={settings}
             onSettingsChange={handleSettingsChange}
             onSave={handleSave}
             isLoading={false}
-            isSaving={false}
+            isSaving={isSaving}
         />
     );
 }

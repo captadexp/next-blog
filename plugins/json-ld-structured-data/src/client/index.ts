@@ -1,3 +1,2 @@
-export {useSettingsPanelHook} from './hooks/settings-panel-hook';
-export {useBlogSidebarHook} from './hooks/blog-sidebar-hook';
-export {injectStyles} from './utils/styles.js';
+export {useSettingsPanelHook} from './hooks/settings-panel-hook.js';
+export {useBlogSidebarHook} from './hooks/blog-sidebar-hook.js';

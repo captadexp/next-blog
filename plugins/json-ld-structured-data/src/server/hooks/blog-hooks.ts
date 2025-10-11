@@ -22,9 +22,9 @@ export const blogHooks: ServerPluginModule["hooks"] = {
         const cacheKey = `jsonLd:generated:${payload.blogId}`;
         await sdk.cache?.delete(cacheKey);
 
-        // Clean up blog-specific overrides
+        // Clean up blog-specific overrides (set to null to remove)
         const overridesKey = `${BLOG_OVERRIDES_PREFIX}${payload.blogId}`;
-        await (sdk.settings as any).delete(overridesKey);
+        await sdk.settings.set(overridesKey, null);
     },
 
     // Inject JSON-LD into blog page head

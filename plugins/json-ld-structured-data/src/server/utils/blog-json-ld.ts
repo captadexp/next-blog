@@ -6,14 +6,13 @@ import {transformBlogData} from './data-transform.js';
 const GLOBAL_SETTINGS_KEY = 'jsonLd:globalSettings';
 const BLOG_OVERRIDES_PREFIX = 'jsonLd:blogOverrides:';
 
-export async function generateBlogJsonLd(sdk: ServerSDK, blogId: string, forceRegenerate = false): Promise<any> {
+export async function generateBlogJsonLd(sdk: ServerSDK, blogId: string, overridesOrRegenerate?: any): Promise<any> {
     const cacheKey = `jsonLd:generated:${blogId}`;
+    const forceRegenerate = typeof overridesOrRegenerate === 'boolean' ? overridesOrRegenerate : false;
 
-    // Check cache first (unless forcing regeneration)
-    if (!forceRegenerate) {
-        const cached = await sdk.cache?.get(cacheKey);
+    if (!forceRegenerate && sdk.cache) {
+        const cached = await sdk.cache.get(cacheKey);
         if (cached) {
-            sdk.log.debug('Returning cached JSON-LD for blog:', blogId);
             return cached;
         }
     }
@@ -30,30 +29,24 @@ export async function generateBlogJsonLd(sdk: ServerSDK, blogId: string, forceRe
         return null;
     }
 
-    // Get global settings
-    const globalSettings = await sdk.settings.get(GLOBAL_SETTINGS_KEY) || {};
-
-    // Get blog-specific overrides
+    const globalSettings = await sdk.settings.get(GLOBAL_SETTINGS_KEY);
     const overridesKey = `${BLOG_OVERRIDES_PREFIX}${blogId}`;
-    const overrides = await sdk.settings.get(overridesKey) || {
-        '@type': 'Article',
-        overrides: {},
-        custom: {}
-    };
+    const overrides = typeof overridesOrRegenerate === 'object' ? overridesOrRegenerate : await sdk.settings.get(overridesKey);
 
     // Create merge context
     const context: MergeContext = {
         blogData: transformBlogData(blog),
-        globalSettings,
-        overrides,
-        baseUrl: sdk.config?.baseUrl || 'https://example.com'
+        globalSettings: globalSettings || {},
+        overrides: overrides || { '@type': 'Article', overrides: {}, custom: {} },
+        baseUrl: sdk.config?.baseUrl || 'https://localhost:3000'
     };
 
     // Generate JSON-LD
     const jsonLd = generateJsonLd(context);
 
-    // Cache the result (TTL: 1 hour)
-    await sdk.cache?.set(cacheKey, jsonLd, 3600);
+    if (sdk.cache) {
+        await sdk.cache.set(cacheKey, jsonLd, 3600);
+    }
 
     sdk.log.debug('Generated and cached JSON-LD for blog:', blogId);
     return jsonLd;
