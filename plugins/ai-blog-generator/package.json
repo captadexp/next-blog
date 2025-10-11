@@ -1,0 +1,24 @@
+{
+  "name": "gemini-blog-generator",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "next-blog build",
+    "dev": "next-blog dev --port 62499",
+    "watch": "next-blog watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@supergrowthai/plugin-dev-kit": "workspace:*",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0"
+  },
+  "nextBlog": {
+    "baseUrl": "http://localhost:3248/plugins/gemini-blog-generator",
+    "devBaseUrl": "http://localhost:3001"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "openai": "^6.2.0"
+  }
+}
