@@ -13,8 +13,7 @@ export default defineConfig({
                 'runtime': resolve(__dirname, 'src/runtime.ts'),
                 'preact': resolve(__dirname, 'src/preact.ts'),
                 'jsx-runtime': resolve(__dirname, 'src/jsx-runtime.ts'),
-                'jsx-dev-runtime': resolve(__dirname, 'src/jsx-dev-runtime.ts'),
-                'plugin-components': resolve(__dirname, 'src/plugin-components.ts')
+                'jsx-dev-runtime': resolve(__dirname, 'src/jsx-dev-runtime.ts')
             },
             formats: ['es'],
             fileName: (format, entryName) => `${entryName}.js`

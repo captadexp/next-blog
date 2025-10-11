@@ -12,12 +12,6 @@ export interface PluginRuntime {
     jsxs(type: any, props: any, key?: any): JSX.Node;
 
     jsxDEV(type: any, props: any, key?: any): JSX.Node;
-
-    Card(props: any): any;
-
-    Button(props: any): any;
-
-    Text(props: any): any;
 }
 
 declare global {

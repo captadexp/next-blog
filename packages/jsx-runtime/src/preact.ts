@@ -1,5 +1,3 @@
-import {BUTTON_SYMBOL, CARD_SYMBOL, TEXT_SYMBOL} from './components';
-
 // Whitelist of allowed native elements
 const ALLOWED_NATIVE_ELEMENTS = [
     // Structural elements
@@ -106,30 +104,6 @@ export function createRenderer(h: any, Fragment: any) {
         }
 
         const childArray = Array.isArray(children) ? children : children ? [children] : [];
-        // Handle custom components
-        switch (type) {
-            case CARD_SYMBOL:
-                return h('div', {class: 'card bg-base-100 shadow-xl'},
-                    h('div', {class: 'card-body'},
-                        ...childArray.map(child => render(child, ctx))
-                    )
-                );
-            case BUTTON_SYMBOL:
-                const finalProps: any = {class: 'btn btn-primary'};
-
-                // Handle onClick
-                if (restProps.onClick && typeof restProps.onClick === 'function') {
-                    finalProps.onClick = (e: Event) => {
-                        e.preventDefault();
-                        restProps.onClick(ctx.sdk, ctx.context, e);
-                    };
-                }
-
-                return h('button', finalProps, ...childArray.map(child => render(child, ctx)));
-            case TEXT_SYMBOL:
-                return h('span', {}, ...childArray.map(child => render(child, ctx)));
-        }
-
         // Handle native elements
         if (typeof type === 'string') {
             if (!ALLOWED_NATIVE_ELEMENTS.includes(type)) {

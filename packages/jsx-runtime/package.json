@@ -27,10 +27,6 @@
     "./preact": {
       "types": "./dist/preact.d.ts",
       "default": "./dist/preact.js"
-    },
-    "./components": {
-      "types": "./dist/plugin-components.d.ts",
-      "default": "./dist/plugin-components.js"
     }
   },
   "typesVersions": {
