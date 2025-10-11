@@ -38,7 +38,7 @@ const renderSettingsPanel = (sdk: ClientSDK) => {
             <ProviderConfig status={status} sdk={sdk} onUpdate={setStatus}/>
 
             <div className="bg-white shadow rounded-lg p-6 mb-6">
-                <TopicsManager status={status} sdk={sdk}/>
+                <TopicsManager status={status} sdk={sdk} onUpdate={setStatus}/>
                 <CustomPrompt status={status} sdk={sdk}/>
             </div>
 

@@ -12,6 +12,9 @@ export interface BlogGenerationSettings {
 export interface PluginStatus {
     hasApiKey: boolean;
     aiProvider: AIProvider;
+    openaiApiKey: string;
+    grokApiKey: string;
+    geminiApiKey: string;
     dailyLimit: number;
     topics: string[];
     customPrompt: string;

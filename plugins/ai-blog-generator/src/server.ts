@@ -8,15 +8,11 @@ type AIProvider = 'openai' | 'grok' | 'gemini';
 
 interface BlogGenerationSettings {
     aiProvider: AIProvider;
-    openaiApiKey?: string;
-    grokApiKey?: string;
-    geminiApiKey?: string;
     dailyLimit: number;
     topics: string[];
     customPrompt?: string;
     lastBlogCreated: number;
     blogsCreatedToday: number;
-    twitterApiKey?: string;
 }
 
 async function getRandomTopic(topics: string[]): Promise<string> {
@@ -59,10 +55,10 @@ async function generateBlogContent(
     try {
         switch (provider) {
             case 'openai': {
-                const openai = new OpenAI({ apiKey });
+                const openai = new OpenAI({apiKey});
                 const completion = await openai.chat.completions.create({
                     model: "gpt-4",
-                    messages: [{ role: "user", content: prompt }],
+                    messages: [{role: "user", content: prompt}],
                     temperature: 0.7,
                     max_tokens: 2000
                 });
@@ -77,8 +73,8 @@ async function generateBlogContent(
                     baseURL: 'https://api.x.ai/v1'
                 });
                 const completion = await grokClient.chat.completions.create({
-                    model: "grok-beta",
-                    messages: [{ role: "user", content: prompt }],
+                    model: "grok-3",
+                    messages: [{role: "user", content: prompt}],
                     temperature: 0.7,
                     max_tokens: 2000
                 });
@@ -88,7 +84,7 @@ async function generateBlogContent(
 
             case 'gemini': {
                 const genAI = new GoogleGenerativeAI(apiKey);
-                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                const model = genAI.getGenerativeModel({model: "gemini-1.5-flash"});
                 const result = await model.generateContent(prompt);
                 const response = await result.response;
                 responseText = response.text();
@@ -135,14 +131,26 @@ async function generateBlogContent(
     }
 }
 
+const DEFAULT_CONFIG: BlogGenerationSettings = {
+    aiProvider: 'openai',
+    dailyLimit: 2,
+    topics: [],
+    customPrompt: DEFAULT_PROMPT,
+    lastBlogCreated: 0,
+    blogsCreatedToday: 0
+};
+
+async function getConfig(sdk: ServerSDK): Promise<BlogGenerationSettings> {
+    const settings = await sdk.settings.get<BlogGenerationSettings>('config');
+    if (!settings) {
+        await sdk.settings.set('config', DEFAULT_CONFIG);
+        return DEFAULT_CONFIG;
+    }
+    return settings;
+}
+
 async function shouldGenerateBlog(sdk: ServerSDK): Promise<boolean> {
-    const settings = await sdk.settings.get<BlogGenerationSettings>('config') || {
-        aiProvider: 'openai',
-        dailyLimit: 2,
-        topics: [],
-        lastBlogCreated: 0,
-        blogsCreatedToday: 0
-    };
+    const settings = await getConfig(sdk);
 
     const now = Date.now();
     const today = new Date(now).toDateString();
@@ -176,43 +184,37 @@ export default defineServer({
                 // Check if we should generate a blog
                 if (!(await shouldGenerateBlog(sdk))) {
                     sdk.log.debug('AI Blog Generator: Skipping generation - not time yet or daily limit reached');
-                    return { success: true, message: 'Generation skipped - not time yet or daily limit reached' };
+                    return {success: true, message: 'Generation skipped - not time yet or daily limit reached'};
                 }
 
                 // Get plugin settings
-                const settings = await sdk.settings.get<BlogGenerationSettings>('config') || {
-                    aiProvider: 'openai',
-                    dailyLimit: 2,
-                    topics: ['Technology trends', 'AI and Machine Learning', 'Web Development'],
-                    lastBlogCreated: 0,
-                    blogsCreatedToday: 0
-                };
+                const settings = await getConfig(sdk);
 
-                // Get API key based on provider from plugin settings
+                // Get API key based on provider from separate settings
                 let apiKey: string | null = null;
                 let providerName: string;
 
                 switch (settings.aiProvider) {
                     case 'openai':
-                        apiKey = settings.openaiApiKey || null;
+                        apiKey = await sdk.settings.get<string>('openaiApiKey');
                         providerName = 'OpenAI';
                         break;
                     case 'grok':
-                        apiKey = settings.grokApiKey || null;
+                        apiKey = await sdk.settings.get<string>('grokApiKey');
                         providerName = 'Grok';
                         break;
                     case 'gemini':
-                        apiKey = settings.geminiApiKey || null;
+                        apiKey = await sdk.settings.get<string>('geminiApiKey');
                         providerName = 'Gemini';
                         break;
                     default:
                         sdk.log.warn(`AI Blog Generator: Unsupported provider: ${settings.aiProvider}`);
-                        return { success: false, message: `Unsupported AI provider: ${settings.aiProvider}` };
+                        return {success: false, message: `Unsupported AI provider: ${settings.aiProvider}`};
                 }
 
                 if (!apiKey) {
                     sdk.log.warn(`AI Blog Generator: No ${providerName} API key configured in plugin settings`);
-                    return { success: false, message: `${providerName} API key not configured in plugin settings` };
+                    return {success: false, message: `${providerName} API key not configured in plugin settings`};
                 }
 
                 // Select a random topic
@@ -230,17 +232,20 @@ export default defineServer({
                     .substring(0, 50);
 
                 // Get system user ID for blog creation
-                const systemUser = await sdk.db.users.findOne({ username: 'system' });
+                const systemUser = await sdk.db.users.findOne({username: 'system'});
                 if (!systemUser) {
                     throw new Error('System user not found');
                 }
 
-                // Get default category
-                const defaultCategory = await sdk.db.categories.findOne({}) || await sdk.db.categories.create({
-                    name: 'AI Generated',
-                    description: 'Content generated by AI',
-                    slug: 'ai-generated'
-                });
+                // Get or create default category
+                let defaultCategory = await sdk.db.categories.findOne({});
+                if (!defaultCategory) {
+                    defaultCategory = await sdk.db.categories.create({
+                        name: 'AI Generated',
+                        description: 'Content generated by AI',
+                        slug: 'ai-generated'
+                    });
+                }
 
                 // Create the blog as a draft with plugin metadata
                 const newBlog = await sdk.db.blogs.create({
@@ -302,28 +307,15 @@ export default defineServer({
     },
     rpcs: {
         'ai-generator:getStatus': async (sdk: ServerSDK) => {
-            const settings = await sdk.settings.get<BlogGenerationSettings>('config') || {
-                aiProvider: 'openai',
-                dailyLimit: 2,
-                topics: [],
-                lastBlogCreated: 0,
-                blogsCreatedToday: 0
-            };
+            const [settings, openaiApiKey, grokApiKey, geminiApiKey] = await Promise.all([
+                getConfig(sdk),
+                sdk.settings.get<string>('openaiApiKey') || '',
+                sdk.settings.get<string>('grokApiKey') || '',
+                sdk.settings.get<string>('geminiApiKey') || ''
+            ]);
 
-            // Check API key based on current provider from plugin settings
-            let apiKey: string | null = null;
-            switch (settings.aiProvider) {
-                case 'openai':
-                    apiKey = settings.openaiApiKey || null;
-                    break;
-                case 'grok':
-                    apiKey = settings.grokApiKey || null;
-                    break;
-                case 'gemini':
-                    apiKey = settings.geminiApiKey || null;
-                    break;
-            }
-            const hasApiKey = !!apiKey;
+            const apiKeyMap = {openai: openaiApiKey, grok: grokApiKey, gemini: geminiApiKey};
+            const hasApiKey = !!apiKeyMap[settings.aiProvider];
 
             const now = Date.now();
             const today = new Date(now).toDateString();
@@ -338,9 +330,9 @@ export default defineServer({
             return {
                 hasApiKey,
                 aiProvider: settings.aiProvider,
-                openaiApiKey: settings.openaiApiKey || '',
-                grokApiKey: settings.grokApiKey || '',
-                geminiApiKey: settings.geminiApiKey || '',
+                openaiApiKey,
+                grokApiKey,
+                geminiApiKey,
                 dailyLimit: settings.dailyLimit,
                 topics: settings.topics,
                 customPrompt: settings.customPrompt || DEFAULT_PROMPT,
@@ -351,14 +343,7 @@ export default defineServer({
         },
 
         'ai-generator:updateSettings': async (sdk: ServerSDK, request: Partial<BlogGenerationSettings>) => {
-            const currentSettings = await sdk.settings.get<BlogGenerationSettings>('config') || {
-                aiProvider: 'openai',
-                dailyLimit: 2,
-                topics: [],
-                lastBlogCreated: 0,
-                blogsCreatedToday: 0
-            };
-
+            const currentSettings = await getConfig(sdk);
             const updatedSettings = {
                 ...currentSettings,
                 ...request
@@ -366,7 +351,7 @@ export default defineServer({
 
             await sdk.settings.set('config', updatedSettings);
 
-            return { success: true, settings: updatedSettings };
+            return {success: true, settings: updatedSettings};
         },
 
         'ai-generator:getRecentBlogs': async (sdk: ServerSDK) => {
@@ -392,8 +377,64 @@ export default defineServer({
                 };
             } catch (error) {
                 sdk.log.error('Failed to fetch recent blogs:', error);
-                return { blogs: [] };
+                return {blogs: []};
             }
+        },
+
+        'ai-generator:setApiKey': async (sdk: ServerSDK, request: { provider: AIProvider; apiKey: string }) => {
+            const {provider, apiKey} = request;
+            const settings = await getConfig(sdk);
+
+            // Save API key as separate setting based on provider
+            switch (provider) {
+                case 'openai':
+                    await sdk.settings.set('openaiApiKey', apiKey);
+                    break;
+                case 'grok':
+                    await sdk.settings.set('grokApiKey', apiKey);
+                    break;
+                case 'gemini':
+                    await sdk.settings.set('geminiApiKey', apiKey);
+                    break;
+                default:
+                    throw new Error(`Unsupported provider: ${provider}`);
+            }
+
+            // Get all API keys for status response
+            const [openaiApiKey, grokApiKey, geminiApiKey] = await Promise.all([
+                provider === 'openai' ? apiKey : (sdk.settings.get<string>('openaiApiKey') || ''),
+                provider === 'grok' ? apiKey : (sdk.settings.get<string>('grokApiKey') || ''),
+                provider === 'gemini' ? apiKey : (sdk.settings.get<string>('geminiApiKey') || '')
+            ]);
+
+            // Check if current provider has API key
+            const apiKeyMap = {openai: openaiApiKey, grok: grokApiKey, gemini: geminiApiKey};
+            const hasApiKey = !!apiKeyMap[settings.aiProvider];
+
+            const now = Date.now();
+            const today = new Date(now).toDateString();
+            const lastCreatedDate = new Date(settings.lastBlogCreated).toDateString();
+
+            // Reset daily counter if it's a new day
+            let blogsCreatedToday = settings.blogsCreatedToday;
+            if (lastCreatedDate !== today) {
+                blogsCreatedToday = 0;
+            }
+
+            // Return complete status
+            return {
+                hasApiKey,
+                aiProvider: settings.aiProvider,
+                openaiApiKey,
+                grokApiKey,
+                geminiApiKey,
+                dailyLimit: settings.dailyLimit,
+                topics: settings.topics,
+                customPrompt: settings.customPrompt || DEFAULT_PROMPT,
+                blogsCreatedToday,
+                lastBlogCreated: settings.lastBlogCreated,
+                canGenerateMore: blogsCreatedToday < settings.dailyLimit
+            };
         }
     }
 });

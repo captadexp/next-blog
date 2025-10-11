@@ -1,5 +1,6 @@
 import {ClientSDK, useEffect, useState} from '@supergrowthai/plugin-dev-kit/client';
 import type {AIProvider, BlogGenerationSettings, PluginStatus} from '../utils/types.js';
+import {setApiKey} from '../utils/actions.js';
 
 interface ProviderConfigProps {
     status: PluginStatus;
@@ -13,16 +14,16 @@ export function ProviderConfig({status, sdk, onUpdate}: ProviderConfigProps) {
     const [dailyLimit, setDailyLimit] = useState(status.dailyLimit);
     const [updating, setUpdating] = useState(false);
 
-    const getKeyName = (provider: AIProvider) => {
+    const getCurrentApiKey = (provider: AIProvider) => {
         switch (provider) {
             case 'openai':
-                return 'ai:openai:access_key';
+                return status.openaiApiKey || '';
             case 'grok':
-                return 'ai:grok:access_key';
+                return status.grokApiKey || '';
             case 'gemini':
-                return 'ai:gemini:access_key';
+                return status.geminiApiKey || '';
             default:
-                return 'ai:openai:access_key';
+                return '';
         }
     };
 
@@ -62,15 +63,10 @@ export function ProviderConfig({status, sdk, onUpdate}: ProviderConfigProps) {
 
     const updateDailyLimit = () => updateSettings({dailyLimit});
 
-    // Load current provider's API key when provider changes
+    // Update API key when provider changes
     useEffect(() => {
-        const loadCurrentKey = async () => {
-            const keyName = getKeyName(aiProvider);
-            const keyValue = await sdk.settings.get(keyName);
-            setCurrentApiKey(keyValue as string || '');
-        };
-        loadCurrentKey();
-    }, [aiProvider]);
+        setCurrentApiKey(getCurrentApiKey(aiProvider));
+    }, [aiProvider, status]);
 
     // Update local state when status changes
     useEffect(() => {
@@ -124,8 +120,14 @@ export function ProviderConfig({status, sdk, onUpdate}: ProviderConfigProps) {
                     <button
                         onClick={async () => {
                             setUpdating(true);
-                            await sdk.settings.set(getKeyName(aiProvider), currentApiKey);
-                            setUpdating(false);
+                            try {
+                                const updatedStatus = await setApiKey(sdk, aiProvider, currentApiKey);
+                                onUpdate(updatedStatus);
+                            } catch (error) {
+                                console.error('Failed to set API key:', error);
+                            } finally {
+                                setUpdating(false);
+                            }
                         }}
                         disabled={updating}
                         className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
@@ -134,7 +136,7 @@ export function ProviderConfig({status, sdk, onUpdate}: ProviderConfigProps) {
                     </button>
                 </div>
                 <p className="text-xs text-gray-600 mt-1">
-                    API key for the selected provider. Keys are stored securely and locally.
+                    API key for the selected provider. Keys are stored securely in the backend.
                 </p>
             </div>
 

@@ -5,24 +5,37 @@ import {addTopic, removeTopic} from '../utils/actions.js';
 interface TopicsManagerProps {
     status: PluginStatus;
     sdk: ClientSDK;
+    onUpdate: (status: PluginStatus) => void;
 }
 
-export function TopicsManager({status, sdk}: TopicsManagerProps) {
+export function TopicsManager({status, sdk, onUpdate}: TopicsManagerProps) {
     const [newTopic, setNewTopic] = useState('');
     const [updating, setUpdating] = useState(false);
 
     const addTopicHandler = async () => {
         if (!newTopic.trim()) return;
         setUpdating(true);
-        await addTopic(sdk, newTopic);
-        setNewTopic('');
-        setUpdating(false);
+        try {
+            const updatedStatus = await addTopic(sdk, newTopic);
+            onUpdate(updatedStatus);
+            setNewTopic('');
+        } catch (error) {
+            console.error('Failed to add topic:', error);
+        } finally {
+            setUpdating(false);
+        }
     };
 
     const removeTopicHandler = async (index: number) => {
         setUpdating(true);
-        await removeTopic(sdk, index);
-        setUpdating(false);
+        try {
+            const updatedStatus = await removeTopic(sdk, index);
+            onUpdate(updatedStatus);
+        } catch (error) {
+            console.error('Failed to remove topic:', error);
+        } finally {
+            setUpdating(false);
+        }
     };
 
     return (
