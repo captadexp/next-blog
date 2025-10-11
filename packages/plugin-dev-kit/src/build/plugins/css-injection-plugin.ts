@@ -1,4 +1,4 @@
-import type {Plugin} from 'rollup';
+import type {Plugin} from "vite";
 import {injectIntoIifeAfterUseStrict, makeCssInjectionCode, processCssIfNeeded} from '../css-injection-utils.js';
 import {existsSync, readdirSync, readFileSync, unlinkSync, writeFileSync} from 'fs';
 import {join} from 'path';

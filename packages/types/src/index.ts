@@ -10,3 +10,4 @@ export * from './events';
 export * from './configuration';
 export * from './intent';
 export * from './seo';
+export * from "./htmlToJson/custom-types"

@@ -2,10 +2,42 @@ FROM oven/bun:latest
 
 WORKDIR /app
 
-COPY . .
+# Copy root package files
+COPY package.json bun.lock turbo.json ./
 
+# Copy package.json files from each package (preserving directory structure)
+COPY packages/core/package.json ./packages/core/package.json
+COPY packages/dashboard/package.json ./packages/dashboard/package.json
+COPY packages/jsx-runtime/package.json ./packages/jsx-runtime/package.json
+COPY packages/oneapi/package.json ./packages/oneapi/package.json
+COPY packages/plugin-dev-kit/package.json ./packages/plugin-dev-kit/package.json
+COPY packages/types/package.json ./packages/types/package.json
+COPY packages/ui/package.json ./packages/ui/package.json
+
+# Copy package.json files from plugins
+COPY plugins/ai-blog-generator/package.json ./plugins/ai-blog-generator/package.json
+COPY plugins/api-widget/package.json ./plugins/api-widget/package.json
+COPY plugins/broken-link-checker/package.json ./plugins/broken-link-checker/package.json
+COPY plugins/json-ld-structured-data/package.json ./plugins/json-ld-structured-data/package.json
+COPY plugins/seo-analyzer/package.json ./plugins/seo-analyzer/package.json
+COPY plugins/seo-llms/package.json ./plugins/seo-llms/package.json
+COPY plugins/seo-robots/package.json ./plugins/seo-robots/package.json
+COPY plugins/seo-rss/package.json ./plugins/seo-rss/package.json
+COPY plugins/seo-sitemap/package.json ./plugins/seo-sitemap/package.json
+COPY plugins/system-update-manager/package.json ./plugins/system-update-manager/package.json
+COPY plugins/test-plugin/package.json ./plugins/test-plugin/package.json
+
+# Copy test-app package.json
+COPY apps/test-app/package.json ./apps/test-app/package.json
+
+# Install dependencies (this layer will be cached if package files don't change)
 RUN bun install --frozen-lockfile
 
+# Copy all source files
+COPY . .
+
+# Build all packages
 RUN bun run build
 
+# Run typecheck
 RUN bun --filter="*" run typecheck

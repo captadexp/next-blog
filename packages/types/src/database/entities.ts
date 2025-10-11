@@ -1,5 +1,5 @@
 import {BrandedId, Hydrated} from '../type-base-hydration';
-import type {ContentObject} from "@supergrowthai/plugin-dev-kit/content";
+import {ContentObject} from "../htmlToJson/custom-types";
 
 export type BlogStatus = 'draft' | 'pending' | 'private' | 'published' | 'trash';
 

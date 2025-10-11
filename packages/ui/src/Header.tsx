@@ -1,5 +1,5 @@
 import React from 'react';
-import {DatabaseAdapter, DetailedBlog} from '@supergrowthai/types';
+import {DatabaseAdapter, DetailedBlog} from '@supergrowthai/next-blog/types';
 
 interface HeaderProps extends Omit<React.HTMLAttributes<HTMLElement>, 'style'> {
     db: DatabaseAdapter;

@@ -1,7 +1,6 @@
 /**
  * SEO-related types for sitemap, robots.txt, RSS feed, etc.
  */
-import {MinimumRequest} from "@supergrowthai/oneapi";
 import {DatabaseAdapter} from "./database/adapter";
 
 // Sitemap types
@@ -118,6 +117,23 @@ export interface RssData {
         '@_xmlns:atom'?: string;
         channel: RssChannel;
     };
+}
+
+
+//fyi duplicated to avoid cyclic deps. dont want to move OneApi* out of oneapi package.
+export type OneApiRequest = Request & { [key: string]: any };
+export type OneApiResponse = Response & { setHeader(key: string, value: string): void };
+
+export interface MinimumRequest<HEADERS = any, BODY = any, QUERY = any> {
+    query: QUERY;
+    body: BODY;
+    method: 'POST' | 'GET' | 'DELETE' | 'OPTIONS' | 'PUT' | 'PATCH' | 'HEAD';
+    headers: HEADERS;
+    cookies?: any;
+    url: string;
+    _response?: OneApiResponse;
+    _request?: OneApiRequest;
+    _params?: Record<string, string>;
 }
 
 // Hook payload types

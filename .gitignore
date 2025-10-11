@@ -85,7 +85,7 @@ apps/test-app/public/plugins
 packages/core/src/version.ts
 
 !packages/plugin-dev-kit/src/helpers/build-env.d.ts
-!packages/dashboard/src/components/utils/dynamic-form/htmlToJson/custom-types.d.ts
+!packages/types/src/htmlToJson/custom-types.ts
 !packages/jsx-runtime/src/global.d.ts
 !packages/dashboard/src/global.d.ts
 !packages/plugin-dev-kit/templates/plugin-env.d.ts

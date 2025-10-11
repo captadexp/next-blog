@@ -13,7 +13,7 @@ import type {
     SitemapData,
     SitemapIndexData
 } from '../seo';
-import type {ContentObject} from "@supergrowthai/plugin-dev-kit/content";
+import {ContentObject} from "../htmlToJson/custom-types";
 
 /**
  * Server-side plugin module
