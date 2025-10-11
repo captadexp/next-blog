@@ -1,17 +1,15 @@
-import type {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
-import {RenderUtils} from '@supergrowthai/plugin-dev-kit/client';
+import {ClientSDK, useState} from '@supergrowthai/plugin-dev-kit/client';
 import type {PluginStatus} from '../utils/types.js';
 import {addTopic, removeTopic} from '../utils/actions.js';
 
 interface TopicsManagerProps {
-    ru: RenderUtils;
     status: PluginStatus;
     sdk: ClientSDK;
 }
 
-export function TopicsManager({ru, status, sdk}: TopicsManagerProps) {
-    const [newTopic, setNewTopic] = ru.useState('');
-    const [updating, setUpdating] = ru.useState(false);
+export function TopicsManager({status, sdk}: TopicsManagerProps) {
+    const [newTopic, setNewTopic] = useState('');
+    const [updating, setUpdating] = useState(false);
 
     const addTopicHandler = async () => {
         if (!newTopic.trim()) return;

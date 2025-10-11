@@ -7,7 +7,7 @@ interface CustomPromptProps {
     sdk: ClientSDK;
 }
 
-export function CustomPrompt({ status, sdk}: CustomPromptProps) {
+export function CustomPrompt({status, sdk}: CustomPromptProps) {
     const [customPrompt, setCustomPrompt] = useState(status.customPrompt);
     const [updating, setUpdating] = useState(false);
 

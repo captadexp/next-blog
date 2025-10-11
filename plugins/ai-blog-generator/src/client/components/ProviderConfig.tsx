@@ -1,5 +1,4 @@
-import type {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
-import {RenderUtils} from '@supergrowthai/plugin-dev-kit/client';
+import {ClientSDK, useEffect, useState} from '@supergrowthai/plugin-dev-kit/client';
 import type {AIProvider, BlogGenerationSettings, PluginStatus} from '../utils/types.js';
 
 interface ProviderConfigProps {
@@ -8,14 +7,11 @@ interface ProviderConfigProps {
     onUpdate: (status: PluginStatus) => void;
 }
 
-const ru = new RenderUtils();
-
 export function ProviderConfig({status, sdk, onUpdate}: ProviderConfigProps) {
-    ru.setReRenderer(sdk.refresh, true);
-    const [aiProvider, setAiProvider] = ru.useState<AIProvider>(status.aiProvider);
-    const [currentApiKey, setCurrentApiKey] = ru.useState('');
-    const [dailyLimit, setDailyLimit] = ru.useState(status.dailyLimit);
-    const [updating, setUpdating] = ru.useState(false);
+    const [aiProvider, setAiProvider] = useState<AIProvider>(status.aiProvider);
+    const [currentApiKey, setCurrentApiKey] = useState('');
+    const [dailyLimit, setDailyLimit] = useState(status.dailyLimit);
+    const [updating, setUpdating] = useState(false);
 
     const getKeyName = (provider: AIProvider) => {
         switch (provider) {
@@ -67,7 +63,7 @@ export function ProviderConfig({status, sdk, onUpdate}: ProviderConfigProps) {
     const updateDailyLimit = () => updateSettings({dailyLimit});
 
     // Load current provider's API key when provider changes
-    ru.useEffect(() => {
+    useEffect(() => {
         const loadCurrentKey = async () => {
             const keyName = getKeyName(aiProvider);
             const keyValue = await sdk.settings.get(keyName);
@@ -77,7 +73,7 @@ export function ProviderConfig({status, sdk, onUpdate}: ProviderConfigProps) {
     }, [aiProvider]);
 
     // Update local state when status changes
-    ru.useEffect(() => {
+    useEffect(() => {
         setAiProvider(status.aiProvider);
         setDailyLimit(status.dailyLimit);
     }, [status]);

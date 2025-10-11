@@ -1,12 +1,12 @@
-import type { RecentBlog } from '../utils/types.js';
-import { formatDate, getStatusBadge } from '../utils/formatters.js';
+import type {RecentBlog} from '../utils/types.js';
+import {formatDate, getStatusBadge} from '../utils/formatters.js';
 
 interface RecentBlogsProps {
     recentBlogs: RecentBlog[];
     onRefresh: () => void;
 }
 
-export function RecentBlogs({ recentBlogs, onRefresh }: RecentBlogsProps) {
+export function RecentBlogs({recentBlogs, onRefresh}: RecentBlogsProps) {
     return (
         <div className="bg-white shadow rounded-lg p-6">
             <div className="flex justify-between items-center mb-4">
@@ -30,15 +30,18 @@ export function RecentBlogs({ recentBlogs, onRefresh }: RecentBlogsProps) {
                     {recentBlogs.map((blog, index) => {
                         const statusBadge = getStatusBadge(blog.status);
                         return (
-                            <div key={`blog-${blog.id}-${index}`} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                            <div key={`blog-${blog.id}-${index}`}
+                                 className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1">
                                         <div className="flex items-center space-x-2 mb-1">
                                             <h3 className="font-medium text-gray-900 truncate">{blog.title}</h3>
-                                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusBadge.className}`}>
+                                            <span
+                                                className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusBadge.className}`}>
                                                 {statusBadge.text}
                                             </span>
-                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                            <span
+                                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                                                 🤖 AI Generated
                                             </span>
                                         </div>
