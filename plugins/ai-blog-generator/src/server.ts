@@ -1,5 +1,5 @@
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
-import type {ServerSDK} from '@supergrowthai/types/server';
+import type {ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
 import {GoogleGenerativeAI} from '@google/generative-ai';
 import OpenAI from 'openai';
 import type {ContentObject} from '@supergrowthai/plugin-dev-kit/content';

@@ -1,6 +1,5 @@
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
-import type {ServerSDK} from '@supergrowthai/types/server';
-import type {LlmsData, LlmsSection, SeoHookPayloadWithDb} from '@supergrowthai/types';
+import type {LlmsData, LlmsSection, SeoHookPayloadWithDb, ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
 import {contentObjectToPlainText} from "@supergrowthai/plugin-dev-kit/content";
 
 export default defineServer({

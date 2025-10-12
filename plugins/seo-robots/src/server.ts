@@ -1,6 +1,5 @@
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
-import type {ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
-import type {RobotsData, SeoHookPayload} from '@supergrowthai/types';
+import type {RobotsData, SeoHookPayload, ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
 
 export default defineServer({
     hooks: {

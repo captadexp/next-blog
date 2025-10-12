@@ -8,3 +8,5 @@ export * from './types.js';
 export * from './parse-path.js';
 export * from './auth/auth-handler.js';
 export * from './auth/iron-session-handler.js';
+
+export type {NextRequest} from "next/server"

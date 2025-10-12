@@ -13,9 +13,7 @@ export class NextJSRouter {
     }
 
     handlers() {
-        const processRequest = (request: NextRequest) => {
-            return this.genericRouter.handle(request);
-        };
+        const processRequest = (request: NextRequest): Promise<Response> => this.genericRouter.handle(request);
 
         return {
             GET: processRequest,

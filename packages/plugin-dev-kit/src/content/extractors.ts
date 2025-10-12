@@ -3,13 +3,8 @@
  * Utilities to extract specific data from ContentObject structures
  */
 
-import type {
-    ContentObject,
-    InlineNode,
-    ExtractedLink,
-    ExtractedImage,
-    ExtractedHeading
-} from './types';
+import type {ContentObject, ExtractedHeading, ExtractedImage, ExtractedLink} from './types';
+import {InlineNode} from "@supergrowthai/types";
 
 /**
  * Extract plain text from inline nodes
@@ -23,9 +18,6 @@ function extractTextFromInlineNode(node: InlineNode): string {
             return node.data.map(extractTextFromInlineNode).join('');
         case 'Link':
             return node.data.content.map(extractTextFromInlineNode).join('');
-        case 'Underline':
-        case 'StrickThrough':
-            return node.data;
         default:
             return '';
     }
@@ -96,7 +88,7 @@ function extractLinksFromInlineNode(node: InlineNode, links: ExtractedLink[]): v
             break;
         case 'Italic':
         case 'Highlight':
-            node.data.forEach(child => extractLinksFromInlineNode(child, links));
+            node.data.forEach((child) => extractLinksFromInlineNode(child, links));
             break;
     }
 }
@@ -119,7 +111,7 @@ export function extractLinksFromContent(content: ContentObject | string): Extrac
     for (const block of content.content) {
         switch (block.name) {
             case 'Paragraph':
-                block.data.forEach(node => extractLinksFromInlineNode(node, links));
+                block.data.forEach((node) => extractLinksFromInlineNode(node, links));
                 break;
             case 'Image':
                 links.push({
@@ -234,7 +226,7 @@ export function hasBlockType(content: ContentObject | string, blockType: string)
         }
     }
 
-    return content.content.some(block => block.name === blockType);
+    return content.content.some((block) => block.name === blockType);
 }
 
 /**
@@ -250,5 +242,5 @@ export function countBlockType(content: ContentObject | string, blockType: strin
         }
     }
 
-    return content.content.filter(block => block.name === blockType).length;
+    return content.content.filter((block) => block.name === blockType).length;
 }

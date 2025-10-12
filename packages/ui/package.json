@@ -44,6 +44,7 @@
     "@supergrowthai/next-blog": "workspace:*"
   },
   "devDependencies": {
+    "@supergrowthai/next-blog": "workspace:*",
     "@types/node": "^24.5.2",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",

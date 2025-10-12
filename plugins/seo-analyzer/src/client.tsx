@@ -1,5 +1,5 @@
 import {defineClient} from "@supergrowthai/plugin-dev-kit";
-import {useState, useEffect, useCallback} from "@supergrowthai/plugin-dev-kit/client";
+import {useCallback, useEffect, useState} from "@supergrowthai/plugin-dev-kit/client";
 import {extractTextFromContent, getWordCount} from "@supergrowthai/plugin-dev-kit/content";
 import "./styles.css"
 
@@ -374,7 +374,7 @@ function editorSidebarWidget(sdk: any, prev: any, context: any) {
                 {analysisResults.length > 0 ? (
                     <>
                         {analysisResults.map((item, index) => (
-                            <ChecklistItem key={index} item={item}/>
+                            <ChecklistItem key={index?.toString()} item={item}/>
                         ))}
                         {isTyping && <TypingIndicator/>}
                     </>

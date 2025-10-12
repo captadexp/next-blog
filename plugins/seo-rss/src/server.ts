@@ -1,6 +1,6 @@
+import type {RssItem} from '@supergrowthai/plugin-dev-kit';
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
-import type {ServerSDK} from '@supergrowthai/types/server';
-import type {RssData, RssItem, SeoHookPayloadWithDb} from '@supergrowthai/types';
+import type {RssData, SeoHookPayloadWithDb, ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
 import {contentObjectToPlainText} from "@supergrowthai/plugin-dev-kit/content";
 
 export default defineServer({

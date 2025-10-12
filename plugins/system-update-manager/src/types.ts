@@ -25,7 +25,7 @@ export interface SystemMigrationResult {
 // Augment the RPCMethods interface from @supergrowthai/types
 // Note: The SDK's callRPC already wraps responses in {code, message, payload}
 // So RPCMethods[T]['response'] should just be the payload type
-declare module '@supergrowthai/types/plugin' {
+declare module '@supergrowthai/plugin-dev-kit' {
     interface RPCMethods {
         'system-update-manager:checkSystemUpdate': {
             request: {};

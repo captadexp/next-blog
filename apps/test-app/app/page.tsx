@@ -4,8 +4,7 @@ import styles from './page.module.css';
 
 export default async function Home() {
     const blogDb = await dbProvider();
-    const posts = (await blogDb.blogs.find({}))
-        .filter(blog => blog.status === 'published');
+    const posts = await blogDb.blogs.find({"status": "published"});
 
     return (
         <div className={styles.page}>

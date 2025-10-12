@@ -183,6 +183,10 @@ declare global {
             dialog: HTMLAttributes;
         }
 
+        interface IntrinsicAttributes {
+            key?: string
+        }
+
     }
 
     type FunctionComponent<P = any> = (props?: P) => JSX.Node | null

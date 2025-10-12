@@ -14,6 +14,8 @@ export default defineConfig({
                 'content/types': path.resolve(__dirname, 'src/content/types.ts'),
                 'content/extractors': path.resolve(__dirname, 'src/content/extractors.ts'),
                 'content/converters': path.resolve(__dirname, 'src/content/converters.ts'),
+                'jsx-runtime': path.resolve(__dirname, 'src/jsx-runtime.ts'),
+                'jsx-dev-runtime': path.resolve(__dirname, 'src/jsx-dev-runtime.ts'),
             },
             fileName: (format, entryName) => `${entryName}.js`,
             formats: ['es'],

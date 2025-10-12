@@ -1,5 +1,5 @@
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
-import type {ServerSDK} from '@supergrowthai/types/server';
+import type {ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
 import type {SystemMigrationResult, SystemUpdateStatus} from './types';
 import './types'; // Ensure type augmentation is loaded
 

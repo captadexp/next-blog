@@ -8,7 +8,7 @@
     ],
     "types": [],
     "jsx": "react-jsx",
-    "jsxImportSource": "@supergrowthai/jsx-runtime",
+    "jsxImportSource": "@supergrowthai/plugin-dev-kit",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

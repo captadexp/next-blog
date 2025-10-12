@@ -1,6 +1,6 @@
 /**
  * Content Utilities for Next-Blog Plugins
- * 
+ *
  * This module provides utilities for working with ContentObject,
  * the block-based content structure used by the blog system.
  */
@@ -16,8 +16,6 @@ export type {
     ItalicItem,
     HighlightItem,
     LinkItem,
-    UnderlineItem,
-    StrikeThroughItem,
     // Block elements
     ParagraphLayout,
     SubheadingLayout,

@@ -1,6 +1,6 @@
+import type {SitemapUrl} from '@supergrowthai/plugin-dev-kit';
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
-import type {ServerSDK} from '@supergrowthai/types/server';
-import type {SeoHookPayloadWithDb, SitemapData, SitemapUrl} from '@supergrowthai/types';
+import type {SeoHookPayloadWithDb, ServerSDK, SitemapData} from '@supergrowthai/plugin-dev-kit/server';
 
 export default defineServer({
     hooks: {

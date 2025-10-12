@@ -73,10 +73,10 @@
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "ISC",
   "dependencies": {
-    "fast-xml-parser": "^5.3.0",
     "moment": "^2.30.1"
   },
   "optionalDependencies": {
+    "fast-xml-parser": "^5.3.0",
     "mongodb": "^6.17.0",
     "uuid": "^11.1.0",
     "sift": "^17.1.3",
@@ -85,9 +85,15 @@
     "@xmldom/xmldom": "^0.8.11"
   },
   "peerDependencies": {
-    "next": "^15.2.4"
+    "next": ">=15.0.0"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    }
   },
   "devDependencies": {
+    "next": "^15.0.0",
     "@supergrowthai/next-blog-dashboard": "workspace:*",
     "@supergrowthai/types": "workspace:*",
     "@supergrowthai/oneapi": "workspace:*",

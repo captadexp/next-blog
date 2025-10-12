@@ -6,7 +6,7 @@ import type {JsonLdOutput} from './core-types.js';
 // Framework wraps with {code, message, payload}, RPC also wraps with {code, message, payload}
 // So final structure is: {code, message, payload: {code, message, payload: ACTUAL_DATA}}
 
-declare module '@supergrowthai/types/plugin' {
+declare module '@supergrowthai/plugin-dev-kit' {
     interface RPCMethods {
         'jsonLd:getGlobalSettings': {
             request: {};

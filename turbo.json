@@ -35,6 +35,8 @@
     },
     "test-app#build": {
       "dependsOn": [
+        "@supergrowthai/next-blog#build",
+        "@supergrowthai/next-blog-ui#build",
         "^build"
       ],
       "outputs": [
@@ -43,6 +45,20 @@
       "env": [
         "MONGO_DB_URL",
         "VERCEL"
+      ]
+    },
+    "@plugins/*#build": {
+      "dependsOn": [
+        "@supergrowthai/plugin-dev-kit#build",
+        "^build"
+      ]
+    },
+    "@supergrowthai/next-blog#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**"
       ]
     }
   }

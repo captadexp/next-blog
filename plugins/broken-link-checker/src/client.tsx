@@ -1,5 +1,5 @@
 import type {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
-import {useState, useEffect} from '@supergrowthai/plugin-dev-kit/client';
+import {useEffect, useState} from '@supergrowthai/plugin-dev-kit/client';
 import {ScanResponse} from './types';
 import {LinkReport} from './components/LinkReport';
 import {ScanButton} from './components/ScanButton';
@@ -84,11 +84,11 @@ const renderPanel = (sdk: ClientSDK) => {
             </div>
 
             {showStatus ? (
-                <StatusIndicator state={{isLoading, isScanning, report, error}}/>
+                <StatusIndicator state={{isLoading, isScanning, report, error, latestSdk: null}}/>
             ) : (
                 <ul>
                     {report?.map((link: any, index: number) => (
-                        <LinkReport key={index} linkData={link}/>
+                        <LinkReport key={index?.toString()} linkData={link}/>
                     ))}
                 </ul>
             )}

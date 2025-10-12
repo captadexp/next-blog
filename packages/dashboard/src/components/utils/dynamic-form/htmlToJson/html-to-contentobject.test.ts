@@ -221,6 +221,7 @@ function main() {
     console.log('\n' + (simpleTestsPassed && complexTestPassed ? '🎉 ALL TESTS PASSED!' : '⚠️ Some tests failed'))
 }
 
+//@ts-ignore because require isnt available in browser. and this is just for local testing
 if (require.main === module) {
     main();
 }

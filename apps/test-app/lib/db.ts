@@ -1,5 +1,5 @@
 import {adapters} from "@supergrowthai/next-blog";
-import {DatabaseAdapter} from "@supergrowthai/types";
+import {DatabaseAdapter} from "@supergrowthai/next-blog/types";
 import {MongoClient} from "mongodb";
 import path from "path";
 import fs from "fs";

@@ -3,11 +3,7 @@
  * Utilities to convert ContentObject to/from other formats
  */
 
-import type {
-    ContentObject,
-    InlineNode,
-    ParagraphLayout
-} from './types';
+import type {ContentObject, InlineNode, ParagraphLayout} from './types';
 
 /**
  * Convert inline nodes to HTML
@@ -23,10 +19,6 @@ function inlineNodeToHtml(node: InlineNode): string {
         case 'Link':
             const linkContent = node.data.content.map(inlineNodeToHtml).join('');
             return `<a href="${escapeHtml(node.data.url)}">${linkContent}</a>`;
-        case 'Underline':
-            return `<u>${escapeHtml(node.data)}</u>`;
-        case 'StrickThrough':
-            return `<del>${escapeHtml(node.data)}</del>`;
         default:
             return '';
     }
@@ -201,9 +193,6 @@ function extractTextFromInlineNode(node: InlineNode): string {
             return node.data.map(extractTextFromInlineNode).join('');
         case 'Link':
             return node.data.content.map(extractTextFromInlineNode).join('');
-        case 'Underline':
-        case 'StrickThrough':
-            return node.data;
         default:
             return '';
     }
@@ -240,10 +229,10 @@ export function createParagraphBlock(text: string): ParagraphLayout {
 export function isValidContentObject(content: string): boolean {
     try {
         const parsed = JSON.parse(content);
-        return parsed && 
-               typeof parsed === 'object' && 
-               typeof parsed.version === 'number' &&
-               Array.isArray(parsed.content);
+        return parsed &&
+            typeof parsed === 'object' &&
+            typeof parsed.version === 'number' &&
+            Array.isArray(parsed.content);
     } catch {
         return false;
     }
