@@ -2,7 +2,6 @@ import {defineConfig, type UserConfig} from 'vite';
 import {resolve} from 'path';
 import {existsSync, readFileSync} from 'fs';
 import type {ViteConfigOptions} from './types.js';
-import tailwindcss from '@tailwindcss/vite';
 import {
     createCssInjectionPlugin,
     createCssModuleTypesPlugin,
@@ -97,7 +96,7 @@ function createIifeBuildConfig(
     };
 }
 
-export function createViteConfig(options: ViteConfigOptions): UserConfig {
+export async function createViteConfig(options: ViteConfigOptions): Promise<UserConfig> {
     const {root, entry, type, mode = 'production'} = options;
     const baseConfig = createBaseConfig(options);
     const packageJson = getPackageInfo(root);
@@ -143,8 +142,15 @@ export function createViteConfig(options: ViteConfigOptions): UserConfig {
             const cssInjectionPlugin = createCssInjectionPlugin({mode, root});
             const clientPlugins = [createCssModuleTypesPlugin(root), wrapIifePlugin, cssInjectionPlugin];
 
-            const tailwindPlugin = tailwindcss();
-            clientPlugins.unshift(...tailwindPlugin);
+            // Try to load Tailwind CSS plugin if available
+            try {
+                const tailwindcss = await import('@tailwindcss/vite');
+                const tailwindPlugin = tailwindcss.default();
+                clientPlugins.unshift(...tailwindPlugin);
+            } catch (error) {
+                // Tailwind CSS not installed, continue without it
+                console.log('[plugin-dev-kit] Tailwind CSS not found, building without Tailwind support');
+            }
 
             return defineConfig({
                 ...baseConfig,

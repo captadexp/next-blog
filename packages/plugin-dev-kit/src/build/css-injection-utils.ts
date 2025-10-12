@@ -1,5 +1,4 @@
 import postcss, {PluginCreator} from 'postcss';
-import tailwindcss from 'tailwindcss';
 
 /**
  * Creates the JavaScript code that injects CSS into the document head
@@ -29,6 +28,18 @@ export function injectIntoIifeAfterUseStrict(jsCode: string, injection: string):
 }
 
 /**
+ * Attempts to load TailwindCSS dynamically
+ */
+async function loadTailwindCSS() {
+    try {
+        const tailwindModule = await import('tailwindcss');
+        return tailwindModule.default || tailwindModule;
+    } catch (error) {
+        return null;
+    }
+}
+
+/**
  * Processes CSS through TailwindCSS if it contains Tailwind directives,
  * then scopes it to a plugin if pluginId is provided
  */
@@ -40,11 +51,17 @@ export async function processCssIfNeeded(css: string, fromPath: string, pluginId
 
     // Process with Tailwind if needed
     if (hasTailwindDirectives(css)) {
-        try {
-            const result = await postcss([tailwindcss]).process(css, {from: fromPath, to: undefined});
-            processedCss = result.css;
-        } catch (err) {
-            console.warn('TailwindCSS processing failed, using raw CSS:', err);
+        const tailwindcss = await loadTailwindCSS();
+
+        if (tailwindcss) {
+            try {
+                const result = await postcss([tailwindcss]).process(css, {from: fromPath, to: undefined});
+                processedCss = result.css;
+            } catch (err) {
+                console.warn('TailwindCSS processing failed, using raw CSS:', err);
+            }
+        } else {
+            console.warn('[plugin-dev-kit] Tailwind directives detected but Tailwind CSS is not installed. Please install tailwindcss to use Tailwind features.');
         }
     }
 

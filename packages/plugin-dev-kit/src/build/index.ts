@@ -49,7 +49,7 @@ export async function buildPlugin(options: PluginBuildOptions) {
             throw new Error(`Plugin manifest entry point not found: src/${entry}`);
         }
 
-        const config = createViteConfig({
+        const config = await createViteConfig({
             root,
             entry: entryPath,
             outDir,
@@ -94,7 +94,7 @@ export async function watchPlugin(options: PluginWatchOptions) {
             throw new Error(`Plugin manifest entry point not found: src/${entry}`);
         }
 
-        const config = createViteConfig({
+        const config = await createViteConfig({
             root,
             entry: entryPath,
             outDir,

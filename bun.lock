@@ -159,8 +159,12 @@
       "peerDependencies": {
         "react": "^18.0.0 || ^19.0.0",
         "react-dom": "^18.0.0 || ^19.0.0",
+        "tailwindcss": ">=4",
         "vite": "^7.0.0",
       },
+      "optionalPeers": [
+        "tailwindcss",
+      ],
     },
     "packages/types": {
       "name": "@supergrowthai/types",
@@ -211,6 +215,10 @@
     "plugins/api-widget": {
       "name": "@plugins/api-widget",
       "version": "1.0.0",
+      "dependencies": {
+        "@tailwindcss/vite": "^4.1.14",
+        "tailwindcss": "^4.1.14",
+      },
       "devDependencies": {
         "@supergrowthai/plugin-dev-kit": "workspace:*",
         "typescript": "^5.9.2",
@@ -219,6 +227,10 @@
     "plugins/broken-link-checker": {
       "name": "@plugins/broken-link-checker",
       "version": "1.0.0",
+      "dependencies": {
+        "@tailwindcss/vite": "^4.1.14",
+        "tailwindcss": "^4.1.14",
+      },
       "devDependencies": {
         "@supergrowthai/plugin-dev-kit": "workspace:*",
         "typescript": "^5.9.2",
@@ -227,6 +239,10 @@
     "plugins/json-ld-structured-data": {
       "name": "@plugins/json-ld-structured-data",
       "version": "1.0.0",
+      "dependencies": {
+        "@tailwindcss/vite": "^4.1.14",
+        "tailwindcss": "^4.1.14",
+      },
       "devDependencies": {
         "@supergrowthai/plugin-dev-kit": "workspace:*",
         "typescript": "^5.9.3",
@@ -236,6 +252,10 @@
     "plugins/seo-analyzer": {
       "name": "@plugins/seo-analyzer",
       "version": "1.0.0",
+      "dependencies": {
+        "@tailwindcss/vite": "^4.1.14",
+        "tailwindcss": "^4.1.14",
+      },
       "devDependencies": {
         "@supergrowthai/plugin-dev-kit": "workspace:*",
         "typescript": "^5.7.3",
@@ -281,6 +301,10 @@
     "plugins/system-update-manager": {
       "name": "@plugins/system-update-manager",
       "version": "1.0.0",
+      "dependencies": {
+        "@tailwindcss/vite": "^4.1.14",
+        "tailwindcss": "^4.1.14",
+      },
       "devDependencies": {
         "@supergrowthai/plugin-dev-kit": "workspace:*",
         "typescript": "^5.9.3",
