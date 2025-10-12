@@ -36,7 +36,6 @@
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "ISC",
   "dependencies": {
-    "@supergrowthai/plugin-dev-kit": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.1.1",
@@ -44,6 +43,7 @@
     "@supergrowthai/next-blog": "workspace:*"
   },
   "devDependencies": {
+    "@supergrowthai/plugin-dev-kit": "workspace:*",
     "@supergrowthai/next-blog": "workspace:*",
     "@types/node": "^24.5.2",
     "@types/react": "^19.1.8",
