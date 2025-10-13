@@ -2,6 +2,7 @@
   "name": "@supergrowthai/next-blog-dashboard",
   "version": "1.0.0",
   "description": "Dashboard components for next-blog",
+  "private": true,
   "repository": "https://github.com/captadexp/next-blog",
   "type": "module",
   "main": "./dist/index.js",

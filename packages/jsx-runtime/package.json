@@ -2,6 +2,7 @@
   "name": "@supergrowthai/jsx-runtime",
   "version": "1.0.0",
   "description": "Secure JSX runtime for Next-Blog plugin system",
+  "private": true,
   "type": "module",
   "main": "dist/runtime.js",
   "module": "dist/runtime.js",
