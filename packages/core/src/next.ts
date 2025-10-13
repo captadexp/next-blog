@@ -6,6 +6,8 @@ import {initializeSystem} from "./utils/defaultSettings.js";
 import pluginExecutor from "./plugins/plugin-executor.server.js";
 import {wrapPathObject} from "./utils/withExtras.js";
 
+export * from "./seo-generators.js"
+
 /**
  * Main CMS function that creates the API route handlers
  */

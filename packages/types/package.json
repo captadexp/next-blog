@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Shared TypeScript types for SupergrowthAI Next Blog platform",
   "type": "module",
+  "private": true,
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -92,8 +93,5 @@
     "typescript": "^5.9.2",
     "vite": "^7.1.5",
     "vite-plugin-dts": "^4.5.4"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }

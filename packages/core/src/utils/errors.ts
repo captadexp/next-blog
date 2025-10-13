@@ -7,7 +7,7 @@ export {
     Forbidden,
     Success,
     InternalServerError as DatabaseError
-} from "@supergrowthai/oneapi/errors";
+} from "@supergrowthai/oneapi";
 
 // Add ValidationError as an alias for BadRequest
-export { BadRequest as ValidationError } from "@supergrowthai/oneapi/errors";
+export {BadRequest as ValidationError} from "@supergrowthai/oneapi";

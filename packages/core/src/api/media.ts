@@ -2,7 +2,7 @@ import secure from '../utils/secureInternal.js';
 import {NotFound, Success, ValidationError} from '../utils/errors.js';
 import {StorageFactory} from '../storage/storage-factory.js';
 import path from 'path';
-import type {OneApiFunction} from "@supergrowthai/oneapi/types";
+import type {OneApiFunction} from "@supergrowthai/oneapi";
 import {ApiExtra} from "../types/api.ts";
 
 export const getMedia = secure(async (session, request, extra) => {

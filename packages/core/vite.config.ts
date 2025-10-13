@@ -53,7 +53,7 @@ export default defineConfig(({mode}) => {
             ...filesToIgnoreInWatch,
             lib: {
                 entry: {
-                    index: path.resolve(__dirname, 'src/index.ts'),
+                    'index': path.resolve(__dirname, 'src/index.ts'),
                     'adapters/index': path.resolve(__dirname, 'src/adapters/index.ts'),
                     'types/index': path.resolve(__dirname, 'src/types/index.ts'),
                 },
@@ -66,7 +66,12 @@ export default defineConfig(({mode}) => {
                     'next',
                     'next/server',
                     'mongodb',
+                    'sift',
                     'uuid',
+                    "fast-xml-parser",
+                    "@aws-sdk/client-s3",
+                    "@aws-sdk/lib-storage",
+                    "@xmldom/xmldom",
 
                     // Node.js builtin modules
                     'fs',
@@ -100,11 +105,13 @@ export default defineConfig(({mode}) => {
             dts({
                 outDir: 'dist',
                 include: ['src'],
-                exclude: ['node_modules', 'src/**/*.test.ts', 'src/**/*.spec.ts'],
-                rollupTypes: false,
-                copyDtsFiles: true,
-                insertTypesEntry: true,
-                declarationOnly: false,
+                rollupTypes: false
+            }),
+            dts({
+                outDir: 'dist/types-rolled-up',
+                include: ['src'],
+                rollupTypes: true,
+                bundledPackages: ["@supergrowthai/types", "@supergrowthai/jsx-runtime", "@supergrowthai/oneapi"],
             }),
             viteStaticCopy({
                 targets: [

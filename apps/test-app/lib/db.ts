@@ -1,4 +1,4 @@
-import {adapters} from "@supergrowthai/next-blog";
+import {FileDBAdapter, MongoDBAdapter} from "@supergrowthai/next-blog/adapters";
 import {DatabaseAdapter} from "@supergrowthai/next-blog/types";
 import {MongoClient} from "mongodb";
 import path from "path";
@@ -20,7 +20,7 @@ if (useMongo) {
 
     dbProvider = async () => {
         const client = await clientPromise;
-        return new adapters.MongoDBAdapter("next-blog", client);
+        return new MongoDBAdapter("next-blog", client);
     };
     console.log("Using MongoDBAdapter.");
 } else {
@@ -29,7 +29,7 @@ if (useMongo) {
     if (!fs.existsSync(dataPath)) {
         fs.mkdirSync(dataPath, {recursive: true});
     }
-    dbProvider = async () => new adapters.FileDBAdapter(`${dataPath}/`);
+    dbProvider = async () => new FileDBAdapter(`${dataPath}/`);
     console.log("Using FileDBAdapter for local development. Set MONGO_DB_URL to use MongoDB locally.");
 }
 

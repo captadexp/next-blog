@@ -26,8 +26,11 @@ export default defineConfig({
         react(),
         libInjectCss(),
         dts({
+            outDir: 'dist',
+            include: ['src'],
+            rollupTypes: true,
+            bundledPackages: ["@supergrowthai/types", "@supergrowthai/jsx-runtime", "@supergrowthai/oneapi"],
             insertTypesEntry: true,
-            copyDtsFiles: true,
         }),
     ],
 });

@@ -1,4 +1,4 @@
-import type {ClientPluginModule, ClientSDK, PluginManifest, ServerPluginModule, ServerSDK} from '@supergrowthai/types';
+import type {ClientPluginModule, PluginManifest, ServerPluginModule} from '@supergrowthai/types';
 
 // Import build-time placeholder types
 /// <reference path="./build-env.d.ts" />
@@ -82,42 +82,4 @@ export function defineClient(plugin: ClientPluginModule): ClientPluginModule {
  */
 export function defineServer(plugin: ServerPluginModule): ServerPluginModule {
     return plugin;
-}
-
-/**
- * Helper to create a plugin component with proper types
- * This is syntactic sugar for creating UI components
- *
- * @example
- * const MyWidget = createComponent((sdk, context) => {
- *   const [state, setState] = useState(0);
- *   return <div>Widget</div>;
- * });
- */
-export function createComponent<T extends Record<string, any> = {}>(
-    component: (sdk: ClientSDK, context?: T) => JSX.Node | null
-): (sdk: ClientSDK, prev?: any, context?: T) => JSX.Node | null {
-    return (sdk, _prev, context) => component(sdk, context);
-}
-
-/**
- * Helper to create an async server hook with proper error handling
- *
- * @example
- * const validateBlog = createAsyncHook(async (sdk, payload) => {
- *   if (!payload.title) throw new Error('Title required');
- *   return payload;
- * });
- */
-export function createAsyncHook<T = any, R = any>(
-    handler: (sdk: ServerSDK, payload: T) => Promise<R>
-): (sdk: ServerSDK, payload: T) => Promise<R> {
-    return async (sdk, payload) => {
-        try {
-            return await handler(sdk, payload);
-        } catch (error) {
-            sdk.log.error('Hook error:', error);
-            throw error;
-        }
-    };
 }

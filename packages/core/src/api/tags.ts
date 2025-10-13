@@ -1,4 +1,4 @@
-import type {MinimumRequest, SessionData, OneApiFunctionResponse} from "@supergrowthai/oneapi/types";
+import type {MinimumRequest, SessionData, OneApiFunctionResponse} from "@supergrowthai/oneapi";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import type {TagData} from "@supergrowthai/types/server";

@@ -1,1 +1,1 @@
-export * from "@supergrowthai/types";
+export type * from "@supergrowthai/types"

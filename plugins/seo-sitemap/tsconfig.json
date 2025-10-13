@@ -7,7 +7,7 @@
       "DOM"
     ],
     "jsx": "react-jsx",
-    "jsxImportSource": "@supergrowthai/plugin-dev-kit",
+    "jsxImportSource": "@supergrowthai/plugin-dev-kit/jsx-runtime",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

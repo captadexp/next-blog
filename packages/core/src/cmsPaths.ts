@@ -1,4 +1,4 @@
-import type {OneApiFunction, PathObject} from "@supergrowthai/oneapi/types";
+import type {OneApiFunction, PathObject} from "@supergrowthai/oneapi";
 import {NextResponse} from "next/server";
 import {DashboardPage} from "@supergrowthai/next-blog-dashboard";
 import {

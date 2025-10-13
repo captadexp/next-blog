@@ -1,10 +1,4 @@
-export {
-    definePlugin,
-    defineClient,
-    defineServer,
-    createComponent,
-    createAsyncHook,
-} from './helpers/plugin-builder.js';
+import {defineClient, definePlugin, defineServer,} from "./helpers/plugin-builder"
 
 // Re-export common types that plugins frequently use
 export type {
@@ -37,3 +31,15 @@ export type {RPCMethods} from '@supergrowthai/types';
 
 // Re-export jsx-runtime for plugins
 export * as jsx from '@supergrowthai/jsx-runtime';
+
+export {
+    definePlugin,
+    defineClient,
+    defineServer,
+}
+
+export default {
+    definePlugin,
+    defineClient,
+    defineServer,
+}
