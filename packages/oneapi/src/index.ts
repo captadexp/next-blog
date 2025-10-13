@@ -19,8 +19,7 @@ export * from './parse-path.js';
 
 // Generic router
 export {GenericRouter, createGenericRouter} from './router/generic-router.js';
+export {GenericIronSessionHandler} from './auth/generic-iron-session-handler.js';
 
 // Authentication base classes
-export * from './auth/auth-handler.js';
 export * from './auth/iron-session-handler.js';
-export {GenericIronSessionHandler} from './auth/generic-iron-session-handler.js';

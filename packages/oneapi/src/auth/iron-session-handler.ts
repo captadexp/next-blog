@@ -1,6 +1,5 @@
 import {IronSession, SessionOptions} from 'iron-session';
-import {AuthResult, IAuthHandler} from './auth-handler';
-import {OneApiRequest, OneApiResponse} from "../types";
+import {AuthResult, IAuthHandler, OneApiRequest, OneApiResponse} from "../types";
 
 /**
  * Session data structure for iron-session
