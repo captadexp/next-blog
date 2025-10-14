@@ -2,7 +2,7 @@ import {FunctionComponent, h} from 'preact';
 import {useLocation} from 'preact-iso';
 import {useEffect, useState} from 'preact/hooks';
 import {useUser} from '../../../context/UserContext';
-import {Blog} from '@supergrowthai/types';
+import {Blog} from '@supergrowthai/next-blog-types';
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 
 interface BlogsListProps {

@@ -11,7 +11,7 @@ import type {
     Tag,
     UIConfiguration,
     User
-} from '@supergrowthai/types';
+} from '@supergrowthai/next-blog-types';
 
 class ApiClientImpl implements APIClient {
     private readonly baseUrl: string;

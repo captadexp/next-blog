@@ -1,7 +1,7 @@
 /// <reference path="./global.d.ts" />
 
 import type {PluginRuntime} from './types';
-import type {ClientSDKUtils} from "@supergrowthai/types";
+import type {ClientSDKUtils} from "@supergrowthai/next-blog-types";
 
 const utils: ClientSDKUtils = {
     classList(...classes) {

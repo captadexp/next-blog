@@ -7,7 +7,7 @@ import type {
     PluginSettings,
     Storage,
     User
-} from '@supergrowthai/types';
+} from '@supergrowthai/next-blog-types';
 
 // Import createId for creating branded IDs
 const createBrandedId = {
@@ -344,7 +344,7 @@ class MockAPIClient implements APIClient {
     async getAllPermissions() {
         console.log('[Mock Client API] getAllPermissions');
         // Return properly typed Permission values
-        const permissions: Array<import('@supergrowthai/types').Permission> = ['blogs:all', 'users:read', 'categories:list', 'tags:list'];
+        const permissions: Array<import('@supergrowthai/next-blog-types').Permission> = ['blogs:all', 'users:read', 'categories:list', 'tags:list'];
         return this.mockResponse(permissions);
     }
 

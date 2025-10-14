@@ -1,7 +1,7 @@
 import {FunctionComponent, h} from 'preact';
 import {useLocation} from 'preact-iso';
 import {useUser} from '../../context/UserContext';
-import {Permission} from '@supergrowthai/types';
+import {Permission} from '@supergrowthai/next-blog-types';
 import packageJson from '../../../package.json';
 import {ExtensionPoint} from "./ExtensionZone";
 

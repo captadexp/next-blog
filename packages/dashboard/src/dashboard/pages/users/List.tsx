@@ -1,6 +1,6 @@
 import {h} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
-import {Permission, User} from '@supergrowthai/types';
+import {Permission, User} from '@supergrowthai/next-blog-types';
 import {useUser} from '../../../context/UserContext';
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 

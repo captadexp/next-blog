@@ -1,5 +1,5 @@
 import type {MinimumRequest, OneApiFunctionResponse, SessionData} from "@supergrowthai/oneapi";
-import {CategoryData} from "@supergrowthai/types/server";
+import {CategoryData} from "@supergrowthai/next-blog-types/server";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";

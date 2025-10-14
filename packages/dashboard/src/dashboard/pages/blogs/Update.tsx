@@ -3,7 +3,7 @@ import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import {useLocation} from 'preact-iso';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {useUser} from "../../../context/UserContext.tsx";
-import {Blog, Category, Tag} from "@supergrowthai/types";
+import {Blog, Category, Tag} from "@supergrowthai/next-blog-types";
 import {ExtensionPoint, ExtensionZone} from "../../components/ExtensionZone";
 
 const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {

@@ -25,11 +25,11 @@ import {
     TagData,
     User,
     UserData
-} from "@supergrowthai/types/server";
+} from "@supergrowthai/next-blog-types/server";
 import {v4 as uuidv4} from 'uuid';
 import sift from 'sift';
 
-export type * from "@supergrowthai/types";
+export type * from "@supergrowthai/next-blog-types";
 
 export class FileDBAdapter implements DatabaseAdapter {
 

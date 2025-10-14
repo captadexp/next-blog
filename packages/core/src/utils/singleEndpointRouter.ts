@@ -2,7 +2,7 @@ import {createNextJSRouter} from "@supergrowthai/oneapi/nextjs";
 import {BasicAuthHandler} from "../auth/basic-auth-handler.js";
 import {initializeSystem} from "./defaultSettings.js";
 import pluginExecutor from "../plugins/plugin-executor.server.js";
-import {DatabaseAdapter} from "@supergrowthai/types/server";
+import {DatabaseAdapter} from "@supergrowthai/next-blog-types/server";
 import {OneApiFunction} from "@supergrowthai/oneapi";
 import {wrapPathObject} from "./withExtras.ts";
 

@@ -5,8 +5,8 @@ import {useUser} from "../../../context/UserContext.tsx";
 import Logger, {LogLevel} from "../../../utils/Logger.ts";
 import {createRenderer} from "@supergrowthai/jsx-runtime/preact";
 import {createClientSDK} from "../../../sdk/sdk-factory.client";
-import {UIHookFn} from "@supergrowthai/types";
-import {ClientSDK} from "@supergrowthai/types/client";
+import {UIHookFn} from "@supergrowthai/next-blog-types";
+import {ClientSDK} from "@supergrowthai/next-blog-types/client";
 
 // Create the renderer once with Preact's h, Fragment, and hooks
 const hooks = {

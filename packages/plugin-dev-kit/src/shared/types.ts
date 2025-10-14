@@ -1,5 +1,5 @@
-// Re-export shared types from @supergrowthai/types
+// Re-export shared types from @supergrowthai/next-blog-types
 export type {
     User,
     APIResponse
-} from '@supergrowthai/types';
+} from '@supergrowthai/next-blog-types';

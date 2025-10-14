@@ -41,8 +41,8 @@
       },
       "devDependencies": {
         "@supergrowthai/next-blog-dashboard": "workspace:*",
+        "@supergrowthai/next-blog-types": "workspace:*",
         "@supergrowthai/oneapi": "workspace:*",
-        "@supergrowthai/types": "workspace:*",
         "@tailwindcss/vite": "^4.1.14",
         "@types/mongodb": "^4.0.7",
         "@types/node": "^24.5.2",
@@ -73,7 +73,7 @@
       "version": "1.0.0",
       "dependencies": {
         "@supergrowthai/jsx-runtime": "workspace:*",
-        "@supergrowthai/types": "workspace:*",
+        "@supergrowthai/next-blog-types": "workspace:*",
         "dom-serializer": "^2.0.0",
         "domelementtype": "^2.3.0",
         "domhandler": "^5.0.3",
@@ -102,7 +102,7 @@
       "name": "@supergrowthai/jsx-runtime",
       "version": "1.0.0",
       "devDependencies": {
-        "@supergrowthai/types": "workspace:*",
+        "@supergrowthai/next-blog-types": "workspace:*",
         "concurrently": "^9.2.1",
         "vite": "^7.1.5",
         "vite-plugin-dts": "^4.5.4",
@@ -142,7 +142,7 @@
       },
       "dependencies": {
         "@supergrowthai/jsx-runtime": "workspace:*",
-        "@supergrowthai/types": "workspace:*",
+        "@supergrowthai/next-blog-types": "workspace:*",
         "@vitejs/plugin-react": "^5.0.0",
         "chalk": "^5.3.0",
         "commander": "^12.1.0",
@@ -170,7 +170,7 @@
       ],
     },
     "packages/types": {
-      "name": "@supergrowthai/types",
+      "name": "@supergrowthai/next-blog-types",
       "version": "1.0.0",
       "devDependencies": {
         "@types/node": "^24.5.2",
@@ -831,13 +831,13 @@
 
     "@supergrowthai/next-blog-dashboard": ["@supergrowthai/next-blog-dashboard@workspace:packages/dashboard"],
 
+    "@supergrowthai/next-blog-types": ["@supergrowthai/next-blog-types@workspace:packages/types"],
+
     "@supergrowthai/next-blog-ui": ["@supergrowthai/next-blog-ui@workspace:packages/ui"],
 
     "@supergrowthai/oneapi": ["@supergrowthai/oneapi@workspace:packages/oneapi"],
 
     "@supergrowthai/plugin-dev-kit": ["@supergrowthai/plugin-dev-kit@workspace:packages/plugin-dev-kit"],
-
-    "@supergrowthai/types": ["@supergrowthai/types@workspace:packages/types"],
 
     "@swc/helpers": ["@swc/helpers@0.5.15", "", { "dependencies": { "tslib": "^2.8.0" } }, "sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g=="],
 

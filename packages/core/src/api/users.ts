@@ -1,5 +1,5 @@
 import type {MinimumRequest, SessionData} from "@supergrowthai/oneapi";
-import {Permission, User, UserData} from "@supergrowthai/types/server";
+import {Permission, User, UserData} from "@supergrowthai/next-blog-types/server";
 import crypto from "../utils/crypto.js";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";

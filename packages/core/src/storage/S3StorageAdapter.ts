@@ -1,5 +1,5 @@
 import "./pollyfill.js"
-import type {StorageAdapter} from '@supergrowthai/types/server';
+import type {StorageAdapter} from '@supergrowthai/next-blog-types/server';
 import {createHash} from 'crypto';
 import {S3} from '@aws-sdk/client-s3';
 import {Upload} from '@aws-sdk/lib-storage';

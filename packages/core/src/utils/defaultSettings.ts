@@ -1,4 +1,4 @@
-import {BrandedId, createId, DatabaseAdapter, Plugin, User} from "@supergrowthai/types/server";
+import {BrandedId, createId, DatabaseAdapter, Plugin, User} from "@supergrowthai/next-blog-types/server";
 import {StorageFactory} from "../storage/storage-factory.ts";
 
 // Cache for system IDs

@@ -26,10 +26,10 @@ import {
     TagData,
     User,
     UserData
-} from "@supergrowthai/types/server";
+} from "@supergrowthai/next-blog-types/server";
 import {Collection, Db, MongoClient, ObjectId} from "mongodb"
 
-export type * from "@supergrowthai/types";
+export type * from "@supergrowthai/next-blog-types";
 
 export function oid(obj: ObjectId | string) {
     if (obj instanceof ObjectId) {

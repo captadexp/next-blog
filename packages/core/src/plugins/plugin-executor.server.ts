@@ -5,7 +5,7 @@ import {
     PluginHookMapping,
     ServerPluginModule,
     ServerSDK
-} from "@supergrowthai/types/server";
+} from "@supergrowthai/next-blog-types/server";
 import Logger, {LogLevel} from "../utils/Logger.js";
 import pluginManager from "./pluginManager.js";
 import {ServerSDKFactory} from "./sdk-factory.server.js";

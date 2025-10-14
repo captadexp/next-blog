@@ -1,5 +1,5 @@
-import type {DatabaseAdapter, StorageAdapter} from '@supergrowthai/types/server';
-import {createId} from '@supergrowthai/types/server';
+import type {DatabaseAdapter, StorageAdapter} from '@supergrowthai/next-blog-types/server';
+import {createId} from '@supergrowthai/next-blog-types/server';
 import {LocalStorageAdapter} from './LocalStorageAdapter.js';
 import {S3StorageAdapter} from './S3StorageAdapter.js';
 import {decrypt} from '../utils/encryption.js';

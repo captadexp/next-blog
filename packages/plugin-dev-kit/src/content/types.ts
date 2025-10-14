@@ -1,6 +1,6 @@
 /**
  * Content Object Types for Next-Blog
- * Re-export types from @supergrowthai/types package
+ * Re-export types from @supergrowthai/next-blog-types package
  */
 
 export type {
@@ -22,7 +22,7 @@ export type {
     InternalEmbed,
     ContentObjectLayout,
     ContentObject,
-} from '@supergrowthai/types';
+} from '@supergrowthai/next-blog-types';
 
 /* ================================
  * Utility Types

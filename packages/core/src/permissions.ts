@@ -1,4 +1,4 @@
-import {Permission} from '@supergrowthai/types/server';
+import {Permission} from '@supergrowthai/next-blog-types/server';
 
 /**
  * Predefined permissions for common operations

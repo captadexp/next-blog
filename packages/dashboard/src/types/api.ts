@@ -1,4 +1,4 @@
-import type {Permission} from '@supergrowthai/types';
+import type {Permission} from '@supergrowthai/next-blog-types';
 
 export interface CreateBlogInput {
     title: string;

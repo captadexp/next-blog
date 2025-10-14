@@ -1,7 +1,7 @@
 import {ClientSDK} from './index';
 import {createMockClientSDK} from './mock-sdk';
 import {Fragment} from './jsx-runtime';
-import {ClientPluginModule} from "@supergrowthai/types";
+import {ClientPluginModule} from "@supergrowthai/next-blog-types";
 
 export interface TestOptions {
     hook: string;

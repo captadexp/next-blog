@@ -1,4 +1,4 @@
-import type {PluginCache} from '@supergrowthai/types/client';
+import type {PluginCache} from '@supergrowthai/next-blog-types/client';
 
 /**
  * Client-side cache helper using localStorage with automatic plugin fingerprinting

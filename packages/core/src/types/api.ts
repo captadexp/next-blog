@@ -1,5 +1,5 @@
-import type {Configuration, DatabaseAdapter, ServerSDK, ServerHooks} from "@supergrowthai/types/server";
-import type {CallServerHookFunction} from "@supergrowthai/types";
+import type {Configuration, DatabaseAdapter, ServerSDK, ServerHooks} from "@supergrowthai/next-blog-types/server";
+import type {CallServerHookFunction} from "@supergrowthai/next-blog-types";
 
 /**
  * Extra context passed to all API handlers

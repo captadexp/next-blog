@@ -7,7 +7,7 @@ export {
     type User,
     type APIResponse,
     type NotificationStatus
-} from '@supergrowthai/types';
+} from '@supergrowthai/next-blog-types';
 
 export {createMockClientSDK} from './mock-sdk';
 export {testClientPlugin} from './test-harness';

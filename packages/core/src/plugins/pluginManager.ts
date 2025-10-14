@@ -1,4 +1,4 @@
-import {createId, DatabaseAdapter, PluginManifest, ServerPluginModule} from "@supergrowthai/types/server";
+import {createId, DatabaseAdapter, PluginManifest, ServerPluginModule} from "@supergrowthai/next-blog-types/server";
 import {ValidationError} from "../utils/errors.js";
 import Logger from "../utils/Logger.js";
 

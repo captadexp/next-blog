@@ -1,4 +1,4 @@
-import type {APIClient, ClientSDK, NotificationStatus, User} from '@supergrowthai/types/client';
+import type {APIClient, ClientSDK, NotificationStatus, User} from '@supergrowthai/next-blog-types/client';
 import {ClientSettingsHelper} from './settings-helper.client';
 import {ClientCacheHelper} from './cache-helper.client';
 import {ClientEventsHelper} from './events-helper.client';

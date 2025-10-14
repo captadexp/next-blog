@@ -1,8 +1,8 @@
-import type {Logger, PluginSettings, ServerSDK, User} from '@supergrowthai/types';
-import {createId} from "@supergrowthai/types/server";
+import type {Logger, PluginSettings, ServerSDK, User} from '@supergrowthai/next-blog-types';
+import {createId} from "@supergrowthai/next-blog-types/server";
 
 // Mock database implementation - simplified version
-// In real implementation, would use the full DatabaseAdapter interface from @supergrowthai/types
+// In real implementation, would use the full DatabaseAdapter interface from @supergrowthai/next-blog-types
 class MockDatabase {
     // Simplified mock methods - in real implementation would match DatabaseAdapter interface
     blogs = this.createCollectionMethods('blogs');

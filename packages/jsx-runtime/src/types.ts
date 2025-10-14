@@ -1,7 +1,7 @@
 /// <reference path="./global.d.ts" />
 
 
-import {ClientSDKUtils} from "@supergrowthai/types";
+import {ClientSDKUtils} from "@supergrowthai/next-blog-types";
 
 export interface PluginRuntime {
     Fragment: symbol;

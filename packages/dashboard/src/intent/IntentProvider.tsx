@@ -1,6 +1,6 @@
 import {createContext, h} from 'preact';
 import {useCallback, useContext, useEffect, useState} from 'preact/hooks';
-import {IntentRequest, IntentResponse} from '@supergrowthai/types';
+import {IntentRequest, IntentResponse} from '@supergrowthai/next-blog-types';
 import {intentRegistry} from './intent-registry';
 
 interface IntentContextType {

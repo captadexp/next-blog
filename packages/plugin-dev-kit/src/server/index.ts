@@ -5,7 +5,7 @@ export {
     type Logger,
     type User,
     type APIResponse,
-} from '@supergrowthai/types';
+} from '@supergrowthai/next-blog-types';
 
 // Re-export server-specific types
 export type {
@@ -22,10 +22,10 @@ export type {
     Blog,
     Category,
     ContentObject,
-} from '@supergrowthai/types';
+} from '@supergrowthai/next-blog-types';
 
-// Re-export from @supergrowthai/types/server subpath
-export type {ServerSDK as ServerSDKType} from '@supergrowthai/types/server';
+// Re-export from @supergrowthai/next-blog-types/server subpath
+export type {ServerSDK as ServerSDKType} from '@supergrowthai/next-blog-types/server';
 
 export {createMockServerSDK} from './mock-sdk';
 export {testServerPlugin} from './test-harness';

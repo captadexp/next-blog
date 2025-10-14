@@ -1,4 +1,4 @@
-import {IntentConfig, IntentRequest} from '@supergrowthai/types';
+import {IntentConfig, IntentRequest} from '@supergrowthai/next-blog-types';
 import {ComponentType} from 'preact';
 
 export interface IntentRegistration extends IntentConfig {

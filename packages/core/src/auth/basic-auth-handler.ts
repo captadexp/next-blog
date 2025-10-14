@@ -1,5 +1,5 @@
 import type {AuthResult, IAuthHandler, OneApiRequest, OneApiResponse} from "@supergrowthai/oneapi";
-import type {DatabaseAdapter, Permission, User, UserData} from "@supergrowthai/types/server";
+import type {DatabaseAdapter, Permission, User, UserData} from "@supergrowthai/next-blog-types/server";
 import crypto from "../utils/crypto.js";
 
 /**

@@ -3,7 +3,7 @@ import {useEffect, useState} from 'preact/hooks';
 import {useLocation} from 'preact-iso';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {useUser} from "../../../context/UserContext";
-import {SettingsEntry} from '@supergrowthai/types';
+import {SettingsEntry} from '@supergrowthai/next-blog-types';
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 
 interface SettingsEntryWithScope extends SettingsEntry {

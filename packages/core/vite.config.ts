@@ -105,7 +105,7 @@ export default defineConfig(({mode}) => {
             dts({
                 outDir: "dist",
                 include: ["src"],
-                bundledPackages: ["@supergrowthai/types", "@supergrowthai/next-blog-dashboard"],
+                bundledPackages: ["@supergrowthai/next-blog-types", "@supergrowthai/next-blog-dashboard"],
                 rollupTypes: false
             }),
             viteStaticCopy({

@@ -1,4 +1,4 @@
-import type {PluginEvents} from '@supergrowthai/types/client';
+import type {PluginEvents} from '@supergrowthai/next-blog-types/client';
 
 type EventHandler = (data: any) => void;
 

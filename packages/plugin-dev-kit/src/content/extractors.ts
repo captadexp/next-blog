@@ -4,7 +4,7 @@
  */
 
 import type {ContentObject, ExtractedHeading, ExtractedImage, ExtractedLink} from './types';
-import {InlineNode} from "@supergrowthai/types";
+import {InlineNode} from "@supergrowthai/next-blog-types";
 
 /**
  * Extract plain text from inline nodes

@@ -1,6 +1,6 @@
 import {FunctionComponent, h} from 'preact';
 import {useState} from 'preact/hooks';
-import {Permission} from '@supergrowthai/types';
+import {Permission} from '@supergrowthai/next-blog-types';
 import {useLocation} from 'preact-iso/router';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {useUser} from '../../../context/UserContext';

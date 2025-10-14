@@ -1,6 +1,6 @@
 import {ServerSDK} from './index';
 import {createMockServerSDK} from './mock-sdk';
-import {ServerPluginModule} from "@supergrowthai/types";
+import {ServerPluginModule} from "@supergrowthai/next-blog-types";
 
 export interface TestOptions {
     hook: string;

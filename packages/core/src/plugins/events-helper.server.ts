@@ -1,4 +1,4 @@
-import type {PluginEvents} from '@supergrowthai/types/server';
+import type {PluginEvents} from '@supergrowthai/next-blog-types/server';
 import {EventEmitter} from 'events';
 
 // Global event emitter for all plugins

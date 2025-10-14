@@ -1,4 +1,4 @@
-import {INTENT_TYPES} from '@supergrowthai/types';
+import {INTENT_TYPES} from '@supergrowthai/next-blog-types';
 import {IntentRegistration} from '../intent-registry';
 import {ImageSelector} from '../components/ImageSelector';
 

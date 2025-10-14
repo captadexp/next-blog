@@ -3,7 +3,7 @@ import {useEffect, useState} from 'preact/hooks';
 import {useLocation} from 'preact-iso';
 import {useUser} from '../../../context/UserContext';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
-import {Category, Tag} from '@supergrowthai/types';
+import {Category, Tag} from '@supergrowthai/next-blog-types';
 import {ExtensionZone} from '../../components/ExtensionZone';
 
 interface CreateBlogProps {

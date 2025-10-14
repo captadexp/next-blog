@@ -5,7 +5,7 @@ import type {ApiExtra} from "../types/api.js";
 import pluginExecutor from "../plugins/plugin-executor.server.js";
 import pluginManager from "../plugins/pluginManager.js";
 import Logger, {LogLevel} from "../utils/Logger.js";
-import {createId} from "@supergrowthai/types/server";
+import {createId} from "@supergrowthai/next-blog-types/server";
 
 const logger = new Logger('plugins-api', LogLevel.ERROR);
 

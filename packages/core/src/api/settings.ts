@@ -2,8 +2,8 @@ import type {MinimumRequest, OneApiFunctionResponse, SessionData} from "@supergr
 import {BadRequest, NotFound} from "@supergrowthai/oneapi";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
-import type {SettingsEntryData} from "@supergrowthai/types/server";
-import {createId} from "@supergrowthai/types/server";
+import type {SettingsEntryData} from "@supergrowthai/next-blog-types/server";
+import {createId} from "@supergrowthai/next-blog-types/server";
 import {getSystemPluginId} from "../utils/defaultSettings.js";
 import {encrypt, isSecureKey, maskValue} from "../utils/encryption.js";
 

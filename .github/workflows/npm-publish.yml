@@ -47,6 +47,23 @@ jobs:
         run: |
           bun --filter="*" run typecheck
 
+      - name: Version and publish types
+        run: |
+          cd packages/types
+          if [ "${{ inputs.release_type }}" = "latest" ]; then
+            bun pm version patch --no-git-tag-version
+            bun publish --access public
+          else
+            COMMIT_SHA=$(git rev-parse --short HEAD)
+            CURRENT_VERSION=$(bun -e "console.log(require('./package.json').version)")
+            BASE_VERSION=${CURRENT_VERSION%-canary.*}
+            NEW_VERSION="${BASE_VERSION}-canary.${COMMIT_SHA}"
+            bun pm pkg set version="${NEW_VERSION}"
+            bun publish --tag canary --access public
+          fi
+        env:
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Version and publish OneAPI
         run: |
           cd packages/oneapi

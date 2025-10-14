@@ -2,7 +2,7 @@ import {FunctionComponent, h} from 'preact';
 import {useLocation} from 'preact-iso';
 import {useEffect, useState} from 'preact/hooks';
 import {useUser} from '../../../context/UserContext';
-import {SettingsEntry} from '@supergrowthai/types';
+import {SettingsEntry} from '@supergrowthai/next-blog-types';
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 
 interface SettingsEntryWithScope extends SettingsEntry {

@@ -1,5 +1,5 @@
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
-import type {ServerSDK} from '@supergrowthai/types/server';
+import type {ServerSDK} from '@supergrowthai/next-blog-types/server';
 
 // Server-side hooks that run in Node.js
 export default defineServer({

@@ -1,6 +1,6 @@
 import {h} from 'preact';
 import {useUser} from '../../../context/UserContext';
-import {Plugin} from '@supergrowthai/types';
+import {Plugin} from '@supergrowthai/next-blog-types';
 import {usePlugins} from "../../../context/PluginContext.tsx";
 import {useLocation} from "preact-iso";
 import {useEffect} from "preact/hooks";

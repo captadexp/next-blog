@@ -1,4 +1,4 @@
-import {Configuration} from "@supergrowthai/types/server";
+import {Configuration} from "@supergrowthai/next-blog-types/server";
 import {BasicAuthHandler} from "../auth/basic-auth-handler.ts";
 import {wrapPathObject} from "../utils/withExtras.ts";
 import cmsPaths from "../cmsPaths.ts";

@@ -1,1 +1,1 @@
-export * from '@supergrowthai/types';
+export * from '@supergrowthai/next-blog-types';

@@ -1,4 +1,4 @@
-import type {PluginCache} from '@supergrowthai/types/server';
+import type {PluginCache} from '@supergrowthai/next-blog-types/server';
 
 // Simple in-memory cache for server-side plugins
 // TODO: Replace with Redis or proper caching solution for production

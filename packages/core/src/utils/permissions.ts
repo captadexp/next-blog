@@ -1,4 +1,4 @@
-import {EntityType, Permission, PERMISSION_WEIGHTS, PermissionType, User} from '@supergrowthai/types/server';
+import {EntityType, Permission, PERMISSION_WEIGHTS, PermissionType, User} from '@supergrowthai/next-blog-types/server';
 
 /**
  * Calculate the weight of a permission

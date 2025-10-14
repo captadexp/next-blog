@@ -1,5 +1,5 @@
 /**
- * Server-side type exports for @supergrowthai/types/server
+ * Server-side type exports for @supergrowthai/next-blog-types/server
  * Use this for server-side code (Next.js API routes, Node.js plugins)
  */
 

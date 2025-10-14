@@ -1,7 +1,7 @@
 import type {MinimumRequest, SessionData, OneApiFunctionResponse} from "@supergrowthai/oneapi";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
-import type {TagData} from "@supergrowthai/types/server";
+import type {TagData} from "@supergrowthai/next-blog-types/server";
 import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
 
 export const getTags = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {

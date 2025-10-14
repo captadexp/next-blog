@@ -30,10 +30,10 @@ export type {
     PluginManifest,
     ClientPluginModule,
     ServerPluginModule,
-} from '@supergrowthai/types';
+} from '@supergrowthai/next-blog-types';
 
 // Re-export interface for module augmentation
-export type {RPCMethods} from '@supergrowthai/types';
+export type {RPCMethods} from '@supergrowthai/next-blog-types';
 
 // Re-export jsx-runtime for plugins
 export * as jsx from '@supergrowthai/jsx-runtime';

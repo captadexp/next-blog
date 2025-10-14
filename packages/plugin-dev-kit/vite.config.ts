@@ -24,7 +24,7 @@ export default defineConfig({
             external: [
                 // Workspace dependencies
                 '@supergrowthai/jsx-runtime',
-                '@supergrowthai/types',
+                '@supergrowthai/next-blog-types',
 
                 // External libraries
                 '@vitejs/plugin-react',

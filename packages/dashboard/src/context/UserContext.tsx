@@ -1,6 +1,6 @@
 import {createContext, h} from 'preact';
 import {useContext, useEffect, useState} from 'preact/hooks';
-import {EntityType, Permission, PermissionType, UIConfiguration, User} from '@supergrowthai/types';
+import {EntityType, Permission, PermissionType, UIConfiguration, User} from '@supergrowthai/next-blog-types';
 import ApiClientImpl from '../api/client';
 import {useMemo} from "react";
 

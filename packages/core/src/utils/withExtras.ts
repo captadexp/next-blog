@@ -1,5 +1,5 @@
-import type {Configuration, ServerHooks} from "@supergrowthai/types/server";
-import type {ServerSDK} from "@supergrowthai/types";
+import type {Configuration, ServerHooks} from "@supergrowthai/next-blog-types/server";
+import type {ServerSDK} from "@supergrowthai/next-blog-types";
 import type {MinimumRequest, OneApiFunction, PathObject, SessionData} from "@supergrowthai/oneapi";
 import type {ApiExtra} from "../types/api.js";
 import pluginExecutor from "../plugins/plugin-executor.server.js";

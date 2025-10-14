@@ -1,6 +1,6 @@
 import {h} from 'preact';
 import {useEffect, useRef, useState} from 'preact/hooks';
-import {ImageSelectRequest, IntentRequest, IntentResponse, Media} from '@supergrowthai/types';
+import {ImageSelectRequest, IntentRequest, IntentResponse, Media} from '@supergrowthai/next-blog-types';
 import {useUser} from '../../context/UserContext';
 import toast from 'react-hot-toast';
 

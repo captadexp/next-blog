@@ -1,4 +1,4 @@
-import type {ClientPluginModule, ClientSDK, PluginManifest, ServerPluginModule, ServerSDK} from '@supergrowthai/types';
+import type {ClientPluginModule, ClientSDK, PluginManifest, ServerPluginModule, ServerSDK} from '@supergrowthai/next-blog-types';
 
 // Import build-time placeholder types
 /// <reference path="./build-env.d.ts" />

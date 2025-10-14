@@ -1,4 +1,4 @@
-import type {PluginSettings} from '@supergrowthai/types/client';
+import type {PluginSettings} from '@supergrowthai/next-blog-types/client';
 
 /**
  * Client-side settings helper for plugins using localStorage

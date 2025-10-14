@@ -1,4 +1,4 @@
-import type {StorageAdapter} from '@supergrowthai/types/server';
+import type {StorageAdapter} from '@supergrowthai/next-blog-types/server';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import {createHash} from 'crypto';

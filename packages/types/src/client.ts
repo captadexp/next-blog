@@ -1,5 +1,5 @@
 /**
- * Client-side type exports for @supergrowthai/types/client
+ * Client-side type exports for @supergrowthai/next-blog-types/client
  * Use this for browser code (React components, client-side plugins)
  */
 
