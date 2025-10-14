@@ -99,6 +99,15 @@ export async function handleStaticFileRequest(session: SessionData, request: Min
             console.warn("- staticDir:", staticDir);
             console.warn("- staticDir exists:", fs.existsSync(staticDir));
 
+            if (fs.existsSync(__dirname)) {
+                try {
+                    const __dirnameFiles = fs.readdirSync(__dirname, {withFileTypes: true});
+                    console.warn("- staticDir contents:", __dirnameFiles.map(f => `${f.name}${f.isDirectory() ? '/' : ''}`));
+                } catch (err) {
+                    console.warn("- Error reading staticDir:", err);
+                }
+            }
+
             if (fs.existsSync(staticDir)) {
                 try {
                     const staticFiles = fs.readdirSync(staticDir, {withFileTypes: true});
