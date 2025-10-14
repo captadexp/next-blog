@@ -35,7 +35,7 @@
     },
     "packages/core": {
       "name": "@supergrowthai/next-blog",
-      "version": "2.0.0",
+      "version": "2.0.1-beta.0",
       "dependencies": {
         "moment": "^2.30.1",
       },
@@ -111,7 +111,7 @@
     },
     "packages/oneapi": {
       "name": "@supergrowthai/oneapi",
-      "version": "2.0.0",
+      "version": "2.0.1-beta.0",
       "dependencies": {
         "iron-session": "^8.0.4",
       },
@@ -171,7 +171,7 @@
     },
     "packages/types": {
       "name": "@supergrowthai/next-blog-types",
-      "version": "1.0.0",
+      "version": "1.0.1-beta.0",
       "devDependencies": {
         "@types/node": "^24.5.2",
         "typescript": "^5.9.2",
@@ -181,7 +181,7 @@
     },
     "packages/ui": {
       "name": "@supergrowthai/next-blog-ui",
-      "version": "1.0.0",
+      "version": "1.0.1-beta.0",
       "devDependencies": {
         "@supergrowthai/next-blog": "workspace:*",
         "@supergrowthai/plugin-dev-kit": "workspace:*",
