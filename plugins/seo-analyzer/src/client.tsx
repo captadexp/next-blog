@@ -2,6 +2,7 @@ import {defineClient} from "@supergrowthai/plugin-dev-kit";
 import {useCallback, useEffect, useState} from "@supergrowthai/plugin-dev-kit/client";
 import {extractTextFromContent, getWordCount} from "@supergrowthai/plugin-dev-kit/content";
 import "./styles.css"
+import {BlogEditorContext, ClientHookFunction} from "@supergrowthai/next-blog-types";
 
 interface AnalysisResult {
     label: string;
@@ -91,7 +92,7 @@ function calculateKeywordDensity(text: string, keyword: string, wordCount: numbe
 }
 
 // Main widget function using React hooks
-function editorSidebarWidget(sdk: any, prev: any, context: any) {
+const editorSidebarWidget: ClientHookFunction = (sdk, prev, context: BlogEditorContext) => {
     const [isLoading, setIsLoading] = useState(true);
     const [isTyping, setIsTyping] = useState(false);
     const [focusKeyword, setFocusKeyword] = useState('');
@@ -386,7 +387,7 @@ function editorSidebarWidget(sdk: any, prev: any, context: any) {
             </div>
         </div>
     );
-}
+};
 
 export default defineClient({
     hooks: {
