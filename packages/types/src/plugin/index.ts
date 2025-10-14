@@ -8,15 +8,18 @@ export * from './client';
 export * from './server';
 export * from './common';
 export type {
-    MethodDefinition,
     ServerHookFunction,
     ClientHookFunction,
+
     ServerRPCFunction,
     ClientRPCFunction,
+
     CallServerHookFunction,
     CallClientHookFunction,
+
     CallServerRPCFunction,
     CallClientRPCFunction,
+
     ServerRPCsDefinition,
     ClientRPCsDefinition
 } from './types';

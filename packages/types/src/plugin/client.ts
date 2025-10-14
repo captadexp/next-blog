@@ -10,17 +10,11 @@ export interface ClientPluginModule {
 
 // Generic context type with common properties
 export interface ClientHookContext<T = any> {
-    zone?: string;
-    page?: string;
-    entity?: string;
     data?: T;
-    actions?: Record<string, Function>;
 }
 
 // Specific context for blog editor pages
 export interface BlogEditorContext extends ClientHookContext<Blog> {
-    page: 'blogs';
-    entity: 'blog';
     data: Blog;
     blogId: string;
     contentOwnerId?: string;
@@ -29,6 +23,7 @@ export interface BlogEditorContext extends ClientHookContext<Blog> {
         getContent: () => string;
     };
     on: (event: string, callback: Function) => void;
+    off: (event: string, callback: Function) => void;
 }
 
 // Context for list views

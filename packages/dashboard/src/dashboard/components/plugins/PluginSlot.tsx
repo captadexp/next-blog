@@ -7,6 +7,7 @@ import {createRenderer} from "@supergrowthai/jsx-runtime/preact";
 import {createClientSDK} from "../../../sdk/sdk-factory.client";
 import {UIHookFn} from "@supergrowthai/next-blog-types";
 import {ClientSDK} from "@supergrowthai/next-blog-types/client";
+import {memo} from "preact/compat";
 
 // Create the renderer once with Preact's h, Fragment, and hooks
 const hooks = {
@@ -23,24 +24,46 @@ const render = createRenderer(h, Fragment, hooks);
 
 const logger = new Logger('PluginSystem', LogLevel.INFO);
 
+const ProxyComponent = memo(({refreshKey, hookFn, context, pluginId, sdk}: {
+    refreshKey: number,
+    hookFn: any,
+    pluginId: string,
+    sdk: ClientSDK,
+    context?: Record<string, any>
+}) => {
+
+    let renderedContent: any = null;
+    try {
+        renderedContent = hookFn(sdk, null, context);
+    } catch (e: any) {
+        logger.error(`Hook execution failed for plugin "${pluginId}":`, e?.message?.toString());
+    }
+
+    try {
+        logger.debug(`Rendering plugin "${pluginId}"`);
+        return render(renderedContent, {sdk, context, pluginId});
+    } catch (e: any) {
+        logger.error(`Rendering plugin "${pluginId}" failed:`, e?.message?.toString());
+        return null;
+    }
+});
 
 /**
  * A single, stateful host for one plugin's UI. It manages the refresh
  * cycle and renders the UI Tree provided by the plugin.
  */
-function PluginHost({pluginId, hookFn, context, callHook, callRPC}: {
+const PluginHost = memo(({hookName, pluginId, hookFn, context, callHook, callRPC}: {
+    hookName: string,
     pluginId: string,
     hookFn: UIHookFn,
     context?: Record<string, any>,
     callHook<T, R>(id: string, payload: T): Promise<R>
     callRPC<T, R>(id: string, payload: T): Promise<R>
-}) {
-    // This host's state is just a number to trigger re-renders when a plugin calls refresh().
+}) => {
     const [refreshKey, setRefreshKey] = useState(0);
     const {apis, user} = useUser();
     logger.debug(`Creating PluginHost for plugin "${pluginId}" with refreshKey: ${refreshKey}`);
 
-    // Create plugin-specific SDK using the factory
     const sdk: ClientSDK = useMemo(() => {
         const {utils} = window.PluginRuntime;
 
@@ -59,35 +82,28 @@ function PluginHost({pluginId, hookFn, context, callHook, callRPC}: {
         );
     }, [apis, user, pluginId, callHook, callRPC]);
 
+    return (
+        <ProxyComponent
+            refreshKey={refreshKey}
+            context={context}
+            hookFn={hookFn}
+            pluginId={pluginId}
+            sdk={sdk}
+        />
+    );
+}, (prevProps, nextProps) => {
 
-    let uiTree: any = null;
-    try {
-        logger.debug(`Executing hook for plugin "${pluginId}"`);
-        uiTree = hookFn(sdk, null, context);
-    } catch (e: any) {
-        logger.error(`Executing hook for plugin "${pluginId}" Failed:`, e?.message?.toString());
-    }
-
-    if (!uiTree) {
-        logger.debug(`Plugin "${pluginId}" returned null`);
-        return null;
-    }
-
-    // Render using jsx-runtime
-    try {
-        return render(uiTree, {sdk, context, pluginId});
-    } catch (err) {
-        logger.error(`Failed to render plugin "${pluginId}":`, err);
-        return null;
-    }
-}
+    return (
+        prevProps.hookName === nextProps.hookName &&
+        prevProps.pluginId === nextProps.pluginId &&
+        prevProps.hookFn === nextProps.hookFn &&
+        prevProps.callHook === nextProps.callHook &&
+        prevProps.callRPC === nextProps.callRPC
+    );
+});
 
 interface PluginSlotProps {
-    hookName?: string;
-    page?: string;
-    position?: string;
-    entity?: string;
-    section?: string;
+    hookName: string;
     context?: Record<string, any>;
     pluginFilter?: string;
 }
@@ -102,28 +118,11 @@ interface PluginSlotProps {
  * - <PluginSlot entity="blog" position="sidebar" />
  */
 export const PluginSlot: FunctionComponent<PluginSlotProps> = (props) => {
-    const {hookName: providedHookName, page, position, entity, section, context, pluginFilter} = props;
+    const {hookName: hookName, context, pluginFilter} = props;
     const {getHookFunctions, status, callHook, callRPC} = usePlugins();
 
-    // Generate hook name from pattern if not provided directly
-    const hookName = useMemo(() => {
-        if (providedHookName) return providedHookName;
-
-        // Build dynamic hook name from parts
-        const parts: string[] = [];
-        if (page) {
-            parts.push('dashboard', page);
-        } else if (entity) {
-            parts.push('editor', entity);
-        }
-        if (section) parts.push(section);
-        if (position) parts.push(position);
-
-        return parts.join('-');
-    }, [providedHookName, page, position, entity, section]);
-
     if (status !== 'ready') {
-        return null; // Or a loading indicator
+        return null;
     }
 
     let hookFunctions = getHookFunctions(hookName);
@@ -137,27 +136,17 @@ export const PluginSlot: FunctionComponent<PluginSlotProps> = (props) => {
         return null;
     }
 
-    // Enhanced context with hook metadata
-    const enhancedContext = {
-        ...context,
-        hookName,
-        page,
-        position,
-        entity,
-        section
-    };
-
     return (
         <Fragment>
             {hookFunctions.map(({pluginId, hookFn, manifestId}) => (
                 <div key={pluginId} className={`plugin-${manifestId}`}>
-                    {PluginHost({
+                    <PluginHost {...{
                         pluginId,
                         hookFn,
                         callHook: (name, payload) => callHook(pluginId, name, payload),
                         callRPC: (name, payload) => callRPC(pluginId, name, payload),
-                        context: enhancedContext
-                    })}
+                        hookName
+                    }} context={context}/>
                 </div>
             ))}
         </Fragment>

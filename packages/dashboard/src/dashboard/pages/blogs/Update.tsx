@@ -5,6 +5,7 @@ import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynam
 import {useUser} from "../../../context/UserContext.tsx";
 import {Blog, Category, Tag} from "@supergrowthai/next-blog-types";
 import {ExtensionPoint, ExtensionZone} from "../../components/ExtensionZone";
+import {BlogEditorContext} from "@supergrowthai/types";
 
 const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
     const location = useLocation();
@@ -29,6 +30,15 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                     listeners[event] = [];
                 }
                 listeners[event].push(callback);
+
+                return () => {
+                    this.off(event, callback)
+                }
+            },
+            off(event: string, callback: Function) {
+                if (listeners[event]) {
+                    listeners[event] = listeners[event].filter(c => c !== callback);
+                }
             },
             emit(event: string, data?: any) {
                 if (listeners[event]) {
@@ -66,23 +76,20 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
     }, [id, apis]);
 
     // --- PLUGIN CONTEXT ---
-    const pluginContext = useMemo(() => {
-        if (!formData || !blog) return {};
+    const pluginContext = useMemo<BlogEditorContext | undefined>(() => {
+        if (!formData || !blog) return undefined;
         return {
-            zone: 'editor-sidebar-widget',
-            page: 'blogs',
-            entity: 'blog',
             data: blog,
-            actions: undefined,
             blogId: id,
             contentOwnerId: blog?.userId,
             editor: {
                 getTitle: () => formData.title || '',
                 getContent: () => formData.content || '',
             },
-            on: editorEventBus.on
+            on: editorEventBus.on,
+            off: editorEventBus.off
         };
-    }, [id, blog, formData, editorEventBus.on, tempRefresher]);
+    }, [id, blog, formData, editorEventBus, tempRefresher]);
 
     const handleFieldChange = (key: string, value: any) => {
         setFormData(currentFormData => {
@@ -160,7 +167,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
         }
     };
 
-    const getFormFields = (): DynamicFormFieldType[] => {
+    const getFormFields = useMemo((): DynamicFormFieldType[] => {
         if (!formData) return [];
         return [
             {key: 'title', label: 'Title', type: 'text', value: formData.title, required: true},
@@ -201,7 +208,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                 onAdd: addNewTag
             },
         ];
-    };
+    }, [formData, categories, tags, apis, editorRef.current]);
 
     useEffect(() => {
         if (!!editorRef.current) return
@@ -231,7 +238,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                                         submitLabel="Update Blog"
                                         postTo={`/api/next-blog/api/blog/${blog._id}/update`}
                                         redirectTo={"/api/next-blog/dashboard/blogs"}
-                                        fields={getFormFields()}
+                                        fields={getFormFields}
                                         onFieldChange={handleFieldChange}
                                     />
                                 </div>

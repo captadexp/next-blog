@@ -162,6 +162,10 @@ function debugDirectoryStructure(
     sanitizedPath: string,
     __dirname: string
 ) {
+
+    if (!process.env.DEBUG_MISSING_FILE)
+        return;
+
     console.warn("Debug - Path construction:");
     console.warn("- import.meta.url:", import.meta.url);
     console.warn("- __dirname:", __dirname);

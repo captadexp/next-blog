@@ -16,7 +16,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const editorInstanceRef = useRef<any>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const {key, value, disabled, label} = field;
+    const {key, value, disabled, label, ref} = field;
 
     useEffect(() => {
         let mounted = true;
@@ -132,6 +132,10 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                 });
 
                 editorInstanceRef.current = editor;
+
+                if (ref)
+                    ref.current = editor;
+
             } catch (error) {
                 console.error('Failed to initialize editor:', error);
                 setIsLoading(false);

@@ -23,11 +23,6 @@ export interface RPCDefinition {
 }
 
 /**
- * Generic method definition (for backward compatibility)
- */
-export type MethodDefinition = HookDefinition | RPCDefinition;
-
-/**
  * Server hook function signature
  */
 export type ServerHookFunction<T extends HookDefinition> = (
@@ -41,7 +36,7 @@ export type ServerHookFunction<T extends HookDefinition> = (
 export type ClientHookFunction<T extends HookDefinition = HookDefinition> = (
     sdk: ClientSDK,
     prev?: T['response'],
-    context?: Record<string, any>
+    context?: T["payload"]
 ) => any | null;
 
 /**

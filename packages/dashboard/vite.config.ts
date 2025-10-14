@@ -37,7 +37,7 @@ export default defineConfig({
         dts({
             outDir: "dist",
             include: ['src'],
-            rollupTypes: true
+            rollupTypes: false
         }),
         viteStaticCopy({
             targets: [

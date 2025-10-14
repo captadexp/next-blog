@@ -288,7 +288,7 @@ export class PluginExecutor {
         this.logger.time(`Loading plugin: ${plugin.name}`);
         this.logger.info(`Loading plugin: ${plugin.name}`);
         try {
-            if (!plugin.server) throw new Error("Missing server module URL");
+            if (!plugin.server) return
             let module: ServerPluginModule;
             const url = plugin.server.url;
 

@@ -33,7 +33,7 @@ export default defineConfig({
             outDir: 'dist',
             include: ['src'],
             exclude: ['src/global.d.ts'],
-            rollupTypes: true,
+            rollupTypes: false,
             afterBuild: () => {
                 // Copy global.d.ts
                 const globalSrcPath = path.resolve(__dirname, 'src/global.d.ts');
