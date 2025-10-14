@@ -1,7 +1,3 @@
-import nextBlog from "./next.js";
+export type * from "@supergrowthai/types";
 
-export * from "./adapters/index.js"
-export {default as adapters} from "./adapters/index.js"
-export * from "./seo-generators.js"
-
-export default nextBlog
+export default {}

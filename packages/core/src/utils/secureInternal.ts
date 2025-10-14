@@ -1,4 +1,4 @@
-import type {MinimumRequest, OneApiFunction, SessionData} from "@supergrowthai/oneapi/types";
+import type {MinimumRequest, OneApiFunction, SessionData} from "@supergrowthai/oneapi";
 import type {Permission} from "@supergrowthai/types/server";
 import {hasAllPermissions, hasAnyPermission, hasPermission} from "./permissions.js";
 

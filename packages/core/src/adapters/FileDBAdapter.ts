@@ -29,7 +29,9 @@ import {
 import {v4 as uuidv4} from 'uuid';
 import sift from 'sift';
 
-export default class FileDBAdapter implements DatabaseAdapter {
+export type * from "@supergrowthai/types";
+
+export class FileDBAdapter implements DatabaseAdapter {
 
     constructor(public dataPath: string) {
         this.ensureFilesExist();
@@ -810,3 +812,5 @@ export default class FileDBAdapter implements DatabaseAdapter {
         }));
     }
 }
+
+export default {}

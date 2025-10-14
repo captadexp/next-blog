@@ -1,4 +1,4 @@
-import type {MinimumRequest, OneApiFunctionResponse, SessionData} from "@supergrowthai/oneapi/types";
+import type {MinimumRequest, OneApiFunctionResponse, SessionData} from "@supergrowthai/oneapi";
 import type {ApiExtra} from "../types/api.js";
 import {XMLBuilder} from "fast-xml-parser";
 

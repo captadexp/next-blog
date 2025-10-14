@@ -30,48 +30,27 @@
   "exports": {
     "./adapters": {
       "types": "./dist/adapters/index.d.ts",
-      "import": {
-        "types": "./dist/adapters/index.d.ts",
-        "default": "./dist/adapters/index.js"
-      },
-      "require": {
-        "types": "./dist/adapters/index.d.ts",
-        "default": "./dist/adapters/index.js"
-      },
+      "import": "./dist/adapters/index.js",
       "default": "./dist/adapters/index.js"
+    },
+    "./next": {
+      "types": "./dist/nextjs/index.d.ts",
+      "import": "./dist/nextjs/index.js",
+      "default": "./dist/nextjs/index.js"
     },
     ".": {
       "types": "./dist/index.d.ts",
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
-      "require": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      },
+      "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
-    "./package.json": "./package.json",
-    "./types": {
-      "types": "./dist/types/index.d.ts",
-      "import": {
-        "types": "./dist/types/index.d.ts",
-        "default": "./dist/types/index.js"
-      },
-      "require": {
-        "types": "./dist/types/index.d.ts",
-        "default": "./dist/types/index.js"
-      },
-      "default": "./dist/types/index.js"
-    }
+    "./package.json": "./package.json"
   },
   "publishConfig": {
     "access": "public"
   },
   "module": "./dist/index.js",
   "author": "Capt ADExp <tech@developer.toys>",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "moment": "^2.30.1"
   },

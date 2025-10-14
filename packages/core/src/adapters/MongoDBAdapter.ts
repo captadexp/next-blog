@@ -29,6 +29,8 @@ import {
 } from "@supergrowthai/types/server";
 import {Collection, Db, MongoClient, ObjectId} from "mongodb"
 
+export type * from "@supergrowthai/types";
+
 export function oid(obj: ObjectId | string) {
     if (obj instanceof ObjectId) {
         return obj as ObjectId;
@@ -405,7 +407,7 @@ class MediaTransformer implements DbEntityTransformer<Media, MediaData> {
     }
 }
 
-export default class MongoDBAdapter implements DatabaseAdapter {
+export class MongoDBAdapter implements DatabaseAdapter {
     private db: Db;
     private readonly blogTransformer: BlogTransformer;
     private readonly categoryTransformer: CategoryTransformer;
@@ -708,3 +710,5 @@ export default class MongoDBAdapter implements DatabaseAdapter {
         };
     }
 }
+
+export default {}

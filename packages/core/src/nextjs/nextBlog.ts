@@ -1,10 +1,10 @@
+import {Configuration} from "@supergrowthai/types/server";
+import {BasicAuthHandler} from "../auth/basic-auth-handler.ts";
+import {wrapPathObject} from "../utils/withExtras.ts";
+import cmsPaths from "../cmsPaths.ts";
 import {createNextJSRouter} from "@supergrowthai/oneapi/nextjs";
-import type {Configuration} from "@supergrowthai/types/server";
-import {BasicAuthHandler} from "./auth/basic-auth-handler.js";
-import cmsPaths from "./cmsPaths.js";
-import {initializeSystem} from "./utils/defaultSettings.js";
-import pluginExecutor from "./plugins/plugin-executor.server.js";
-import {wrapPathObject} from "./utils/withExtras.js";
+import pluginExecutor from "../plugins/plugin-executor.server.ts";
+import {initializeSystem} from "../utils/defaultSettings.ts";
 
 /**
  * Main CMS function that creates the API route handlers
@@ -40,4 +40,4 @@ const nextBlog = function (configuration: Configuration) {
     return router.handlers();
 };
 
-export default nextBlog;
+export {nextBlog};

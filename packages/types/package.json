@@ -2,6 +2,8 @@
   "name": "@supergrowthai/types",
   "version": "1.0.0",
   "description": "Shared TypeScript types for SupergrowthAI Next Blog platform",
+  "repository": "https://github.com/captadexp/next-blog",
+  "homepage": "https://github.com/captadexp/next-blog/tree/main#readme",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -81,7 +83,7 @@
   "scripts": {
     "clean": "rm -rf dist",
     "dev": "vite build --watch",
-    "build": "vite build && tsc --emitDeclarationOnly --declaration --declarationMap",
+    "build": "vite build",
     "typecheck": "tsc --noEmit"
   },
   "files": [
@@ -93,6 +95,8 @@
     "vite": "^7.1.5",
     "vite-plugin-dts": "^4.5.4"
   },
+  "author": "Capt ADExp <tech@developer.toys>",
+  "license": "MIT",
   "publishConfig": {
     "access": "public"
   }

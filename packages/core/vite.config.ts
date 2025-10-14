@@ -53,9 +53,9 @@ export default defineConfig(({mode}) => {
             ...filesToIgnoreInWatch,
             lib: {
                 entry: {
-                    index: path.resolve(__dirname, 'src/index.ts'),
+                    'index': path.resolve(__dirname, 'src/index.ts'),
                     'adapters/index': path.resolve(__dirname, 'src/adapters/index.ts'),
-                    'types/index': path.resolve(__dirname, 'src/types/index.ts'),
+                    'nextjs/index': path.resolve(__dirname, 'src/nextjs/index.ts'),
                 },
                 fileName: (format, entryName) => `${entryName}.js`,
                 formats: ["es"],
@@ -66,7 +66,12 @@ export default defineConfig(({mode}) => {
                     'next',
                     'next/server',
                     'mongodb',
+                    'sift',
                     'uuid',
+                    "fast-xml-parser",
+                    "@aws-sdk/client-s3",
+                    "@aws-sdk/lib-storage",
+                    "@xmldom/xmldom",
 
                     // Node.js builtin modules
                     'fs',
@@ -98,13 +103,10 @@ export default defineConfig(({mode}) => {
             versionPlugin(),
             tailwindcss(),
             dts({
-                outDir: 'dist',
-                include: ['src'],
-                exclude: ['node_modules', 'src/**/*.test.ts', 'src/**/*.spec.ts'],
-                rollupTypes: false,
-                copyDtsFiles: true,
-                insertTypesEntry: true,
-                declarationOnly: false,
+                outDir: "dist",
+                include: ["src"],
+                bundledPackages: ["@supergrowthai/types", "@supergrowthai/next-blog-dashboard"],
+                rollupTypes: true
             }),
             viteStaticCopy({
                 targets: [

@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "UI components for next-blog",
   "repository": "https://github.com/captadexp/next-blog",
+  "homepage": "https://github.com/captadexp/next-blog/tree/main#readme",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -34,7 +35,7 @@
     "access": "public"
   },
   "author": "Capt ADExp <tech@developer.toys>",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
   },
   "peerDependencies": {
