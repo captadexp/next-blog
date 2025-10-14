@@ -12,5 +12,3 @@ export * from './api';
 
 // Export client plugin types
 export * from './plugin/client';
-export * from './plugin/manifest';
-export * from './plugin/common';

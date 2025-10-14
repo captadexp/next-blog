@@ -8,15 +8,6 @@ export * from './database/entities';
 // Re-export type-safe hydration utilities
 export * from './type-base-hydration';
 
-// Re-export base SDK types - used by both
-export type {
-    BaseSDK,
-    PluginSettings,
-    PluginCache,
-    PluginEvents,
-    Logger
-} from './sdk/base';
-
 // Re-export configuration - may be used by both
 export * from './configuration';
 

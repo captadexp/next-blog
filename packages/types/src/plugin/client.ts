@@ -1,6 +1,8 @@
-import type {RPCMethods} from './common';
+import {RPCMethods} from "./common";
 import type {ClientHooksDefinition, ClientRPCsDefinition} from './types';
 import type {Blog, Category, Tag, User} from '../database/entities';
+
+export type * from './common';
 
 export interface ClientPluginModule {
     hasSettingsPanel?: boolean;

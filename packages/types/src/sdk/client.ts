@@ -2,11 +2,12 @@
  * Client-side SDK interface for browser plugins
  */
 
-import type {BaseSDK, Logger, PluginCache, PluginEvents} from './base';
+import type {BaseSDK, Logger, PluginCache, PluginEvents, SystemInfo} from './base';
 import type {User} from '../database/entities';
-import type {CallClientHookFunction, CallClientRPCFunction, ClientHooks, RPCMethods} from '../plugin';
+import type {CallClientHookFunction, CallClientRPCFunction, ClientHooks, RPCMethods} from '../plugin/client';
 import type {APIClient} from '../api';
-import {SystemInfo} from "./server";
+
+export type * from "./base"
 
 // Storage interface for client-side persistence
 export interface Storage {
@@ -62,10 +63,3 @@ export interface ClientSDK extends BaseSDK {
 
     system: SystemInfo;
 }
-
-// UI Hook function signature
-export type UIHookFn = (
-    sdk: ClientSDK,
-    prev?: any,
-    context?: Record<string, any>
-) => any | null;

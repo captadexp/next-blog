@@ -15,6 +15,8 @@ import type {
 } from '../seo';
 import {ContentObject} from "../htmlToJson/custom-types";
 
+export type * from "./common"
+
 /**
  * Server-side plugin module
  * This is what's exported from the plugin's server.ts
@@ -268,3 +270,4 @@ export interface SystemUpdatePayload {
     toVersion: string;
     timestamp: number;
 }
+

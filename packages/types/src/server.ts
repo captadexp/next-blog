@@ -13,4 +13,5 @@ export * from './database/adapter';
 // Export server plugin types
 export * from './plugin/server';
 export * from './plugin/manifest';
-export * from './plugin/common';
+
+export * from "./seo"

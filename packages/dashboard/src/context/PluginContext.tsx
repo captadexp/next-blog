@@ -1,18 +1,38 @@
 import {createContext, FunctionComponent, h} from 'preact';
 import {useCallback, useContext, useEffect, useMemo, useState} from 'preact/hooks';
 import {useUser} from "./UserContext.tsx";
-import {matchesHookPattern, Plugin, UIHookFn} from '@supergrowthai/next-blog-types';
+import {ClientHookFunction, Plugin} from '@supergrowthai/next-blog-types';
 import {pluginCache} from "../utils/pluginCache.ts";
 import Logger, {LogLevel} from "../utils/Logger.ts";
 import {ClientPluginModule} from "@supergrowthai/next-blog-types/client";
 
 const logger = new Logger('PluginSystem', LogLevel.INFO);
 
+/**
+ * Matches hook names against patterns
+ * @param hookName The actual hook name
+ * @param pattern The pattern to match against (can include * wildcards)
+ * @returns true if the hook name matches the pattern
+ */
+function matchesHookPattern(hookName: string, pattern: string): boolean {
+    // Direct match
+    if (hookName === pattern) return true;
+
+    // Convert pattern to regex (e.g., "dashboard-*-header" -> /^dashboard-[^-]+-header$/)
+    const regexPattern = pattern
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escape special regex chars
+        .replace(/\\\*/g, '[^-]+') // Replace * with non-dash matcher
+        .replace(/{([^}]+)}/g, '([^-]+)'); // Replace {var} with capture group
+
+    const regex = new RegExp(`^${regexPattern}$`);
+    return regex.test(hookName);
+}
+
 interface PluginContextType {
     status: 'idle' | 'initializing' | 'ready' | 'error';
     plugins: Plugin[];
     loadedPlugins: Map<string, ClientPluginModule>;
-    getHookFunctions: (hookName: string) => { pluginId: string, hookFn: UIHookFn, manifestId: string }[];
+    getHookFunctions: (hookName: string) => { pluginId: string, hookFn: ClientHookFunction, manifestId: string }[];
     callHook: <T, R>(pluginId: string, hookName: string, payload: T) => Promise<R>;
     callRPC: <T, R>(pluginId: string, hookName: string, payload: T) => Promise<R>;
     reloadPlugins: () => Promise<void>;
@@ -20,8 +40,8 @@ interface PluginContextType {
 }
 
 interface HookIndex {
-    exact: Map<string, Array<{ pluginId: string, hookFn: UIHookFn }>>;
-    patterns: Map<string, Array<{ pattern: string, pluginId: string, hookFn: UIHookFn }>>;
+    exact: Map<string, Array<{ pluginId: string, hookFn: ClientHookFunction }>>;
+    patterns: Map<string, Array<{ pattern: string, pluginId: string, hookFn: ClientHookFunction }>>;
 }
 
 const PluginContext = createContext<PluginContextType | undefined>(undefined);
@@ -119,7 +139,7 @@ export const PluginProvider: FunctionComponent = ({children}) => {
                         index.patterns.get(hookName)!.push({
                             pattern: hookName,
                             pluginId,
-                            hookFn: fn as UIHookFn
+                            hookFn: fn as ClientHookFunction
                         });
                     } else {
                         // Exact match hook
@@ -128,7 +148,7 @@ export const PluginProvider: FunctionComponent = ({children}) => {
                         }
                         index.exact.get(hookName)!.push({
                             pluginId,
-                            hookFn: fn as UIHookFn
+                            hookFn: fn as ClientHookFunction
                         });
                     }
                 });
@@ -173,12 +193,12 @@ export const PluginProvider: FunctionComponent = ({children}) => {
 
     const getHookFunctions = useCallback((hookName: string): {
         pluginId: string,
-        hookFn: UIHookFn,
+        hookFn: ClientHookFunction,
         manifestId: string
     }[] => {
         logger.debug(`getHookFunctions called for hook: "${hookName}"`);
 
-        const functions: { pluginId: string, hookFn: UIHookFn, manifestId: string }[] = [];
+        const functions: { pluginId: string, hookFn: ClientHookFunction, manifestId: string }[] = [];
         const seenPlugins = new Set<string>(); // Avoid duplicate plugins
 
         // O(1) exact match lookup

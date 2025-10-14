@@ -1,6 +1,8 @@
-import type {BaseSDK, Logger, PluginCache, PluginEvents} from './base';
+import type {BaseSDK, Logger, PluginCache, PluginEvents, SystemInfo} from './base';
 import type {DatabaseAdapter} from '../database/adapter';
-import type {CallServerHookFunction, CallServerRPCFunction, RPCMethods, ServerHooks} from '../plugin';
+import type {CallServerHookFunction, CallServerRPCFunction, RPCMethods, ServerHooks} from '../plugin/server';
+
+export type * from "./base"
 
 export interface ServerConfig {
     environment?: 'development' | 'staging' | 'production';
@@ -10,12 +12,6 @@ export interface ServerConfig {
         caching?: boolean;
         logging?: boolean;
     };
-}
-
-export interface SystemInfo {
-    version: string;
-    buildTime: string;
-    buildMode: string;
 }
 
 export interface ServerSDK extends BaseSDK {

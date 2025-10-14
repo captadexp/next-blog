@@ -1,13 +1,4 @@
-// Client-side SDK for browser plugins
-export {
-    type ClientSDK,
-    type APIClient,
-    type Storage,
-    type ClientPluginModule,
-    type User,
-    type APIResponse,
-    type NotificationStatus
-} from '@supergrowthai/next-blog-types';
+export type * from "@supergrowthai/next-blog-types/client"
 
 export {createMockClientSDK} from './mock-sdk';
 export {testClientPlugin} from './test-harness';

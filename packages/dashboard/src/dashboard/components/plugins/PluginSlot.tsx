@@ -5,9 +5,9 @@ import {useUser} from "../../../context/UserContext.tsx";
 import Logger, {LogLevel} from "../../../utils/Logger.ts";
 import {createRenderer} from "@supergrowthai/jsx-runtime/preact";
 import {createClientSDK} from "../../../sdk/sdk-factory.client";
-import {UIHookFn} from "@supergrowthai/next-blog-types";
 import {ClientSDK} from "@supergrowthai/next-blog-types/client";
 import {memo} from "preact/compat";
+import {ClientHookFunction} from "@supergrowthai/next-blog-types";
 
 // Create the renderer once with Preact's h, Fragment, and hooks
 const hooks = {
@@ -55,7 +55,7 @@ const ProxyComponent = memo(({refreshKey, hookFn, context, pluginId, sdk}: {
 const PluginHost = memo(({hookName, pluginId, hookFn, context, callHook, callRPC}: {
     hookName: string,
     pluginId: string,
-    hookFn: UIHookFn,
+    hookFn: ClientHookFunction,
     context?: Record<string, any>,
     callHook<T, R>(id: string, payload: T): Promise<R>
     callRPC<T, R>(id: string, payload: T): Promise<R>
