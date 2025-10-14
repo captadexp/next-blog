@@ -112,7 +112,7 @@ export default defineConfig(({mode}) => {
                 targets: [
                     {
                         src: path.resolve(__dirname, './../dashboard/dist/static/'),
-                        dest: 'assets/@supergrowthai/next-blog-dashboard',
+                        dest: 'nextjs/assets/@supergrowthai/next-blog-dashboard',
                     }
                 ],
             }),
