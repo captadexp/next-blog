@@ -81,13 +81,14 @@ export async function handleStaticFileRequest(session: SessionData, request: Min
 
         const __dirname = path.dirname(fileURLToPath(import.meta.url));
         // Path to this package
-        const pkgPath = path.join(__dirname, 'assets', '@supergrowthai', 'next-blog-dashboard');
+        const pkgPath = path.join(__dirname, "..", 'assets', '@supergrowthai', 'next-blog-dashboard');
 
         // Full path to the static file
         const fullPath = path.join(pkgPath, 'static', sanitizedPath);
 
         // Check if the file exists
         if (!fs.existsSync(fullPath)) {
+            console.warn("File not found", fullPath)
             return {
                 code: 404,
                 message: `File not found: ${sanitizedPath}`
