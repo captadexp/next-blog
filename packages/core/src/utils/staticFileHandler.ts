@@ -88,7 +88,38 @@ export async function handleStaticFileRequest(session: SessionData, request: Min
 
         // Check if the file exists
         if (!fs.existsSync(fullPath)) {
-            console.warn("File not found", fullPath)
+            console.warn("File not found", fullPath);
+
+            // Debug: Check what exists in the directory structure
+            console.warn("Debug - Directory structure analysis:");
+            console.warn("- pkgPath:", pkgPath);
+            console.warn("- pkgPath exists:", fs.existsSync(pkgPath));
+
+            const staticDir = path.join(pkgPath, 'static');
+            console.warn("- staticDir:", staticDir);
+            console.warn("- staticDir exists:", fs.existsSync(staticDir));
+
+            if (fs.existsSync(staticDir)) {
+                try {
+                    const staticFiles = fs.readdirSync(staticDir, {withFileTypes: true});
+                    console.warn("- staticDir contents:", staticFiles.map(f => `${f.name}${f.isDirectory() ? '/' : ''}`));
+                } catch (err) {
+                    console.warn("- Error reading staticDir:", err);
+                }
+            }
+
+            // Check parent directory of requested file
+            const requestedDir = path.dirname(fullPath);
+            if (fs.existsSync(requestedDir)) {
+                try {
+                    const dirFiles = fs.readdirSync(requestedDir, {withFileTypes: true});
+                    console.warn("- requestedDir:", requestedDir);
+                    console.warn("- requestedDir contents:", dirFiles.map(f => `${f.name}${f.isDirectory() ? '/' : ''}`));
+                } catch (err) {
+                    console.warn("- Error reading requestedDir:", err);
+                }
+            }
+
             return {
                 code: 404,
                 message: `File not found: ${sanitizedPath}`
