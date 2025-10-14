@@ -28,9 +28,7 @@ export const AvailablePlugins = () => {
     const [error, setError] = useState<string | null>(null);
 
     // Create a map of installed plugin IDs for quick lookup
-    const installedPluginIds = useMemo(() => {
-        return new Set(installedPlugins.map(p => p.name.toLowerCase().replace(/\s+/g, '-')));
-    }, [installedPlugins]);
+    const installedPluginIds = useMemo(() => new Set(installedPlugins.map(p => p.id)), [installedPlugins]);
 
     useEffect(() => {
         const fetchAvailablePlugins = async () => {
