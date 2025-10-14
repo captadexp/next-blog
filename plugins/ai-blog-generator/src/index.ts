@@ -6,7 +6,7 @@ export default definePlugin({
     name: 'AI Blog Generator',
     version: '1.0.0', // Auto-updated from package.json during build
     description: 'Automatically generates blog drafts using AI (OpenAI, Grok, or Gemini) with configurable providers',
-    author: 'AI Assistant',
+    author: 'Next-Blog Team',
     permissions: ['blogs:read', 'blogs:write', 'settings:read', 'settings:write'],
     config: {
         aiProvider: {

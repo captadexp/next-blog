@@ -43,6 +43,7 @@ export async function getOrCreateSystemPlugin(db: DatabaseAdapter): Promise<Plug
     if (!systemPlugin) {
         // Create system plugin - let the database generate the ID naturally
         systemPlugin = await db.plugins.create({
+            id: 'system',
             name: 'system',
             description: 'Core system plugin for internal operations',
             version: '1.0.0',

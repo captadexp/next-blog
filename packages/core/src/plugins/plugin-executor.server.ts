@@ -228,7 +228,7 @@ export class PluginExecutor {
         this.logger.time(label);
         this.logger.debug(`Running ${label}`);
         try {
-            const pluginEntry = this.db!.plugins.findById(mapping.pluginId);
+            const pluginEntry = await this.db!.plugins.findById(mapping.pluginId);
             if (!pluginEntry) {
                 this.logger.warn(`Plugin ${mapping.pluginId} not found`);
                 return;
@@ -240,7 +240,7 @@ export class PluginExecutor {
             }
 
             // Create plugin-specific SDK using the factory
-            const pluginSDK = await this.sdkFactory!.createSDK(mapping.pluginId);
+            const pluginSDK = await this.sdkFactory!.createSDK(pluginEntry.id);
 
             const result = await module[type][hookName](pluginSDK, context);
             updateContext(result);
@@ -344,7 +344,14 @@ export class PluginExecutor {
 
         try {
             const systemPluginId = await getSystemPluginId(this.db);
-            const sdk = await this.sdkFactory.createSDK(systemPluginId);
+            const systemPlugin = await this.db.plugins.findById(systemPluginId);
+            if (!systemPlugin) {
+                this.logger.error('System plugin not found');
+                return;
+            }
+
+            // Use the plugin's manifest ID (stored in 'id' field) for settings persistence
+            const sdk = await this.sdkFactory.createSDK(systemPlugin.id);
 
             const payload = {
                 currentVersion: VERSION_INFO.version,
