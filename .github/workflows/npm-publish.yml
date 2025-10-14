@@ -10,6 +10,7 @@ on:
         type: choice
         options:
           - latest
+          - beta
           - canary
 
 jobs:
@@ -48,90 +49,38 @@ jobs:
           bun --filter="*" run typecheck
 
       - name: Version and publish types
-        run: |
-          cd packages/types
-          if [ "${{ inputs.release_type }}" = "latest" ]; then
-            bun pm version patch --no-git-tag-version
-            bun publish --access public
-          else
-            COMMIT_SHA=$(git rev-parse --short HEAD)
-            CURRENT_VERSION=$(bun -e "console.log(require('./package.json').version)")
-            BASE_VERSION=${CURRENT_VERSION%-canary.*}
-            NEW_VERSION="${BASE_VERSION}-canary.${COMMIT_SHA}"
-            bun pm pkg set version="${NEW_VERSION}"
-            bun publish --tag canary --access public
-          fi
+        run: ./.github/scripts/publish-package.sh packages/types "${{ inputs.release_type }}"
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Update workspace dependencies
-        run: bun install
 
       - name: Version and publish OneAPI
-        run: |
-          cd packages/oneapi
-          if [ "${{ inputs.release_type }}" = "latest" ]; then
-            bun pm version patch --no-git-tag-version
-            bun publish --access public
-          else
-            COMMIT_SHA=$(git rev-parse --short HEAD)
-            CURRENT_VERSION=$(bun -e "console.log(require('./package.json').version)")
-            BASE_VERSION=${CURRENT_VERSION%-canary.*}
-            NEW_VERSION="${BASE_VERSION}-canary.${COMMIT_SHA}"
-            bun pm pkg set version="${NEW_VERSION}"
-            bun publish --tag canary --access public
-          fi
+        run: ./.github/scripts/publish-package.sh packages/oneapi "${{ inputs.release_type }}"
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Update workspace dependencies
-        run: bun install
 
       - name: Version and publish UI
-        run: |
-          cd packages/ui
-          if [ "${{ inputs.release_type }}" = "latest" ]; then
-            bun pm version patch --no-git-tag-version
-            bun publish --access public
-          else
-            COMMIT_SHA=$(git rev-parse --short HEAD)
-            CURRENT_VERSION=$(bun -e "console.log(require('./package.json').version)")
-            BASE_VERSION=${CURRENT_VERSION%-canary.*}
-            NEW_VERSION="${BASE_VERSION}-canary.${COMMIT_SHA}"
-            bun pm pkg set version="${NEW_VERSION}"
-            bun publish --tag canary --access public
-          fi
+        run: ./.github/scripts/publish-package.sh packages/ui "${{ inputs.release_type }}"
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Update workspace dependencies
-        run: bun install
 
       - name: Version and publish Core
-        run: |
-          cd packages/core
-          if [ "${{ inputs.release_type }}" = "latest" ]; then
-            bun pm version patch --no-git-tag-version
-            bun publish --access public
-          else
-            COMMIT_SHA=$(git rev-parse --short HEAD)
-            CURRENT_VERSION=$(bun -e "console.log(require('./package.json').version)")
-            BASE_VERSION=${CURRENT_VERSION%-canary.*}
-            NEW_VERSION="${BASE_VERSION}-canary.${COMMIT_SHA}"
-            bun pm pkg set version="${NEW_VERSION}"
-            bun publish --tag canary --access public
-          fi
+        run: ./.github/scripts/publish-package.sh packages/core "${{ inputs.release_type }}"
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Update workspace dependencies
-        run: bun install
-
       - name: Commit and push version changes
-        if: inputs.release_type == 'latest'
+        if: inputs.release_type == 'latest' || inputs.release_type == 'beta'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add packages/*/package.json
-          git diff --staged --quiet || git commit -m "chore: bump package versions [skip ci]"
-          git push
+          git add packages/*/package.json bun.lock
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            if [ "${{ inputs.release_type }}" = "latest" ]; then
+              git commit -m "chore: bump package versions [skip ci]"
+            else
+              git commit -m "chore: bump beta versions [skip ci]"
+            fi
+            git push
+          fi
