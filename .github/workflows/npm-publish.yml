@@ -64,6 +64,9 @@ jobs:
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Update workspace dependencies
+        run: bun install
+
       - name: Version and publish OneAPI
         run: |
           cd packages/oneapi
@@ -80,6 +83,9 @@ jobs:
           fi
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Update workspace dependencies
+        run: bun install
 
       - name: Version and publish UI
         run: |
@@ -98,6 +104,9 @@ jobs:
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Update workspace dependencies
+        run: bun install
+
       - name: Version and publish Core
         run: |
           cd packages/core
@@ -114,6 +123,9 @@ jobs:
           fi
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Update workspace dependencies
+        run: bun install
 
       - name: Commit and push version changes
         if: inputs.release_type == 'latest'
