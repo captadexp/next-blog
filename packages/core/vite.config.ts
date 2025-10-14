@@ -106,7 +106,7 @@ export default defineConfig(({mode}) => {
                 outDir: "dist",
                 include: ["src"],
                 bundledPackages: ["@supergrowthai/types", "@supergrowthai/next-blog-dashboard"],
-                rollupTypes: true
+                rollupTypes: false
             }),
             viteStaticCopy({
                 targets: [

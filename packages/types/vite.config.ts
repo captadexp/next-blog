@@ -9,13 +9,9 @@ export default defineConfig({
                 index: resolve(__dirname, 'src/index.ts'),
                 server: resolve(__dirname, 'src/server.ts'),
                 client: resolve(__dirname, 'src/client.ts'),
-                common: resolve(__dirname, 'src/common.ts'),
-                'plugin/index': resolve(__dirname, 'src/plugin/index.ts'),
-                'plugin/common': resolve(__dirname, 'src/plugin/common.ts'),
                 'plugin/client': resolve(__dirname, 'src/plugin/client.ts'),
                 'plugin/server': resolve(__dirname, 'src/plugin/server.ts'),
                 'plugin/manifest': resolve(__dirname, 'src/plugin/manifest.ts'),
-                'sdk/base': resolve(__dirname, 'src/sdk/base.ts'),
                 'sdk/client': resolve(__dirname, 'src/sdk/client.ts'),
                 'sdk/server': resolve(__dirname, 'src/sdk/server.ts'),
                 'database/entities': resolve(__dirname, 'src/database/entities.ts'),
@@ -35,7 +31,7 @@ export default defineConfig({
                 exports: 'named'
             }
         },
-        emptyOutDir: false,
+        emptyOutDir: true,
         minify: false,
         sourcemap: true
     },

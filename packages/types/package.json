@@ -24,21 +24,6 @@
       "import": "./dist/client.mjs",
       "require": "./dist/client.js"
     },
-    "./common": {
-      "types": "./dist/common.d.ts",
-      "import": "./dist/common.mjs",
-      "require": "./dist/common.js"
-    },
-    "./plugin": {
-      "types": "./dist/plugin/index.d.ts",
-      "import": "./dist/plugin/index.mjs",
-      "require": "./dist/plugin/index.js"
-    },
-    "./plugin/common": {
-      "types": "./dist/plugin/common.d.ts",
-      "import": "./dist/plugin/common.mjs",
-      "require": "./dist/plugin/common.js"
-    },
     "./plugin/client": {
       "types": "./dist/plugin/client.d.ts",
       "import": "./dist/plugin/client.mjs",
@@ -53,11 +38,6 @@
       "types": "./dist/plugin/manifest.d.ts",
       "import": "./dist/plugin/manifest.mjs",
       "require": "./dist/plugin/manifest.js"
-    },
-    "./sdk/base": {
-      "types": "./dist/sdk/base.d.ts",
-      "import": "./dist/sdk/base.mjs",
-      "require": "./dist/sdk/base.js"
     },
     "./sdk/client": {
       "types": "./dist/sdk/client.d.ts",
