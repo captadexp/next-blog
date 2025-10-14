@@ -89,45 +89,7 @@ export async function handleStaticFileRequest(session: SessionData, request: Min
         // Check if the file exists
         if (!fs.existsSync(fullPath)) {
             console.warn("File not found", fullPath);
-
-            // Debug: Check what exists in the directory structure
-            console.warn("Debug - Directory structure analysis:");
-            console.warn("- pkgPath:", pkgPath);
-            console.warn("- pkgPath exists:", fs.existsSync(pkgPath));
-
-            const staticDir = path.join(pkgPath, 'static');
-            console.warn("- staticDir:", staticDir);
-            console.warn("- staticDir exists:", fs.existsSync(staticDir));
-
-            if (fs.existsSync(__dirname)) {
-                try {
-                    const __dirnameFiles = fs.readdirSync(__dirname, {withFileTypes: true});
-                    console.warn("- staticDir contents:", __dirnameFiles.map(f => `${f.name}${f.isDirectory() ? '/' : ''}`));
-                } catch (err) {
-                    console.warn("- Error reading staticDir:", err);
-                }
-            }
-
-            if (fs.existsSync(staticDir)) {
-                try {
-                    const staticFiles = fs.readdirSync(staticDir, {withFileTypes: true});
-                    console.warn("- staticDir contents:", staticFiles.map(f => `${f.name}${f.isDirectory() ? '/' : ''}`));
-                } catch (err) {
-                    console.warn("- Error reading staticDir:", err);
-                }
-            }
-
-            // Check parent directory of requested file
-            const requestedDir = path.dirname(fullPath);
-            if (fs.existsSync(requestedDir)) {
-                try {
-                    const dirFiles = fs.readdirSync(requestedDir, {withFileTypes: true});
-                    console.warn("- requestedDir:", requestedDir);
-                    console.warn("- requestedDir contents:", dirFiles.map(f => `${f.name}${f.isDirectory() ? '/' : ''}`));
-                } catch (err) {
-                    console.warn("- Error reading requestedDir:", err);
-                }
-            }
+            debugDirectoryStructure(fullPath, pkgPath, sanitizedPath, __dirname);
 
             return {
                 code: 404,
@@ -157,4 +119,81 @@ export async function handleStaticFileRequest(session: SessionData, request: Min
             message: `Error serving static file: ${error instanceof Error ? error.message : String(error)}`
         };
     }
+}
+
+
+/**
+ * Recursively prints directory tree structure
+ */
+function printDirectoryTree(dirPath: string, prefix: string = "", maxDepth: number = 4, currentDepth: number = 0): void {
+    if (currentDepth >= maxDepth || !fs.existsSync(dirPath)) return;
+
+    try {
+        const items = fs.readdirSync(dirPath, {withFileTypes: true}).sort((a, b) => {
+            // Sort directories first, then files
+            if (a.isDirectory() && !b.isDirectory()) return -1;
+            if (!a.isDirectory() && b.isDirectory()) return 1;
+            return a.name.localeCompare(b.name);
+        });
+
+        items.forEach((item, index) => {
+            const isLast = index === items.length - 1;
+            const currentPrefix = prefix + (isLast ? "└── " : "├── ");
+            const nextPrefix = prefix + (isLast ? "    " : "│   ");
+
+            console.warn(`${currentPrefix}${item.name}${item.isDirectory() ? '/' : ''}`);
+
+            if (item.isDirectory()) {
+                const itemPath = path.join(dirPath, item.name);
+                printDirectoryTree(itemPath, nextPrefix, maxDepth, currentDepth + 1);
+            }
+        });
+    } catch (err) {
+        console.warn(`${prefix}[Error reading directory: ${err}]`);
+    }
+}
+
+/**
+ * Debug function to log directory structure and path information
+ */
+function debugDirectoryStructure(
+    fullPath: string,
+    pkgPath: string,
+    sanitizedPath: string,
+    __dirname: string
+) {
+    console.warn("Debug - Path construction:");
+    console.warn("- import.meta.url:", import.meta.url);
+    console.warn("- __dirname:", __dirname);
+    console.warn("- pkgPath:", pkgPath);
+    console.warn("- sanitizedPath:", sanitizedPath);
+    console.warn("- fullPath:", fullPath);
+
+    // Print complete directory tree from 2 levels above __dirname
+    const grandParentDir = path.dirname(path.dirname(__dirname));
+    console.warn("\n=== COMPLETE DIRECTORY TREE ===");
+    console.warn(`Starting from: ${grandParentDir}`);
+    printDirectoryTree(grandParentDir);
+
+    console.warn("\n=== __dirname TREE ===");
+    console.warn(`Starting from: ${__dirname}`);
+    printDirectoryTree(__dirname);
+
+    console.warn("\n=== PARENT DIR TREE ===");
+    const parentDir = path.dirname(__dirname);
+    console.warn(`Starting from: ${parentDir}`);
+    printDirectoryTree(parentDir);
+
+    console.warn("\n=== SPECIFIC PATH CHECKS ===");
+    console.warn("- pkgPath:", pkgPath);
+    console.warn("- pkgPath exists:", fs.existsSync(pkgPath));
+
+    const staticDir = path.join(pkgPath, 'static');
+    console.warn("- staticDir:", staticDir);
+    console.warn("- staticDir exists:", fs.existsSync(staticDir));
+
+    // Check parent directory of requested file
+    const requestedDir = path.dirname(fullPath);
+    console.warn("- requestedDir:", requestedDir);
+    console.warn("- requestedDir exists:", fs.existsSync(requestedDir));
 }
