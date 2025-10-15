@@ -69,43 +69,44 @@ function DashboardApp() {
                             <Layout currentPath={currentPath}>
                                 <Router onRouteChange={handleRouteChange}>
 
-                                {/* Home route */}
-                                <Route path="/api/next-blog/dashboard" component={Home}/>
+                                    {/* Home route */}
+                                    <Route path="/api/next-blog/dashboard" component={Home}/>
 
-                                {/* Blog routes */}
-                                <Route path="/api/next-blog/dashboard/blogs" component={BlogsList}/>
-                                <Route path="/api/next-blog/dashboard/blogs/create" component={CreateBlog}/>
-                                <Route path="/api/next-blog/dashboard/blogs/:id" component={UpdateBlog}/>
+                                    {/* Blog routes */}
+                                    <Route path="/api/next-blog/dashboard/blogs" component={BlogsList}/>
+                                    <Route path="/api/next-blog/dashboard/blogs/create" component={CreateBlog}/>
+                                    <Route path="/api/next-blog/dashboard/blogs/:id" component={UpdateBlog}/>
 
-                                {/* User routes */}
-                                <Route path="/api/next-blog/dashboard/users" component={UsersList}/>
-                                <Route path="/api/next-blog/dashboard/users/create" component={CreateUser}/>
-                                <Route path="/api/next-blog/dashboard/users/:id" component={UpdateUser}/>
+                                    {/* User routes */}
+                                    <Route path="/api/next-blog/dashboard/users" component={UsersList}/>
+                                    <Route path="/api/next-blog/dashboard/users/create" component={CreateUser}/>
+                                    <Route path="/api/next-blog/dashboard/users/:id" component={UpdateUser}/>
 
-                                {/* Category routes */}
-                                <Route path="/api/next-blog/dashboard/categories" component={CategoriesList}/>
-                                <Route path="/api/next-blog/dashboard/categories/create" component={CreateCategory}/>
-                                <Route path="/api/next-blog/dashboard/categories/:id" component={UpdateCategory}/>
+                                    {/* Category routes */}
+                                    <Route path="/api/next-blog/dashboard/categories" component={CategoriesList}/>
+                                    <Route path="/api/next-blog/dashboard/categories/create"
+                                           component={CreateCategory}/>
+                                    <Route path="/api/next-blog/dashboard/categories/:id" component={UpdateCategory}/>
 
-                                {/* Tag routes */}
-                                <Route path="/api/next-blog/dashboard/tags" component={TagsList}/>
-                                <Route path="/api/next-blog/dashboard/tags/create" component={CreateTag}/>
-                                <Route path="/api/next-blog/dashboard/tags/:id" component={UpdateTag}/>
+                                    {/* Tag routes */}
+                                    <Route path="/api/next-blog/dashboard/tags" component={TagsList}/>
+                                    <Route path="/api/next-blog/dashboard/tags/create" component={CreateTag}/>
+                                    <Route path="/api/next-blog/dashboard/tags/:id" component={UpdateTag}/>
 
-                                {/* Settings routes */}
-                                <Route path="/api/next-blog/dashboard/settings" component={SettingsList}/>
-                                <Route path="/api/next-blog/dashboard/settings/create" component={CreateSetting}/>
-                                <Route path="/api/next-blog/dashboard/settings/:id" component={UpdateSetting}/>
+                                    {/* Settings routes */}
+                                    <Route path="/api/next-blog/dashboard/settings" component={SettingsList}/>
+                                    <Route path="/api/next-blog/dashboard/settings/create" component={CreateSetting}/>
+                                    <Route path="/api/next-blog/dashboard/settings/:id" component={UpdateSetting}/>
 
-                                {/* Plugin routes */}
-                                <Route path="/api/next-blog/dashboard/plugins" component={PluginsList}/>
-                                <Route path="/api/next-blog/dashboard/plugins/create" component={CreatePlugin}/>
-                                <Route path="/api/next-blog/dashboard/plugins/:pluginId" component={PluginPanel}/>
+                                    {/* Plugin routes */}
+                                    <Route path="/api/next-blog/dashboard/plugins" component={PluginsList}/>
+                                    <Route path="/api/next-blog/dashboard/plugins/create" component={CreatePlugin}/>
+                                    <Route path="/api/next-blog/dashboard/plugins/:pluginId" component={PluginPanel}/>
 
-                                {/* 404 route */}
-                                <Route default component={() => <div>Not Found</div>}/>
-                            </Router>
-                        </Layout>
+                                    {/* 404 route */}
+                                    <Route default component={() => <div>Not Found</div>}/>
+                                </Router>
+                            </Layout>
                         </IntentProvider>
                     </PluginProvider>
                 </UserProvider>
