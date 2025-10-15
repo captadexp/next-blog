@@ -10,7 +10,11 @@ import {initializeSystem} from "../utils/defaultSettings.ts";
  * Main CMS function that creates the API route handlers
  */
 const nextBlog = function (configuration: Configuration) {
-    const {pathPrefix = "/api/next-blog/"} = configuration;
+    const {pathPrefix} = configuration;
+
+    if (!!pathPrefix) {
+        throw new Error("Custom path prefix not supported. Create an issue to request this feature on priority");
+    }
 
     // Create auth handler
     const authHandler = new BasicAuthHandler(configuration.db);
@@ -19,7 +23,7 @@ const nextBlog = function (configuration: Configuration) {
 
     // Create a single router for all methods
     const router = createNextJSRouter(wrappedPaths, {
-        pathPrefix,
+        pathPrefix: "/api/next-blog/",
         authHandler,
         createApiImpl: async ({request, session, response}) => {
             // Initialize database and plugins

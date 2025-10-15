@@ -10,6 +10,8 @@ interface LayoutProps {
     currentPath: string;
 }
 
+const simpleIsSubPathCheck = (pathGroup: string, actualPath: string) => actualPath.startsWith(pathGroup)
+
 export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) => {
     const location = useLocation();
     const {user, config, loading, logout, hasPermission} = useUser();
@@ -99,12 +101,12 @@ export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) 
                                         location.route(item.path);
                                     }}
                                     className={`no-underline whitespace-nowrap py-1 px-1 ${
-                                        currentPath === item.path
+                                        simpleIsSubPathCheck(item.path, currentPath)
                                             ? `font-bold`
                                             : `hover:opacity-80`
                                     }`}
                                     style={{
-                                        color: currentPath === item.path ? primaryColor : undefined
+                                        color: simpleIsSubPathCheck(item.path, currentPath) ? primaryColor : undefined
                                     }}
                                 >
                                     {item.label}
@@ -138,5 +140,4 @@ export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) 
         </div>
     );
 };
-
 
