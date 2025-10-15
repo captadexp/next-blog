@@ -8,7 +8,7 @@ import Logger, {LogLevel} from "../utils/Logger";
 /**
  * Dependencies required to create a client SDK instance
  */
-export interface ClientSDKDependencies {
+interface ClientSDKDependencies {
     apis: APIClient;
     user: User | null;
     log: Logger;
@@ -21,7 +21,7 @@ export interface ClientSDKDependencies {
  * Factory to create plugin-specific SDK instances with all dependencies injected
  * This ensures complete isolation and fingerprinting for each plugin
  */
-export class ClientSDKFactory {
+class ClientSDKFactory {
     constructor(private readonly deps: ClientSDKDependencies) {
     }
 

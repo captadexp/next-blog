@@ -152,12 +152,3 @@ export class ClientSettingsHelper implements PluginSettings {
         return settings;
     }
 }
-
-/**
- * Create a settings helper bound to a specific plugin ID
- * @param pluginId The plugin ID
- * @param userId Optional user ID for user-scoped settings
- */
-export function createSettingsHelper(pluginId: string, userId?: string): PluginSettings {
-    return new ClientSettingsHelper(pluginId, userId);
-}
