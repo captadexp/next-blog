@@ -10,44 +10,48 @@ interface LayoutProps {
     currentPath: string;
 }
 
-const simpleIsSubPathCheck = (pathGroup: string, actualPath: string) => actualPath.startsWith(pathGroup)
+interface NavItem {
+    path: string;
+    label: string;
+    icon?: string;
+    requiredPermission?: Permission;
+}
+
+const matchesPath = (base: string, actual: string) => {
+    const norm = (p: string) => p.split(/[?#]/)[0].replace(/\/+$/, '');
+    const a = norm(actual);
+    const b = norm(base);
+    return a === b || a.startsWith(b + '/');
+};
+
+const defaultNavItems: NavItem[] = [
+    {path: '/api/next-blog/dashboard', label: 'Dashboard', icon: 'home'},
+    {path: '/api/next-blog/dashboard/blogs', label: 'Blogs', icon: 'file-text', requiredPermission: 'blogs:list'},
+    {path: '/api/next-blog/dashboard/tags', label: 'Tags', icon: 'tag', requiredPermission: 'tags:list'},
+    {
+        path: '/api/next-blog/dashboard/categories',
+        label: 'Categories',
+        icon: 'folder',
+        requiredPermission: 'categories:list'
+    },
+    {path: '/api/next-blog/dashboard/users', label: 'Users', icon: 'users', requiredPermission: 'users:list'},
+    {
+        path: '/api/next-blog/dashboard/settings',
+        label: 'Settings',
+        icon: 'settings',
+        requiredPermission: 'settings:list'
+    },
+    {
+        path: '/api/next-blog/dashboard/plugins',
+        label: 'Plugins',
+        icon: 'package',
+        requiredPermission: 'plugins:list'
+    },
+];
 
 export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) => {
     const location = useLocation();
     const {user, config, loading, logout, hasPermission} = useUser();
-
-    interface NavItem {
-        path: string;
-        label: string;
-        icon?: string;
-        requiredPermission?: Permission;
-    }
-
-    // Default navigation items with required permissions
-    const defaultNavItems: NavItem[] = [
-        {path: '/api/next-blog/dashboard', label: 'Dashboard', icon: 'home'},
-        {path: '/api/next-blog/dashboard/blogs', label: 'Blogs', icon: 'file-text', requiredPermission: 'blogs:list'},
-        {path: '/api/next-blog/dashboard/tags', label: 'Tags', icon: 'tag', requiredPermission: 'tags:list'},
-        {
-            path: '/api/next-blog/dashboard/categories',
-            label: 'Categories',
-            icon: 'folder',
-            requiredPermission: 'categories:list'
-        },
-        {path: '/api/next-blog/dashboard/users', label: 'Users', icon: 'users', requiredPermission: 'users:list'},
-        {
-            path: '/api/next-blog/dashboard/settings',
-            label: 'Settings',
-            icon: 'settings',
-            requiredPermission: 'settings:list'
-        },
-        {
-            path: '/api/next-blog/dashboard/plugins',
-            label: 'Plugins',
-            icon: 'package',
-            requiredPermission: 'plugins:list'
-        },
-    ];
 
     // Filter navigation items based on user permissions
     const navItems = config?.navigation?.menuItems ||
@@ -92,27 +96,36 @@ export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) 
                 </div>
                 <nav className="overflow-x-auto pb-2">
                     <ul className="flex flex-nowrap sm:flex-wrap gap-4 sm:gap-6 list-none p-0 m-0 min-w-max">
-                        {navItems.map(item => (
-                            <li key={item.path}>
-                                <a
-                                    href={item.path}
-                                    onClick={e => {
-                                        e.preventDefault();
-                                        location.route(item.path);
-                                    }}
-                                    className={`no-underline whitespace-nowrap py-1 px-1 ${
-                                        simpleIsSubPathCheck(item.path, currentPath)
-                                            ? `font-bold`
-                                            : `hover:opacity-80`
-                                    }`}
-                                    style={{
-                                        color: simpleIsSubPathCheck(item.path, currentPath) ? primaryColor : undefined
-                                    }}
-                                >
-                                    {item.label}
-                                </a>
-                            </li>
-                        ))}
+                        {navItems.map(item => {
+
+                            const activePath = navItems
+                                .filter(item => matchesPath(item.path, currentPath))
+                                .sort((a, b) => b.path.length - a.path.length)[0]?.path ?? '';
+
+                            const isActive = activePath === item.path;
+
+                            return (
+                                <li key={item.path}>
+                                    <a
+                                        href={item.path}
+                                        onClick={e => {
+                                            e.preventDefault();
+                                            location.route(item.path);
+                                        }}
+                                        className={`no-underline whitespace-nowrap py-1 px-1 ${
+                                            isActive
+                                                ? `font-bold`
+                                                : `hover:opacity-80`
+                                        }`}
+                                        style={{
+                                            color: isActive ? primaryColor : undefined
+                                        }}
+                                    >
+                                        {item.label}
+                                    </a>
+                                </li>
+                            );
+                        })}
                     </ul>
                 </nav>
             </header>
