@@ -4,6 +4,7 @@ import {useUser} from '../../context/UserContext';
 import {Permission} from '@supergrowthai/next-blog-types';
 import packageJson from '../../../package.json';
 import {ExtensionPoint} from "./ExtensionZone";
+import {UserMenu} from "./UserMenu.tsx";
 
 interface LayoutProps {
     children: any;
@@ -71,12 +72,6 @@ export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) 
     const headerClass = isDarkMode ? 'border-gray-700' : 'border-gray-200';
     const footerClass = isDarkMode ? 'border-gray-700 text-gray-400' : 'border-gray-200 text-gray-500';
 
-    const handleLogout = async (e: Event) => {
-        e.preventDefault();
-        await logout();
-        location.route('/api/next-blog/dashboard');
-    };
-
     return (
         <div className={`w-full min-h-screen max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-4 sm:py-6 ${themeClass}`}>
             <header className={`mb-6 border-b pb-4 ${headerClass}`}>
@@ -84,10 +79,7 @@ export const Layout: FunctionComponent<LayoutProps> = ({children, currentPath}) 
                     <h1 className="text-xl sm:text-2xl font-bold">{brandName}</h1>
                     {user && (
                         <div className="flex items-center gap-3 self-end sm:self-auto">
-                            <span className="text-sm hidden sm:inline">
-                                {user.name}
-                                {user.permissions.includes('all:all') && <span className="ml-1">(Admin)</span>}
-                            </span>
+                            <UserMenu/>
                         </div>
                     )}
                 </div>
