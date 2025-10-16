@@ -9,14 +9,12 @@ const xmlBuilder = new XMLBuilder({
 });
 
 export async function getSitemap(session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse | Response> {
-    const db = await extra.db();
     const baseUrl = request.headers['host'];
     const protocol = request.headers['x-forwarded-proto'] || 'https';
     const siteUrl = `${protocol}://${baseUrl}`;
 
     const hookResult = await extra.callHook('seo:sitemap', {
         siteUrl,
-        db,
         request
     });
 
@@ -140,7 +138,6 @@ export async function getLlmsTxt(session: SessionData, request: MinimumRequest, 
 
     const hookResult = await extra.callHook('seo:llms.txt', {
         siteUrl,
-        db,
         request
     });
 
@@ -173,7 +170,6 @@ export async function getRssFeed(session: SessionData, request: MinimumRequest, 
 
     const hookResult = await extra.callHook('seo:rss', {
         siteUrl,
-        db,
         request
     });
 

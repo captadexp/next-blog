@@ -1,11 +1,11 @@
 import type {RssItem} from '@supergrowthai/plugin-dev-kit';
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
-import type {RssData, SeoHookPayloadWithDb, ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
+import type {RssData, SeoHookPayload, ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
 import {contentObjectToPlainText} from "@supergrowthai/plugin-dev-kit/content";
 
 export default defineServer({
     hooks: {
-        'seo:rss': async (sdk: ServerSDK, payload: SeoHookPayloadWithDb): Promise<{ data: RssData }> => {
+        'seo:rss': async (sdk: ServerSDK, payload: SeoHookPayload): Promise<{ data: RssData }> => {
             sdk.log.info('Generating RSS feed');
 
             // Get site settings from cache or defaults
@@ -13,7 +13,7 @@ export default defineServer({
             const siteDescription = await sdk.settings.get('seo-rss:site-description') || 'Latest posts from our blog';
 
             // Fetch recent published blogs
-            const blogs = await payload.db.blogs.find(
+            const blogs = await sdk.db.blogs.find(
                 {status: 'published'},
                 {sort: {createdAt: -1}, limit: 20}
             );
@@ -23,10 +23,10 @@ export default defineServer({
 
             for (const blog of blogs) {
                 // Get author information
-                const author = await payload.db.users.findById(blog.userId);
+                const author = await sdk.db.users.findById(blog.userId);
 
                 // Get category information
-                const category = await payload.db.categories.findById(blog.categoryId);
+                const category = await sdk.db.categories.findById(blog.categoryId);
 
                 // Strip HTML/Markdown from content for description
                 const cleanContent = contentObjectToPlainText(blog.content)

@@ -10,7 +10,7 @@ import {wrapPathObject} from "./withExtras.ts";
  * Creates a Next.js router for a single API endpoint
  * Useful for creating standalone route handlers that need full Next-Blog infrastructure
  */
-export function createSingleEndpointNextJSRouter(apiFunction: OneApiFunction) {
+export function createSingleEndpointNextJSRouter(apiFunction: OneApiFunction, {pathPrefix = ""} = {}) {
     return (dbProvider: () => Promise<DatabaseAdapter>) => {
         // Create a simple path object with just the root endpoint
         const pathObject = wrapPathObject({db: dbProvider}, {
@@ -23,7 +23,7 @@ export function createSingleEndpointNextJSRouter(apiFunction: OneApiFunction) {
 
         // Create router
         const router = createNextJSRouter(pathObject, {
-            pathPrefix: "", // No prefix needed for direct endpoints
+            pathPrefix,
             authHandler,
             createApiImpl: async ({request, session, response}) => {
                 // Initialize database and plugins

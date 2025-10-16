@@ -1,7 +1,6 @@
 /**
  * SEO-related types for sitemap, robots.txt, RSS feed, etc.
  */
-import {DatabaseAdapter} from "./database/adapter";
 
 // Sitemap types
 export interface SitemapUrl {
@@ -140,8 +139,4 @@ export interface MinimumRequest<HEADERS = any, BODY = any, QUERY = any> {
 export interface SeoHookPayload {
     siteUrl: string;
     request: MinimumRequest;
-}
-
-export interface SeoHookPayloadWithDb extends SeoHookPayload {
-    db: DatabaseAdapter;
 }

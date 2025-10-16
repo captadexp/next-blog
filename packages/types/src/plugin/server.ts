@@ -4,15 +4,7 @@
 
 import type {RPCMethods} from './common';
 import type {ServerHooksDefinition, ServerRPCsDefinition} from './types';
-import type {
-    LlmsData,
-    RobotsData,
-    RssData,
-    SeoHookPayload,
-    SeoHookPayloadWithDb,
-    SitemapData,
-    SitemapIndexData
-} from '../seo';
+import type {LlmsData, RobotsData, RssData, SeoHookPayload, SitemapData, SitemapIndexData} from '../seo';
 import {ContentObject} from "../htmlToJson/custom-types";
 
 export type * from "./common"
@@ -196,7 +188,7 @@ export interface ServerHooks extends Record<string, { payload?: any; response: a
 
     // SEO hooks
     'seo:sitemap': {
-        payload: SeoHookPayloadWithDb;
+        payload: SeoHookPayload;
         response: void | { data: SitemapData } | Response;
     };
     'seo:sitemap-index': {
@@ -208,11 +200,11 @@ export interface ServerHooks extends Record<string, { payload?: any; response: a
         response: void | { data: RobotsData } | Response;
     };
     'seo:llms.txt': {
-        payload: SeoHookPayloadWithDb;
+        payload: SeoHookPayload;
         response: void | { data: LlmsData } | Response;
     };
     'seo:rss': {
-        payload: SeoHookPayloadWithDb;
+        payload: SeoHookPayload;
         response: void | { data: RssData } | Response;
     };
 }

@@ -1,10 +1,10 @@
 import type {SitemapUrl} from '@supergrowthai/plugin-dev-kit';
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
-import type {SeoHookPayloadWithDb, ServerSDK, SitemapData} from '@supergrowthai/plugin-dev-kit/server';
+import type {SeoHookPayload, ServerSDK, SitemapData} from '@supergrowthai/plugin-dev-kit/server';
 
 export default defineServer({
     hooks: {
-        'seo:sitemap': async (sdk: ServerSDK, payload: SeoHookPayloadWithDb & { segments?: string[] }) => {
+        'seo:sitemap': async (sdk: ServerSDK, payload: SeoHookPayload & { segments?: string[] }) => {
             sdk.log.info('Generating sitemap', {segments: payload.segments});
 
             const segments = payload.segments || [];
@@ -48,9 +48,9 @@ export default defineServer({
     }
 });
 
-async function generateMainSitemap(sdk: ServerSDK, payload: SeoHookPayloadWithDb): Promise<{ data: SitemapData }> {
+async function generateMainSitemap(sdk: ServerSDK, payload: SeoHookPayload): Promise<{ data: SitemapData }> {
     // Fetch published blogs from database
-    const blogs = await payload.db.blogs.find(
+    const blogs = await sdk.db.blogs.find(
         {status: 'published'},
         {sort: {updatedAt: -1}, limit: 100} // Limit for main sitemap
     );
@@ -86,13 +86,13 @@ async function generateMainSitemap(sdk: ServerSDK, payload: SeoHookPayloadWithDb
     };
 }
 
-async function generatePostsSitemap(sdk: ServerSDK, payload: SeoHookPayloadWithDb, page: number): Promise<{
+async function generatePostsSitemap(sdk: ServerSDK, payload: SeoHookPayload, page: number): Promise<{
     data: SitemapData
 }> {
     const perPage = 1000;
     const skip = (page - 1) * perPage;
 
-    const blogs = await payload.db.blogs.find(
+    const blogs = await sdk.db.blogs.find(
         {status: 'published'},
         {sort: {updatedAt: -1}, skip, limit: perPage}
     );
@@ -114,10 +114,10 @@ async function generatePostsSitemap(sdk: ServerSDK, payload: SeoHookPayloadWithD
     };
 }
 
-async function generateCategoriesSitemap(sdk: ServerSDK, payload: SeoHookPayloadWithDb): Promise<{
+async function generateCategoriesSitemap(sdk: ServerSDK, payload: SeoHookPayload): Promise<{
     data: SitemapData
 }> {
-    const categories = await payload.db.categories.find({});
+    const categories = await sdk.db.categories.find({});
 
     const urls: SitemapUrl[] = categories.map(category => ({
         loc: `${payload.siteUrl}/category/${category.slug}`,
@@ -136,7 +136,7 @@ async function generateCategoriesSitemap(sdk: ServerSDK, payload: SeoHookPayload
     };
 }
 
-async function streamLargeSitemap(sdk: ServerSDK, payload: SeoHookPayloadWithDb, page?: string): Promise<Response> {
+async function streamLargeSitemap(sdk: ServerSDK, payload: SeoHookPayload, page?: string): Promise<Response> {
     // Example: Stream a large sitemap
     const stream = new ReadableStream({
         start(controller) {
@@ -148,7 +148,7 @@ async function streamLargeSitemap(sdk: ServerSDK, payload: SeoHookPayloadWithDb,
         async pull(controller) {
             // Stream URLs in chunks
             try {
-                const blogs = await payload.db.blogs.find(
+                const blogs = await sdk.db.blogs.find(
                     {status: 'published'},
                     {sort: {updatedAt: -1}, limit: 100}
                 );

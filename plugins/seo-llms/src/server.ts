@@ -1,20 +1,20 @@
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
-import type {LlmsData, LlmsSection, SeoHookPayloadWithDb, ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
+import type {LlmsData, LlmsSection, SeoHookPayload, ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
 import {contentObjectToPlainText} from "@supergrowthai/plugin-dev-kit/content";
 
 export default defineServer({
     hooks: {
-        'seo:llms.txt': async (sdk: ServerSDK, payload: SeoHookPayloadWithDb): Promise<{ data: LlmsData }> => {
+        'seo:llms.txt': async (sdk: ServerSDK, payload: SeoHookPayload): Promise<{ data: LlmsData }> => {
             sdk.log.info('Generating llms.txt');
 
             // Fetch recent published blogs
-            const blogs = await payload.db.blogs.find(
+            const blogs = await sdk.db.blogs.find(
                 {status: 'published'},
                 {sort: {createdAt: -1}, limit: 10}
             );
 
             // Fetch categories for context
-            const categories = await payload.db.categories.find({});
+            const categories = await sdk.db.categories.find({});
 
             const sections: LlmsSection[] = [
                 {
