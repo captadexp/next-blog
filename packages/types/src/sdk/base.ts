@@ -3,11 +3,11 @@ import type {User} from '../database/entities';
 export interface PluginSettings {
     get<T = any>(key: string): T | null | Promise<T | null>;
 
-    set<T = any>(key: string, value: T): void | Promise<void>;
+    set<T = any>(key: string, value: T, config?: { isSecure: boolean }): void | Promise<void>;
 
     getGlobal<T = any>(key: string): T | null | Promise<T | null>;
 
-    setGlobal<T = any>(key: string, value: T): void | Promise<void>;
+    setGlobal<T = any>(key: string, value: T, config?: { isSecure: boolean }): void | Promise<void>;
 
     getFromPlugin<T = any>(pluginId: string, key: string): T | null | Promise<T | null>;
 }

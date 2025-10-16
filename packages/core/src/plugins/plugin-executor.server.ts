@@ -240,7 +240,7 @@ export class PluginExecutor {
             }
 
             // Create plugin-specific SDK using the factory
-            const pluginSDK = await this.sdkFactory!.createSDK(pluginEntry.id);
+            const pluginSDK = await this.sdkFactory!.createSDK(pluginEntry);
 
             const result = await module[type][hookName](pluginSDK, context);
             updateContext(result);
@@ -351,7 +351,7 @@ export class PluginExecutor {
             }
 
             // Use the plugin's manifest ID (stored in 'id' field) for settings persistence
-            const sdk = await this.sdkFactory.createSDK(systemPlugin.id);
+            const sdk = await this.sdkFactory.createSDK(systemPlugin);
 
             const payload = {
                 currentVersion: VERSION_INFO.version,

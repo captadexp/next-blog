@@ -1,4 +1,4 @@
-import type {DatabaseAdapter, Logger, ServerConfig, ServerSDK, User} from '@supergrowthai/next-blog-types/server';
+import type {DatabaseAdapter, Logger, ServerConfig, ServerSDK, User, Plugin} from '@supergrowthai/next-blog-types/server';
 import {ServerSettingsHelper} from './settings-helper.server.js';
 import {ServerCacheHelper} from './cache-helper.server.js';
 import {ServerEventsHelper} from './events-helper.server.js';
@@ -29,17 +29,17 @@ export class ServerSDKFactory {
      * Create an SDK instance for a specific plugin
      * All operations performed through this SDK will be automatically scoped to the plugin
      */
-    async createSDK(pluginId: string): Promise<ServerSDK> {
+    async createSDK(plugin: Plugin): Promise<ServerSDK> {
         // Create plugin-specific helpers
-        const settingsHelper = new ServerSettingsHelper(pluginId, this.deps.db);
-        const cacheHelper = new ServerCacheHelper(pluginId);
-        const eventsHelper = new ServerEventsHelper(pluginId);
-        const storageHelper = await StorageFactory.create(pluginId, this.deps.db);
+        const settingsHelper = new ServerSettingsHelper(plugin, this.deps.db);
+        const cacheHelper = new ServerCacheHelper(plugin.id);
+        const eventsHelper = new ServerEventsHelper(plugin.id);
+        const storageHelper = await StorageFactory.create(plugin.id, this.deps.db);
 
         // Create the SDK with plugin fingerprinting
         const sdk: ServerSDK = {
             // Plugin identity - baked into every operation
-            pluginId,
+            pluginId: plugin.id,
 
             // Execution context
             executionContext: this.deps.executionContext,
@@ -57,10 +57,10 @@ export class ServerSDKFactory {
             storage: storageHelper,
 
             // Database access - could be wrapped to add plugin metadata
-            db: this.createScopedDatabase(pluginId),
+            db: this.createScopedDatabase(plugin.id),
 
             // Logging with automatic plugin context
-            log: this.createScopedLogger(pluginId),
+            log: this.createScopedLogger(plugin.id),
 
             // Configuration
             config: this.deps.config,
@@ -74,13 +74,13 @@ export class ServerSDKFactory {
 
             // Hook execution with plugin tracking
             callHook: async (hookName, payload) => {
-                this.deps.log.debug(`Plugin ${pluginId} calling hook: ${hookName}`);
+                this.deps.log.debug(`Plugin ${plugin.id} calling hook: ${hookName}`);
                 return this.deps.pluginExecutor.executeHook(String(hookName), sdk, payload);
             },
 
             // RPC execution with plugin tracking
             callRPC: async (method, request) => {
-                this.deps.log.debug(`Plugin ${pluginId} calling RPC: ${method}`);
+                this.deps.log.debug(`Plugin ${plugin.id} calling RPC: ${method}`);
                 return this.deps.pluginExecutor.executeRpc(String(method), sdk, request);
             }
         };

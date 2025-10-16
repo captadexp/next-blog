@@ -1,4 +1,4 @@
-import type {DatabaseAdapter, PluginSettings} from '@supergrowthai/next-blog-types/server';
+import type {DatabaseAdapter, PluginSettings, BrandedId, Plugin} from '@supergrowthai/next-blog-types/server';
 import {createId} from '@supergrowthai/next-blog-types/server';
 import {getSystemPluginId} from '../utils/defaultSettings.js';
 import {decrypt, encrypt, isSecureKey} from '../utils/crypto.js';
@@ -26,7 +26,11 @@ export class ServerSettingsHelper implements PluginSettings {
     private readonly db: DatabaseAdapter;
     private readonly currentUserId?: string; // Current user context for the plugin
 
-    constructor(private readonly pluginId: string, db?: DatabaseAdapter, currentUserId?: string) {
+    constructor(
+        private readonly plugin: Plugin,
+        db?: DatabaseAdapter,
+        currentUserId?: string
+    ) {
         // Use injected db or fall back to global (for backwards compatibility)
         this.db = db || globalDb!;
         if (!this.db) {
@@ -40,11 +44,11 @@ export class ServerSettingsHelper implements PluginSettings {
      * Plugin settings are stored with system plugin ownership but prefixed keys
      */
     async get<T = any>(key: string): Promise<T | null> {
-        const prefixedKey = `plugin:${this.pluginId}:${key}`;
+        const prefixedKey = `plugin:${this.plugin.id}:${key}`;
 
         const setting = await this.db.settings.findOne({
             key: prefixedKey,
-            ownerId: createId.plugin(this.pluginId),
+            ownerId: this.plugin._id,
             ownerType: 'plugin'
         });
 
@@ -64,17 +68,16 @@ export class ServerSettingsHelper implements PluginSettings {
      * Set a plugin-specific setting
      * Plugin settings are stored with system plugin ownership but prefixed keys
      */
-    async set<T = any>(key: string, value: T): Promise<void> {
-        const pluginBrandedId = createId.plugin(this.pluginId);
-        const prefixedKey = `plugin:${this.pluginId}:${key}`;
+    async set<T = any>(key: string, value: T, {isSecure = false} = {}): Promise<void> {
+        const prefixedKey = `plugin:${this.plugin.id}:${key}`;
 
         // Check if this should be a secure setting
-        const shouldBeSecure = isSecureKey(key) || isSecureKey(prefixedKey);
+        const shouldBeSecure = isSecureKey(key) || isSecure;
         const finalValue = shouldBeSecure ? encrypt(value) : value;
 
         const existingSetting = await this.db.settings.findOne({
             key: prefixedKey,
-            ownerId: pluginBrandedId
+            ownerId: this.plugin._id
         });
 
         if (existingSetting) {
@@ -86,7 +89,7 @@ export class ServerSettingsHelper implements PluginSettings {
             await this.db.settings.create({
                 key: prefixedKey,
                 value: finalValue as any,
-                ownerId: pluginBrandedId,
+                ownerId: this.plugin._id,
                 ownerType: 'plugin',
                 isSecure: shouldBeSecure
             });
@@ -120,18 +123,16 @@ export class ServerSettingsHelper implements PluginSettings {
     /**
      * Set a global setting (owned by system plugin)
      */
-    async setGlobal<T = any>(key: string, value: T): Promise<void> {
+    async setGlobal<T = any>(key: string, value: T, {isSecure = false} = {}): Promise<void> {
         const systemPluginId = await getSystemPluginId(this.db);
-        const pluginId = createId.plugin(systemPluginId);
 
-        // Check if this should be a secure setting
-        const shouldBeSecure = isSecureKey(key);
+        const shouldBeSecure = isSecureKey(key) || isSecure;
         const finalValue = shouldBeSecure ? encrypt(value) : value;
 
         //fixme we should be using upsert here
         const existingSetting = await this.db.settings.findOne({
             key,
-            ownerId: pluginId
+            ownerId: systemPluginId
         });
 
         if (existingSetting) {
@@ -143,7 +144,7 @@ export class ServerSettingsHelper implements PluginSettings {
             await this.db.settings.create({
                 key,
                 value: finalValue as any,
-                ownerId: pluginId,
+                ownerId: systemPluginId,
                 ownerType: 'plugin',
                 isSecure: shouldBeSecure
             });
@@ -160,7 +161,6 @@ export class ServerSettingsHelper implements PluginSettings {
         // TODO: Add permission check - should plugins be able to read each other's settings?
         const setting = await this.db.settings.findOne({
             key: prefixedKey,
-            ownerId: createId.plugin(systemPluginId),
             ownerType: 'plugin'
         });
 
@@ -259,8 +259,8 @@ export class ServerSettingsHelper implements PluginSettings {
 }
 
 /**
- * Create a settings helper bound to a specific plugin ID
+ * Create a settings helper bound to a specific plugin
  */
-export function createSettingsHelper(pluginId: string): PluginSettings {
-    return new ServerSettingsHelper(pluginId);
+export function createSettingsHelper(plugin: Plugin): PluginSettings {
+    return new ServerSettingsHelper(plugin);
 }

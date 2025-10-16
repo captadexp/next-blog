@@ -5,12 +5,21 @@ import type {ApiExtra} from "../types/api.js";
 import pluginExecutor from "../plugins/plugin-executor.server.js";
 import {ServerSettingsHelper} from "../plugins/settings-helper.server.js";
 import {VERSION_INFO} from "../version.js";
+import {getSystemPluginId} from "./defaultSettings.js";
 
 export const createWithExtras = (configuration: Configuration) => {
     return (fn: OneApiFunction<ApiExtra>): OneApiFunction => {
         const wrappedFn = async (session: SessionData, request: MinimumRequest, extra: any) => {
             // Initialize SDK for internal use
             const db = await configuration.db();
+
+            // Get system plugin information
+            const systemPluginId = await getSystemPluginId(db);
+            const systemPlugin = await db.plugins.findById(systemPluginId);
+            if (!systemPlugin) {
+                throw new Error('System plugin not found');
+            }
+
             const sdk: ServerSDK = {
                 log: console,
                 db,
@@ -21,8 +30,8 @@ export const createWithExtras = (configuration: Configuration) => {
                     buildTime: VERSION_INFO.buildTime,
                     buildMode: VERSION_INFO.buildMode
                 },
-                pluginId: 'system',
-                settings: new ServerSettingsHelper('system', db, session.user?._id),
+                pluginId: systemPlugin.id,
+                settings: new ServerSettingsHelper(systemPlugin, db, session.user?._id),
                 callHook: async (hookName, payload) => {
                     return pluginExecutor.executeHook(String(hookName), sdk, payload);
                 },
