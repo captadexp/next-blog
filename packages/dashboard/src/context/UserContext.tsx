@@ -18,7 +18,7 @@ interface UserContextType {
     apis: ApiClientImpl; // API client instance
 }
 
-const defaultApiClient = new ApiClientImpl("/api/next-blog/api/");
+const defaultApiClient = new ApiClientImpl("/api/next-blog/api");
 
 const UserContext = createContext<UserContextType>({
     user: null,
@@ -33,11 +33,11 @@ const UserContext = createContext<UserContextType>({
     hasPermission: () => false,
     hasAnyPermission: () => false,
     hasAllPermissions: () => false,
-    apis: defaultApiClient, // Provide the default API client
+    apis: defaultApiClient
 });
 
 export const UserProvider = ({children}: { children: any }) => {
-    // Initialize the API client
+
     const apiClient = useMemo(() => new ApiClientImpl("/api/next-blog/api"), []);
 
     const [user, setUser] = useState<User | null>(null);

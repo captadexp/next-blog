@@ -167,13 +167,11 @@ export interface PluginAPI {
     }): Promise<APIResponse<PluginHookMapping[]>>;
 
     callPluginHook<TPayload = any, TResponse = any>(
-        pluginId: string,
         hookName: string,
         payload: TPayload
     ): Promise<TResponse>;
 
     callPluginRPC<TPayload = any, TResponse = any>(
-        pluginId: string,
         hookName: string,
         payload: TPayload
     ): Promise<TResponse>;
@@ -242,8 +240,4 @@ export interface APIClient extends BlogAPI,
     AuthAPI,
     ConfigAPI,
     MediaAPI {
-    // Token management for the client
-    setToken?(token: string): void;
-
-    clearToken?(): void;
 }

@@ -181,7 +181,7 @@ export const updateBlogMetadata = secure(async (session: SessionData, request: M
 
     try {
         const body = request.body as { metadata?: Record<string, unknown> };
-        const metadata = body.metadata;
+        let metadata = body.metadata;
 
         if (!metadata) {
             throw new ValidationError("Metadata is required");
@@ -192,6 +192,28 @@ export const updateBlogMetadata = secure(async (session: SessionData, request: M
         }) | null;
         if (!existingBlog) {
             throw new NotFound(`Blog with id ${blogId} not found`);
+        }
+
+        const callingPluginId = request.headers['x-plugin-id'] || request.headers['X-Plugin-Id'];
+        //X-Plugin-Manifest-Id contains the id we need but lets just make it such that it takes more effort to make a mistake
+        if (callingPluginId) {
+            const plugin = await db.plugins.findOne({_id: callingPluginId});
+            if (plugin) {
+                const prefixedMetadata: Record<string, unknown> = {};
+
+                for (const [key, value] of Object.entries(metadata)) {
+                    // Safety check: only prefix keys that don't already have a plugin prefix
+                    // This prevents double-prefixing and data loss
+                    if (!key.includes(':') || !key.match(/^[a-zA-Z0-9_-]+:[a-zA-Z0-9_-]/)) {
+                        const prefixedKey = `${plugin.id}:${key}`;
+                        prefixedMetadata[prefixedKey] = value;
+                    } else {
+                        prefixedMetadata[key] = value;
+                    }
+                }
+
+                metadata = prefixedMetadata;
+            }
         }
 
         // Merge existing metadata with new metadata

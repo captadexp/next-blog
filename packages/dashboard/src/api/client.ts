@@ -15,18 +15,11 @@ import type {
 
 class ApiClientImpl implements APIClient {
     private readonly baseUrl: string;
-    private token: string | null = null;
+    private readonly defaultHeaders: Record<string, string>;
 
-    constructor(baseUrl: string = '/api') {
+    constructor(baseUrl: string = '/api', defaultHeaders: Record<string, string> = {}) {
         this.baseUrl = baseUrl;
-    }
-
-    setToken(token: string) {
-        this.token = token;
-    }
-
-    clearToken() {
-        this.token = null;
+        this.defaultHeaders = defaultHeaders;
     }
 
     // Auth APIs
@@ -263,12 +256,12 @@ class ApiClientImpl implements APIClient {
         return this.request<PluginHookMapping[]>(`/plugin-hooks?${endpoint}`);
     }
 
-    async callPluginHook<TPayload = any, TResponse = any>(pluginId: string, hookName: string, payload: TPayload): Promise<TResponse> {
-        return this.request<any>(`/plugin/hook/${hookName}`, 'POST', payload, {"X-Calling-Plugin-Id": pluginId}) as any;
+    async callPluginHook<TPayload = any, TResponse = any>(hookName: string, payload: TPayload): Promise<TResponse> {
+        return this.request<any>(`/plugin/hook/${hookName}`, 'POST', payload) as any;
     }
 
-    async callPluginRPC<TPayload = any, TResponse = any>(pluginId: string, rpcName: string, payload: TPayload): Promise<TResponse> {
-        return this.request<any>(`/plugin/rpc/${rpcName}`, 'POST', payload, {"X-Calling-Plugin-Id": pluginId}) as any;
+    async callPluginRPC<TPayload = any, TResponse = any>(rpcName: string, payload: TPayload): Promise<TResponse> {
+        return this.request<any>(`/plugin/rpc/${rpcName}`, 'POST', payload) as any;
     }
 
     // Media APIs
@@ -345,11 +338,8 @@ class ApiClientImpl implements APIClient {
             'Content-Type': 'application/json',
             ...this.getCsrfHeaders(),
             ...extraHeaders,
+            ...this.defaultHeaders,
         };
-
-        if (this.token) {
-            headers['Authorization'] = `Bearer ${this.token}`;
-        }
 
         const options: RequestInit = {
             method,
@@ -376,5 +366,4 @@ class ApiClientImpl implements APIClient {
     }
 }
 
-// Export the class for instantiation in the context
 export default ApiClientImpl;

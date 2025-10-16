@@ -1,9 +1,10 @@
-import type {APIClient, ClientSDK, NotificationStatus, User, Plugin} from '@supergrowthai/next-blog-types/client';
+import type {APIClient, ClientSDK, NotificationStatus, Plugin, User} from '@supergrowthai/next-blog-types/client';
 import {ClientSettingsHelper} from './settings-helper.client';
 import {ClientCacheHelper} from './cache-helper.client';
 import {ClientEventsHelper} from './events-helper.client';
 import toast from 'react-hot-toast';
 import Logger, {LogLevel} from "../utils/Logger";
+import ApiClientImpl from '../api/client';
 
 /**
  * Dependencies required to create a client SDK instance
@@ -13,8 +14,6 @@ interface ClientSDKDependencies {
     user: User | null;
     log: Logger;
     utils?: any;
-    callHook: (hookName: string, payload: any) => Promise<any>;
-    callRPC: (hookName: string, payload: any) => Promise<any>;
 }
 
 /**
@@ -34,9 +33,6 @@ class ClientSDKFactory {
         const settingsHelper = new ClientSettingsHelper(plugin);
         const cacheHelper = new ClientCacheHelper(plugin.id);
         const eventsHelper = new ClientEventsHelper(plugin.id);
-
-        // Wrap API client to add plugin headers
-        const wrappedApis = this.createWrappedAPIClient(plugin.id);
 
         // Create the SDK with plugin fingerprinting
         const sdk: ClientSDK = {
@@ -58,7 +54,7 @@ class ClientSDKFactory {
             events: eventsHelper,
 
             // API client with automatic plugin headers
-            apis: wrappedApis,
+            apis: this.deps.apis,
 
             // User info
             user: this.deps.user,
@@ -94,13 +90,13 @@ class ClientSDKFactory {
             // Hook execution with plugin tracking
             callRPC: async (hookName, payload) => {
                 console.debug(`[Plugin: ${plugin.id}] Calling RPC: ${hookName}`);
-                return this.deps.callRPC(String(hookName), payload);
+                return this.deps.apis.callPluginRPC(String(hookName), payload);
             },
 
             // Hook execution with plugin tracking
             callHook: async (hookName, payload) => {
                 console.debug(`[Plugin: ${plugin.id}] Calling hook: ${hookName}`);
-                return this.deps.callHook(String(hookName), payload);
+                return this.deps.apis.callPluginHook(String(hookName), payload);
             },
 
             startIntent: <T, R>(intentType: string, payload: T): Promise<R> => {
@@ -152,52 +148,6 @@ class ClientSDKFactory {
         return sdk;
     }
 
-    /**
-     * Create a wrapped API client that adds plugin headers to all requests
-     */
-    private createWrappedAPIClient(pluginId: string): APIClient {
-        const originalApis = this.deps.apis;
-
-        // Create proxy that intercepts all method calls
-        return new Proxy(originalApis, {
-            get(target: any, prop: string) {
-                const original = target[prop];
-
-                // If it's not a function, return as is
-                if (typeof original !== 'function') {
-                    return original;
-                }
-
-                // Wrap the function to add plugin headers
-                return async (...args: any[]) => {
-                    // Log API call for debugging
-                    console.debug(`[Plugin: ${pluginId}] API call: ${prop}`, args);
-
-                    // If this is a raw fetch call, add headers
-                    if (prop === 'fetch' || prop === 'request') {
-                        const options = args[1] || {};
-                        args[1] = {
-                            ...options,
-                            headers: {
-                                ...options.headers,
-                                'X-Plugin-Id': pluginId,
-                                // Could add more metadata
-                                'X-Plugin-Context': 'client'
-                            }
-                        };
-                    }
-
-                    // Call the original method
-                    const result = await original.apply(target, args);
-
-                    // Could track metrics here
-                    console.debug(`[Plugin: ${pluginId}] API response for ${prop}:`, result);
-
-                    return result;
-                };
-            }
-        }) as APIClient;
-    }
 
     /**
      * Create a logger that automatically includes plugin context
@@ -218,18 +168,28 @@ class ClientSDKFactory {
 }
 
 /**
- * Create a simple SDK without factory (for backwards compatibility)
+ * Create a plugin-specific SDK with automatic header injection
  */
 export function createClientSDK(
     plugin: Plugin,
     apis: APIClient,
     user: User | null,
     utils: any,
-    callHook: (hookName: string, payload: any) => Promise<any>,
-    callRPC: (hookName: string, payload: any) => Promise<any>,
     onRefresh?: () => void
 ): ClientSDK {
+
+    const pluginApiClient = new ApiClientImpl("/api/next-blog/api", {
+        'X-Plugin-Id': plugin._id,
+        'X-Plugin-Manifest-Id': plugin.id,
+        'X-Plugin-Context': 'client'
+    });
+
     const logger = new Logger('PluginExecutor', LogLevel.ERROR);
-    const factory = new ClientSDKFactory({apis, log: logger, user, utils, callHook, callRPC});
+    const factory = new ClientSDKFactory({
+        apis: pluginApiClient,
+        log: logger,
+        user,
+        utils,
+    });
     return factory.createSDK(plugin, onRefresh);
 }

@@ -33,8 +33,6 @@ interface PluginContextType {
     plugins: Plugin[];
     loadedPlugins: Map<string, ClientPluginModule>;
     getHookFunctions: (hookName: string) => { plugin: Plugin, hookFn: ClientHookFunction }[];
-    callHook: <T, R>(pluginId: string, hookName: string, payload: T) => Promise<R>;
-    callRPC: <T, R>(pluginId: string, hookName: string, payload: T) => Promise<R>;
     reloadPlugins: () => Promise<void>;
     hardReloadPlugins: () => Promise<void>;
 }
@@ -259,24 +257,14 @@ export const PluginProvider: FunctionComponent = ({children}) => {
         return functions;
     }, [hookIndex, plugins]);
 
-    const callHook = useCallback(async (pluginId: string, hookName: string, payload: any): Promise<any> => {
-        return apis.callPluginHook(pluginId, hookName, payload);
-    }, [apis]);
-
-    const callRPC = useCallback(async (pluginId: string, hookName: string, payload: any): Promise<any> => {
-        return apis.callPluginRPC(pluginId, hookName, payload);
-    }, [apis]);
-
     const value = useMemo(() => ({
         status,
         plugins,
         loadedPlugins,
         getHookFunctions,
-        callHook,
-        callRPC,
         reloadPlugins,
         hardReloadPlugins
-    }), [status, plugins, loadedPlugins, getHookFunctions, callHook, reloadPlugins, hardReloadPlugins]);
+    }), [status, plugins, loadedPlugins, getHookFunctions, reloadPlugins, hardReloadPlugins]);
 
     return <PluginContext.Provider value={value}>{children}</PluginContext.Provider>;
 };

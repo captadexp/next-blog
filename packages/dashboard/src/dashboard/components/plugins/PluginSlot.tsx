@@ -52,13 +52,11 @@ const ProxyComponent = memo(({refreshKey, hookFn, context, pluginId, sdk}: {
  * A single, stateful host for one plugin's UI. It manages the refresh
  * cycle and renders the UI Tree provided by the plugin.
  */
-const PluginHost = memo(({hookName, plugin, hookFn, context, callHook, callRPC}: {
+const PluginHost = memo(({hookName, plugin, hookFn, context}: {
     hookName: string,
     plugin: Plugin,
     hookFn: ClientHookFunction,
     context?: Record<string, any>,
-    callHook<T, R>(id: string, payload: T): Promise<R>
-    callRPC<T, R>(id: string, payload: T): Promise<R>
 }) => {
     const [refreshKey, setRefreshKey] = useState(0);
     const {apis, user} = useUser();
@@ -73,14 +71,12 @@ const PluginHost = memo(({hookName, plugin, hookFn, context, callHook, callRPC}:
             apis,
             user,
             utils,
-            callHook,
-            callRPC,
             () => {
                 logger.debug(`Refresh requested by plugin "${plugin.id}"`);
                 setRefreshKey(Date.now());
             }
         );
-    }, [apis, user, plugin, callHook, callRPC]);
+    }, [apis, user, plugin]);
 
     return (
         <ProxyComponent
@@ -96,9 +92,7 @@ const PluginHost = memo(({hookName, plugin, hookFn, context, callHook, callRPC}:
     return (
         prevProps.hookName === nextProps.hookName &&
         prevProps.plugin._id === nextProps.plugin._id &&
-        prevProps.hookFn === nextProps.hookFn &&
-        prevProps.callHook === nextProps.callHook &&
-        prevProps.callRPC === nextProps.callRPC
+        prevProps.hookFn === nextProps.hookFn
     );
 });
 
@@ -119,7 +113,7 @@ interface PluginSlotProps {
  */
 export const PluginSlot: FunctionComponent<PluginSlotProps> = (props) => {
     const {hookName: hookName, context, pluginFilter} = props;
-    const {getHookFunctions, status, callHook, callRPC} = usePlugins();
+    const {getHookFunctions, status} = usePlugins();
 
     if (status !== 'ready') {
         return null;
@@ -143,8 +137,6 @@ export const PluginSlot: FunctionComponent<PluginSlotProps> = (props) => {
                     <PluginHost {...{
                         plugin,
                         hookFn,
-                        callHook: (name, payload) => callHook(plugin._id, name, payload),
-                        callRPC: (name, payload) => callRPC(plugin._id, name, payload),
                         hookName
                     }} context={context}/>
                 </div>
