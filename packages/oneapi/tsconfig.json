@@ -20,7 +20,7 @@
     "noEmit": true,
     "outDir": "dist",
     "types": [
-      "bun-types"
+      "bun"
     ],
     "paths": {
     },

@@ -1,4 +1,4 @@
-import {CommonRequest, PathObject} from '../types.js';
+import {CommonRequest, CommonResponse, PathObject} from '../types.js';
 import {NextRequest} from "next/server";
 import {GenericRouter, GenericRouterConfig} from './generic-router.js';
 
@@ -13,7 +13,7 @@ export class NextJSRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkno
     }
 
     handlers() {
-        const processRequest = (request: NextRequest): Promise<Response> => this.genericRouter.handle(request as Request as CommonRequest);
+        const processRequest = (request: NextRequest): Promise<CommonResponse> => this.genericRouter.handle(request as Request as CommonRequest);
 
         return {
             GET: processRequest,

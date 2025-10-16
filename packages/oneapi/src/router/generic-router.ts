@@ -1,7 +1,7 @@
 import {getCachedMatch} from '../parse-path.js';
 import {BadRequest, Exception, Forbidden, NotFound, Success, UnAuthorised} from '../errors.js';
 import {
-    CommonRequest,
+    CommonRequest, CommonResponse,
     IRouterConfig,
     MinimumRequest,
     OneApiResponse,
@@ -22,7 +22,7 @@ export class GenericRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkn
     ) {
     }
 
-    async handle(request: CommonRequest): Promise<Response> {
+    async handle(request: CommonRequest): Promise<CommonResponse> {
         try {
             const url = new URL(request.url);
             const pathname = this.config.pathPrefix && url.pathname.startsWith(this.config.pathPrefix)
@@ -154,7 +154,7 @@ export class GenericRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkn
         return 500;
     }
 
-    private handleError(e: any): Response {
+    private handleError(e: any): CommonResponse {
         if (e instanceof UnAuthorised) {
             return Response.json({code: e.code, message: e.message}, {status: 401});
         } else if (e instanceof Forbidden) {

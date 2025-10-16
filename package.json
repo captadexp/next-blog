@@ -43,6 +43,7 @@
   },
   "trustedDependencies": [
     "@tailwindcss/oxide",
+    "bun",
     "esbuild",
     "sharp"
   ]

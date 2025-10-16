@@ -1,7 +1,7 @@
 import type {DatabaseAdapter, PluginSettings} from '@supergrowthai/next-blog-types/server';
 import {createId} from '@supergrowthai/next-blog-types/server';
 import {getSystemPluginId} from '../utils/defaultSettings.js';
-import {decrypt, encrypt, isSecureKey} from '../utils/encryption.js';
+import {decrypt, encrypt, isSecureKey} from '../utils/crypto.js';
 
 // Global database reference for backwards compatibility
 let globalDb: DatabaseAdapter | null = null;

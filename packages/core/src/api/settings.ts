@@ -5,7 +5,7 @@ import type {ApiExtra} from "../types/api.js";
 import type {SettingsEntryData} from "@supergrowthai/next-blog-types/server";
 import {createId} from "@supergrowthai/next-blog-types/server";
 import {getSystemPluginId} from "../utils/defaultSettings.js";
-import {encrypt, isSecureKey, maskValue} from "../utils/encryption.js";
+import {encrypt, isSecureKey, maskValue} from "../utils/crypto.js";
 
 // List all settings
 export const getSettings = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {

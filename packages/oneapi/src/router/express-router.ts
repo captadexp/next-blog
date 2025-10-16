@@ -1,5 +1,5 @@
 import type {NextFunction, Request as ExpressRequest, Response as ExpressResponse} from 'express';
-import {PathObject} from '../types.js';
+import {CommonResponse, PathObject} from '../types.js';
 import {GenericRouter, GenericRouterConfig} from './generic-router.js';
 
 export interface ExpressRouterConfig<CREDENTIALS = unknown, USER = unknown, SESSION = unknown> extends GenericRouterConfig<CREDENTIALS, USER, SESSION> {
@@ -79,7 +79,7 @@ export class ExpressRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkn
         });
     }
 
-    private async convertWebToExpressResponse(response: Response, res: ExpressResponse): Promise<void> {
+    private async convertWebToExpressResponse(response: CommonResponse, res: ExpressResponse): Promise<void> {
         res.status(response.status);
 
         response.headers.forEach((value, key) => {
