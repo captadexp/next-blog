@@ -1,5 +1,4 @@
 import type {OneApiFunction, PathObject} from "@supergrowthai/oneapi";
-import {NextResponse} from "next/server";
 import {DashboardPage} from "@supergrowthai/next-blog-dashboard";
 import {
     createBlog,
@@ -27,7 +26,6 @@ import {
     getCategoryById,
     getConfig,
     getCurrentUser,
-    getLlmsTxt,
     getMedia,
     getMediaById,
     getPluginById,
@@ -35,16 +33,14 @@ import {
     getPlugins,
     getPluginSetting,
     getPluginSettings,
-    getRobotsTxt,
-    getRssFeed,
     getSettingById,
     getSettings,
-    getSitemap,
-    getSitemapIndex,
     getTagById,
     getTags,
     getUser,
     listUsers,
+    login,
+    logout,
     reinstallPlugin,
     setPluginSetting,
     updateBlog,
@@ -77,6 +73,8 @@ function methodHandler(handlers: {
 
 const cmsPaths: PathObject = {
     api: {
+        login: methodHandler({POST: login}),
+        logout: methodHandler({POST: logout}),
         blogs: {
             '*': methodHandler({GET: getBlogs}),
             ':id': methodHandler({GET: getBlogById}),
@@ -181,27 +179,12 @@ const cmsPaths: PathObject = {
             delete: {
                 ':id': methodHandler({POST: deleteMedia})
             }
-        },
-        seo: {
-            'sitemap.xml': methodHandler({GET: getSitemap}),
-            'sitemap-index.xml': methodHandler({GET: getSitemapIndex}),
-            'robots.txt': methodHandler({GET: getRobotsTxt}),
-            'llms.txt': methodHandler({GET: getLlmsTxt}),
-            'rss.xml': methodHandler({GET: getRssFeed})
         }
     },
     dashboard: {
         '[...]': methodHandler({
             GET: async (session, request, extra) => {
-                // Check if user is authenticated
-                if (!session.user) {
-                    return {
-                        code: 401,
-                        message: "Authentication required to access dashboard"
-                    };
-                }
-                // Return HTML directly as NextResponse
-                return new NextResponse(DashboardPage.toString(), {
+                return new Response(DashboardPage.toString(), {
                     status: 200,
                     headers: {
                         'Content-Type': 'text/html; charset=utf-8'

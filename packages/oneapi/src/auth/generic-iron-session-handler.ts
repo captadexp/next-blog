@@ -1,13 +1,14 @@
 import {IronSessionAuthConfig, IronSessionAuthHandler, IronSessionData} from "./iron-session-handler.js";
 import {getIronSession, IronSession} from "iron-session";
+import {CommonRequest, OneApiResponse} from "../types.ts";
 
 export class GenericIronSessionHandler extends IronSessionAuthHandler {
     constructor(config: IronSessionAuthConfig) {
         super(config);
     }
 
-    async getIronSession(req: Request, res?: Response | null): Promise<IronSession<IronSessionData>> {
-        // For generic Request/Response, we need to handle cookies ourselves
+    async getIronSession(req: CommonRequest, res?: OneApiResponse | null): Promise<IronSession<IronSessionData>> {
+
         const cookieStore = {
             get: (name: string) => {
                 const cookieHeader = req.headers.get('cookie') || '';
@@ -30,12 +31,15 @@ export class GenericIronSessionHandler extends IronSessionAuthHandler {
                             if (k === 'sameSite') return `SameSite=${v}`;
                             return `${k}=${v}`;
                         }).join('; ')}`;
-                    res.headers.append('Set-Cookie', cookieString);
+                    const existingHeader = res.getHeader("Set-Cookie");
+                    res.setHeader("Set-Cookie", [...(Array.isArray(existingHeader) ? existingHeader : []), cookieString]);
                 }
             },
             delete: (name: string) => {
                 if (res) {
-                    res.headers.append('Set-Cookie', `${name}=; Max-Age=0; Path=/`);
+                    const existingHeader = res.getHeader("Set-Cookie");
+                    const cookieString = `${name}=; Max-Age=0; Path=/`;
+                    res.setHeader("Set-Cookie", [...(Array.isArray(existingHeader) ? existingHeader : []), cookieString]);
                 }
             }
         };

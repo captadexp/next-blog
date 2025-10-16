@@ -1,15 +1,15 @@
 import type {NextFunction, Request as ExpressRequest, Response as ExpressResponse} from 'express';
-import {IRouterConfig, PathObject} from '../types.js';
-import {createGenericRouter} from './generic-router.js';
+import {PathObject} from '../types.js';
+import {GenericRouter, GenericRouterConfig} from './generic-router.js';
 
-export interface ExpressRouterConfig extends IRouterConfig {
+export interface ExpressRouterConfig<CREDENTIALS = unknown, USER = unknown, SESSION = unknown> extends GenericRouterConfig<CREDENTIALS, USER, SESSION> {
 }
 
-export class ExpressRouter {
+export class ExpressRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unknown> {
     private genericRouter;
 
-    constructor(pathObject: PathObject, config: ExpressRouterConfig = {}) {
-        this.genericRouter = createGenericRouter(pathObject, config);
+    constructor(pathObject: PathObject, config: ExpressRouterConfig<CREDENTIALS, USER, SESSION> = {}) {
+        this.genericRouter = new GenericRouter(pathObject, config);
     }
 
     middleware() {
@@ -73,6 +73,6 @@ export class ExpressRouter {
     }
 }
 
-export function createExpressRouter(pathObject: PathObject, config?: ExpressRouterConfig) {
-    return new ExpressRouter(pathObject, config);
+export function createExpressRouter<CREDENTIALS = any, USER = any, SESSION = any>(pathObject: PathObject, config?: ExpressRouterConfig<CREDENTIALS, USER, SESSION>) {
+    return new ExpressRouter<CREDENTIALS, USER, SESSION>(pathObject, config);
 }

@@ -48,11 +48,17 @@ async function createDefaultAdminUser(db: DatabaseAdapter, password: string): Pr
  * Basic Authentication handler for oneapi
  * Handles HTTP Basic Auth for Next.js Blog CMS
  */
-export class BasicAuthHandler implements IAuthHandler {
+export class BasicAuthHandler implements IAuthHandler<{ username: string, password: string }, User, {
+    user: User | null,
+    isAuthenticated: boolean
+}> {
     constructor(private db: () => Promise<DatabaseAdapter>) {
     }
 
-    async login(credentials: any, req: OneApiRequest, res?: OneApiResponse | null): Promise<AuthResult> {
+    async login(credentials: {
+        username: string,
+        password: string
+    }, req: OneApiRequest, res?: OneApiResponse | null): Promise<AuthResult<User>> {
         const {username, password} = credentials;
 
         if (!username || !password) {
@@ -93,7 +99,7 @@ export class BasicAuthHandler implements IAuthHandler {
         // The client should stop sending the Authorization header
     }
 
-    async getUser(req: OneApiRequest, res?: OneApiResponse | null): Promise<any | null> {
+    async getUser(req: OneApiRequest, res?: OneApiResponse | null): Promise<User | null> {
         // Parse Basic Auth header - handle both Headers and plain object
         let authHeader: string | undefined;
 
@@ -158,12 +164,15 @@ export class BasicAuthHandler implements IAuthHandler {
         return user !== null;
     }
 
-    async updateUser(user: any, req: OneApiRequest, res?: OneApiResponse | null): Promise<void> {
+    async updateUser(user: User, req: OneApiRequest, res?: OneApiResponse | null): Promise<void> {
         // Basic auth doesn't maintain sessions, so this is a no-op
         // The user data is fetched fresh on each request
     }
 
-    async getSession(req: OneApiRequest, res?: OneApiResponse | null): Promise<any> {
+    async getSession(req: OneApiRequest, res?: OneApiResponse | null): Promise<{
+        user: User | null,
+        isAuthenticated: boolean
+    }> {
         // For basic auth, we return a simple session object with the user
         const user = await this.getUser(req, res);
         return {

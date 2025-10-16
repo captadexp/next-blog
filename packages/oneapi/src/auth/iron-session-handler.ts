@@ -36,7 +36,7 @@ export interface IronSessionAuthConfig {
  * Iron-session based authentication handler
  * Uses encrypted cookies to store session data
  */
-export abstract class IronSessionAuthHandler implements IAuthHandler {
+export abstract class IronSessionAuthHandler implements IAuthHandler<any, any, any> {
     protected readonly sessionOptions: SessionOptions;
     private readonly validateCredentials?: (credentials: any) => Promise<any | null>;
 
@@ -69,7 +69,7 @@ export abstract class IronSessionAuthHandler implements IAuthHandler {
         credentials: any,
         req: OneApiRequest,
         res?: OneApiResponse | null
-    ): Promise<AuthResult> {
+    ): Promise<AuthResult<any>> {
         try {
             const session = await this.getIronSession(req, res);
 

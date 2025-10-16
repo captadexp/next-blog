@@ -1,12 +1,14 @@
 import type {MinimumRequest, OneApiFunction, SessionData} from "@supergrowthai/oneapi";
 import type {Permission} from "@supergrowthai/next-blog-types/server";
 import {hasAllPermissions, hasAnyPermission, hasPermission} from "./permissions.js";
+import {Session} from "../auth/sessions.ts";
 
 type SecureOptions = {
     requirePermission?: Permission;
     requireAnyPermission?: Permission[];
     requireAllPermissions?: Permission[];
 };
+
 
 /**
  * Wrapper to secure an oneapi endpoint with permission checking
@@ -65,4 +67,76 @@ export default function secure(
     Object.assign(wrappedFn, fn);
 
     return wrappedFn;
+}
+
+
+const CSRF_HEADER = "x-csrf-token";
+const CSRF_COOKIE = "csrf";
+const UNSAFE = new Set<MinimumRequest["method"]>(["POST", "PUT", "PATCH", "DELETE", "GET"]);
+
+function getHeader(req: MinimumRequest, name: string) {
+    const h = req.headers;
+    const key = Object.keys(h).find(k => k.toLowerCase() === name.toLowerCase());
+    return key ? h[key] : undefined;
+}
+
+function getCookie(req: MinimumRequest, name: string): string | undefined {
+    return req.cookies[name];
+}
+
+export function securePlus(
+    fn: OneApiFunction,
+    options?: SecureOptions
+): OneApiFunction {
+    const wrapped: OneApiFunction = async (session, request, extra) => {
+        // 1) Auth required
+        if (!session.user) {
+            return {code: 401, message: "Authentication required"};
+        }
+
+        // 2) CSRF for unsafe methods (double-submit: header must equal cookie)
+        if (UNSAFE.has(request.method)) {
+            const headerToken = getHeader(request, CSRF_HEADER);
+            const cookieToken = getCookie(request, CSRF_COOKIE);
+            const sessionToken = (session.session as Session).csrf
+
+            if (!headerToken || !cookieToken || !sessionToken) {
+                return {code: 403, message: "Missing CSRF token"};
+            }
+            if (headerToken !== cookieToken || headerToken !== sessionToken) {
+                return {code: 403, message: "Invalid CSRF token"};
+            }
+        }
+
+        // 3) Permission checks (same semantics as your original)
+        if (options?.requirePermission) {
+            if (!hasPermission(session.user, options.requirePermission)) {
+                return {code: 403, message: `Insufficient permissions. Required: ${options.requirePermission}`};
+            }
+        }
+
+        if (options?.requireAnyPermission?.length) {
+            if (!hasAnyPermission(session.user, options.requireAnyPermission)) {
+                return {
+                    code: 403,
+                    message: `Insufficient permissions. Required any of: ${options.requireAnyPermission.join(", ")}`
+                };
+            }
+        }
+
+        if (options?.requireAllPermissions?.length) {
+            if (!hasAllPermissions(session.user, options.requireAllPermissions)) {
+                return {
+                    code: 403,
+                    message: `Insufficient permissions. Required all of: ${options.requireAllPermissions.join(", ")}`
+                };
+            }
+        }
+
+        // 4) All good
+        return fn(session, request, extra);
+    };
+
+    Object.assign(wrapped, fn);
+    return wrapped;
 }

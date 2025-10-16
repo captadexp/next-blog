@@ -25,6 +25,8 @@
     }
   },
   "scripts": {
+    "clean": "rimraf dist",
+    "dev": "vite build --watch",
     "typecheck": "tsc --noEmit",
     "build": "vite build"
   },

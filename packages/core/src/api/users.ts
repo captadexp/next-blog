@@ -1,9 +1,10 @@
 import type {MinimumRequest, SessionData} from "@supergrowthai/oneapi";
-import {Permission, User, UserData} from "@supergrowthai/next-blog-types/server";
+import {User, UserData} from "@supergrowthai/next-blog-types/server";
 import crypto from "../utils/crypto.js";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
+import {BasicAuthHandler} from "../auth/basic-auth-handler.ts";
 
 // Get the currently logged in user - requires authentication but no special permission
 export const getCurrentUser = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
@@ -20,16 +21,27 @@ export const getCurrentUser = secure(async (session: SessionData, request: Minim
     throw new Success("Current user retrieved successfully", userWithoutPassword);
 });
 
-// Helper to check permissions
-function hasPermission(user: User, permission: Permission): boolean {
-    if (!user || !user.permissions) return false;
-    return user.permissions.includes(permission) || user.permissions.includes('all:all' as Permission);
+export const login = async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
+    const username = request.body!.username;
+    const password = request.body!.password;
+
+    const result = await (session.authHandler as BasicAuthHandler)?.login({
+        username,
+        password
+    }, request._request!, request._response!);
+
+
+    if (result.success)
+        return {code: 0, message: "Success", payload: result.user}
+    else
+        return {code: -1, message: "Failed to login"}
 }
 
-function hasAnyPermission(user: User, permissions: Permission[]): boolean {
-    if (!user || !user.permissions) return false;
-    return permissions.some(p => hasPermission(user, p));
-}
+export const logout = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
+    await (session.authHandler as BasicAuthHandler)?.logout(request._request!, request._response!);
+
+    return {code: 0, message: "Success"}
+})
 
 // List all users
 export const listUsers = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {

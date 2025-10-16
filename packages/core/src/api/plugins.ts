@@ -195,7 +195,7 @@ export const getPluginHookMappings = secure(async (session: SessionData, request
 }, {requirePermission: 'plugins:read'});
 
 // Execute plugin RPC
-export async function executePluginRpc(session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> {
+export const executePluginRpc = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
     const rpcName = request._params?.rpcName;
     const payload = request.body;
     logger.info(`Executing plugin rpc: ${rpcName}`);
@@ -213,4 +213,4 @@ export async function executePluginRpc(session: SessionData, request: MinimumReq
         message: `Hook ${rpcName} executed successfully`,
         payload: result
     };
-}
+});

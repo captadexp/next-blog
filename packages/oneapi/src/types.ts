@@ -1,47 +1,76 @@
-export type OneApiRequest = Request & { [key: string]: any };
-export type OneApiResponse = Response & { setHeader(key: string, value: string): void };
+export type CommonRequest = Request;
+export type CommonResponse = Response;
 
-export interface MinimumRequest<HEADERS = any, BODY = any, QUERY = any> {
+export type OneApiRequest = CommonRequest;
+
+export type OneApiResponse = CommonResponse & {
+    setHeader(key: string, value: string | number | readonly string[]): void;
+    getHeader(key: string): string | number | string[] | undefined;
+};
+
+type HeaderMap = Record<string, string>;
+type QueryValue = string | undefined;
+
+export interface MinimumRequest<
+    HEADERS extends HeaderMap = HeaderMap,
+    BODY = any,
+    QUERY extends Record<string, QueryValue> = Record<string, QueryValue>
+> {
     query: QUERY;
     body: BODY;
     method: 'POST' | 'GET' | 'DELETE' | 'OPTIONS' | 'PUT' | 'PATCH' | 'HEAD';
     headers: HEADERS;
-    cookies?: any;
+    cookies: Record<string, string>;
     url: string;
     _response?: OneApiResponse;
     _request?: OneApiRequest;
     _params?: Record<string, string>;
 }
 
-export interface SessionData {
-    user?: any;
+export interface SessionData<USER = any, SESSION = any> {
+    user?: USER;
     domain?: string | null;
-    api?: any;
-    authHandler?: IAuthHandler;
-    session?: any;
+    api?: APIImpl;
+    authHandler?: IAuthHandler<any, USER, SESSION>;
+    session?: SESSION;
 }
 
-// Configuration for OneAPI functions
 export interface OneApiFunctionConfig {
-    parseBody?: boolean; // Whether to parse request body (default: true)
-    maxBodySize?: number; // Maximum body size in bytes (optional)
+    parseBody?: boolean;
+    maxBodySize?: number;
 }
 
-// Support both standard OneApiFunctionResponse and raw Response objects (for static files, etc)
-export type OneApiFunction<EXTRA = any, HEADERS = any, BODY = any, QUERY = any, RPayload = any> = {
-    (
-        session: SessionData,
-        request: MinimumRequest<HEADERS, BODY, QUERY>,
-        extra: EXTRA
-    ): Promise<OneApiFunctionResponse<RPayload> | Response>;
-    config?: OneApiFunctionConfig;
-};
-
-export interface OneApiFunctionResponse<T = any> {
+export interface OneApiFunctionResponse<T = unknown> {
     code: number;
     message: string;
     payload?: T;
 }
+
+// available for augmentation
+export interface APIImpl {
+} // use interface for declaration merging
+
+type APIImplConfig<SESSION = unknown> = {
+    request: OneApiRequest;
+    response?: OneApiResponse;
+    session?: SESSION | null;
+};
+
+export type OneApiFunction<
+    EXTRA = any,
+    HEADERS extends HeaderMap = HeaderMap,
+    BODY = any,
+    QUERY extends Record<string, QueryValue> = Record<string, QueryValue>,
+    RPayload = any,
+    SESSION_DATA extends SessionData<any, any> = SessionData<any, any>,
+> = {
+    (
+        session: SESSION_DATA,
+        request: MinimumRequest<HEADERS, BODY, QUERY>,
+        extra: EXTRA
+    ): Promise<OneApiFunctionResponse<RPayload> | CommonResponse>;
+    config?: OneApiFunctionConfig;
+};
 
 export type PathMatchResult = {
     handler: OneApiFunction | null;
@@ -51,56 +80,26 @@ export type PathMatchResult = {
 
 export type PathObject = { [key: string]: PathObject | OneApiFunction };
 
-type APIImpl = {}
-type APIImplConfig = { request: OneApiRequest, response?: OneApiResponse, session?: SessionData | null };
-
-export interface IRouterConfig {
-    createApiImpl?: (config: APIImplConfig) => Promise<APIImpl>;
+export interface IRouterConfig<CREDENTIALS = unknown, USER = unknown, SESSION = unknown> {
+    createApiImpl?: (config: APIImplConfig<SESSION>) => Promise<APIImpl>;
     pathPrefix?: string;
-    authHandler?: IAuthHandler;
+    authHandler?: IAuthHandler<CREDENTIALS, USER, SESSION>;
 }
 
-/**
- * Authentication result returned from login methods
- */
-export interface AuthResult {
-    success: boolean;
-    user?: any;
-    error?: string;
-}
+export type AuthResult<T> =
+    | { success: false; error: string }
+    | { success: true; user: T };
 
-/**
- * Base authentication handler interface
- * Implementations can use different strategies (cookies, JWT, OAuth, etc.)
- */
-export interface IAuthHandler {
-    /**
-     * Authenticate user with credentials
-     */
-    login(credentials: any, req: OneApiRequest, res?: OneApiResponse | null): Promise<AuthResult>;
+export interface IAuthHandler<CREDENTIALS, USER, SESSION> {
+    login(credentials: CREDENTIALS, req: OneApiRequest, res?: OneApiResponse | null): Promise<AuthResult<USER>>;
 
-    /**
-     * Logout current user
-     */
     logout(req: OneApiRequest, res?: OneApiResponse | null): Promise<void>;
 
-    /**
-     * Get current authenticated user
-     */
-    getUser(req: OneApiRequest, res?: OneApiResponse | null): Promise<any | null>;
+    getUser(req: OneApiRequest, res?: OneApiResponse | null): Promise<USER | null>;
 
-    /**
-     * Check if user is authenticated
-     */
     isAuthenticated(req: OneApiRequest, res?: OneApiResponse | null): Promise<boolean>;
 
-    /**
-     * Update user data in session
-     */
-    updateUser(user: any, req: OneApiRequest, res?: OneApiResponse | null): Promise<void>;
+    updateUser(user: USER, req: OneApiRequest, res?: OneApiResponse | null): Promise<void>;
 
-    /**
-     * Get the session object (implementation specific)
-     */
-    getSession(req: OneApiRequest, res?: OneApiResponse | null): Promise<any>;
+    getSession(req: OneApiRequest, res?: OneApiResponse | null): Promise<SESSION>;
 }

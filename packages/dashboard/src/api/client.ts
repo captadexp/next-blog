@@ -322,14 +322,14 @@ class ApiClientImpl implements APIClient {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch(`${this.baseUrl}/media/upload/${mediaId}`, {
-            method: 'POST',
-            credentials: 'include',
-            body: formData
-        });
+        return this.request<Media>(`${this.baseUrl}/media/upload/${mediaId}`, "POST", formData, {"Content-Type": undefined});
+    }
 
-        const result = await response.json();
-        return result as APIResponse<Media>;
+    getCsrfHeaders(): {} {
+        const csrf = document.cookie.split("; ").find(c => c.startsWith("csrf="))?.split("=")[1] ?? "";
+        if (csrf)
+            return {"x-csrf-token": csrf}
+        return {};
     }
 
     private async request<TResponsePayload, BODY = any, HEADERS = any>(
@@ -338,11 +338,13 @@ class ApiClientImpl implements APIClient {
         body?: BODY,
         extraHeaders?: HEADERS
     ): Promise<APIResponse<TResponsePayload>> {
+
         const url = `${this.baseUrl}${endpoint}`;
 
         const headers: HeadersInit = {
-            ...extraHeaders,
             'Content-Type': 'application/json',
+            ...this.getCsrfHeaders(),
+            ...extraHeaders,
         };
 
         if (this.token) {
@@ -352,7 +354,7 @@ class ApiClientImpl implements APIClient {
         const options: RequestInit = {
             method,
             headers,
-            credentials: 'include', // Include cookies for session-based auth
+            credentials: 'include',
         };
 
         if (body && method !== 'GET') {

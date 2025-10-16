@@ -23,7 +23,6 @@ const Login: FunctionComponent = () => {
             const success = await login(username, password);
 
             if (success) {
-                // Redirect to dashboard home
                 location.route('/api/next-blog/dashboard');
             }
         } finally {

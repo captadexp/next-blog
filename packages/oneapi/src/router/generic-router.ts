@@ -1,18 +1,18 @@
 import {getCachedMatch} from '../parse-path.js';
 import {BadRequest, Exception, Forbidden, NotFound, Success, UnAuthorised} from '../errors.js';
-import {IRouterConfig, MinimumRequest, OneApiResponse, PathObject, SessionData} from '../types.js';
+import {CommonRequest, IRouterConfig, MinimumRequest, OneApiResponse, PathObject, SessionData} from '../types.js';
 
-export interface GenericRouterConfig extends IRouterConfig {
+export interface GenericRouterConfig<CREDENTIALS = unknown, USER = unknown, SESSION = unknown> extends IRouterConfig<CREDENTIALS, USER, SESSION> {
 }
 
-export class GenericRouter {
+export class GenericRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unknown> {
     constructor(
         private pathObject: PathObject,
-        private config: GenericRouterConfig = {}
+        private config: GenericRouterConfig<CREDENTIALS, USER, SESSION> = {}
     ) {
     }
 
-    async handle(request: Request): Promise<Response> {
+    async handle(request: CommonRequest): Promise<Response> {
         try {
             const url = new URL(request.url);
             const pathname = this.config.pathPrefix
@@ -27,13 +27,17 @@ export class GenericRouter {
                 throw new NotFound();
             }
 
-            const headersForResponse: Record<string, string> = {};
+            const headersForResponse: Record<string, string | string[]> = {};
             const patchedResponse: OneApiResponse = new Response() as any;
-            patchedResponse.setHeader = (k: string, v: string) => {
+            patchedResponse.setHeader = (k: string, v: string | string[]) => {
                 headersForResponse[k] = v;
             };
 
-            let session = null;
+            patchedResponse.getHeader = (k: string) => {
+                return headersForResponse[k];
+            };
+
+            let session: SESSION | null = null;
             let user = null;
 
             if (this.config.authHandler) {
@@ -104,10 +108,10 @@ export class GenericRouter {
                 user,
                 domain: request.headers.get('host'),
                 api: await this.config.createApiImpl?.({
-                    request: request as any,
+                    request: request,
                     session,
                     response: patchedResponse
-                }) || null,
+                }),
                 authHandler: this.config.authHandler,
                 session
             };
@@ -122,11 +126,11 @@ export class GenericRouter {
                 const httpStatus = this.getHttpStatus(response.code);
                 return Response.json(response, {
                     status: httpStatus,
-                    headers: headersForResponse
+                    headers: headersForResponse as any
                 });
             }
 
-            return Response.json(response, {headers: headersForResponse});
+            return Response.json(response, {headers: headersForResponse as any});
 
         } catch (e) {
             return this.handleError(e);
@@ -164,6 +168,6 @@ export class GenericRouter {
     }
 }
 
-export function createGenericRouter(pathObject: PathObject, config?: GenericRouterConfig) {
-    return new GenericRouter(pathObject, config);
+export function createGenericRouter<CREDENTIALS = any, USER = any, SESSION = any>(pathObject: PathObject, config?: GenericRouterConfig<CREDENTIALS, USER, SESSION>) {
+    return new GenericRouter<CREDENTIALS, USER, SESSION>(pathObject, config);
 }
