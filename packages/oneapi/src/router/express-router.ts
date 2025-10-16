@@ -15,61 +15,92 @@ export class ExpressRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkn
     middleware() {
         return async (req: ExpressRequest, res: ExpressResponse, next: NextFunction) => {
             try {
-                // Convert Express Request to standard Request
-                const headers = new Headers();
-                Object.entries(req.headers).forEach(([key, value]) => {
-                    if (typeof value === 'string') {
-                        headers.set(key, value);
-                    } else if (Array.isArray(value)) {
-                        headers.set(key, value.join(','));
-                    }
-                });
-
-                const url = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
-
-                // Create body stream if needed
-                let body = undefined;
-                if (req.method !== 'GET' && req.method !== 'HEAD') {
-                    if (req.body) {
-                        const contentType = req.get('content-type');
-                        if (contentType?.includes('application/json')) {
-                            body = JSON.stringify(req.body);
-                        } else if (contentType?.includes('application/x-www-form-urlencoded')) {
-                            body = new URLSearchParams(req.body).toString();
-                        } else {
-                            body = req.body;
-                        }
-                    }
-                }
-
-                const request = new Request(url, {
-                    method: req.method,
-                    headers,
-                    body
-                });
-
-                // Handle the request
+                const request = this.convertExpressToWebRequest(req);
                 const response = await this.genericRouter.handle(request);
-
-                // Convert Response back to Express response
-                res.status(response.status);
-
-                response.headers.forEach((value, key) => {
-                    res.setHeader(key, value);
-                });
-
-                const contentType = response.headers.get('content-type');
-                if (contentType?.includes('application/json')) {
-                    const data = await response.json();
-                    res.json(data);
-                } else {
-                    const text = await response.text();
-                    res.send(text);
-                }
+                await this.convertWebToExpressResponse(response, res);
             } catch (error) {
                 next(error);
             }
         };
+    }
+
+    private convertExpressToWebRequest(req: ExpressRequest): Request {
+        const headers = new Headers();
+        Object.entries(req.headers).forEach(([key, value]) => {
+            if (typeof value === 'string') {
+                headers.set(key, value);
+            } else if (Array.isArray(value)) {
+                headers.set(key, value.join(','));
+            }
+        });
+
+        const url = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+
+        let body = undefined;
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
+            if (req.body === undefined || req.body === null) {
+                // No body parsing middleware ran - create a ReadableStream from the Express request
+                body = new ReadableStream({
+                    start(controller) {
+                        req.on('data', (chunk) => {
+                            controller.enqueue(new Uint8Array(chunk));
+                        });
+
+                        req.on('end', () => {
+                            controller.close();
+                        });
+
+                        req.on('error', (error) => {
+                            controller.error(error);
+                        });
+                    }
+                });
+            } else {
+                // Body was parsed by Express middleware
+                body = req.body;
+
+                // Convert parsed objects to appropriate formats
+                if (typeof req.body === 'object' && !Buffer.isBuffer(req.body) && !(req.body instanceof ReadableStream)) {
+                    const contentType = req.headers['content-type'];
+
+                    if (contentType?.includes('application/json')) {
+                        body = JSON.stringify(req.body);
+                    } else if (contentType?.includes('application/x-www-form-urlencoded')) {
+                        body = new URLSearchParams(req.body).toString();
+                    }
+                }
+            }
+        }
+
+        return new Request(url, {
+            method: req.method,
+            headers,
+            body
+        });
+    }
+
+    private async convertWebToExpressResponse(response: Response, res: ExpressResponse): Promise<void> {
+        res.status(response.status);
+
+        response.headers.forEach((value, key) => {
+            res.setHeader(key, value);
+        });
+
+        if (response.body) {
+            const reader = response.body.getReader();
+            try {
+                while (true) {
+                    const {done, value} = await reader.read();
+                    if (done) break;
+                    res.write(value);
+                }
+                res.end();
+            } finally {
+                reader.releaseLock();
+            }
+        } else {
+            res.end();
+        }
     }
 }
 

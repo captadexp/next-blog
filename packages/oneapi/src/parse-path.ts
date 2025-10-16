@@ -105,9 +105,8 @@ export function matchPathToFunction(pathObject: PathObject, url: string): PathMa
     };
 }
 
-const routeCache = new Map<string, PathMatchResult>();
 
-export function getCachedMatch(pathObject: PathObject, url: string): PathMatchResult {
+export function getCachedMatch(routeCache: Map<string, PathMatchResult>, pathObject: PathObject, url: string): PathMatchResult {
     if (routeCache.has(url)) {
         return routeCache.get(url)!;
     }

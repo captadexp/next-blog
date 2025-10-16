@@ -1,11 +1,21 @@
 import {getCachedMatch} from '../parse-path.js';
 import {BadRequest, Exception, Forbidden, NotFound, Success, UnAuthorised} from '../errors.js';
-import {CommonRequest, IRouterConfig, MinimumRequest, OneApiResponse, PathObject, SessionData} from '../types.js';
+import {
+    CommonRequest,
+    IRouterConfig,
+    MinimumRequest,
+    OneApiResponse,
+    PathMatchResult,
+    PathObject,
+    SessionData
+} from '../types.js';
 
 export interface GenericRouterConfig<CREDENTIALS = unknown, USER = unknown, SESSION = unknown> extends IRouterConfig<CREDENTIALS, USER, SESSION> {
 }
 
 export class GenericRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unknown> {
+    private routeCache = new Map<string, PathMatchResult>();
+
     constructor(
         private pathObject: PathObject,
         private config: GenericRouterConfig<CREDENTIALS, USER, SESSION> = {}
@@ -15,11 +25,11 @@ export class GenericRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkn
     async handle(request: CommonRequest): Promise<Response> {
         try {
             const url = new URL(request.url);
-            const pathname = this.config.pathPrefix
-                ? url.pathname.replace(this.config.pathPrefix, '')
+            const pathname = this.config.pathPrefix && url.pathname.startsWith(this.config.pathPrefix)
+                ? url.pathname.slice(this.config.pathPrefix.length)
                 : url.pathname;
 
-            const {params, handler, templatePath} = getCachedMatch(this.pathObject, pathname);
+            const {params, handler, templatePath} = getCachedMatch(this.routeCache, this.pathObject, pathname);
 
             console.log("Generic =>", request.method, templatePath, params, "executing:", !!handler);
 
