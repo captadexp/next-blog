@@ -32,7 +32,7 @@ interface PluginContextType {
     status: 'idle' | 'initializing' | 'ready' | 'error';
     plugins: Plugin[];
     loadedPlugins: Map<string, ClientPluginModule>;
-    getHookFunctions: (hookName: string) => { pluginId: string, hookFn: ClientHookFunction, manifestId: string }[];
+    getHookFunctions: (hookName: string) => { plugin: Plugin, hookFn: ClientHookFunction }[];
     callHook: <T, R>(pluginId: string, hookName: string, payload: T) => Promise<R>;
     callRPC: <T, R>(pluginId: string, hookName: string, payload: T) => Promise<R>;
     reloadPlugins: () => Promise<void>;
@@ -192,13 +192,12 @@ export const PluginProvider: FunctionComponent = ({children}) => {
     }, [doLoadAll]);
 
     const getHookFunctions = useCallback((hookName: string): {
-        pluginId: string,
-        hookFn: ClientHookFunction,
-        manifestId: string
+        plugin: Plugin,
+        hookFn: ClientHookFunction
     }[] => {
         logger.debug(`getHookFunctions called for hook: "${hookName}"`);
 
-        const functions: { pluginId: string, hookFn: ClientHookFunction, manifestId: string }[] = [];
+        const functions: { plugin: Plugin, hookFn: ClientHookFunction }[] = [];
         const seenPlugins = new Set<string>(); // Avoid duplicate plugins
 
         // O(1) exact match lookup
@@ -207,12 +206,12 @@ export const PluginProvider: FunctionComponent = ({children}) => {
             logger.debug(`Found ${exactMatches.length} exact matches for "${hookName}"`);
             exactMatches.forEach(match => {
                 if (!seenPlugins.has(match.pluginId)) {
-                    // Find the plugin to get its manifest ID
+                    // Find the plugin to get the full Plugin object
                     const plugin = plugins.find(p => p._id === match.pluginId);
                     if (!plugin) {
                         throw new Error(`Plugin with ID ${match.pluginId} not found in plugins list`);
                     }
-                    functions.push({...match, manifestId: plugin.id});
+                    functions.push({plugin, hookFn: match.hookFn});
                     seenPlugins.add(match.pluginId);
                 }
             });
@@ -230,12 +229,12 @@ export const PluginProvider: FunctionComponent = ({children}) => {
                     hooks.forEach(hook => {
                         if (!seenPlugins.has(hook.pluginId)) {
                             logger.debug(`Hook "${hookName}" matches zone pattern "${pattern}"`);
-                            // Find the plugin to get its manifest ID
+                            // Find the plugin to get the full Plugin object
                             const plugin = plugins.find(p => p._id === hook.pluginId);
                             if (!plugin) {
                                 throw new Error(`Plugin with ID ${hook.pluginId} not found in plugins list`);
                             }
-                            functions.push({pluginId: hook.pluginId, hookFn: hook.hookFn, manifestId: plugin.id});
+                            functions.push({plugin, hookFn: hook.hookFn});
                             seenPlugins.add(hook.pluginId);
                         }
                     });
@@ -244,12 +243,12 @@ export const PluginProvider: FunctionComponent = ({children}) => {
                 hooks.forEach(hook => {
                     if (!seenPlugins.has(hook.pluginId)) {
                         logger.debug(`Hook "${hookName}" matches pattern "${pattern}"`);
-                        // Find the plugin to get its manifest ID
+                        // Find the plugin to get the full Plugin object
                         const plugin = plugins.find(p => p._id === hook.pluginId);
                         if (!plugin) {
                             throw new Error(`Plugin with ID ${hook.pluginId} not found in plugins list`);
                         }
-                        functions.push({pluginId: hook.pluginId, hookFn: hook.hookFn, manifestId: plugin.id});
+                        functions.push({plugin, hookFn: hook.hookFn});
                         seenPlugins.add(hook.pluginId);
                     }
                 });

@@ -1,4 +1,4 @@
-import type {PluginSettings} from '@supergrowthai/next-blog-types/client';
+import type {PluginSettings, Plugin} from '@supergrowthai/next-blog-types/client';
 
 /**
  * Client-side settings helper for plugins using localStorage
@@ -12,8 +12,8 @@ export class ClientSettingsHelper implements PluginSettings {
     private readonly prefix: string;
     private readonly userId?: string;
 
-    constructor(private readonly pluginId: string, userId?: string) {
-        this.prefix = `plugin_${pluginId}_`;
+    constructor(private readonly plugin: Plugin, userId?: string) {
+        this.prefix = `plugin_${plugin.id}_`;
         this.userId = userId;
     }
 
@@ -25,7 +25,7 @@ export class ClientSettingsHelper implements PluginSettings {
             const value = localStorage.getItem(this.prefix + key);
             return value ? JSON.parse(value) : null;
         } catch (error) {
-            console.error(`Failed to get setting ${key} for plugin ${this.pluginId}:`, error);
+            console.error(`Failed to get setting ${key} for plugin ${this.plugin.id}:`, error);
             return null;
         }
     }
@@ -37,7 +37,7 @@ export class ClientSettingsHelper implements PluginSettings {
         try {
             localStorage.setItem(this.prefix + key, JSON.stringify(value));
         } catch (error) {
-            console.error(`Failed to set setting ${key} for plugin ${this.pluginId}:`, error);
+            console.error(`Failed to set setting ${key} for plugin ${this.plugin.id}:`, error);
         }
     }
 

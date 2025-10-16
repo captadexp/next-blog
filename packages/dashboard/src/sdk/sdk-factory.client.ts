@@ -1,4 +1,4 @@
-import type {APIClient, ClientSDK, NotificationStatus, User} from '@supergrowthai/next-blog-types/client';
+import type {APIClient, ClientSDK, NotificationStatus, User, Plugin} from '@supergrowthai/next-blog-types/client';
 import {ClientSettingsHelper} from './settings-helper.client';
 import {ClientCacheHelper} from './cache-helper.client';
 import {ClientEventsHelper} from './events-helper.client';
@@ -29,21 +29,21 @@ class ClientSDKFactory {
      * Create an SDK instance for a specific plugin
      * All operations performed through this SDK will be automatically scoped to the plugin
      */
-    createSDK(pluginId: string, onRefresh?: () => void): ClientSDK {
+    createSDK(plugin: Plugin, onRefresh?: () => void): ClientSDK {
         // Create plugin-specific helpers
-        const settingsHelper = new ClientSettingsHelper(pluginId);
-        const cacheHelper = new ClientCacheHelper(pluginId);
-        const eventsHelper = new ClientEventsHelper(pluginId);
+        const settingsHelper = new ClientSettingsHelper(plugin);
+        const cacheHelper = new ClientCacheHelper(plugin.id);
+        const eventsHelper = new ClientEventsHelper(plugin.id);
 
         // Wrap API client to add plugin headers
-        const wrappedApis = this.createWrappedAPIClient(pluginId);
+        const wrappedApis = this.createWrappedAPIClient(plugin.id);
 
         // Create the SDK with plugin fingerprinting
         const sdk: ClientSDK = {
             // Plugin identity - baked into every operation
-            pluginId,
+            pluginId: plugin.id,
 
-            log: this.createScopedLogger(pluginId),
+            log: this.createScopedLogger(plugin.id),
 
             // Execution context
             executionContext: this.deps.user,
@@ -68,7 +68,7 @@ class ClientSDKFactory {
 
             // UI interaction methods with plugin context
             notify: (message: string, status?: NotificationStatus) => {
-                console.log(`[Plugin: ${pluginId}]`, message);
+                console.log(`[Plugin: ${plugin.id}]`, message);
 
                 if (status === 'info') {
                     toast(message);
@@ -85,7 +85,7 @@ class ClientSDKFactory {
 
             // Refresh method
             refresh: () => {
-                console.debug(`[Plugin: ${pluginId}] Refresh requested`);
+                console.debug(`[Plugin: ${plugin.id}] Refresh requested`);
                 if (onRefresh) {
                     onRefresh();
                 }
@@ -93,21 +93,21 @@ class ClientSDKFactory {
 
             // Hook execution with plugin tracking
             callRPC: async (hookName, payload) => {
-                console.debug(`[Plugin: ${pluginId}] Calling RPC: ${hookName}`);
+                console.debug(`[Plugin: ${plugin.id}] Calling RPC: ${hookName}`);
                 return this.deps.callRPC(String(hookName), payload);
             },
 
             // Hook execution with plugin tracking
             callHook: async (hookName, payload) => {
-                console.debug(`[Plugin: ${pluginId}] Calling hook: ${hookName}`);
+                console.debug(`[Plugin: ${plugin.id}] Calling hook: ${hookName}`);
                 return this.deps.callHook(String(hookName), payload);
             },
 
             startIntent: <T, R>(intentType: string, payload: T): Promise<R> => {
-                console.debug(`[Plugin: ${pluginId}] Starting intent: ${intentType}`);
+                console.debug(`[Plugin: ${plugin.id}] Starting intent: ${intentType}`);
 
                 return new Promise((resolve, reject) => {
-                    const requestId = `${pluginId}-${intentType}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+                    const requestId = `${plugin.id}-${intentType}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
                     const handleResponse = (event: Event) => {
                         const customEvent = event as CustomEvent;
@@ -221,7 +221,7 @@ class ClientSDKFactory {
  * Create a simple SDK without factory (for backwards compatibility)
  */
 export function createClientSDK(
-    pluginId: string,
+    plugin: Plugin,
     apis: APIClient,
     user: User | null,
     utils: any,
@@ -231,5 +231,5 @@ export function createClientSDK(
 ): ClientSDK {
     const logger = new Logger('PluginExecutor', LogLevel.ERROR);
     const factory = new ClientSDKFactory({apis, log: logger, user, utils, callHook, callRPC});
-    return factory.createSDK(pluginId, onRefresh);
+    return factory.createSDK(plugin, onRefresh);
 }

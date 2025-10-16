@@ -5,7 +5,7 @@ import {useUser} from "../../../context/UserContext.tsx";
 import Logger, {LogLevel} from "../../../utils/Logger.ts";
 import {createRenderer} from "@supergrowthai/jsx-runtime/preact";
 import {createClientSDK} from "../../../sdk/sdk-factory.client";
-import {ClientSDK} from "@supergrowthai/next-blog-types/client";
+import {ClientSDK, Plugin} from "@supergrowthai/next-blog-types/client";
 import {memo} from "preact/compat";
 import {ClientHookFunction} from "@supergrowthai/next-blog-types";
 
@@ -52,9 +52,9 @@ const ProxyComponent = memo(({refreshKey, hookFn, context, pluginId, sdk}: {
  * A single, stateful host for one plugin's UI. It manages the refresh
  * cycle and renders the UI Tree provided by the plugin.
  */
-const PluginHost = memo(({hookName, pluginId, hookFn, context, callHook, callRPC}: {
+const PluginHost = memo(({hookName, plugin, hookFn, context, callHook, callRPC}: {
     hookName: string,
-    pluginId: string,
+    plugin: Plugin,
     hookFn: ClientHookFunction,
     context?: Record<string, any>,
     callHook<T, R>(id: string, payload: T): Promise<R>
@@ -62,32 +62,32 @@ const PluginHost = memo(({hookName, pluginId, hookFn, context, callHook, callRPC
 }) => {
     const [refreshKey, setRefreshKey] = useState(0);
     const {apis, user} = useUser();
-    logger.debug(`Creating PluginHost for plugin "${pluginId}" with refreshKey: ${refreshKey}`);
+    logger.debug(`Creating PluginHost for plugin "${plugin.id}" with refreshKey: ${refreshKey}`);
 
     const sdk: ClientSDK = useMemo(() => {
         const {utils} = window.PluginRuntime;
 
         // Use the SDK factory to create a properly fingerprinted SDK
         return createClientSDK(
-            pluginId,
+            plugin,
             apis,
             user,
             utils,
             callHook,
             callRPC,
             () => {
-                logger.debug(`Refresh requested by plugin "${pluginId}"`);
+                logger.debug(`Refresh requested by plugin "${plugin.id}"`);
                 setRefreshKey(Date.now());
             }
         );
-    }, [apis, user, pluginId, callHook, callRPC]);
+    }, [apis, user, plugin, callHook, callRPC]);
 
     return (
         <ProxyComponent
             refreshKey={refreshKey}
             context={context}
             hookFn={hookFn}
-            pluginId={pluginId}
+            pluginId={plugin.id}
             sdk={sdk}
         />
     );
@@ -95,7 +95,7 @@ const PluginHost = memo(({hookName, pluginId, hookFn, context, callHook, callRPC
 
     return (
         prevProps.hookName === nextProps.hookName &&
-        prevProps.pluginId === nextProps.pluginId &&
+        prevProps.plugin._id === nextProps.plugin._id &&
         prevProps.hookFn === nextProps.hookFn &&
         prevProps.callHook === nextProps.callHook &&
         prevProps.callRPC === nextProps.callRPC
@@ -129,7 +129,7 @@ export const PluginSlot: FunctionComponent<PluginSlotProps> = (props) => {
 
     // Filter by plugin if specified
     if (pluginFilter) {
-        hookFunctions = hookFunctions.filter(({pluginId}) => pluginId === pluginFilter);
+        hookFunctions = hookFunctions.filter(({plugin}) => plugin._id === pluginFilter);
     }
 
     if (!hookFunctions.length) {
@@ -138,13 +138,13 @@ export const PluginSlot: FunctionComponent<PluginSlotProps> = (props) => {
 
     return (
         <Fragment>
-            {hookFunctions.map(({pluginId, hookFn, manifestId}) => (
-                <div key={pluginId} className={`plugin-${manifestId}`}>
+            {hookFunctions.map(({plugin, hookFn}) => (
+                <div key={plugin._id} className={`plugin-${plugin.id}`}>
                     <PluginHost {...{
-                        pluginId,
+                        plugin,
                         hookFn,
-                        callHook: (name, payload) => callHook(pluginId, name, payload),
-                        callRPC: (name, payload) => callRPC(pluginId, name, payload),
+                        callHook: (name, payload) => callHook(plugin._id, name, payload),
+                        callRPC: (name, payload) => callRPC(plugin._id, name, payload),
                         hookName
                     }} context={context}/>
                 </div>
