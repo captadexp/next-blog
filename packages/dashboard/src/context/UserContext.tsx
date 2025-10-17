@@ -1,6 +1,6 @@
 import {createContext, h} from 'preact';
 import {useContext, useEffect, useState} from 'preact/hooks';
-import {EntityType, Permission, PermissionType, UIConfiguration, User} from '@supergrowthai/next-blog-types';
+import {APIClient, EntityType, Permission, PermissionType, UIConfiguration, User} from '@supergrowthai/next-blog-types';
 import ApiClientImpl from '../api/client';
 import {useMemo} from "react";
 
@@ -15,7 +15,7 @@ interface UserContextType {
     hasPermission: (permission: Permission) => boolean;
     hasAnyPermission: (permissions: Permission[]) => boolean;
     hasAllPermissions: (permissions: Permission[]) => boolean;
-    apis: ApiClientImpl; // API client instance
+    apis: APIClient
 }
 
 const defaultApiClient = new ApiClientImpl("/api/next-blog/api");

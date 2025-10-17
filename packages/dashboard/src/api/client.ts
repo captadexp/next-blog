@@ -135,7 +135,10 @@ class ApiClientImpl implements APIClient {
     }
 
     // Category APIs
-    async getCategories(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<Category>>> {
+    async getCategories(params?: PaginationParams & {
+        search?: string;
+        ids?: string
+    }): Promise<APIResponse<PaginatedResponse<Category>>> {
         const queryString = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
         return this.request<PaginatedResponse<Category>>(`/categories${queryString}`);
     }
@@ -165,7 +168,10 @@ class ApiClientImpl implements APIClient {
     }
 
     // Tag APIs
-    async getTags(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<Tag>>> {
+    async getTags(params?: PaginationParams & {
+        search?: string;
+        ids?: string
+    }): Promise<APIResponse<PaginatedResponse<Tag>>> {
         const queryString = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
         return this.request<PaginatedResponse<Tag>>(`/tags${queryString}`);
     }
@@ -193,7 +199,9 @@ class ApiClientImpl implements APIClient {
     }
 
     // Settings APIs
-    async getSettings(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<SettingsEntry>>> {
+    async getSettings(params?: PaginationParams & {
+        search?: string;
+    }): Promise<APIResponse<PaginatedResponse<SettingsEntry>>> {
         const queryString = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
         return this.request<PaginatedResponse<SettingsEntry>>(`/settings${queryString}`);
     }

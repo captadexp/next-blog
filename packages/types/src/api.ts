@@ -12,7 +12,6 @@ import type {
 } from './database/entities';
 import {UIConfiguration} from "./configuration";
 
-// Standard API response format
 export interface APIResponse<T = any> {
     authenticated?: boolean;
     code: number;
@@ -23,7 +22,6 @@ export interface APIResponse<T = any> {
 export interface PaginationParams {
     page?: number;
     limit?: number;
-    search?: string;
 }
 
 export interface PaginatedResponse<T = any> {
@@ -96,7 +94,10 @@ export interface UserAPI {
 }
 
 export interface CategoryAPI {
-    getCategories(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<Category>>>;
+    getCategories(params?: PaginationParams & {
+        search?: string;
+        ids?: string
+    }): Promise<APIResponse<PaginatedResponse<Category>>>;
 
     getCategory(id: string): Promise<APIResponse<Category>>;
 
@@ -116,7 +117,10 @@ export interface CategoryAPI {
 }
 
 export interface TagAPI {
-    getTags(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<Tag>>>;
+    getTags(params?: PaginationParams & {
+        search?: string;
+        ids?: string
+    }): Promise<APIResponse<PaginatedResponse<Tag>>>;
 
     getTag(id: string): Promise<APIResponse<Tag>>;
 
@@ -134,7 +138,9 @@ export interface TagAPI {
 }
 
 export interface SettingsAPI {
-    getSettings(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<SettingsEntry>>>;
+    getSettings(params?: PaginationParams & {
+        search?: string;
+    }): Promise<APIResponse<PaginatedResponse<SettingsEntry>>>;
 
     getSetting(id: string): Promise<APIResponse<SettingsEntry>>;
 
