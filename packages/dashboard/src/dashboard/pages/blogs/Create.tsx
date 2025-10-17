@@ -18,13 +18,6 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Redirect to login if not authenticated
-    // useEffect(() => {
-    //     if (!userLoading && !user) {
-    //         location.route('/api/next-blog/dashboard/login');
-    //     }
-    // }, [user, userLoading, location]);
-
     useEffect(() => {
         // Skip if not authenticated
         if (!user) return;
@@ -37,7 +30,7 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
                     apis.getCategories()
                         .then((categoriesResponse) => {
                             if (categoriesResponse.code === 0 && categoriesResponse.payload) {
-                                setCategories(categoriesResponse.payload);
+                                setCategories(categoriesResponse.payload.data);
                             } else {
                                 throw new Error(categoriesResponse.message || 'Failed to fetch categories');
                             }
@@ -46,7 +39,7 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
                     apis.getTags()
                         .then((tagsResponse) => {
                             if (tagsResponse.code === 0 && tagsResponse.payload) {
-                                setTags(tagsResponse.payload);
+                                setTags(tagsResponse.payload.data);
                             } else {
                                 throw new Error(tagsResponse.message || 'Failed to fetch tags');
                             }

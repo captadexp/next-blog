@@ -45,9 +45,22 @@ export class FileDBAdapter implements DatabaseAdapter {
                 return filtered[0] || null;
             },
 
-            find: async (filter: Filter<Blog>): Promise<Blog[]> => {
+            find: async (filter: Filter<Blog>, options?: {
+                skip?: number,
+                limit?: number
+            }): Promise<Blog[]> => {
                 const blogs = await this.readData<Blog>('blogs.json');
-                return blogs.filter(sift(filter));
+                let filtered = blogs.filter(sift(filter));
+
+                // Apply skip and limit if provided
+                if (options?.skip) {
+                    filtered = filtered.slice(options.skip);
+                }
+                if (options?.limit) {
+                    filtered = filtered.slice(0, options.limit);
+                }
+
+                return filtered;
             },
 
             findById: async (id: string): Promise<Blog | null> => {
@@ -112,9 +125,22 @@ export class FileDBAdapter implements DatabaseAdapter {
                 const filtered = categories.filter(sift(filter));
                 return filtered[0] || null;
             },
-            find: async (filter: Filter<Category>): Promise<Category[]> => {
+            find: async (filter: Filter<Category>, options?: {
+                skip?: number,
+                limit?: number
+            }): Promise<Category[]> => {
                 const categories = await this.readData<Category>('categories.json');
-                return categories.filter(sift(filter));
+                let filtered = categories.filter(sift(filter));
+
+                // Apply skip and limit if provided
+                if (options?.skip) {
+                    filtered = filtered.slice(options.skip);
+                }
+                if (options?.limit) {
+                    filtered = filtered.slice(0, options.limit);
+                }
+
+                return filtered;
             },
             findById: async (id: string): Promise<Category | null> => {
                 const categories = await this.readData<Category>('categories.json');
@@ -177,9 +203,22 @@ export class FileDBAdapter implements DatabaseAdapter {
                 const filtered = tags.filter(sift(filter));
                 return filtered[0] || null;
             },
-            find: async (filter: Filter<Tag>): Promise<Tag[]> => {
+            find: async (filter: Filter<Tag>, options?: {
+                skip?: number,
+                limit?: number
+            }): Promise<Tag[]> => {
                 const tags = await this.readData<Tag>('tags.json');
-                return tags.filter(sift(filter));
+                let filtered = tags.filter(sift(filter));
+
+                // Apply skip and limit if provided
+                if (options?.skip) {
+                    filtered = filtered.slice(options.skip);
+                }
+                if (options?.limit) {
+                    filtered = filtered.slice(0, options.limit);
+                }
+
+                return filtered;
             },
             findById: async (id: string): Promise<Tag | null> => {
                 const tags = await this.readData<Tag>('tags.json');
@@ -243,9 +282,22 @@ export class FileDBAdapter implements DatabaseAdapter {
                 const filtered = users.filter(sift(filter));
                 return filtered[0] || null;
             },
-            find: async (filter: Filter<User>): Promise<User[]> => {
+            find: async (filter: Filter<User>, options?: {
+                skip?: number,
+                limit?: number
+            }): Promise<User[]> => {
                 const users = await this.readData<User>('users.json');
-                return users.filter(sift(filter));
+                let filtered = users.filter(sift(filter));
+
+                // Apply skip and limit if provided
+                if (options?.skip) {
+                    filtered = filtered.slice(options.skip);
+                }
+                if (options?.limit) {
+                    filtered = filtered.slice(0, options.limit);
+                }
+
+                return filtered;
             },
             findById: async (id: string): Promise<User | null> => {
                 const users = await this.readData<User>('users.json');
@@ -398,9 +450,22 @@ export class FileDBAdapter implements DatabaseAdapter {
                 const filtered = plugins.filter(sift(filter));
                 return filtered[0] || null;
             },
-            find: async (filter: Filter<Plugin>): Promise<Plugin[]> => {
+            find: async (filter: Filter<Plugin>, options?: {
+                skip?: number,
+                limit?: number
+            }): Promise<Plugin[]> => {
                 const plugins = await this.readData<Plugin>('plugins.json');
-                return plugins.filter(sift(filter));
+                let filtered = plugins.filter(sift(filter));
+
+                // Apply skip and limit if provided
+                if (options?.skip) {
+                    filtered = filtered.slice(options.skip);
+                }
+                if (options?.limit) {
+                    filtered = filtered.slice(0, options.limit);
+                }
+
+                return filtered;
             },
             findById: async (id: string): Promise<Plugin | null> => {
                 const plugins = await this.readData<Plugin>('plugins.json');
@@ -667,9 +732,22 @@ export class FileDBAdapter implements DatabaseAdapter {
                 const filtered = media.filter(sift(filter));
                 return filtered[0] || null;
             },
-            find: async (filter: Filter<Media>): Promise<Media[]> => {
+            find: async (filter: Filter<Media>, options?: {
+                skip?: number,
+                limit?: number
+            }): Promise<Media[]> => {
                 const media = await this.readData<Media>('media.json');
-                return media.filter(sift(filter));
+                let filtered = media.filter(sift(filter));
+
+                // Apply skip and limit if provided
+                if (options?.skip) {
+                    filtered = filtered.slice(options.skip);
+                }
+                if (options?.limit) {
+                    filtered = filtered.slice(0, options.limit);
+                }
+
+                return filtered;
             },
             findById: async (id: string): Promise<Media | null> => {
                 const media = await this.readData<Media>('media.json');

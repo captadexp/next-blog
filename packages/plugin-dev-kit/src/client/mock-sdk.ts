@@ -1,9 +1,12 @@
 import type {
     APIClient,
     APIResponse,
+    Blog,
     BrandedId,
     ClientSDK,
     Media,
+    PaginatedResponse,
+    PaginationParams,
     PluginSettings,
     Storage,
     User
@@ -54,9 +57,10 @@ class MockAPIClient implements APIClient {
     };
 
     // Blog APIs
-    async getBlogs() {
+    async getBlogs(params?: PaginationParams) {
         console.log('[Mock Client API] getBlogs');
-        return this.mockResponse(this.mockData['/api/blogs'] || []);
+        const blogs: Blog[] = this.mockData['/api/blogs'] || [];
+        return this.mockResponse(this.mockPaginatedResponse(blogs, params));
     }
 
     async getBlog(id: string) {
@@ -102,9 +106,10 @@ class MockAPIClient implements APIClient {
     }
 
     // User APIs
-    async getUsers() {
+    async getUsers(params?: PaginationParams) {
         console.log('[Mock Client API] getUsers');
-        return this.mockResponse(this.mockData['/api/users'] || []);
+        const users: User[] = this.mockData['/api/users'] || [];
+        return this.mockResponse(this.mockPaginatedResponse(users, params));
     }
 
     async getUser(id: string) {
@@ -134,9 +139,9 @@ class MockAPIClient implements APIClient {
     }
 
     // Category APIs
-    async getCategories() {
+    async getCategories(params?: PaginationParams) {
         console.log('[Mock Client API] getCategories');
-        return this.mockResponse([
+        const categories = [
             {
                 _id: createBrandedId.category('1'),
                 name: 'General',
@@ -153,7 +158,8 @@ class MockAPIClient implements APIClient {
                 createdAt: Date.now(),
                 updatedAt: Date.now()
             }
-        ]);
+        ];
+        return this.mockResponse(this.mockPaginatedResponse(categories, params));
     }
 
     async getCategory(id: string) {
@@ -184,9 +190,9 @@ class MockAPIClient implements APIClient {
     }
 
     // Tag APIs
-    async getTags() {
+    async getTags(params?: PaginationParams) {
         console.log('[Mock Client API] getTags');
-        return this.mockResponse([
+        const tags = [
             {
                 _id: createBrandedId.tag('1'),
                 name: 'JavaScript',
@@ -195,7 +201,8 @@ class MockAPIClient implements APIClient {
                 updatedAt: Date.now()
             },
             {_id: createBrandedId.tag('2'), name: 'React', slug: 'react', createdAt: Date.now(), updatedAt: Date.now()}
-        ]);
+        ];
+        return this.mockResponse(this.mockPaginatedResponse(tags, params));
     }
 
     async getTag(id: string) {
@@ -225,9 +232,10 @@ class MockAPIClient implements APIClient {
     }
 
     // Settings APIs
-    async getSettings() {
+    async getSettings(params?: PaginationParams) {
         console.log('[Mock Client API] getSettings');
-        return this.mockResponse([]);
+        const settings: any[] = [];
+        return this.mockResponse(this.mockPaginatedResponse(settings, params));
     }
 
     async getSetting(id: string) {
@@ -259,9 +267,10 @@ class MockAPIClient implements APIClient {
     }
 
     // Plugin APIs
-    async getPlugins() {
+    async getPlugins(params?: PaginationParams) {
         console.log('[Mock Client API] getPlugins');
-        return this.mockResponse([]);
+        const plugins: any[] = [];
+        return this.mockResponse(this.mockPaginatedResponse(plugins, params));
     }
 
     async getPlugin(id: BrandedId<"Plugin">) {
@@ -358,14 +367,13 @@ class MockAPIClient implements APIClient {
     }
 
     // Media APIs
-    async getMedia(params?: {
+    async getMedia(params?: PaginationParams & {
         mimeType?: string;
         userId?: string;
-        limit?: number;
-        offset?: number;
     }) {
         console.log('[Mock Client API] getMedia', params);
-        return this.mockResponse([]);
+        const media: any[] = [];
+        return this.mockResponse(this.mockPaginatedResponse(media, params));
     }
 
     async getMediaById(id: string) {
@@ -437,6 +445,17 @@ class MockAPIClient implements APIClient {
             code: 0,
             message: 'Success',
             payload: data
+        };
+    }
+
+    private mockPaginatedResponse<T>(data: T[], params?: PaginationParams): PaginatedResponse<T> {
+        const page = params?.page || 1;
+        const limit = params?.limit || 10;
+
+        return {
+            data,
+            page,
+            limit
         };
     }
 }

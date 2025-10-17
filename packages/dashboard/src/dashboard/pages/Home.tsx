@@ -8,7 +8,6 @@ interface HomeProps {
     path?: string;
 }
 
-// Dashboard home page
 const Home: FunctionComponent<HomeProps> = () => {
     const [isClient, setIsClient] = useState(false);
     const {user, config, loading} = useUser();
@@ -91,18 +90,12 @@ const Home: FunctionComponent<HomeProps> = () => {
                             />
                         </div>
                     </div>
-                    <div className="w-full md:w-60 lg:w-72">
-                        <ExtensionZone name="quick-draft" context={{zone: 'quick-draft', page: 'dashboard'}}>
-                            <DraftBox/>
-                        </ExtensionZone>
-                    </div>
                 </div>
             </ExtensionZone>
         </ExtensionZone>
     );
 };
 
-// Helper component for section cards
 interface SectionCardProps {
     title: string;
     description: string;
@@ -132,134 +125,5 @@ const SectionCard: FunctionComponent<SectionCardProps> = ({title, description, l
         </div>
     );
 };
-
-// DraftBox component for creating draft blogs
-const DraftBox: FunctionComponent = () => {
-    const [title, setTitle] = useState('');
-    const [content, setContent] = useState('');
-    const [saving, setSaving] = useState(false);
-    const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
-    const {apis, hasPermission} = useUser();
-    const location = useLocation();
-
-    // Handle draft submission
-    const handleSubmit = async (e: Event) => {
-        e.preventDefault();
-
-        if (!title.trim()) {
-            setMessage({text: 'Title is required', type: 'error'});
-            return;
-        }
-
-        setSaving(true);
-
-        try {
-            // Create slug from title
-            const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-
-            // Fetch default category
-            const categoriesResponse = await apis.getCategories();
-            let categoryId = 'all';
-
-            if (categoriesResponse.code === 0 && categoriesResponse.payload && categoriesResponse.payload.length > 0) {
-                categoryId = categoriesResponse.payload[0]._id;
-            }
-
-            // Create draft blog post
-            const response = await apis.createBlog({
-                title,
-                slug,
-                content,
-                status: 'draft',
-                tags: [],
-                category: categoryId
-            });
-
-            if (response.code === 0 && response.payload) {
-                setMessage({text: 'Draft saved successfully!', type: 'success'});
-                setTitle('');
-                setContent('');
-
-                // Clear success message after 3 seconds
-                setTimeout(() => setMessage(null), 3000);
-            } else {
-                throw new Error(response.message || 'Failed to save draft');
-            }
-        } catch (error) {
-            console.error('Error saving draft:', error);
-            setMessage({
-                text: error instanceof Error ? error.message : 'Failed to save draft',
-                type: 'error'
-            });
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    // Only show if user has permission to create blogs
-    if (!hasPermission('blogs:create')) {
-        return null;
-    }
-
-    return (
-        <div className="border border-gray-100 rounded-lg p-4 shadow-sm bg-gray-50">
-            <h2 className="text-base font-semibold mb-3">Quick Draft</h2>
-            {message && (
-                <div className={`p-2 mb-3 text-xs rounded ${
-                    message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                }`}>
-                    {message.text}
-                </div>
-            )}
-            <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                    <label className="block text-xs font-medium mb-1" htmlFor="draft-title">
-                        Title
-                    </label>
-                    <input
-                        type="text"
-                        id="draft-title"
-                        value={title}
-                        onChange={(e) => setTitle((e.target as HTMLInputElement).value)}
-                        placeholder="Enter title"
-                        className="w-full border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500"
-                    />
-                </div>
-                <div className="mb-3">
-                    <label className="block text-xs font-medium mb-1" htmlFor="draft-content">
-                        Content
-                    </label>
-                    <textarea
-                        id="draft-content"
-                        value={content}
-                        onChange={(e) => setContent((e.target as HTMLTextAreaElement).value)}
-                        placeholder="Write something..."
-                        className="w-full border border-gray-300 rounded px-2 py-1 text-xs min-h-[100px] resize-y focus:outline-none focus:border-blue-500"
-                    />
-                </div>
-                <div className="flex justify-between items-center">
-                    <button
-                        type="submit"
-                        disabled={saving}
-                        className="bg-blue-600 text-white px-3 py-1 text-xs rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
-                    >
-                        {saving ? 'Saving...' : 'Save Draft'}
-                    </button>
-                    <a
-                        href="/api/next-blog/dashboard/blogs"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            location.route('/api/next-blog/dashboard/blogs');
-                        }}
-                        className="text-xs text-blue-600 hover:underline"
-                    >
-                        View All
-                    </a>
-                </div>
-            </form>
-        </div>
-    );
-};
-
 
 export default Home;

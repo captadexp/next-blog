@@ -1,15 +1,42 @@
 import {h} from 'preact';
 import {useUser} from '../../../context/UserContext';
-import {Plugin} from '@supergrowthai/next-blog-types';
+import {PaginatedResponse, Plugin} from '@supergrowthai/next-blog-types';
 import {usePlugins} from "../../../context/PluginContext.tsx";
 import {useLocation} from "preact-iso";
-import {useEffect} from "preact/hooks";
+import {useEffect, useState} from "preact/hooks";
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
+import {usePagination} from '../../../hooks/usePagination';
+import {PaginationControls} from '../../../components/PaginationControls';
 
 const PluginsList = () => {
-    const {hasPermission, hasAllPermissions, apis: api} = useUser();
-    const {plugins, loadedPlugins, status: pluginStatus, hardReloadPlugins} = usePlugins();
+    const {hasPermission, hasAllPermissions, apis: api, user} = useUser();
+    const {loadedPlugins, hardReloadPlugins} = usePlugins();
     const location = useLocation();
+    const [plugins, setPlugins] = useState<Plugin[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [pagination, setPagination] = useState<PaginatedResponse<Plugin> | null>(null);
+
+    const {page, setPage, getParams} = usePagination();
+
+    const fetchPlugins = async () => {
+        try {
+            const params = getParams();
+            const response = await api.getPlugins(params);
+
+            if (response.code === 0 && response.payload) {
+                setPlugins(response.payload.data);
+                setPagination(response.payload);
+            } else {
+                throw new Error(response.message || 'Failed to fetch plugins');
+            }
+            setLoading(false);
+        } catch (err) {
+            console.error('Error fetching plugins:', err);
+            setError(err instanceof Error ? err.message : 'Unknown error');
+            setLoading(false);
+        }
+    };
 
     const handleReinstall = async (id: string) => {
         if (!window.confirm('Are you sure you want to reinstall this plugin? This will re-run its installation script.')) {
@@ -19,6 +46,7 @@ const PluginsList = () => {
             const response = await api.reinstallPlugin(id);
             if (response.code === 0) {
                 hardReloadPlugins();
+                fetchPlugins();
             } else {
                 alert(`Error: ${response.message}`);
             }
@@ -34,7 +62,8 @@ const PluginsList = () => {
         try {
             const response = await api.deletePlugin(id);
             if (response.code === 0) {
-                hardReloadPlugins()
+                hardReloadPlugins();
+                fetchPlugins();
             } else {
                 alert(`Error: ${response.message}`);
             }
@@ -101,13 +130,18 @@ const PluginsList = () => {
         if (location.query.r === '1') {
             console.log("Detected a refresh request")
             hardReloadPlugins();
+            fetchPlugins();
             const {r, ...rest} = location.query;
             const qs = new URLSearchParams(rest as Record<string, string>).toString();
             location.route(location.path + (qs ? `?${qs}` : ''), /* replaceHistory */ true);
         }
     }, [location.query.r]);
 
-    if (pluginStatus !== 'ready') {
+    useEffect(() => {
+        fetchPlugins();
+    }, [page]);
+
+    if (loading) {
         return (
             <div className="flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
@@ -132,10 +166,15 @@ const PluginsList = () => {
 
                 <ExtensionPoint name="plugins-list-toolbar" context={{plugins, loadedPlugins}}/>
 
-                {plugins.length === 0 ? (
+                {error ? (
+                    <div className="p-4 bg-red-100 text-red-800 rounded">
+                        Error: {error}
+                    </div>
+                ) : plugins.length === 0 ? (
                     <div className="text-gray-500">No plugins found.</div>
                 ) : (
-                    <ExtensionZone name="plugins-table" context={{zone: 'plugins-table', page: 'plugins', data: {plugins, loadedPlugins}}}>
+                    <ExtensionZone name="plugins-table"
+                                   context={{zone: 'plugins-table', page: 'plugins', data: {plugins, loadedPlugins}}}>
                         <div className="overflow-x-auto">
                             <table className="min-w-full bg-white border border-gray-200">
                                 <thead>
@@ -149,22 +188,29 @@ const PluginsList = () => {
                                 <tbody>
                                 {plugins.map((plugin: any) => (
                                     <>
-                                        <ExtensionPoint name="plugin-item:before" context={{plugin}} />
+                                        <ExtensionPoint name="plugin-item:before" context={{plugin}}/>
                                         <tr key={plugin._id} className="hover:bg-gray-50">
-                                        {columns.map((column) => (
-                                            <td key={column.accessor} className="py-2 px-4 border-b">
-                                                {column.cell ? column.cell(plugin) : plugin[column.accessor]}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                    <ExtensionPoint name="plugin-item:after" context={{plugin}} />
-                                </>
+                                            {columns.map((column) => (
+                                                <td key={column.accessor} className="py-2 px-4 border-b">
+                                                    {column.cell ? column.cell(plugin) : plugin[column.accessor]}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                        <ExtensionPoint name="plugin-item:after" context={{plugin}}/>
+                                    </>
                                 ))}
                                 </tbody>
                             </table>
                         </div>
                     </ExtensionZone>
                 )}
+
+                <PaginationControls
+                    pagination={pagination}
+                    currentPage={page}
+                    dataLength={plugins.length}
+                    onPageChange={setPage}
+                />
             </div>
         </ExtensionZone>
     );
