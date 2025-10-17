@@ -8,14 +8,27 @@ import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../
 // List all categories
 export const getCategories = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = await extra.db();
-    const params = request.query as PaginationParams | undefined;
+    const params = request.query as (PaginationParams & { search?: string; ids?: string }) | undefined;
 
     try {
         const page = params?.page || 1;
         const limit = params?.limit || 10;
         const skip = (page - 1) * limit;
 
-        let categories = await db.categories.find({}, {skip, limit});
+        const query: any = {};
+
+        // Handle search parameter
+        if (params?.search) {
+            query.name = {$regex: params.search, $options: 'i'};
+        }
+
+        // Handle multiple IDs parameter
+        if (params?.ids) {
+            const ids = params.ids.split(',');
+            query._id = {$in: ids};
+        }
+
+        let categories = await db.categories.find(query, {skip, limit});
 
         // Execute hook for list operation
         if (extra?.callHook) {
