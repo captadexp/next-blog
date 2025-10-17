@@ -6,6 +6,15 @@ import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynam
 import {Category, Tag} from '@supergrowthai/next-blog-types';
 import {ExtensionZone} from '../../components/ExtensionZone';
 
+const uniqById = <T extends { _id: string }>(arr: T[]) => {
+    const map = new Map<string, T>();
+    arr.forEach(i => map.set(i._id, i));
+    return Array.from(map.values());
+};
+
+const toOptions = <T extends { _id: string; name: string }>(arr: T[]) =>
+    arr.map(it => ({value: it._id, label: it.name}));
+
 interface CreateBlogProps {
     path?: string;
 }
@@ -25,28 +34,14 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
         // Function to fetch categories and tags from the API
         const fetchData = async () => {
             try {
-                // Fetch categories and tags data using the API client
-                await Promise.all([
-                    apis.getCategories()
-                        .then((categoriesResponse) => {
-                            if (categoriesResponse.code === 0 && categoriesResponse.payload) {
-                                setCategories(categoriesResponse.payload.data);
-                            } else {
-                                throw new Error(categoriesResponse.message || 'Failed to fetch categories');
-                            }
-                        })
-                        .catch(console.error),
-                    apis.getTags()
-                        .then((tagsResponse) => {
-                            if (tagsResponse.code === 0 && tagsResponse.payload) {
-                                setTags(tagsResponse.payload.data);
-                            } else {
-                                throw new Error(tagsResponse.message || 'Failed to fetch tags');
-                            }
-                        })
-                        .catch(console.error),
+                // Fetch first page of categories and tags using paginated API
+                const [catsPage1, tagsPage1] = await Promise.all([
+                    apis.getCategories({page: 1}).then(r => Array.isArray(r.payload?.data) ? r.payload?.data : []),
+                    apis.getTags({page: 1}).then(r => Array.isArray(r.payload?.data) ? r.payload?.data : []),
                 ]);
 
+                setCategories(catsPage1);
+                setTags(tagsPage1);
                 setLoading(false);
             } catch (err) {
                 console.error('Error fetching data:', err);
@@ -60,74 +55,46 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
 
     // Functions for handling search and adding new items
     const searchCategories = async (query: string): Promise<{ value: string; label: string }[]> => {
-        // Filter categories that match the query
-        return categories
-            .filter(cat => cat.name.toLowerCase().includes(query.toLowerCase()))
-            .map(cat => ({value: cat._id, label: cat.name}));
+        const resp = await apis.getCategories({search: query, page: 1});
+        const results: Category[] = Array.isArray(resp.payload?.data) ? resp.payload?.data : [];
+
+        return toOptions(results);
     };
 
     const searchTags = async (query: string): Promise<{ value: string; label: string }[]> => {
-        // Filter tags that match the query
-        return tags
-            .filter(tag => tag.name.toLowerCase().includes(query.toLowerCase()))
-            .map(tag => ({value: tag._id, label: tag.name}));
+        const resp = await apis.getTags({search: query, page: 1});
+        const results: Tag[] = Array.isArray(resp.payload?.data) ? resp.payload?.data : [];
+
+        return toOptions(results);
     };
 
-    const addNewCategory = async (item: { value: string; label: string }): Promise<{
-        value: string;
-        label: string
-    } | null> => {
+    const addNewCategory = async (item: { value: string; label: string }) => {
         try {
-            // Create slug from label
-            const slug = item.label.toLowerCase().replace(/\s+/g, '-');
-
-            // Use API client to create a new category
             const response = await apis.createCategory({
                 name: item.label,
                 description: '',
-                slug: slug
+                slug: item.label.toLowerCase().replace(/\s+/g, '-'),
             });
-
-            if (response.code === 0 && response.payload) {
-                const newCategory = response.payload;
-
-                // Add to local state
-                setCategories([...categories, newCategory]);
-
-                return {value: newCategory._id, label: newCategory.name};
-            } else {
-                throw new Error(response.message || 'Failed to create category');
-            }
+            if (response.code !== 0) throw new Error(`Failed to create category: ${response.message}`);
+            const newCategory = response.payload!;
+            setCategories(old => uniqById<Category>([...old, newCategory]));
+            return {value: newCategory._id, label: newCategory.name};
         } catch (error) {
             console.error('Error adding new category:', error);
             return null;
         }
     };
 
-    const addNewTag = async (item: { value: string; label: string }): Promise<{
-        value: string;
-        label: string
-    } | null> => {
+    const addNewTag = async (item: { value: string; label: string }) => {
         try {
-            // Create slug from label
-            const slug = item.label.toLowerCase().replace(/\s+/g, '-');
-
-            // Use API client to create a new tag
             const response = await apis.createTag({
                 name: item.label,
-                slug: slug
+                slug: item.label.toLowerCase().replace(/\s+/g, '-'),
             });
-
-            if (response.code === 0 && response.payload) {
-                const newTag = response.payload;
-
-                // Add to local state
-                setTags([...tags, newTag]);
-
-                return {value: newTag._id, label: newTag.name};
-            } else {
-                throw new Error(response.message || 'Failed to create tag');
-            }
+            if (response.code !== 0) throw new Error(`Failed to create tag: ${response.message}`);
+            const newTag = response.payload!;
+            setTags(old => uniqById<Tag>([...old, newTag]));
+            return {value: newTag._id, label: newTag.name};
         } catch (error) {
             console.error('Error adding new tag:', error);
             return null;
@@ -151,7 +118,7 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
             key: 'category',
             label: 'Category',
             type: 'select',
-            options: categories.map(cat => ({value: cat._id, label: cat.name})),
+            options: toOptions(categories),
             required: true,
             onSearch: searchCategories,
             onAdd: addNewCategory
@@ -160,7 +127,7 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
             key: 'tags',
             label: 'Tags',
             type: 'multiselect',
-            options: tags.map(tag => ({value: tag._id, label: tag.name})),
+            options: toOptions(tags),
             onSearch: searchTags,
             onAdd: addNewTag
         },
@@ -208,7 +175,8 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
                     Error: {error}
                 </div>
             ) : (
-                <ExtensionZone name="blog-create-form" context={{zone: 'blog-create-form', page: 'blogs', entity: 'blog'}}>
+                <ExtensionZone name="blog-create-form"
+                               context={{zone: 'blog-create-form', page: 'blogs', entity: 'blog'}}>
                     <div className="bg-white p-6 rounded-lg shadow-md">
                         <DynamicForm
                             id="createBlog"

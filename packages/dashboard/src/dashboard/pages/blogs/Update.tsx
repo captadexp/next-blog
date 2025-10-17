@@ -196,7 +196,6 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                 label: 'Category',
                 type: 'select',
                 value: formData.categoryId,
-                // IMPORTANT: only page1 + selected (state already merged)
                 options: toOptions(categories),
                 required: true,
                 onSearch: searchCategories,
@@ -207,7 +206,6 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                 label: 'Tags',
                 type: 'multiselect',
                 value: formData.tagIds,
-                // IMPORTANT: only page1 + selected (state already merged)
                 options: toOptions(tags),
                 onSearch: searchTags,
                 onAdd: addNewTag
