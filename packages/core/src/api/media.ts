@@ -9,6 +9,7 @@ import {PaginatedResponse, PaginationParams} from '@supergrowthai/next-blog-type
 export const getMedia = secure(async (session, request, extra) => {
     const db = await extra.db();
     const params = request.query as PaginationParams & {
+        search?: string
         mimeType?: string;
         userId?: string;
     } | undefined;

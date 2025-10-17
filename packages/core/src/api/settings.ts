@@ -11,7 +11,7 @@ import {encrypt, isSecureKey, maskValue} from "../utils/crypto.js";
 // List all settings
 export const getSettings = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
     const db = await extra.db();
-    const params = request.query as PaginationParams | undefined;
+    const params = request.query as PaginationParams & { search?: string } | undefined;
     const systemPluginId = await getSystemPluginId(db);
 
     const page = params?.page || 1;
