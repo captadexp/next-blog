@@ -6,12 +6,23 @@ import {useUser} from "../../../context/UserContext.tsx";
 import {Blog, BlogEditorContext, Category, Tag} from "@supergrowthai/next-blog-types";
 import {ExtensionPoint, ExtensionZone} from "../../components/ExtensionZone";
 
+const uniqById = <T extends { _id: string }>(arr: T[]) => {
+    const map = new Map<string, T>();
+    arr.forEach(i => map.set(i._id, i));
+    return Array.from(map.values());
+};
+
+const toOptions = <T extends { _id: string; name: string }>(arr: T[]) =>
+    arr.map(it => ({value: it._id, label: it.name}));
+
 const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
     const location = useLocation();
     const [blog, setBlog] = useState<Blog | null>(null);
     const [formData, setFormData] = useState<Record<string, any> | null>(null);
+
     const [categories, setCategories] = useState<Category[]>([]);
     const [tags, setTags] = useState<Tag[]>([]);
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const {apis} = useUser();
@@ -55,15 +66,28 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                 return;
             }
             try {
-                const [blogData, categoriesData, tagsData] = await Promise.all([
-                    apis.getBlog(id).then(resp => resp.payload!),
-                    apis.getCategories().then(resp => resp.payload!),
-                    apis.getTags().then(resp => resp.payload!),
-                ]);
+                const blogData = await apis.getBlog(id).then(resp => resp.payload!);
                 setBlog(blogData);
                 setFormData(blogData);
-                setCategories(Array.isArray(categoriesData) ? categoriesData : []);
-                setTags(Array.isArray(tagsData) ? tagsData : []);
+
+                const [catsPage1, tagsPage1] = await Promise.all([
+                    apis.getCategories({page: 1}).then(r => Array.isArray(r.payload?.data) ? r.payload?.data : []),
+                    apis.getTags({page: 1}).then(r => Array.isArray(r.payload?.data) ? r.payload?.data : []),
+                ]);
+
+                const selectedCatId: string | undefined = blogData?.categoryId;
+                const selectedTagIds: string[] = Array.isArray(blogData?.tagIds) ? blogData.tagIds : [];
+
+                const needCatFetch = selectedCatId && !catsPage1.some(c => c._id === selectedCatId);
+                const needTagsFetch = selectedTagIds.length > 0 && !selectedTagIds.every(id => tagsPage1.some(t => t._id === id));
+
+                const [selectedCats, selectedTags] = await Promise.all([
+                    needCatFetch ? apis.getCategories({ids: selectedCatId}).then(r => Array.isArray(r.payload?.data) ? r.payload?.data : []) : Promise.resolve([]),
+                    needTagsFetch ? apis.getTags({ids: selectedTagIds.join(',')}).then(r => Array.isArray(r.payload?.data) ? r.payload?.data : []) : Promise.resolve([]),
+                ]);
+
+                setCategories(uniqById<Category>([...catsPage1, ...selectedCats]));
+                setTags(uniqById<Tag>([...tagsPage1, ...selectedTags]));
             } catch (err) {
                 console.error('Error fetching data:', err);
                 setError(err instanceof Error ? err.message : 'Unknown error');
@@ -100,39 +124,29 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
     };
 
     const searchCategories = async (query: string): Promise<{ value: string; label: string }[]> => {
-        // Filter categories that match the query
-        return categories
-            .filter(cat => cat.name.toLowerCase().includes(query.toLowerCase()))
-            .map(cat => ({value: cat._id, label: cat.name}));
+        const resp = await apis.getCategories({search: query, page: 1});
+        const results: Category[] = Array.isArray(resp.payload?.data) ? resp.payload?.data : [];
+
+        return toOptions(results);
     };
 
     const searchTags = async (query: string): Promise<{ value: string; label: string }[]> => {
-        // Filter tags that match the query
-        return tags
-            .filter(tag => tag.name.toLowerCase().includes(query.toLowerCase()))
-            .map(tag => ({value: tag._id, label: tag.name}));
+        const resp = await apis.getTags({search: query, page: 1});
+        const results: Tag[] = Array.isArray(resp.payload?.data) ? resp.payload?.data : [];
+
+        return toOptions(results);
     };
 
-    const addNewCategory = async (item: { value: string; label: string }): Promise<{
-        value: string;
-        label: string
-    } | null> => {
+    const addNewCategory = async (item: { value: string; label: string }) => {
         try {
-            // API call to create a new category
             const response = await apis.createCategory({
                 name: item.label,
                 description: '',
                 slug: item.label.toLowerCase().replace(/\s+/g, '-'),
             });
-
-            if (response.code !== 0) {
-                throw new Error(`Failed to create category: ${response.message}`);
-            }
-
+            if (response.code !== 0) throw new Error(`Failed to create category: ${response.message}`);
             const newCategory = response.payload!;
-
-            setCategories((old) => [...old, newCategory]);
-
+            setCategories(old => uniqById<Category>([...old, newCategory]));
             return {value: newCategory._id, label: newCategory.name};
         } catch (error) {
             console.error('Error adding new category:', error);
@@ -140,25 +154,15 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
         }
     };
 
-    const addNewTag = async (item: { value: string; label: string }): Promise<{
-        value: string;
-        label: string
-    } | null> => {
+    const addNewTag = async (item: { value: string; label: string }) => {
         try {
             const response = await apis.createTag({
                 name: item.label,
                 slug: item.label.toLowerCase().replace(/\s+/g, '-'),
-            })
-
-            if (response.code !== 0) {
-                throw new Error(`Failed to create tag: ${response.message}`);
-            }
-
+            });
+            if (response.code !== 0) throw new Error(`Failed to create tag: ${response.message}`);
             const newTag = response.payload!;
-
-            // Add to local state
-            setTags((tags) => [...tags, newTag]);
-
+            setTags(old => uniqById<Tag>([...old, newTag]));
             return {value: newTag._id, label: newTag.name};
         } catch (error) {
             console.error('Error adding new tag:', error);
@@ -192,7 +196,8 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                 label: 'Category',
                 type: 'select',
                 value: formData.categoryId,
-                options: categories.map(cat => ({value: cat._id, label: cat.name})),
+                // IMPORTANT: only page1 + selected (state already merged)
+                options: toOptions(categories),
                 required: true,
                 onSearch: searchCategories,
                 onAdd: addNewCategory
@@ -202,7 +207,8 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                 label: 'Tags',
                 type: 'multiselect',
                 value: formData.tagIds,
-                options: tags.map(tag => ({value: tag._id, label: tag.name})),
+                // IMPORTANT: only page1 + selected (state already merged)
+                options: toOptions(tags),
                 onSearch: searchTags,
                 onAdd: addNewTag
             },
