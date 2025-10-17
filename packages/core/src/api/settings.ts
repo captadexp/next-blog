@@ -1,17 +1,30 @@
 import type {MinimumRequest, OneApiFunctionResponse, SessionData} from "@supergrowthai/oneapi";
 import {BadRequest, NotFound} from "@supergrowthai/oneapi";
+import type {SettingsEntryData} from "@supergrowthai/next-blog-types/server";
+import {createId, SettingsEntry} from "@supergrowthai/next-blog-types/server";
+import {PaginatedResponse, PaginationParams,} from "@supergrowthai/next-blog-types";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
-import type {SettingsEntryData} from "@supergrowthai/next-blog-types/server";
-import {createId} from "@supergrowthai/next-blog-types/server";
 import {getSystemPluginId} from "../utils/defaultSettings.js";
 import {encrypt, isSecureKey, maskValue} from "../utils/crypto.js";
 
 // List all settings
 export const getSettings = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
     const db = await extra.db();
+    const params = request.query as PaginationParams | undefined;
     const systemPluginId = await getSystemPluginId(db);
-    let settings = await db.settings.find({});
+
+    const page = params?.page || 1;
+    const limit = params?.limit || 10;
+    const search = params?.search || '';
+
+    let filter: any = {};
+    if (search) {
+        filter = {$or: [{key: {$regex: search, $options: 'i'}}]};
+    }
+
+    const skip = (page - 1) * limit;
+    let settings = await db.settings.find(filter, {skip, limit});
 
     // Add scope information and mask secure values
     settings = settings.map((setting: any) => {
@@ -29,7 +42,6 @@ export const getSettings = secure(async (session: SessionData, request: MinimumR
             maskedSetting = {...maskedSetting, value: masked, masked: true, isSecure: true};
         }
 
-
         return maskedSetting;
     });
 
@@ -38,7 +50,7 @@ export const getSettings = secure(async (session: SessionData, request: MinimumR
         const hookResult = await extra.callHook('setting:onList', {
             entity: 'setting',
             operation: 'list',
-            filters: {},
+            filters: filter,
             data: settings
         });
         if (hookResult?.data) {
@@ -46,10 +58,16 @@ export const getSettings = secure(async (session: SessionData, request: MinimumR
         }
     }
 
+    const paginatedResponse: PaginatedResponse<SettingsEntry> = {
+        data: settings,
+        page,
+        limit
+    };
+
     return {
         code: 0,
         message: "Settings retrieved successfully",
-        payload: settings
+        payload: paginatedResponse
     };
 }, {requirePermission: 'settings:list'});
 

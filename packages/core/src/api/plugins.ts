@@ -1,26 +1,39 @@
 import type {MinimumRequest, OneApiFunctionResponse, SessionData} from "@supergrowthai/oneapi";
 import {BadRequest, NotFound} from "@supergrowthai/oneapi";
+import {createId, Plugin} from "@supergrowthai/next-blog-types/server";
+import {PaginatedResponse, PaginationParams,} from "@supergrowthai/next-blog-types";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import pluginExecutor from "../plugins/plugin-executor.server.js";
 import pluginManager from "../plugins/pluginManager.js";
 import Logger, {LogLevel} from "../utils/Logger.js";
-import {createId} from "@supergrowthai/next-blog-types/server";
 
 const logger = new Logger('plugins-api', LogLevel.ERROR);
 
 // List all plugins
 export const getPlugins = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
     const db = await extra.db();
+    const params = request.query as PaginationParams | undefined;
     logger.info('Listing all plugins');
 
-    const plugins = await db.plugins.find({});
+    const page = params?.page || 1;
+    const limit = params?.limit || 10;
+
+    const skip = (page - 1) * limit;
+    const plugins = await db.plugins.find({}, {skip, limit});
+
+    const paginatedResponse: PaginatedResponse<Plugin> = {
+        data: plugins,
+        page,
+        limit
+    };
+
     logger.info('Plugins retrieved successfully');
 
     return {
         code: 0,
         message: "Plugins retrieved successfully",
-        payload: plugins
+        payload: paginatedResponse
     };
 }, {requirePermission: 'plugins:list'});
 

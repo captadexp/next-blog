@@ -2,8 +2,10 @@ import {FunctionComponent, h} from 'preact';
 import {useLocation} from 'preact-iso';
 import {useEffect, useState} from 'preact/hooks';
 import {useUser} from '../../../context/UserContext';
-import {SettingsEntry} from '@supergrowthai/next-blog-types';
+import {PaginatedResponse, SettingsEntry} from '@supergrowthai/next-blog-types';
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
+import {usePagination} from '../../../hooks/usePagination';
+import {PaginationControls} from '../../../components/PaginationControls';
 
 interface SettingsEntryWithScope extends SettingsEntry {
     scope?: 'global' | 'user' | 'plugin';
@@ -20,6 +22,42 @@ const SettingsList: FunctionComponent<SettingsListProps> = () => {
     const [settings, setSettings] = useState<SettingsEntryWithScope[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [pagination, setPagination] = useState<PaginatedResponse<SettingsEntry> | null>(null);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const [search, setSearch] = useState(urlParams.get('search') || '');
+
+    const {page, setPage, getParams} = usePagination();
+
+    const updateSearchURL = (newSearch: string) => {
+        const params = new URLSearchParams(window.location.search);
+        if (newSearch) {
+            params.set('search', newSearch);
+        } else {
+            params.delete('search');
+        }
+        const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+        window.history.replaceState({}, '', newURL);
+    };
+
+    const fetchSettings = async () => {
+        try {
+            const params = {...getParams(), search};
+            const response = await apis.getSettings(params);
+
+            if (response.code === 0 && response.payload) {
+                setSettings(response.payload.data);
+                setPagination(response.payload);
+            } else {
+                throw new Error(response.message || 'Failed to fetch settings');
+            }
+            setLoading(false);
+        } catch (err) {
+            console.error('Error fetching settings:', err);
+            setError(err instanceof Error ? err.message : 'Unknown error');
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         // Redirect to login if not authenticated
@@ -28,26 +66,8 @@ const SettingsList: FunctionComponent<SettingsListProps> = () => {
             return;
         }
 
-        // Function to fetch settings from the API
-        const fetchSettings = async () => {
-            try {
-                const response = await apis.getSettings();
-
-                if (response.code === 0 && response.payload) {
-                    setSettings(response.payload);
-                } else {
-                    throw new Error(response.message || 'Failed to fetch settings');
-                }
-                setLoading(false);
-            } catch (err) {
-                console.error('Error fetching settings:', err);
-                setError(err instanceof Error ? err.message : 'Unknown error');
-                setLoading(false);
-            }
-        };
-
         fetchSettings();
-    }, [user, loading]);
+    }, [user, loading, page, search]);
 
     // Format date for display
     const formatDate = (timestamp: number) => {
@@ -85,6 +105,21 @@ const SettingsList: FunctionComponent<SettingsListProps> = () => {
 
             <ExtensionPoint name="settings-list-toolbar" context={{settings}}/>
 
+            <div className="mb-4">
+                <input
+                    type="text"
+                    placeholder="Search settings..."
+                    value={search}
+                    onInput={(e) => {
+                        const newSearch = (e.target as HTMLInputElement).value;
+                        setSearch(newSearch);
+                        setPage(1);
+                        updateSearchURL(newSearch);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+            </div>
+
             {loading ? (
                 <p>Loading settings...</p>
             ) : error ? (
@@ -94,7 +129,8 @@ const SettingsList: FunctionComponent<SettingsListProps> = () => {
             ) : settings.length === 0 ? (
                 <p>No settings found. Create your first setting!</p>
             ) : (
-                <ExtensionZone name="settings-table" context={{zone: 'settings-table', page: 'settings', data: settings}}>
+                <ExtensionZone name="settings-table"
+                               context={{zone: 'settings-table', page: 'settings', data: settings}}>
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
                             <thead>
@@ -110,7 +146,7 @@ const SettingsList: FunctionComponent<SettingsListProps> = () => {
                             <tbody>
                             {settings.map(setting => (
                                 <>
-                                    <ExtensionPoint name="setting-item:before" context={{setting}} />
+                                    <ExtensionPoint name="setting-item:before" context={{setting}}/>
                                     <tr key={setting._id} className="border-b border-gray-200 hover:bg-gray-50">
                                         <td className="p-3">
                                             {setting.key}
@@ -128,55 +164,62 @@ const SettingsList: FunctionComponent<SettingsListProps> = () => {
                                                 {setting.scope || 'unknown'}
                                             </span>
                                         </td>
-                                    <td className="p-3">{formatDate(setting.createdAt)}</td>
-                                    <td className="p-3">{formatDate(setting.updatedAt)}</td>
-                                    <td className="p-3">
-                                        {hasPermission('settings:update') && (
-                                            <a
-                                                href={`/api/next-blog/dashboard/settings/${setting._id}`}
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    location.route(`/api/next-blog/dashboard/settings/${setting._id}`);
-                                                }}
-                                                className="text-blue-500 hover:text-blue-700 no-underline mr-3"
-                                            >
-                                                Edit
-                                            </a>
-                                        )}
-                                        {hasPermission('settings:delete') && (
-                                            <button
-                                                onClick={async () => {
-                                                    if (confirm(`Are you sure you want to delete "${setting.key}"?`)) {
-                                                        try {
-                                                            const response = await apis.deleteSetting(setting._id);
+                                        <td className="p-3">{formatDate(setting.createdAt)}</td>
+                                        <td className="p-3">{formatDate(setting.updatedAt)}</td>
+                                        <td className="p-3">
+                                            {hasPermission('settings:update') && (
+                                                <a
+                                                    href={`/api/next-blog/dashboard/settings/${setting._id}`}
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        location.route(`/api/next-blog/dashboard/settings/${setting._id}`);
+                                                    }}
+                                                    className="text-blue-500 hover:text-blue-700 no-underline mr-3"
+                                                >
+                                                    Edit
+                                                </a>
+                                            )}
+                                            {hasPermission('settings:delete') && (
+                                                <button
+                                                    onClick={async () => {
+                                                        if (confirm(`Are you sure you want to delete "${setting.key}"?`)) {
+                                                            try {
+                                                                const response = await apis.deleteSetting(setting._id);
 
-                                                            if (response.code === 0) {
-                                                                // Remove the setting from state
-                                                                setSettings(settings.filter(s => s._id !== setting._id));
-                                                            } else {
-                                                                alert(`Error: ${response.message}`);
+                                                                if (response.code === 0) {
+                                                                    // Remove the setting from state
+                                                                    setSettings(settings.filter(s => s._id !== setting._id));
+                                                                } else {
+                                                                    alert(`Error: ${response.message}`);
+                                                                }
+                                                            } catch (err) {
+                                                                console.error('Error deleting setting:', err);
+                                                                alert('Failed to delete setting. Please try again.');
                                                             }
-                                                        } catch (err) {
-                                                            console.error('Error deleting setting:', err);
-                                                            alert('Failed to delete setting. Please try again.');
                                                         }
-                                                    }
-                                                }}
-                                                className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit"
-                                            >
-                                                Delete
-                                            </button>
-                                        )}
-                                    </td>
-                                </tr>
-                                <ExtensionPoint name="setting-item:after" context={{setting}} />
-                            </>
+                                                    }}
+                                                    className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit"
+                                                >
+                                                    Delete
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                    <ExtensionPoint name="setting-item:after" context={{setting}}/>
+                                </>
                             ))}
                             </tbody>
                         </table>
                     </div>
                 </ExtensionZone>
             )}
+
+            <PaginationControls
+                pagination={pagination}
+                currentPage={page}
+                dataLength={settings.length}
+                onPageChange={setPage}
+            />
         </ExtensionZone>
     );
 };

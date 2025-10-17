@@ -3,6 +3,9 @@ import {useLocation} from 'preact-iso';
 import {useEffect, useState} from 'preact/hooks';
 import {useUser} from "../../../context/UserContext.tsx";
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
+import {PaginatedResponse} from '@supergrowthai/next-blog-types';
+import {usePagination} from '../../../hooks/usePagination';
+import {PaginationControls} from '../../../components/PaginationControls';
 
 interface CategoriesListProps {
     path?: string;
@@ -22,31 +25,34 @@ const CategoriesList: FunctionComponent<CategoriesListProps> = () => {
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [pagination, setPagination] = useState<PaginatedResponse<Category> | null>(null);
     const {apis} = useUser();
 
-    useEffect(() => {
-        // Function to fetch categories from the API
-        const fetchCategories = async () => {
-            try {
-                // Fetch categories data from API
-                const response = await apis.getCategories();
+    const {page, setPage, getParams} = usePagination();
 
-                if (response.code !== 0) {
-                    throw new Error(`Error fetching categories: ${response.message}`);
-                }
+    const fetchCategories = async () => {
+        try {
+            const params = getParams();
+            const response = await apis.getCategories(params);
 
-                const data = response.payload!;
-                setCategories(Array.isArray(data) ? data : []);
-                setLoading(false);
-            } catch (err) {
-                console.error('Error fetching categories:', err);
-                setError(err instanceof Error ? err.message : 'Unknown error');
-                setLoading(false);
+            if (response.code !== 0) {
+                throw new Error(`Error fetching categories: ${response.message}`);
             }
-        };
 
+            const data = response.payload!;
+            setCategories(data.data);
+            setPagination(data);
+            setLoading(false);
+        } catch (err) {
+            console.error('Error fetching categories:', err);
+            setError(err instanceof Error ? err.message : 'Unknown error');
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchCategories();
-    }, []);
+    }, [page]);
 
     // Format date for display
     const formatDate = (timestamp?: number) => {
@@ -80,7 +86,8 @@ const CategoriesList: FunctionComponent<CategoriesListProps> = () => {
             ) : categories.length === 0 ? (
                 <p>No categories found. Create your first category!</p>
             ) : (
-                <ExtensionZone name="categories-table" context={{zone: 'categories-table', page: 'categories', data: categories}}>
+                <ExtensionZone name="categories-table"
+                               context={{zone: 'categories-table', page: 'categories', data: categories}}>
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
                             <thead>
@@ -94,38 +101,45 @@ const CategoriesList: FunctionComponent<CategoriesListProps> = () => {
                             <tbody>
                             {categories.map(category => (
                                 <>
-                                    <ExtensionPoint name="category-item:before" context={{category}} />
+                                    <ExtensionPoint name="category-item:before" context={{category}}/>
                                     <tr key={category._id} className="border-b border-gray-200 hover:bg-gray-50">
-                                    <td className="p-3">{category.name}</td>
-                                    <td className="p-3">{category.slug || 'N/A'}</td>
-                                    <td className="p-3">{formatDate(category.createdAt)}</td>
-                                    <td className="p-3">
-                                        <a
-                                            href={`/api/next-blog/dashboard/categories/${category._id}`}
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                location.route(`/api/next-blog/dashboard/categories/${category._id}`);
-                                            }}
-                                            className="text-blue-500 hover:text-blue-700 no-underline mr-3"
-                                        >
-                                            Edit
-                                        </a>
-                                        <button
-                                            onClick={() => alert(`Delete category: ${category._id}`)}
-                                            className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit"
-                                        >
-                                            Delete
-                                        </button>
-                                    </td>
-                                </tr>
-                                <ExtensionPoint name="category-item:after" context={{category}} />
-                            </>
+                                        <td className="p-3">{category.name}</td>
+                                        <td className="p-3">{category.slug || 'N/A'}</td>
+                                        <td className="p-3">{formatDate(category.createdAt)}</td>
+                                        <td className="p-3">
+                                            <a
+                                                href={`/api/next-blog/dashboard/categories/${category._id}`}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    location.route(`/api/next-blog/dashboard/categories/${category._id}`);
+                                                }}
+                                                className="text-blue-500 hover:text-blue-700 no-underline mr-3"
+                                            >
+                                                Edit
+                                            </a>
+                                            <button
+                                                onClick={() => alert(`Delete category: ${category._id}`)}
+                                                className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit"
+                                            >
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <ExtensionPoint name="category-item:after" context={{category}}/>
+                                </>
                             ))}
                             </tbody>
                         </table>
                     </div>
                 </ExtensionZone>
             )}
+
+            <PaginationControls
+                pagination={pagination}
+                currentPage={page}
+                dataLength={categories.length}
+                onPageChange={setPage}
+            />
         </ExtensionZone>
     );
 };

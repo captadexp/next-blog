@@ -1,21 +1,27 @@
-import type {MinimumRequest, SessionData, OneApiFunctionResponse} from "@supergrowthai/oneapi";
+import type {MinimumRequest, SessionData} from "@supergrowthai/oneapi";
+import type {TagData} from "@supergrowthai/next-blog-types/server";
+import {Tag} from "@supergrowthai/next-blog-types/server";
+import {PaginatedResponse, PaginationParams,} from "@supergrowthai/next-blog-types";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
-import type {TagData} from "@supergrowthai/next-blog-types/server";
 import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
 
 export const getTags = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = await extra.db();
+    const params = request.query as PaginationParams | undefined;
 
     try {
-        let tags = await db.tags.find({});
+        const page = params?.page || 1;
+        const limit = params?.limit || 10;
+        const skip = (page - 1) * limit;
+
+        let tags = await db.tags.find({}, {skip, limit});
 
         // Execute hook for list operation
         if (extra?.callHook) {
             const hookResult = await extra.callHook('tag:onList', {
                 entity: 'tag',
                 operation: 'list',
-                filters: {},
                 data: tags
             });
             if (hookResult?.data) {
@@ -23,7 +29,13 @@ export const getTags = secure(async (session: SessionData, request: MinimumReque
             }
         }
 
-        throw new Success("Tags retrieved successfully", tags);
+        const paginatedResponse: PaginatedResponse<Tag> = {
+            data: tags,
+            page,
+            limit
+        };
+
+        throw new Success("Tags retrieved successfully", paginatedResponse);
     } catch (error) {
         if (error instanceof Success) throw error;
 

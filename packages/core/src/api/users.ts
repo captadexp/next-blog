@@ -1,5 +1,6 @@
 import type {MinimumRequest, SessionData} from "@supergrowthai/oneapi";
 import {User, UserData} from "@supergrowthai/next-blog-types/server";
+import {PaginatedResponse, PaginationParams,} from "@supergrowthai/next-blog-types";
 import crypto from "../utils/crypto.js";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
@@ -46,7 +47,13 @@ export const logout = secure(async (session: SessionData, request: MinimumReques
 // List all users
 export const listUsers = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = await extra.db();
-    let users = await db.users.find({});
+    const params = request.query as PaginationParams | undefined;
+
+    const page = params?.page || 1;
+    const limit = params?.limit || 10;
+    const skip = (page - 1) * limit;
+
+    let users = await db.users.find({}, {skip, limit});
 
     // Remove password fields
     let sanitizedUsers = users.map((user: User) => {
@@ -59,7 +66,6 @@ export const listUsers = secure(async (session: SessionData, request: MinimumReq
         const hookResult = await extra.callHook('user:onList', {
             entity: 'user',
             operation: 'list',
-            filters: {},
             data: sanitizedUsers
         });
         if (hookResult?.data) {
@@ -67,7 +73,13 @@ export const listUsers = secure(async (session: SessionData, request: MinimumReq
         }
     }
 
-    throw new Success("Users retrieved successfully", sanitizedUsers);
+    const paginatedResponse: PaginatedResponse<Omit<User, 'password'>> = {
+        data: sanitizedUsers,
+        page,
+        limit
+    };
+
+    throw new Success("Users retrieved successfully", paginatedResponse);
 }, {requirePermission: 'users:list'});
 
 // Get a specific user by ID

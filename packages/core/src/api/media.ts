@@ -4,33 +4,69 @@ import {StorageFactory} from '../storage/storage-factory.js';
 import path from 'path';
 import type {OneApiFunction} from "@supergrowthai/oneapi";
 import {ApiExtra} from "../types/api.ts";
+import {PaginatedResponse, PaginationParams} from '@supergrowthai/next-blog-types';
 
 export const getMedia = secure(async (session, request, extra) => {
     const db = await extra.db();
-    const url = new URL(request.url);
-    const params = Object.fromEntries(url.searchParams);
+    const params = request.query as PaginationParams & {
+        mimeType?: string;
+        userId?: string;
+    } | undefined;
 
-    const query: any = {};
-    if (params.mimeType) {
+    const page = params?.page || 1;
+    const limit = params?.limit || 10;
+    const search = params?.search;
+    const userId = params?.userId;
+
+    let filter: any = {};
+
+    if (params?.mimeType) {
         const mimeTypes = params.mimeType.split(',').map(type => type.trim());
         if (mimeTypes.length > 1) {
-            query.mimeType = {$in: mimeTypes};
+            filter.mimeType = {$in: mimeTypes};
         } else {
-            query.mimeType = {$regex: mimeTypes[0]};
+            filter.mimeType = {$regex: mimeTypes[0]};
         }
     }
-    if (params.userId) {
-        query.userId = params.userId;
+
+    if (userId) {
+        filter.userId = params.userId;
     }
 
-    const limit = params.limit ? parseInt(params.limit) : undefined;
-    const offset = params.offset ? parseInt(params.offset) : undefined;
+    if (!!search) {
+        console.log("search", typeof search, search)
+        filter = {
+            ...filter,
+            $or: [
+                {filename: {$regex: search, $options: 'i'}},
+                {mimeType: {$regex: search, $options: 'i'}}
+            ]
+        };
+    }
 
-    const media = await db.media.find(query, {limit, offset});
+    const skip = (page - 1) * limit;
 
-    await extra.callHook('media:onList', {media});
+    let media = await db.media.find(filter, {skip, limit});
 
-    throw new Success('Media retrieved successfully', media);
+    if (extra?.callHook) {
+        const hookResult = await extra.callHook('media:onList', {
+            entity: 'media',
+            operation: 'list',
+            filters: filter,
+            data: media
+        });
+        if (hookResult?.data) {
+            media = hookResult.data;
+        }
+    }
+
+    const paginatedResponse: PaginatedResponse<any> = {
+        data: media,
+        page,
+        limit
+    };
+
+    throw new Success('Media retrieved successfully', paginatedResponse);
 }, {requirePermission: 'media:list'});
 
 export const getMediaById = secure(async (session, request, extra) => {

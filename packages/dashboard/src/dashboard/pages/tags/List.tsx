@@ -3,6 +3,9 @@ import {useLocation} from 'preact-iso';
 import {useEffect, useState} from 'preact/hooks';
 import {useUser} from "../../../context/UserContext.tsx";
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
+import {PaginatedResponse} from '@supergrowthai/next-blog-types';
+import {usePagination} from '../../../hooks/usePagination';
+import {PaginationControls} from '../../../components/PaginationControls';
 
 interface TagsListProps {
     path?: string;
@@ -22,19 +25,24 @@ const TagsList: FunctionComponent<TagsListProps> = () => {
     const [tags, setTags] = useState<Tag[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [pagination, setPagination] = useState<PaginatedResponse<Tag> | null>(null);
     const {apis} = useUser();
+
+    const {page, setPage, getParams} = usePagination();
 
     const fetchTags = async () => {
         try {
             // Fetch tags data from API
-            const response = await apis.getTags()
+            const params = getParams();
+            const response = await apis.getTags(params);
 
             if (response.code !== 0) {
                 throw new Error(`Error fetching tags: ${response.message}`);
             }
 
             const data = response.payload!;
-            setTags(Array.isArray(data) ? data : []);
+            setTags(data.data);
+            setPagination(data);
             setLoading(false);
         } catch (err) {
             console.error('Error fetching tags:', err);
@@ -45,7 +53,7 @@ const TagsList: FunctionComponent<TagsListProps> = () => {
 
     useEffect(() => {
         fetchTags();
-    }, []);
+    }, [page]);
 
     // Format date for display
     const formatDate = (timestamp?: number) => {
@@ -93,43 +101,50 @@ const TagsList: FunctionComponent<TagsListProps> = () => {
                             <tbody>
                             {tags.map(tag => (
                                 <>
-                                    <ExtensionPoint name="tag-item:before" context={{tag}} />
+                                    <ExtensionPoint name="tag-item:before" context={{tag}}/>
                                     <tr key={tag._id} className="border-b border-gray-200 hover:bg-gray-50">
-                                    <td className="p-3">{tag.name}</td>
-                                    <td className="p-3">{tag.slug || 'N/A'}</td>
-                                    <td className="p-3">{formatDate(tag.createdAt)}</td>
-                                    <td className="p-3">
-                                        <a
-                                            href={`/api/next-blog/dashboard/tags/${tag._id}`}
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                location.route(`/api/next-blog/dashboard/tags/${tag._id}`);
-                                            }}
-                                            className="text-blue-500 hover:text-blue-700 no-underline mr-3"
-                                        >
-                                            Edit
-                                        </a>
-                                        <button
-                                            onClick={() => {
-                                                if (confirm(`Delete tag: ${tag._id}`)) {
-                                                    apis.deleteTag(tag._id)
-                                                        .then(() => fetchTags());
-                                                }
-                                            }}
-                                            className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit"
-                                        >
-                                            Delete
-                                        </button>
-                                    </td>
-                                </tr>
-                                <ExtensionPoint name="tag-item:after" context={{tag}} />
-                            </>
+                                        <td className="p-3">{tag.name}</td>
+                                        <td className="p-3">{tag.slug || 'N/A'}</td>
+                                        <td className="p-3">{formatDate(tag.createdAt)}</td>
+                                        <td className="p-3">
+                                            <a
+                                                href={`/api/next-blog/dashboard/tags/${tag._id}`}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    location.route(`/api/next-blog/dashboard/tags/${tag._id}`);
+                                                }}
+                                                className="text-blue-500 hover:text-blue-700 no-underline mr-3"
+                                            >
+                                                Edit
+                                            </a>
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm(`Delete tag: ${tag._id}`)) {
+                                                        apis.deleteTag(tag._id)
+                                                            .then(() => fetchTags());
+                                                    }
+                                                }}
+                                                className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit"
+                                            >
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <ExtensionPoint name="tag-item:after" context={{tag}}/>
+                                </>
                             ))}
                             </tbody>
                         </table>
                     </div>
                 </ExtensionZone>
             )}
+
+            <PaginationControls
+                pagination={pagination}
+                currentPage={page}
+                dataLength={tags.length}
+                onPageChange={setPage}
+            />
         </ExtensionZone>
     );
 };

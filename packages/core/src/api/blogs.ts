@@ -1,5 +1,6 @@
 import type {MinimumRequest, SessionData} from "@supergrowthai/oneapi";
 import {Blog, BlogData, Permission} from "@supergrowthai/next-blog-types/server";
+import {PaginatedResponse, PaginationParams,} from "@supergrowthai/next-blog-types";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
@@ -7,19 +8,29 @@ import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../
 // List all blogs
 export const getBlogs = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = await extra.db();
+    const params = request.query as PaginationParams | undefined;
 
     try {
-        let blogs = await db.blogs.find({});
+        const page = params?.page || 1;
+        const limit = params?.limit || 10;
+        const skip = (page - 1) * limit;
+        let blogs = await db.blogs.find({}, {skip, limit});
 
         // Execute hook for list operation if available
         if (extra?.callHook) {
-            const hookResult = await extra.callHook('blog:onList', {filters: {}, data: blogs});
+            const hookResult = await extra.callHook('blog:onList', {data: blogs});
             if (hookResult?.data) {
                 blogs = hookResult.data;
             }
         }
 
-        throw new Success("Blogs retrieved successfully", blogs);
+        const paginatedResponse: PaginatedResponse<Blog> = {
+            data: blogs,
+            page,
+            limit
+        };
+
+        throw new Success("Blogs retrieved successfully", paginatedResponse);
     } catch (error) {
         if (error instanceof Success) throw error;
 

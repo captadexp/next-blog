@@ -1,8 +1,15 @@
 import {h} from 'preact';
 import {useEffect, useRef, useState} from 'preact/hooks';
-import {ImageSelectRequest, IntentRequest, IntentResponse, Media} from '@supergrowthai/next-blog-types';
+import {
+    ImageSelectRequest,
+    IntentRequest,
+    IntentResponse,
+    Media,
+    PaginatedResponse
+} from '@supergrowthai/next-blog-types';
 import {useUser} from '../../context/UserContext';
 import toast from 'react-hot-toast';
+import {PaginationControls} from '../../components/PaginationControls';
 
 interface ImageSelectorProps {
     request: IntentRequest<ImageSelectRequest>;
@@ -14,6 +21,9 @@ export const ImageSelector = ({request}: ImageSelectorProps) => {
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [selectedMedia, setSelectedMedia] = useState<Media | null>(null);
+    const [search, setSearch] = useState('');
+    const [page, setPage] = useState(1);
+    const [pagination, setPagination] = useState<PaginatedResponse<Media> | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -32,15 +42,40 @@ export const ImageSelector = ({request}: ImageSelectorProps) => {
         loadMedia();
     }, []);
 
-    const loadMedia = async () => {
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            loadMedia(true);
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [search]);
+
+    useEffect(() => {
+        if (page > 1) {
+            loadMedia();
+        }
+    }, [page]);
+
+    const loadMedia = async (resetPage = false) => {
         setLoading(true);
         try {
+            const currentPage = resetPage ? 1 : page;
+            const searchQuery = search ? {search} : {};
             const response = await apis.getMedia({
-                mimeType: mimeTypes.join(',')
+                mimeType: mimeTypes.join(','),
+                page: currentPage,
+                limit: 12,
+                ...searchQuery
             });
 
             if (response.code === 0 && response.payload) {
-                setMediaItems(response.payload);
+                if (resetPage) {
+                    setMediaItems(response.payload.data);
+                    setPage(1);
+                } else {
+                    setMediaItems(response.payload.data);
+                }
+                setPagination(response.payload);
             } else {
                 toast.error(response.message || 'Failed to load media');
             }
@@ -96,6 +131,9 @@ export const ImageSelector = ({request}: ImageSelectorProps) => {
                 setMediaItems(prev => [uploadResponse.payload!, ...prev]);
                 setSelectedMedia(uploadResponse.payload!);
                 toast.success('File uploaded successfully');
+                // Reset to first page after upload
+                setPage(1);
+                loadMedia(true);
             } else {
                 toast.error(uploadResponse.message || 'Failed to upload file');
                 // Clean up the created media record if upload failed
@@ -183,6 +221,16 @@ export const ImageSelector = ({request}: ImageSelectorProps) => {
                     </div>
                 )}
 
+                <div className="mb-4">
+                    <input
+                        type="text"
+                        placeholder="Search images..."
+                        value={search}
+                        onInput={(e) => setSearch((e.target as HTMLInputElement).value)}
+                        className="input input-bordered w-full"
+                    />
+                </div>
+
                 {loading ? (
                     <div className="flex justify-center py-8">
                         <span className="loading loading-spinner loading-lg"></span>
@@ -214,9 +262,16 @@ export const ImageSelector = ({request}: ImageSelectorProps) => {
 
                 {mediaItems.length === 0 && !loading && (
                     <div className="text-center py-8 text-base-content/60">
-                        No images found. Upload an image to get started.
+                        {search ? 'No images found matching your search.' : 'No images found. Upload an image to get started.'}
                     </div>
                 )}
+
+                <PaginationControls
+                    pagination={pagination}
+                    currentPage={page}
+                    dataLength={mediaItems.length}
+                    onPageChange={setPage}
+                />
 
                 <div className="flex gap-2 mt-auto">
                     <button

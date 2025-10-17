@@ -1,38 +1,45 @@
 import {h} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
-import {Permission, User} from '@supergrowthai/next-blog-types';
+import {PaginatedResponse, Permission, User} from '@supergrowthai/next-blog-types';
 import {useUser} from '../../../context/UserContext';
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
+import {usePagination} from '../../../hooks/usePagination';
+import {PaginationControls} from '../../../components/PaginationControls';
 
 const UserList = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [pagination, setPagination] = useState<PaginatedResponse<User> | null>(null);
     const {hasPermission, apis} = useUser();
 
-    useEffect(() => {
-        const fetchUsers = async () => {
-            setLoading(true);
-            setError(null);
+    const {page, setPage, getParams} = usePagination();
 
-            try {
-                const response = await apis.getUsers();
+    const fetchUsers = async () => {
+        setLoading(true);
+        setError(null);
 
-                if (response.code === 0 && response.payload) {
-                    setUsers(response.payload);
-                } else {
-                    setError(response.message || 'Failed to fetch users');
-                }
-            } catch (err) {
-                setError('An error occurred while fetching users');
-                console.error('Error fetching users:', err);
-            } finally {
-                setLoading(false);
+        try {
+            const params = getParams();
+            const response = await apis.getUsers(params);
+
+            if (response.code === 0 && response.payload) {
+                setUsers(response.payload.data);
+                setPagination(response.payload);
+            } else {
+                setError(response.message || 'Failed to fetch users');
             }
-        };
+        } catch (err) {
+            setError('An error occurred while fetching users');
+            console.error('Error fetching users:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchUsers();
-    }, []);
+    }, [page]);
 
     const handleDeleteUser = async (id: string) => {
         if (!window.confirm('Are you sure you want to delete this user?')) {
@@ -93,6 +100,7 @@ const UserList = () => {
 
                 <ExtensionPoint name="users-list-toolbar" context={{users}}/>
 
+
                 {users.length === 0 ? (
                     <div className="text-gray-500">No users found.</div>
                 ) : (
@@ -111,7 +119,7 @@ const UserList = () => {
                                 <tbody>
                                 {users.map(user => (
                                     <>
-                                        <ExtensionPoint name="user-item:before" context={{user}} />
+                                        <ExtensionPoint name="user-item:before" context={{user}}/>
                                         <tr key={user._id} className="hover:bg-gray-50">
                                             <td className="py-2 px-4 border-b">{user.name}</td>
                                             <td className="py-2 px-4 border-b">{user.username}</td>
@@ -138,7 +146,7 @@ const UserList = () => {
                                                 </div>
                                             </td>
                                         </tr>
-                                        <ExtensionPoint name="user-item:after" context={{user}} />
+                                        <ExtensionPoint name="user-item:after" context={{user}}/>
                                     </>
                                 ))}
                                 </tbody>
@@ -146,6 +154,13 @@ const UserList = () => {
                         </div>
                     </ExtensionZone>
                 )}
+
+                <PaginationControls
+                    pagination={pagination}
+                    currentPage={page}
+                    dataLength={users.length}
+                    onPageChange={setPage}
+                />
             </div>
         </ExtensionZone>
     );

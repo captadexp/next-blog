@@ -104,11 +104,11 @@ export const PluginProvider: FunctionComponent = ({children}) => {
         logger.info('Initializing...');
         setStatus('initializing');
         try {
-            const pluginsRes = await apis.getPlugins();
+            const pluginsRes = await apis.getPlugins({page: 1, limit: 999});
 
             if (pluginsRes.code !== 0) throw new Error('Failed to fetch plugins.');
 
-            const pluginsToLoad = pluginsRes.payload || [];
+            const pluginsToLoad = pluginsRes.payload?.data || [];
             setPlugins(pluginsToLoad);
             logger.debug(`Found ${pluginsToLoad.length} plugins to load.`);
 

@@ -2,8 +2,10 @@ import {FunctionComponent, h} from 'preact';
 import {useLocation} from 'preact-iso';
 import {useEffect, useState} from 'preact/hooks';
 import {useUser} from '../../../context/UserContext';
-import {Blog} from '@supergrowthai/next-blog-types';
+import {Blog, PaginatedResponse} from '@supergrowthai/next-blog-types';
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
+import {usePagination} from '../../../hooks/usePagination';
+import {PaginationControls} from '../../../components/PaginationControls';
 
 interface BlogsListProps {
     path?: string;
@@ -15,6 +17,9 @@ const BlogsList: FunctionComponent<BlogsListProps> = () => {
     const [blogs, setBlogs] = useState<Blog[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [pagination, setPagination] = useState<PaginatedResponse<Blog> | null>(null);
+
+    const {page, setPage, getParams} = usePagination();
 
     useEffect(() => {
         // Redirect to login if not authenticated
@@ -26,10 +31,12 @@ const BlogsList: FunctionComponent<BlogsListProps> = () => {
         // Function to fetch blogs from the API
         const fetchBlogs = async () => {
             try {
-                const response = await apis.getBlogs();
+                const params = getParams();
+                const response = await apis.getBlogs(params);
 
                 if (response.code === 0 && response.payload) {
-                    setBlogs(response.payload);
+                    setBlogs(response.payload.data);
+                    setPagination(response.payload);
                 } else {
                     throw new Error(response.message || 'Failed to fetch blogs');
                 }
@@ -42,7 +49,7 @@ const BlogsList: FunctionComponent<BlogsListProps> = () => {
         };
 
         fetchBlogs();
-    }, [user, loading]);
+    }, [user, loading, page]);
 
     // Format date for display
     const formatDate = (timestamp: number) => {
@@ -92,7 +99,7 @@ const BlogsList: FunctionComponent<BlogsListProps> = () => {
                             <tbody>
                             {blogs.map(blog => (
                                 <>
-                                    <ExtensionPoint name="blog-item:before" context={{blog}} />
+                                    <ExtensionPoint name="blog-item:before" context={{blog}}/>
                                     <tr key={blog._id} className="border-b border-gray-200 hover:bg-gray-50">
                                         <td className="p-3">
                                             {blog.title}{blog.status === 'draft' &&
@@ -139,7 +146,7 @@ const BlogsList: FunctionComponent<BlogsListProps> = () => {
                                             )}
                                         </td>
                                     </tr>
-                                    <ExtensionPoint name="blog-item:after" context={{blog}} />
+                                    <ExtensionPoint name="blog-item:after" context={{blog}}/>
                                 </>
                             ))}
                             </tbody>
@@ -147,6 +154,13 @@ const BlogsList: FunctionComponent<BlogsListProps> = () => {
                     </div>
                 </ExtensionZone>
             )}
+
+            <PaginationControls
+                pagination={pagination}
+                currentPage={page}
+                dataLength={blogs.length}
+                onPageChange={setPage}
+            />
         </ExtensionZone>
     );
 };

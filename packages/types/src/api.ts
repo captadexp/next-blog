@@ -20,8 +20,20 @@ export interface APIResponse<T = any> {
     payload?: T;
 }
 
+export interface PaginationParams {
+    page?: number;
+    limit?: number;
+    search?: string;
+}
+
+export interface PaginatedResponse<T = any> {
+    data: T[];
+    page: number;
+    limit: number;
+}
+
 export interface BlogAPI {
-    getBlogs(): Promise<APIResponse<Blog[]>>;
+    getBlogs(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<Blog>>>;
 
     getBlog(id: string): Promise<APIResponse<Blog>>;
 
@@ -54,7 +66,7 @@ export interface BlogAPI {
 }
 
 export interface UserAPI {
-    getUsers(): Promise<APIResponse<User[]>>;
+    getUsers(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<User>>>;
 
     getUser(id: string): Promise<APIResponse<User>>;
 
@@ -84,7 +96,7 @@ export interface UserAPI {
 }
 
 export interface CategoryAPI {
-    getCategories(): Promise<APIResponse<Category[]>>;
+    getCategories(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<Category>>>;
 
     getCategory(id: string): Promise<APIResponse<Category>>;
 
@@ -104,7 +116,7 @@ export interface CategoryAPI {
 }
 
 export interface TagAPI {
-    getTags(): Promise<APIResponse<Tag[]>>;
+    getTags(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<Tag>>>;
 
     getTag(id: string): Promise<APIResponse<Tag>>;
 
@@ -122,7 +134,7 @@ export interface TagAPI {
 }
 
 export interface SettingsAPI {
-    getSettings(): Promise<APIResponse<SettingsEntry[]>>;
+    getSettings(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<SettingsEntry>>>;
 
     getSetting(id: string): Promise<APIResponse<SettingsEntry>>;
 
@@ -142,7 +154,7 @@ export interface SettingsAPI {
 }
 
 export interface PluginAPI {
-    getPlugins(): Promise<APIResponse<Plugin[]>>;
+    getPlugins(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<Plugin>>>;
 
     getPlugin(id: string): Promise<APIResponse<Plugin>>;
 
@@ -192,12 +204,10 @@ export interface ConfigAPI {
 }
 
 export interface MediaAPI {
-    getMedia(params?: {
+    getMedia(params?: PaginationParams & {
         mimeType?: string;
         userId?: string;
-        limit?: number;
-        offset?: number;
-    }): Promise<APIResponse<Media[]>>;
+    }): Promise<APIResponse<PaginatedResponse<Media>>>;
 
     getMediaById(id: string): Promise<APIResponse<Media>>;
 

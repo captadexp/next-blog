@@ -1,5 +1,6 @@
-import type {MinimumRequest, OneApiFunctionResponse, SessionData} from "@supergrowthai/oneapi";
-import {CategoryData} from "@supergrowthai/next-blog-types/server";
+import type {MinimumRequest, SessionData} from "@supergrowthai/oneapi";
+import {Category, CategoryData} from "@supergrowthai/next-blog-types/server";
+import {PaginatedResponse, PaginationParams,} from "@supergrowthai/next-blog-types";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
@@ -7,16 +8,20 @@ import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../
 // List all categories
 export const getCategories = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = await extra.db();
+    const params = request.query as PaginationParams | undefined;
 
     try {
-        let categories = await db.categories.find({});
+        const page = params?.page || 1;
+        const limit = params?.limit || 10;
+        const skip = (page - 1) * limit;
+
+        let categories = await db.categories.find({}, {skip, limit});
 
         // Execute hook for list operation
         if (extra?.callHook) {
             const hookResult = await extra.callHook('category:onList', {
                 entity: 'category',
                 operation: 'list',
-                filters: {},
                 data: categories
             });
             if (hookResult?.data) {
@@ -24,7 +29,13 @@ export const getCategories = secure(async (session: SessionData, request: Minimu
             }
         }
 
-        throw new Success("Categories retrieved successfully", categories);
+        const paginatedResponse: PaginatedResponse<Category> = {
+            data: categories,
+            page,
+            limit
+        };
+
+        throw new Success("Categories retrieved successfully", paginatedResponse);
     } catch (error) {
         if (error instanceof Success) throw error;
 
