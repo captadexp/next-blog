@@ -90,6 +90,7 @@ const PluginHost = memo(({hookName, plugin, hookFn, context}: {
 }, (prevProps, nextProps) => {
 
     return (
+        prevProps.context === nextProps.context &&
         prevProps.hookName === nextProps.hookName &&
         prevProps.plugin._id === nextProps.plugin._id &&
         prevProps.hookFn === nextProps.hookFn
