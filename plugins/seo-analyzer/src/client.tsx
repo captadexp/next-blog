@@ -5,6 +5,7 @@ import {
     ClientSDK,
     useCallback,
     useEffect,
+    useRef,
     useState
 } from "@supergrowthai/plugin-dev-kit/client";
 import {extractTextFromContent, getWordCount} from "@supergrowthai/plugin-dev-kit/content";
@@ -85,7 +86,7 @@ function TypingIndicator() {
 function LoadingState() {
     return (
         <div className="p-4 text-center text-gray-500">
-            Loading SEO Analyzer...
+            Loading...
         </div>
     );
 }
@@ -99,11 +100,13 @@ function calculateKeywordDensity(text: string, keyword: string, wordCount: numbe
 
 // Main widget function using React hooks
 const editorSidebarWidget: ClientHookFunction = (sdk: ClientSDK, prev, context: BlogEditorContext) => {
+    const blogId = context?.blogId as string | undefined;
     const [isLoading, setIsLoading] = useState(true);
     const [isTyping, setIsTyping] = useState(false);
     const [focusKeyword, setFocusKeyword] = useState('');
     const [analysisResults, setAnalysisResults] = useState<AnalysisResult[]>([]);
     const [contentVersion, setContentVersion] = useState(0);
+    const lastSavedKeywordRef = useRef<string>('');
 
     // Analysis function
     const runAnalysis = useCallback(async (keyword: string) => {
@@ -241,7 +244,7 @@ const editorSidebarWidget: ClientHookFunction = (sdk: ClientSDK, prev, context: 
                     advice: 'Not enough content to analyze readability.'
                 };
             } else {
-                const response = await sdk.callRPC("get-flesch-score", {content: analysisData.contentObject});
+                const response = await sdk.callRPC("seo-analyzer:flesch-score:get", {content: analysisData.contentObject});
                 if (response.code !== 0) throw new Error(response.message);
 
                 const {payload} = response.payload;
@@ -280,28 +283,20 @@ const editorSidebarWidget: ClientHookFunction = (sdk: ClientSDK, prev, context: 
 
     // Initialize plugin on mount
     useEffect(() => {
-        const initializePlugin = async () => {
-            try {
-                const blog = await sdk.apis.getBlog(context.blogId).then((a: any) => a.payload);
-                const seoMetadata = blog.metadata?.seoAnalyzer || {};
-                const savedKeyword = seoMetadata.focusKeyword || '';
-                setFocusKeyword(savedKeyword);
-                setIsLoading(false);
+        if (!blogId) return;
 
-                // Run initial analysis
-                runAnalysis(savedKeyword);
-            } catch (err: any) {
-                setAnalysisResults([{
-                    label: "Initialization Failed",
-                    status: 'bad',
-                    advice: err.message
-                }]);
-                setIsLoading(false);
-            }
-        };
 
-        initializePlugin();
-    }, [context.blogId, sdk.apis, runAnalysis]);
+        sdk.callRPC('seo-analyzer:config:get', {blogId}).then((resp) => {
+            const config = resp?.payload.payload?.config || {};
+            const savedKeyword = config.focusKeyword;
+            setFocusKeyword(savedKeyword);
+            lastSavedKeywordRef.current = savedKeyword;
+            setIsLoading(false);
+            runAnalysis(savedKeyword);
+        }).catch(() => {
+            setIsLoading(false);
+        });
+    }, [blogId, sdk, runAnalysis]);
 
     // Listen to content changes
     useEffect(() => {
@@ -342,21 +337,27 @@ const editorSidebarWidget: ClientHookFunction = (sdk: ClientSDK, prev, context: 
 
     // Save keyword metadata on change
     useEffect(() => {
-        if (isLoading) return; // Skip during initialization
+        if (!blogId || isLoading) return;
+        const next = (focusKeyword || '').trim();
+        // Allow saving empty keyword to clear it
+        if (next === (lastSavedKeywordRef.current || '').trim()) return;
 
         const timer = setTimeout(async () => {
-            const seoAnalyzerMetadata = {focusKeyword};
             try {
-                await sdk.apis.updateBlogMetadata(context.blogId, {seoAnalyzer: seoAnalyzerMetadata});
+                await sdk.callRPC('seo-analyzer:config:set', {
+                    blogId,
+                    config: {focusKeyword: next}
+                });
+                lastSavedKeywordRef.current = next;
             } catch (err) {
-                console.error("Failed to save metadata:", err);
+                console.error("Failed to save focus keyword:", err);
             }
         }, 1500);
 
         return () => clearTimeout(timer);
-    }, [focusKeyword, context.blogId, sdk.apis, isLoading]);
+    }, [focusKeyword, blogId, sdk, isLoading]);
 
-    if (isLoading) {
+    if (!blogId || isLoading) {
         return <LoadingState/>;
     }
 
