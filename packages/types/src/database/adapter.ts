@@ -53,7 +53,7 @@ export interface CollectionOperations<T, U> {
 
     delete(filter: Filter<T>): Promise<number>;
 
-    count?(filter: Filter<T>): Promise<number>;
+    count(filter: Filter<T>): Promise<number>;
 }
 
 // Database adapter interface
