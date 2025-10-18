@@ -1,6 +1,6 @@
 import {defineClient} from '@supergrowthai/plugin-dev-kit';
 import {ClientSDK, useCallback, useEffect, useState} from '@supergrowthai/plugin-dev-kit/client';
-import "/styles.css"
+import "./styles.css"
 
 interface RobotsRule {
     userAgent: string;
