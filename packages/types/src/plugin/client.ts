@@ -17,15 +17,15 @@ export interface ClientHookContext<T = any> {
 
 // Specific context for blog editor pages
 export interface BlogEditorContext extends ClientHookContext<Blog> {
-    data: Blog;
     blogId: string;
     contentOwnerId?: string;
-    editor: {
-        getTitle: () => string;
-        getContent: () => string;
+    form: {
+        data: Partial<Blog>;
+        getCategory: () => Category | undefined;
+        getTags: () => Tag[] | undefined;
+        on: (event: string, callback: Function) => void;
+        off: (event: string, callback: Function) => void;
     };
-    on: (event: string, callback: Function) => void;
-    off: (event: string, callback: Function) => void;
 }
 
 // Context for list views

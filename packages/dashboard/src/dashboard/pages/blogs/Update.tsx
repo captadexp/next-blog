@@ -18,7 +18,7 @@ const toOptions = <T extends { _id: string; name: string }>(arr: T[]) =>
 const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
     const location = useLocation();
     const [blog, setBlog] = useState<Blog | null>(null);
-    const [formData, setFormData] = useState<Record<string, any> | null>(null);
+    const [formData, setFormData] = useState<Partial<Blog> | null>(null);
 
     const [categories, setCategories] = useState<Category[]>([]);
     const [tags, setTags] = useState<Tag[]>([]);
@@ -102,17 +102,26 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
     const pluginContext = useMemo<BlogEditorContext | undefined>(() => {
         if (!formData || !blog) return undefined;
         return {
-            data: blog,
             blogId: id,
             contentOwnerId: blog?.userId,
+            form: {
+                data: formData,
+                getCategory: () => categories.find(category => formData.categoryId === category._id),
+                getTags: () => tags.filter(tag => formData.tagIds?.includes(tag._id)),
+                on: editorEventBus.on,
+                off: editorEventBus.off
+            },
+
+            //for backward compat will remove soon and update other plugins too
             editor: {
                 getTitle: () => formData.title || '',
                 getContent: () => formData.content || '',
             },
             on: editorEventBus.on,
-            off: editorEventBus.off
+            off: editorEventBus.off,
+            data: blog
         };
-    }, [id, blog, formData, editorEventBus, tempRefresher]);
+    }, [id, blog, categories, tags, formData, editorEventBus, tempRefresher]);
 
     const handleFieldChange = (key: string, value: any) => {
         setFormData(currentFormData => {
