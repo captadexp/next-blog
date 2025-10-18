@@ -1,108 +1,288 @@
-import type {SitemapUrl} from '@supergrowthai/plugin-dev-kit';
-import {defineServer} from '@supergrowthai/plugin-dev-kit';
-import type {SeoHookPayload, ServerSDK, SitemapData} from '@supergrowthai/plugin-dev-kit/server';
+import {Blog, defineServer} from '@supergrowthai/plugin-dev-kit';
+import type {ServerSDK, SitemapData, SitemapIndexData, SitemapUrl} from '@supergrowthai/plugin-dev-kit/server';
+import {Filter} from "@supergrowthai/next-blog-types";
+
+const SETTINGS_KEY = 'seo-sitemap:settings';
+
+interface SitemapSettings {
+    // Standard sitemaps
+    enablePosts: boolean;
+    enableCategories: boolean;
+    enableTags: boolean;
+    enableAuthors: boolean;
+    postsPerPage: number;
+
+    // News sitemap
+    enableNews: boolean;
+    newsMaxAge: number; // Days to include in news sitemap (max 2 per Google)
+    newsPublications: string[]; // Publication names for news sitemap
+    newsTagSlug: string; // Tag slug to filter news articles (e.g., 'news')
+}
+
+const DEFAULT_SETTINGS: SitemapSettings = {
+    enablePosts: true,
+    enableCategories: false,
+    enableTags: false,
+    enableAuthors: false,
+    postsPerPage: 1000,
+    enableNews: false,
+    newsMaxAge: 2,
+    newsPublications: [],
+    newsTagSlug: 'news'
+};
+
+/**
+ * Sitemap URL Structure:
+ *
+ * /sitemap.xml - Main sitemap index
+ *
+ * Standard Sitemaps:
+ * /sitemap/sitemap-posts-{page}.xml - Posts sitemap
+ * /sitemap/sitemap-categories-{page}.xml - Categories sitemap
+ * /sitemap/sitemap-tags-{page}.xml - Tags sitemap
+ * /sitemap/sitemap-authors-{page}.xml - Authors sitemap
+ *
+ * Special Sitemaps:
+ * /sitemap/sitemap-news.xml - Google News sitemap (last 48 hours)
+ *
+ * Future (via jobs):
+ * /sitemap/sitemap-posts-{year}-{month}.xml - Monthly archives
+ * /sitemap/sitemap-posts-live.xml - Last 30 days
+ */
 
 export default defineServer({
     hooks: {
-        'seo:sitemap': async (sdk: ServerSDK, payload: SeoHookPayload & { segments?: string[] }) => {
-            sdk.log.info('Generating sitemap', {segments: payload.segments});
+        'seo:sitemap-index': async (sdk, payload) => {
+            const settings = await getSettings(sdk);
+            console.log(settings);
+            return generateSitemapIndex(sdk, payload.siteUrl, settings);
+        },
+        'seo:sitemap': async (sdk, payload) => {
+            const segments = payload.request._params?.['catchAll']?.split('/').filter(Boolean) || [];
 
-            const segments = payload.segments || [];
+            if (!segments.length)
+                return
 
-            // Handle different sitemap types based on segments
-            if (segments.length === 0) {
-                // Default sitemap - return all content
-                return await generateMainSitemap(sdk, payload);
+            const filename = segments[0];
+
+            // Special sitemaps
+            if (filename === 'sitemap-news.xml') {
+                const settings = await getSettings(sdk);
+                if (!settings.enableNews) {
+                    return new Response('News sitemap disabled', {status: 404});
+                }
+                return generateNewsSitemap(sdk, payload.siteUrl, settings);
             }
 
-            // Handle specific sitemap requests like /sitemap/posts/1 or /sitemap/categories
-            const [type, page] = segments;
+            // Standard paginated sitemaps
+            const match = filename.match(/^sitemap-(\w+)-(\d+)\.xml$/);
+            if (!match) {
+                return new Response('Invalid sitemap format', {status: 404});
+            }
+
+            const [, type, pageStr] = match;
+            const page = parseInt(pageStr);
+            const settings = await getSettings(sdk);
 
             switch (type) {
                 case 'posts':
-                    return await generatePostsSitemap(sdk, payload, parseInt(page) || 1);
+                    if (!settings.enablePosts) break;
+                    return generatePostsSitemap(sdk, payload.siteUrl, page, settings);
 
                 case 'categories':
-                    return await generateCategoriesSitemap(sdk, payload);
+                    if (!settings.enableCategories) break;
+                    return generateCategoriesSitemap(sdk, payload.siteUrl, page);
 
-                case 'external':
-                    // Example: Stream from external source or redirect
-                    const externalUrl = await sdk.settings.get('seo-sitemap:external-url');
-                    if (externalUrl) {
-                        // Redirect to external sitemap (e.g., CDN, gzipped file)
-                        return Response.redirect(externalUrl, 302);
-                    }
-                    break;
+                case 'tags':
+                    if (!settings.enableTags) break;
+                    return generateTagsSitemap(sdk, payload.siteUrl, page);
 
-                case 'stream':
-                    // Example: Stream large sitemap
-                    return await streamLargeSitemap(sdk, payload, page);
-
-                default:
-                    // Unknown segment, return 404
-                    return new Response('Sitemap not found', {status: 404});
+                case 'authors':
+                    if (!settings.enableAuthors) break;
+                    return generateAuthorsSitemap(sdk, payload.siteUrl, page);
             }
 
-            return await generateMainSitemap(sdk, payload);
+            return new Response('Sitemap not found', {status: 404});
+        }
+    },
+    rpcs: {
+        'sitemap:settings:get': async (sdk) => {
+            const settings = await getSettings(sdk);
+            return {code: 0, message: 'ok', payload: settings};
+        },
+        'sitemap:settings:set': async (sdk, settings: SitemapSettings) => {
+            await sdk.settings.set(SETTINGS_KEY, settings);
+            return {code: 0, message: 'Settings saved'};
+        },
+
+        // Job RPCs for future implementation
+        'job:archive-sitemap-month': async (sdk, payload: { year: number, month: number }) => {
+            // Future: Archive a specific month's sitemap to S3
+            return {code: 0, message: 'Job queued', jobId: `archive-${payload.year}-${payload.month}`};
+        },
+        'job:rebuild-sitemap-month': async (sdk, payload: { year: number, month: number }) => {
+            // Future: Rebuild a specific month's sitemap after content update
+            return {code: 0, message: 'Job queued', jobId: `rebuild-${payload.year}-${payload.month}`};
+        },
+        'job:cleanup-old-sitemaps': async (sdk, payload: { olderThanDays: number }) => {
+            // Future: Clean up outdated sitemap versions
+            return {code: 0, message: 'Job queued', jobId: `cleanup-${Date.now()}`};
         }
     }
 });
 
-async function generateMainSitemap(sdk: ServerSDK, payload: SeoHookPayload): Promise<{ data: SitemapData }> {
-    // Fetch published blogs from database
-    const blogs = await sdk.db.blogs.find(
-        {status: 'published'},
-        {sort: {updatedAt: -1}, limit: 100} // Limit for main sitemap
-    );
+async function getSettings(sdk: ServerSDK): Promise<SitemapSettings> {
+    const stored = await sdk.settings.get<SitemapSettings>(SETTINGS_KEY);
+    return {...DEFAULT_SETTINGS, ...stored};
+}
 
-    // Create sitemap URLs for each blog
-    const urls: SitemapUrl[] = [
-        // Homepage
-        {
-            loc: payload.siteUrl,
-            changefreq: 'daily',
-            priority: 1.0,
+async function generateSitemapIndex(sdk: ServerSDK, siteUrl: string, settings: SitemapSettings) {
+    const sitemaps = [];
+
+    if (settings.enableNews) {
+        sitemaps.push({
+            loc: `${siteUrl}/sitemap/sitemap-news.xml`,
             lastmod: new Date().toISOString()
-        }
-    ];
-
-    // Add blog posts to sitemap
-    for (const blog of blogs) {
-        urls.push({
-            loc: `${payload.siteUrl}/blog/${blog.slug}`,
-            lastmod: new Date(blog.updatedAt).toISOString(),
-            changefreq: 'weekly',
-            priority: 0.8
         });
+    }
+
+    if (settings.enablePosts) {
+        //todo need to make count operation cheaper with cache or something
+        const totalPosts = await sdk.db!.blogs!.count!({status: 'published'});
+        const pages = Math.ceil(totalPosts / settings.postsPerPage);
+
+        for (let i = 0; i < pages; i++) {
+            sitemaps.push({
+                loc: `${siteUrl}/sitemap/sitemap-posts-${i}.xml`,
+                lastmod: new Date().toISOString()
+            });
+        }
+    }
+
+    if (settings.enableCategories) {
+        //todo need to make count operation cheaper with cache or something
+        const totalCategories = await sdk.db!.categories!.count!({});
+        const pages = Math.ceil(totalCategories / settings.postsPerPage);
+
+        for (let i = 0; i < pages; i++) {
+            sitemaps.push({
+                loc: `${siteUrl}/sitemap/sitemap-categories-${i}.xml`,
+                lastmod: new Date().toISOString()
+            });
+        }
+    }
+
+    if (settings.enableTags) {
+        //todo need to make count operation cheaper with cache or something
+        const totalTags = await sdk.db!.tags!.count!({});
+        const pages = Math.ceil(totalTags / settings.postsPerPage);
+
+        for (let i = 0; i < pages; i++) {
+            sitemaps.push({
+                loc: `${siteUrl}/sitemap/sitemap-tags-${i}.xml`,
+                lastmod: new Date().toISOString()
+            });
+        }
+    }
+
+    if (settings.enableAuthors) {
+        //todo need to make count operation cheaper with cache or something
+        const totalAuthors = await sdk.db!.users!.count!({});
+        const pages = Math.ceil(totalAuthors / settings.postsPerPage);
+
+        for (let i = 0; i < pages; i++) {
+            sitemaps.push({
+                loc: `${siteUrl}/sitemap/sitemap-authors-${i}.xml`,
+                lastmod: new Date().toISOString()
+            });
+        }
     }
 
     return {
         data: {
-            urlset: {
+            sitemapindex: {
                 '@_xmlns': 'http://www.sitemaps.org/schemas/sitemap/0.9',
-                url: urls
+                sitemap: sitemaps
             }
-        }
+        } as SitemapIndexData
     };
 }
 
-async function generatePostsSitemap(sdk: ServerSDK, payload: SeoHookPayload, page: number): Promise<{
-    data: SitemapData
-}> {
-    const perPage = 1000;
-    const skip = (page - 1) * perPage;
+async function generateNewsSitemap(sdk: ServerSDK, siteUrl: string, settings: SitemapSettings) {
+    const cutoffDate = Date.now() - (settings.newsMaxAge * 24 * 60 * 60 * 1000);
 
-    const blogs = await sdk.db.blogs.find(
-        {status: 'published'},
-        {sort: {updatedAt: -1}, skip, limit: perPage}
+    // Find the news tag if configured
+    let newsTagId = null;
+    if (settings.newsTagSlug) {
+        const newsTag = await sdk.db!.tags!.findOne!({slug: settings.newsTagSlug});
+        if (newsTag) {
+            newsTagId = newsTag._id;
+        }
+    }
+
+    const query: Filter<Blog> = {
+        status: 'published',
+        createdAt: {$gte: cutoffDate}
+    };
+
+    // Filter by news tag if found
+    if (newsTagId) {
+        query.tagIds = newsTagId;
+    }
+
+    const blogs = await sdk.db!.blogs!.find!(
+        query,
+        {sort: {createdAt: -1}, limit: 1000}
     );
 
-    const urls: SitemapUrl[] = blogs.map(blog => ({
-        loc: `${payload.siteUrl}/blog/${blog.slug}`,
-        lastmod: new Date(blog.updatedAt).toISOString(),
-        changefreq: 'weekly',
-        priority: 0.8
-    }));
+    // News sitemap has different format
+    const urls = blogs
+        .filter(blog => blog.metadata?.['permalink-manager:permalink']?.permalink)
+        .map(blog => {
+            const permalink = blog.metadata!['permalink-manager:permalink'].permalink;
+            return {
+                loc: `${siteUrl}${permalink}`,
+                'news:news': {
+                    'news:publication': {
+                        'news:name': settings.newsPublications[0],
+                        'news:language': 'en'
+                    },
+                    'news:publication_date': new Date(blog.createdAt).toISOString(),
+                    'news:title': blog.title
+                }
+            };
+        });
+
+    return {
+        data: {
+            urlset: {
+                '@_xmlns': 'http://www.sitemaps.org/schemas/sitemap/0.9',
+                '@_xmlns:news': 'http://www.google.com/schemas/sitemap-news/0.9',
+                url: urls
+            }
+        } as any // News sitemap has different structure
+    };
+}
+
+async function generatePostsSitemap(sdk: ServerSDK, siteUrl: string, page: number, settings: SitemapSettings) {
+    const skip = page * settings.postsPerPage;
+
+    const blogs = await sdk.db!.blogs!.find!(
+        {status: 'published'},
+        {sort: {updatedAt: -1}, skip, limit: settings.postsPerPage}
+    );
+
+    const urls: SitemapUrl[] = blogs
+        .filter(blog => blog.metadata?.['permalink-manager:permalink']?.permalink)
+        .map(blog => {
+            const permalink = blog.metadata!['permalink-manager:permalink'].permalink;
+            return {
+                loc: `${siteUrl}${permalink}`,
+                lastmod: new Date(blog.updatedAt).toISOString(),
+                changefreq: 'weekly' as const,
+                priority: 0.8
+            };
+        });
 
     return {
         data: {
@@ -110,19 +290,24 @@ async function generatePostsSitemap(sdk: ServerSDK, payload: SeoHookPayload, pag
                 '@_xmlns': 'http://www.sitemaps.org/schemas/sitemap/0.9',
                 url: urls
             }
-        }
+        } as SitemapData
     };
 }
 
-async function generateCategoriesSitemap(sdk: ServerSDK, payload: SeoHookPayload): Promise<{
-    data: SitemapData
-}> {
-    const categories = await sdk.db.categories.find({});
+async function generateCategoriesSitemap(sdk: ServerSDK, siteUrl: string, page: number) {
+    const perPage = 1000;
+    const skip = page * perPage;
+
+    const categories = await sdk.db!.categories!.find!(
+        {},
+        {skip, limit: perPage}
+    );
 
     const urls: SitemapUrl[] = categories.map(category => ({
-        loc: `${payload.siteUrl}/category/${category.slug}`,
+        //todo should be using permalink here too
+        loc: `${siteUrl}/category/${category.slug}`,
         lastmod: new Date(category.updatedAt || Date.now()).toISOString(),
-        changefreq: 'weekly',
+        changefreq: 'weekly' as const,
         priority: 0.6
     }));
 
@@ -132,50 +317,60 @@ async function generateCategoriesSitemap(sdk: ServerSDK, payload: SeoHookPayload
                 '@_xmlns': 'http://www.sitemaps.org/schemas/sitemap/0.9',
                 url: urls
             }
-        }
+        } as SitemapData
     };
 }
 
-async function streamLargeSitemap(sdk: ServerSDK, payload: SeoHookPayload, page?: string): Promise<Response> {
-    // Example: Stream a large sitemap
-    const stream = new ReadableStream({
-        start(controller) {
-            // XML header
-            controller.enqueue('<?xml version="1.0" encoding="UTF-8"?>\n');
-            controller.enqueue('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n');
-        },
+async function generateTagsSitemap(sdk: ServerSDK, siteUrl: string, page: number) {
+    const perPage = 1000;
+    const skip = page * perPage;
 
-        async pull(controller) {
-            // Stream URLs in chunks
-            try {
-                const blogs = await sdk.db.blogs.find(
-                    {status: 'published'},
-                    {sort: {updatedAt: -1}, limit: 100}
-                );
+    const tags = await sdk.db!.tags!.find!(
+        {},
+        {skip, limit: perPage}
+    );
 
-                for (const blog of blogs) {
-                    const urlXml = `  <url>
-    <loc>${payload.siteUrl}/blog/${blog.slug}</loc>
-    <lastmod>${new Date(blog.updatedAt).toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>\n`;
-                    controller.enqueue(urlXml);
-                }
+    const urls: SitemapUrl[] = tags.map(tag => ({
+        //todo should be using permalink here too
+        loc: `${siteUrl}/tag/${tag.slug}`,
+        lastmod: new Date().toISOString(),
+        changefreq: 'monthly' as const,
+        priority: 0.5
+    }));
 
-                // Close XML
-                controller.enqueue('</urlset>');
-                controller.close();
-            } catch (error) {
-                controller.error(error);
+    return {
+        data: {
+            urlset: {
+                '@_xmlns': 'http://www.sitemaps.org/schemas/sitemap/0.9',
+                url: urls
             }
-        }
-    });
+        } as SitemapData
+    };
+}
 
-    return new Response(stream, {
-        headers: {
-            'Content-Type': 'application/xml; charset=utf-8',
-            'Cache-Control': 'public, max-age=3600'
-        }
-    });
+async function generateAuthorsSitemap(sdk: ServerSDK, siteUrl: string, page: number) {
+    const perPage = 1000;
+    const skip = page * perPage;
+
+    const authors = await sdk.db!.users!.find!(
+        {},
+        {skip, limit: perPage}
+    );
+
+    const urls: SitemapUrl[] = authors.map(author => ({
+        //todo should be using permalink here too
+        loc: `${siteUrl}/author/${author.username}`,
+        lastmod: new Date().toISOString(),
+        changefreq: 'monthly' as const,
+        priority: 0.5
+    }));
+
+    return {
+        data: {
+            urlset: {
+                '@_xmlns': 'http://www.sitemaps.org/schemas/sitemap/0.9',
+                url: urls
+            }
+        } as SitemapData
+    };
 }
