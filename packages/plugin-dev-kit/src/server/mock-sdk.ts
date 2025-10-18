@@ -124,6 +124,17 @@ class MockDatabase {
                     !Object.entries(filter).every(([key, value]) => item[key] === value)
                 );
                 return toDelete.length;
+            },
+            count: async (filter: any) => {
+                console.log(`[Mock DB] Count in ${collection}:`, filter);
+                const items = this.data[collection] || [];
+                if (!filter || Object.keys(filter).length === 0) {
+                    return items.length;
+                }
+                const filtered = items.filter(item =>
+                    Object.entries(filter).every(([key, value]) => item[key] === value)
+                );
+                return filtered.length;
             }
         };
     }

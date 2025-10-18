@@ -1,4 +1,4 @@
-import type {DatabaseAdapter, PluginSettings, BrandedId, Plugin} from '@supergrowthai/next-blog-types/server';
+import type {DatabaseAdapter, Plugin, PluginSettings} from '@supergrowthai/next-blog-types/server';
 import {createId} from '@supergrowthai/next-blog-types/server';
 import {getSystemPluginId} from '../utils/defaultSettings.js';
 import {decrypt, encrypt, isSecureKey} from '../utils/crypto.js';
