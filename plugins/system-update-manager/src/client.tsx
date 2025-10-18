@@ -1,6 +1,6 @@
 import {defineClient} from '@supergrowthai/plugin-dev-kit';
 import type {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
-import {useState, useEffect} from '@supergrowthai/plugin-dev-kit/client';
+import {useEffect, useState} from '@supergrowthai/plugin-dev-kit/client';
 import type {SystemMigrationResult, SystemUpdateStatus} from './types';
 import './types';
 import "./styles.css"

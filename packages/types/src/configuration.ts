@@ -29,8 +29,7 @@ export interface UIConfiguration {
 export interface Configuration {
     callbacks?: ConfigurationCallbacks;
     ui?: UIConfiguration;
+    pathPrefix?: string;
 
     db(): Promise<DatabaseAdapter>;
-
-    pathPrefix?: string;
 }

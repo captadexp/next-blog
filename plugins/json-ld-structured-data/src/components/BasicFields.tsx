@@ -17,15 +17,15 @@ interface BasicFieldsProps {
 }
 
 export function BasicFields({
-    overrides,
-    config,
-    context,
-    onFieldChange,
-    onNestedFieldChange,
-    onSelectImage,
-    onAddImage,
-    onRemoveImage
-}: BasicFieldsProps) {
+                                overrides,
+                                config,
+                                context,
+                                onFieldChange,
+                                onNestedFieldChange,
+                                onSelectImage,
+                                onAddImage,
+                                onRemoveImage
+                            }: BasicFieldsProps) {
     return (
         <>
             {/* Headline */}
@@ -138,14 +138,11 @@ export function BasicFields({
                             <div>
                                 <label className="block text-xs text-gray-600 mb-1">
                                     Name
-                                    {!overrides.authorName && context?.data?.user?.username && (
-                                        <span className="text-gray-400 ml-1">({context.data.user.username})</span>
-                                    )}
                                 </label>
                                 <input
                                     type="text"
                                     className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
-                                    placeholder={context?.data?.user?.username || context?.data?.user?.firstName || "Author name"}
+                                    placeholder={"Author name"}
                                     value={overrides.authorName || ''}
                                     onChange={e => onFieldChange('authorName', e.target.value)}
                                 />

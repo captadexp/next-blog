@@ -72,7 +72,23 @@ export interface DatabaseAdapter {
     // Generated/computed operations
     generated: {
         getHydratedBlog(filter: Filter<Blog>): Promise<HydratedBlog | null>;
-        getDetailedBlogObject(filter: Filter<Blog>): Promise<HydratedBlog | null>;
+        getHydratedBlogs(filter: Filter<Blog>, options?: { skip?: number, limit?: number }): Promise<HydratedBlog[]>;
+        getRecentBlogs(limit?: number): Promise<HydratedBlog[]>;
+        getRelatedBlogs(blogId: string, limit?: number): Promise<HydratedBlog[]>;
+        getHydratedAuthor(userId: string): Promise<User | null>;
+        getAuthorBlogs(userId: string, options?: { skip?: number, limit?: number }): Promise<HydratedBlog[]>;
+        getHydratedCategories(): Promise<Category[]>;
+        getCategoryWithBlogs(categoryId: string, options?: { skip?: number, limit?: number }): Promise<{
+            category: Category | null,
+            blogs: HydratedBlog[]
+        }>;
+        getHydratedTags(): Promise<Tag[]>;
+        getTagWithBlogs(tagId: string, options?: { skip?: number, limit?: number }): Promise<{
+            tag: Tag | null,
+            blogs: HydratedBlog[]
+        }>;
+        getBlogsByTag(tagSlug: string, options?: { skip?: number, limit?: number }): Promise<HydratedBlog[]>;
+        getBlogsByCategory(categorySlug: string, options?: { skip?: number, limit?: number }): Promise<HydratedBlog[]>;
     };
 
     // Optional transaction support

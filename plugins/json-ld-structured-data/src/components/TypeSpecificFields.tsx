@@ -6,11 +6,11 @@ interface TypeSpecificFieldsProps {
 }
 
 export function TypeSpecificFields({
-    schemaType,
-    overrides,
-    onNestedFieldChange,
-    onSelectImage
-}: TypeSpecificFieldsProps) {
+                                       schemaType,
+                                       overrides,
+                                       onNestedFieldChange,
+                                       onSelectImage
+                                   }: TypeSpecificFieldsProps) {
 
     if (schemaType === 'Review') {
         return (
@@ -158,13 +158,15 @@ export function TypeSpecificFields({
                                     }}
                                 />
                                 {step.imageMedia ? (
-                                    <div className="flex items-center gap-1.5 p-1 bg-white rounded border border-gray-200">
+                                    <div
+                                        className="flex items-center gap-1.5 p-1 bg-white rounded border border-gray-200">
                                         <img
                                             src={step.imageMedia.url}
                                             alt={step.imageMedia.alt || ''}
                                             className="w-5 h-5 object-cover rounded border border-gray-300"
                                         />
-                                        <span className="flex-1 text-[10px] truncate">{step.imageMedia.alt || 'Step image'}</span>
+                                        <span
+                                            className="flex-1 text-[10px] truncate">{step.imageMedia.alt || 'Step image'}</span>
                                         <button
                                             className="text-[10px] text-red-600 px-1"
                                             onClick={() => {

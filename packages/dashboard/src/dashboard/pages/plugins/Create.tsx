@@ -49,7 +49,7 @@ const CreatePlugin = () => {
                 </div>
             )}
 
-            <AvailablePlugins />
+            <AvailablePlugins/>
 
             {/* Custom URL Section */}
             <div className="bg-white p-6 rounded-lg shadow-md">
@@ -87,7 +87,8 @@ const CreatePlugin = () => {
                         >
                             {loading ? (
                                 <span className="flex items-center">
-                                    <div className="inline-block animate-spin h-4 w-4 border-t-2 border-b-2 border-white rounded-full mr-2"></div>
+                                    <div
+                                        className="inline-block animate-spin h-4 w-4 border-t-2 border-b-2 border-white rounded-full mr-2"></div>
                                     Installing...
                                 </span>
                             ) : (

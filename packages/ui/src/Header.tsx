@@ -1,9 +1,8 @@
 import React from 'react';
-import type {DatabaseAdapter, DetailedBlog} from '@supergrowthai/next-blog';
+import type {HydratedBlog} from '@supergrowthai/next-blog';
 
 interface HeaderProps extends Omit<React.HTMLAttributes<HTMLElement>, 'style'> {
-    db: DatabaseAdapter;
-    blog: DetailedBlog;
+    blog: HydratedBlog;
     style?: React.CSSProperties;
     containerStyle?: React.CSSProperties;
     titleStyle?: React.CSSProperties;
@@ -11,7 +10,6 @@ interface HeaderProps extends Omit<React.HTMLAttributes<HTMLElement>, 'style'> {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-                                                  db,
                                                   blog,
                                                   style,
                                                   containerStyle,

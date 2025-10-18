@@ -1,6 +1,6 @@
 "use client";
 import React, {ReactNode, useEffect, useState} from 'react';
-import type {DetailedBlog} from '@supergrowthai/next-blog';
+import type {HydratedBlog} from '@supergrowthai/next-blog';
 import styles from './SEOAnalyzer.module.css';
 
 // --- Types and Interfaces ---
@@ -20,7 +20,7 @@ interface SEOReport {
 }
 
 interface SEOAnalyzerProps {
-    blog: DetailedBlog;
+    blog: HydratedBlog;
     children?: ReactNode;
 }
 
@@ -33,7 +33,7 @@ const checkPresence = (selector: string): boolean => document.querySelector(sele
 
 // --- Analysis Functions ---
 
-const analyzeOnPage = (blog: DetailedBlog, mainContentText: string): ReportItemData[] => {
+const analyzeOnPage = (blog: HydratedBlog, mainContentText: string): ReportItemData[] => {
     const results: ReportItemData[] = [];
     const keyword = blog.slug.replace(/-/g, ' ');
 

@@ -1,9 +1,8 @@
 import React from 'react';
-import type {DatabaseAdapter, DetailedBlog} from '@supergrowthai/next-blog';
+import type {HydratedBlog} from '@supergrowthai/next-blog';
 
 interface AuthorInfoProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
-    db: DatabaseAdapter;
-    blog: DetailedBlog;
+    blog: HydratedBlog;
     style?: React.CSSProperties;
     imageStyle?: React.CSSProperties;
     nameStyle?: React.CSSProperties;
@@ -11,7 +10,6 @@ interface AuthorInfoProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'st
 }
 
 export const AuthorInfo: React.FC<AuthorInfoProps> = ({
-                                                          db,
                                                           blog,
                                                           style,
                                                           imageStyle,

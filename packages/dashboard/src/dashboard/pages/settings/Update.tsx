@@ -131,7 +131,12 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
     };
 
     return (
-        <ExtensionZone name="setting-update" context={{zone: 'setting-update', page: 'settings', entity: 'setting', data: {setting, loading, error}}}>
+        <ExtensionZone name="setting-update" context={{
+            zone: 'setting-update',
+            page: 'settings',
+            entity: 'setting',
+            data: {setting, loading, error}
+        }}>
             <div className="max-w-4xl mx-auto p-2 md:p-6">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-semibold">Update Setting</h2>
@@ -155,9 +160,15 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
                     </div>
                 ) : (
                     <>
-                        <ExtensionPoint name="setting-update-form:toolbar" context={{setting, fields: getFormFields()}}/>
-                        
-                        <ExtensionZone name="setting-update-form" context={{zone: 'setting-update-form', page: 'settings', entity: 'setting', data: {setting, fields: getFormFields()}}}>
+                        <ExtensionPoint name="setting-update-form:toolbar"
+                                        context={{setting, fields: getFormFields()}}/>
+
+                        <ExtensionZone name="setting-update-form" context={{
+                            zone: 'setting-update-form',
+                            page: 'settings',
+                            entity: 'setting',
+                            data: {setting, fields: getFormFields()}
+                        }}>
                             <div className="bg-white p-6 rounded-lg shadow-md">
                                 <DynamicForm
                                     id="updateSetting"

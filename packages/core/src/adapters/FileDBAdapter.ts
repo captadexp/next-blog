@@ -8,8 +8,8 @@ import {
     CommentData,
     createId,
     DatabaseAdapter,
-    DetailedBlog,
     Filter,
+    HydratedBlog,
     Media,
     MediaData,
     Permission,
@@ -867,47 +867,184 @@ export class FileDBAdapter implements DatabaseAdapter {
 
     get generated() {
         const self = this;
-        return {
-            getHydratedBlog: async (filter: Filter<Blog>): Promise<DetailedBlog | null> => {
-                const blog = await this.blogs.findOne(filter);
-                if (!blog) {
-                    return null;
-                }
 
-                const author = await self.users.findById(blog.userId);
-                const category = await self.categories.findById(blog.categoryId);
-                const tags = await Promise.all(blog.tagIds.map(tagId => self.tags.findById(tagId)));
+        // --- helpers ---
+        const uniq = <T>(arr: T[]) => Array.from(new Set(arr));
+        const indexById = <T extends { _id: string }>(items: (T | null | undefined)[]) => {
+            const map = new Map<string, T>();
+            for (const it of items) if (it) map.set(it._id, it);
+            return map;
+        };
 
-                // Populate featuredMedia
-                const featuredMedia = blog.featuredMediaId
-                    ? await self.media.findById(blog.featuredMediaId)
-                    : undefined;
+        // --- core batched hydrator ---
+        const hydrateBlogs = async (blogs: Blog[]): Promise<HydratedBlog[]> => {
+            if (!blogs.length) return [];
 
-                if (!author || !category) {
-                    // Or handle this case more gracefully
-                    return null;
-                }
+            // Collect all IDs to fetch once
+            const userIds = uniq(blogs.map(b => b.userId));
+            const categoryIds = uniq(blogs.map(b => b.categoryId));
+            const allTagIds = uniq(blogs.flatMap(b => b.tagIds || []));
+            const mediaIds = uniq(blogs.map(b => b.featuredMediaId).filter(Boolean) as string[]);
+            const parentIds = uniq(blogs.map(b => b.parentId).filter(Boolean) as string[]);
 
-                if (!author) {
-                    // Missing user is critical
-                    return null;
-                }
+            // Fetch in parallel (single round trip per collection)
+            const [users, categories, tags, media, parents] = await Promise.all([
+                self.users.find({_id: {$in: userIds}}),
+                self.categories.find({_id: {$in: categoryIds}}),
+                self.tags.find({_id: {$in: allTagIds}}),
+                mediaIds.length ? self.media.find({_id: {$in: mediaIds}}) : Promise.resolve([]),
+                parentIds.length ? self.blogs.find({_id: {$in: parentIds}}) : Promise.resolve([]),
+            ]);
 
-                const {userId, categoryId, tagIds, featuredMediaId, parentId, ...restOfBlog} = blog;
+            // Index for O(1) lookups
+            const userById = indexById(users);
+            const categoryById = indexById(categories);
+            const tagById = indexById(tags);
+            const mediaById = indexById(media);
+            const parentById = indexById(parents);
 
-                return {
-                    ...blog,
-                    user: author,  // userId → user
-                    category,  // categoryId → category
-                    tags: tags.filter((t): t is Tag => t !== null),  // tagIds → tags
-                    featuredMedia: featuredMedia || undefined,  // featuredMediaId → featuredMedia
-                    parent: parentId ? (await self.blogs.findById(parentId)) || undefined : undefined,  // parentId → parent
-                };
-            },
-            getDetailedBlogObject: async function (filter: Filter<Blog>): Promise<DetailedBlog | null> {
-                return self.generated.getHydratedBlog(filter);
+            // Build hydrated objects
+            const out: HydratedBlog[] = [];
+            for (const b of blogs) {
+                const author = userById.get(b.userId);
+                const category = categoryById.get(b.categoryId);
+                if (!author || !category) continue; // skip incomplete
+
+                const hydratedTags = (b.tagIds || [])
+                    .map(tid => tagById.get(tid))
+                    .filter((t): t is Tag => !!t);
+
+                out.push({
+                    ...b,
+                    user: author,
+                    category,
+                    tags: hydratedTags,
+                    featuredMedia: b.featuredMediaId ? mediaById.get(b.featuredMediaId) : undefined,
+                    parent: b.parentId ? parentById.get(b.parentId) : undefined,
+                } as HydratedBlog);
             }
-        }
+            return out;
+        };
+
+        return {
+            // Single item now delegates to the batched path
+            getHydratedBlog: async (filter: Filter<Blog>): Promise<HydratedBlog | null> => {
+                const blogs = await self.blogs.find(filter, {limit: 1});
+                const hydrated = await hydrateBlogs(blogs);
+                return hydrated[0] ?? null;
+            },
+
+            // Batched hydrator entrypoint
+            getHydratedBlogs: async (
+                filter: Filter<Blog>,
+                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+            ): Promise<HydratedBlog[]> => {
+                const blogs = await self.blogs.find(filter, options);
+                return hydrateBlogs(blogs);
+            },
+
+            // Prefer DB-side sort/limit if supported
+            getRecentBlogs: async (limit: number = 10): Promise<HydratedBlog[]> => {
+                return self.generated.getHydratedBlogs(
+                    {status: 'published'},
+                    {limit, sort: {createdAt: -1}}
+                );
+            },
+
+            getRelatedBlogs: async (blogId: string, limit: number = 5): Promise<HydratedBlog[]> => {
+                const seed = await self.blogs.findById(blogId);
+                if (!seed) return [];
+
+                // Fetch candidates with same category OR overlapping tags; exclude self
+                const candidates = await self.blogs.find({
+                    _id: {$ne: blogId},
+                    status: 'published',
+                    //@ts-ignore
+                    $or: [
+                        {categoryId: seed.categoryId},
+                        {tagIds: {$in: seed.tagIds || []}},
+                    ],
+                });
+
+                // Score in-memory, then take top N
+                const scored = candidates
+                    .map(b => {
+                        let score = 0;
+                        if (b.categoryId === seed.categoryId) score += 2;
+                        const shared = (b.tagIds || []).filter(t => (seed.tagIds || []).includes(t));
+                        score += shared.length;
+                        return {b, score};
+                    })
+                    .filter(s => s.score > 0)
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, limit)
+                    .map(s => s.b);
+
+                return hydrateBlogs(scored);
+            },
+
+            getHydratedAuthor: async (userId: string): Promise<User | null> => {
+                return self.users.findById(userId);
+            },
+
+            getAuthorBlogs: async (
+                userId: string,
+                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+            ): Promise<HydratedBlog[]> => {
+                return self.generated.getHydratedBlogs({userId, status: 'published'}, options);
+            },
+
+            getHydratedCategories: async (): Promise<Category[]> => {
+                return self.categories.find({});
+            },
+
+            getCategoryWithBlogs: async (
+                categoryId: string,
+                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+            ): Promise<{ category: Category | null; blogs: HydratedBlog[] }> => {
+                const category = await self.categories.findById(categoryId);
+                if (!category) return {category: null, blogs: []};
+                const blogs = await self.generated.getHydratedBlogs({categoryId, status: 'published'}, options);
+                return {category, blogs};
+            },
+
+            getHydratedTags: async (): Promise<Tag[]> => {
+                return self.tags.find({});
+            },
+
+            getTagWithBlogs: async (
+                tagId: string,
+                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+            ): Promise<{ tag: Tag | null; blogs: HydratedBlog[] }> => {
+                const tag = await self.tags.findById(tagId);
+                if (!tag) return {tag: null, blogs: []};
+                const blogs = await self.generated.getHydratedBlogs(
+                    {status: 'published', tagIds: {$in: [tagId]}},
+                    options
+                );
+                return {tag, blogs};
+            },
+
+            getBlogsByTag: async (
+                tagSlug: string,
+                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+            ): Promise<HydratedBlog[]> => {
+                const tag = await self.tags.findOne({slug: tagSlug});
+                if (!tag) return [];
+                const res = await self.generated.getTagWithBlogs(tag._id, options);
+                return res.blogs;
+            },
+
+            getBlogsByCategory: async (
+                categorySlug: string,
+                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+            ): Promise<HydratedBlog[]> => {
+                const category = await self.categories.findOne({slug: categorySlug});
+                if (!category) return [];
+                const res = await self.generated.getCategoryWithBlogs(category._id, options);
+                return res.blogs;
+            },
+        };
     }
 
     async readData<T>(fileName: string): Promise<T[]> {

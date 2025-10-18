@@ -197,10 +197,18 @@ class MockAPIClient implements APIClient {
                 _id: createBrandedId.tag('1'),
                 name: 'JavaScript',
                 slug: 'javascript',
+                description: 'A popular programming language',
                 createdAt: Date.now(),
                 updatedAt: Date.now()
             },
-            {_id: createBrandedId.tag('2'), name: 'React', slug: 'react', createdAt: Date.now(), updatedAt: Date.now()}
+            {
+                _id: createBrandedId.tag('2'),
+                name: 'React',
+                slug: 'react',
+                description: 'A JavaScript library for building user interfaces',
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            }
         ];
         return this.mockResponse(this.mockPaginatedResponse(tags, params));
     }
@@ -211,6 +219,7 @@ class MockAPIClient implements APIClient {
             _id: createBrandedId.tag(id),
             name: 'Tag',
             slug: 'tag',
+            description: 'A mock tag description',
             createdAt: Date.now(),
             updatedAt: Date.now()
         });

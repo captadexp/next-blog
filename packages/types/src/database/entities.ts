@@ -61,14 +61,6 @@ export type HydratedCategory = Hydrated<Category, ModelMap>;
 // Automatically infers: parent?
 
 export type HydratedSettingsEntry = Hydrated<SettingsEntry, ModelMap>;
-// Automatically infers: owner
-
-// Legacy aliases for backward compatibility (will be removed later)
-export type DetailedBlog = HydratedBlog;
-export type DetailedComment = HydratedComment;
-export type DetailedMedia = HydratedMedia;
-export type DetailedRevision = HydratedRevision;
-export type DetailedCategory = HydratedCategory;
 
 export interface Category {
     _id: BrandedId<"Category">;
@@ -90,6 +82,7 @@ export interface Tag {
     _id: BrandedId<"Tag">;
     name: string;
     slug: string;
+    description: string;
     createdAt: number;
     updatedAt: number;
 }

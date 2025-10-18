@@ -23,12 +23,12 @@ export function formatDate(timestamp: number): string {
 export function getStatusBadge(status: string): { text: string; className: string } {
     switch (status) {
         case 'draft':
-            return { text: 'Draft', className: 'bg-yellow-100 text-yellow-800' };
+            return {text: 'Draft', className: 'bg-yellow-100 text-yellow-800'};
         case 'published':
-            return { text: 'Published', className: 'bg-green-100 text-green-800' };
+            return {text: 'Published', className: 'bg-green-100 text-green-800'};
         case 'private':
-            return { text: 'Private', className: 'bg-gray-100 text-gray-800' };
+            return {text: 'Private', className: 'bg-gray-100 text-gray-800'};
         default:
-            return { text: status, className: 'bg-gray-100 text-gray-800' };
+            return {text: status, className: 'bg-gray-100 text-gray-800'};
     }
 }

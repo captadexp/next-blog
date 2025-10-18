@@ -26,17 +26,17 @@ export default async function (props: { params: Promise<{ slug: string }> }) {
     return (
         <BlogLayout>
             <BlogLayout.Header>
-                <Header db={blogDb} blog={blog}/>
+                <Header blog={blog}/>
             </BlogLayout.Header>
             <BlogLayout.Body>
                 <MainSection>
-                    <Content db={blogDb} blog={blog}/>
-                    <AuthorInfo db={blogDb} blog={blog}/>
+                    <Content blog={blog}/>
+                    <AuthorInfo blog={blog}/>
                     <SEOAnalyzer blog={blog}/>
                 </MainSection>
                 <Aside>
-                    <RelatedPosts db={blogDb} blog={blog}/>
-                    <RecentPosts db={blogDb} blog={blog}/>
+                    <RelatedPosts blogs={[blog]}/>
+                    <RecentPosts blogs={[blog]}/>
                 </Aside>
             </BlogLayout.Body>
             <BlogLayout.Footer>

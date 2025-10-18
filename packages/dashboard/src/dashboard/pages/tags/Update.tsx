@@ -67,7 +67,8 @@ const UpdateTag: FunctionComponent<UpdateTagProps> = ({id}) => {
     };
 
     return (
-        <ExtensionZone name="tag-update" context={{zone: 'tag-update', page: 'tags', entity: 'tag', data: {tag, loading, error}}}>
+        <ExtensionZone name="tag-update"
+                       context={{zone: 'tag-update', page: 'tags', entity: 'tag', data: {tag, loading, error}}}>
             <div className="max-w-4xl mx-auto p-2 md:p-6">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-semibold">Update Tag</h2>
@@ -92,8 +93,13 @@ const UpdateTag: FunctionComponent<UpdateTagProps> = ({id}) => {
                 ) : (
                     <>
                         <ExtensionPoint name="tag-update-form:toolbar" context={{tag, fields: getFormFields()}}/>
-                        
-                        <ExtensionZone name="tag-update-form" context={{zone: 'tag-update-form', page: 'tags', entity: 'tag', data: {tag, fields: getFormFields()}}}>
+
+                        <ExtensionZone name="tag-update-form" context={{
+                            zone: 'tag-update-form',
+                            page: 'tags',
+                            entity: 'tag',
+                            data: {tag, fields: getFormFields()}
+                        }}>
                             <div className="bg-white p-6 rounded-lg shadow-md">
                                 <DynamicForm
                                     id="updateTag"

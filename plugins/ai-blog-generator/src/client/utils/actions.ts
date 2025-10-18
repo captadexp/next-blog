@@ -15,7 +15,7 @@ export async function addTopic(sdk: ClientSDK, topic: string): Promise<PluginSta
     const status = statusResponse.payload as PluginStatus;
 
     const topics = [...status.topics, topic.trim()];
-    await updateSettings(sdk, { topics });
+    await updateSettings(sdk, {topics});
 
     // Get and return updated status
     const updatedStatusResponse = await sdk.callRPC('ai-generator:getStatus', {});
@@ -28,7 +28,7 @@ export async function removeTopic(sdk: ClientSDK, index: number): Promise<Plugin
     const status = statusResponse.payload as PluginStatus;
 
     const topics = status.topics.filter((_: any, i: number) => i !== index);
-    await updateSettings(sdk, { topics });
+    await updateSettings(sdk, {topics});
 
     // Get and return updated status
     const updatedStatusResponse = await sdk.callRPC('ai-generator:getStatus', {});

@@ -1,16 +1,15 @@
 import React from 'react';
-import type {DatabaseAdapter, DetailedBlog} from '@supergrowthai/next-blog';
+import type {HydratedBlog} from '@supergrowthai/next-blog';
 import {contentObjectToHtml} from "@supergrowthai/plugin-dev-kit/content";
 
 interface ContentProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
-    db: DatabaseAdapter;
-    blog: DetailedBlog;
+    blog: HydratedBlog;
     style?: React.CSSProperties;
     contentStyle?: React.CSSProperties;
 }
 
 
-export const Content: React.FC<ContentProps> = ({db, blog, style, contentStyle, ...rest}) => {
+export const Content: React.FC<ContentProps> = ({blog, style, contentStyle, ...rest}) => {
     const containerStyles: React.CSSProperties = {
         backgroundColor: 'white',
         padding: '24px',

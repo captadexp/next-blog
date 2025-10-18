@@ -9,8 +9,8 @@ import {
     CommentData,
     createId,
     DatabaseAdapter,
-    DetailedBlog,
     Filter,
+    HydratedBlog,
     Media,
     MediaData,
     Permission,
@@ -553,90 +553,250 @@ export class MongoDBAdapter implements DatabaseAdapter {
 
     get generated() {
         const self = this;
-        return {
-            getHydratedBlog: async (filter: Filter<Blog>): Promise<DetailedBlog | null> => {
 
-                const blogCollection: Collection<any> = this.db.collection('blogs');
-                const dbFilter = this.blogTransformer.toDb(filter);
+        // ---------- low-level collection handles ----------
+        const blogsCol = () => this.db.collection('blogs') as Collection<any>;
+        const usersCol = () => this.db.collection('users') as Collection<any>;
+        const catsCol = () => this.db.collection('categories') as Collection<any>;
+        const tagsCol = () => this.db.collection('tags') as Collection<any>;
+        const mediaCol = () => this.db.collection('media') as Collection<any>;
 
-                const pipeline = [
-                    {$match: dbFilter},
-                    {
-                        $lookup: {
-                            from: 'users',
-                            localField: 'userId',
-                            foreignField: '_id',
-                            as: 'author'
-                        }
-                    },
-                    {$unwind: '$author'},
-                    {
-                        $lookup: {
-                            from: 'categories',
-                            localField: 'categoryId',
-                            foreignField: '_id',
-                            as: 'category'
-                        }
-                    },
-                    {$unwind: '$category'},
-                    {
-                        $lookup: {
-                            from: 'tags',
-                            localField: 'tagIds',
-                            foreignField: '_id',
-                            as: 'tags'
-                        }
-                    },
-                    {
-                        $lookup: {
-                            from: 'media',
-                            localField: 'featuredMediaId',
-                            foreignField: '_id',
-                            as: 'featuredMedia'
-                        }
-                    },
-                    {$unwind: {path: '$featuredMedia', preserveNullAndEmptyArrays: true}},
-                    {
-                        $project: {
-                            userId: 0, // Exclude original userId
-                            categoryId: 0, // Exclude original categoryId
-                            tagIds: 0, // Exclude original tagIds
-                            featuredMediaId: 0, // Exclude since we have populated featuredMedia
-                            parentId: 0, // Exclude original parentId if populated
-                        }
-                    }
-                ];
+        // ---------- tiny utils ----------
+        const uniq = <T>(xs: T[]) => Array.from(new Set(xs));
+        const truthy = <T>(x: T | null | undefined): x is T => !!x;
 
-                const results = await blogCollection.aggregate(pipeline).toArray();
+        const indexById = <T extends { _id: string }>(rows: T[]) => {
+            const m = new Map<string, T>();
+            for (const r of rows) m.set(r._id, r);
+            return m;
+        };
 
-                if (results.length === 0) {
-                    return null;
-                }
+        // ---------- swappable loaders (cache-ready) ----------
+        const loadUsersByIds = async (ids: string[]) => {
+            if (!ids.length) return new Map<string, any>();
+            const rows = await usersCol().find({_id: {$in: uniq(ids)}}).toArray();
+            return indexById(rows);
+        };
 
-                const result = results[0];
+        const loadCategoriesByIds = async (ids: string[]) => {
+            if (!ids.length) return new Map<string, any>();
+            const rows = await catsCol().find({_id: {$in: uniq(ids)}}).toArray();
+            return indexById(rows);
+        };
 
-                // Transform the nested objects using transformers
-                const user = this.userTransformer.fromDb(result.author);
-                const category = this.categoryTransformer.fromDb(result.category);
-                const tags = result.tags.map((tag: any) => this.tagTransformer.fromDb(tag));
-                const featuredMedia = result.featuredMedia ? this.mediaTransformer.fromDb(result.featuredMedia) : undefined;
+        const loadTagsByIds = async (ids: string[]) => {
+            if (!ids.length) return new Map<string, any>();
+            const rows = await tagsCol().find({_id: {$in: uniq(ids)}}).toArray();
+            return indexById(rows);
+        };
 
-                // Transform the main blog object
-                const blog = this.blogTransformer.fromDb(result);
+        const loadMediaByIds = async (ids: string[]) => {
+            if (!ids.length) return new Map<string, any>();
+            const rows = await mediaCol().find({_id: {$in: uniq(ids)}}).toArray();
+            return indexById(rows);
+        };
 
-                // Return hydrated blog with proper field names
-                return {
+        const loadBlogsByIds = async (ids: string[]) => {
+            if (!ids.length) return new Map<string, any>();
+            const rows = await blogsCol().find({_id: {$in: uniq(ids)}}).toArray();
+            return indexById(rows);
+        };
+
+        // ---------- core hydrator (from raw DB rows) ----------
+        const hydrateRawBlogs = async (rawBlogs: any[]): Promise<HydratedBlog[]> => {
+            if (!rawBlogs.length) return [];
+
+            // collect all foreign keys
+            const userIds = uniq(rawBlogs.map(b => b.userId).filter(truthy));
+            const categoryIds = uniq(rawBlogs.map(b => b.categoryId).filter(truthy));
+            const allTagIds = uniq(rawBlogs.flatMap(b => (b.tagIds || [])).filter(truthy));
+            const mediaIds = uniq(rawBlogs.map(b => b.featuredMediaId).filter(truthy));
+            const parentIds = uniq(rawBlogs.map(b => b.parentId).filter(truthy));
+
+            // batch fetch
+            const [usersMap, catsMap, tagsMap, mediaMap, parentsMap] = await Promise.all([
+                loadUsersByIds(userIds),
+                loadCategoriesByIds(categoryIds),
+                loadTagsByIds(allTagIds),
+                loadMediaByIds(mediaIds),
+                loadBlogsByIds(parentIds),
+            ]);
+
+            // transform + stitch
+            const out: HydratedBlog[] = [];
+            for (const row of rawBlogs) {
+                const dbUser = usersMap.get(row.userId);
+                const dbCat = catsMap.get(row.categoryId);
+                if (!dbUser || !dbCat) continue; // skip incomplete
+
+                const blog = this.blogTransformer.fromDb(row);
+                const user = this.userTransformer.fromDb(dbUser);
+                const category = this.categoryTransformer.fromDb(dbCat);
+                const tags = (row.tagIds || [])
+                    .map((tid: string) => tagsMap.get(tid))
+                    .filter(truthy)
+                    .map((t: any) => this.tagTransformer.fromDb(t));
+                const featuredMedia = row.featuredMediaId
+                    ? (mediaMap.get(row.featuredMediaId) ? this.mediaTransformer.fromDb(mediaMap.get(row.featuredMediaId)) : undefined)
+                    : undefined;
+                const parent = row.parentId
+                    ? (parentsMap.get(row.parentId) ? this.blogTransformer.fromDb(parentsMap.get(row.parentId)) : undefined)
+                    : undefined;
+
+                out.push({
                     ...blog,
-                    user, // userId → user
-                    category, // categoryId → category
-                    tags, // tagIds → tags
-                    featuredMedia, // featuredMediaId → featuredMedia
-                };
-            },
-            getDetailedBlogObject: async function (filter: Filter<Blog>): Promise<DetailedBlog | null> {
-                return self.generated.getHydratedBlog(filter);
+                    user,
+                    category,
+                    tags,
+                    featuredMedia,
+                    parent,
+                } as HydratedBlog);
             }
-        }
+            return out;
+        };
+
+        // ---------- query helpers ----------
+        const applyFindOptions = (cursor: any, options?: {
+            skip?: number;
+            limit?: number;
+            sort?: Record<string, 1 | -1>
+        }) => {
+            if (!options) return cursor;
+            if (options.sort) cursor = cursor.sort(options.sort);
+            if (typeof options.skip === 'number') cursor = cursor.skip(options.skip);
+            if (typeof options.limit === 'number') cursor = cursor.limit(options.limit);
+            return cursor;
+        };
+
+        // ---------- public API ----------
+        return {
+            // single delegates to batched-many
+            getHydratedBlog: async (filter: Filter<Blog>): Promise<HydratedBlog | null> => {
+                const res = await self.generated.getHydratedBlogs(filter, {limit: 1});
+                return res[0] ?? null;
+            },
+
+            getHydratedBlogs: async (
+                filter: Filter<Blog>,
+                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+            ): Promise<HydratedBlog[]> => {
+                const dbFilter = this.blogTransformer.toDb(filter);
+                let cursor = blogsCol().find(dbFilter);
+                cursor = applyFindOptions(cursor, options);
+                const raw = await cursor.toArray();
+                return hydrateRawBlogs(raw);
+            },
+
+            getRecentBlogs: async (limit: number = 10): Promise<HydratedBlog[]> => {
+                return self.generated.getHydratedBlogs(
+                    {status: 'published'},
+                    {sort: {createdAt: -1}, limit}
+                );
+            },
+
+            getRelatedBlogs: async (blogId: string, limit: number = 5): Promise<HydratedBlog[]> => {
+                const seed = await blogsCol().findOne({_id: blogId});
+                if (!seed) return [];
+
+                const seedTags: string[] = Array.isArray(seed.tagIds) ? seed.tagIds : [];
+                const seedCategoryId: string | undefined = seed.categoryId;
+
+                // prefilter server-side (but no aggregation): category OR overlapping tagIds
+                const query: any = {
+                    status: 'published',
+                    _id: {$ne: blogId},
+                    $or: [
+                        {categoryId: seedCategoryId},
+                        {tagIds: {$in: seedTags}},
+                    ],
+                };
+
+                const candidates = await blogsCol().find(query).toArray();
+
+                // score in memory
+                const scored = candidates.map(b => {
+                    let score = 0;
+                    if (seedCategoryId && b.categoryId === seedCategoryId) score += 2;
+                    const shared = (b.tagIds || []).filter((t: string) => seedTags.includes(t)).length;
+                    score += shared;
+                    return {b, score};
+                }).filter(s => s.score > 0)
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, limit)
+                    .map(s => s.b);
+
+                return hydrateRawBlogs(scored);
+            },
+
+            getHydratedAuthor: async (userId: string): Promise<User | null> => {
+                const raw = await usersCol().findOne({_id: userId});
+                return raw ? this.userTransformer.fromDb(raw) : null;
+            },
+
+            getAuthorBlogs: async (
+                userId: string,
+                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+            ): Promise<HydratedBlog[]> => {
+                return self.generated.getHydratedBlogs({userId, status: 'published'}, options);
+            },
+
+            getHydratedCategories: async (): Promise<Category[]> => {
+                const rows = await catsCol().find({}).toArray();
+                return rows.map((c: any) => this.categoryTransformer.fromDb(c));
+            },
+
+            getCategoryWithBlogs: async (
+                categoryId: string,
+                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+            ): Promise<{ category: Category | null; blogs: HydratedBlog[] }> => {
+                const raw = await catsCol().findOne({_id: categoryId});
+                if (!raw) return {category: null, blogs: []};
+                const blogs = await self.generated.getHydratedBlogs({categoryId, status: 'published'}, options);
+                return {category: this.categoryTransformer.fromDb(raw), blogs};
+            },
+
+            getHydratedTags: async (): Promise<Tag[]> => {
+                const rows = await tagsCol().find({}).toArray();
+                return rows.map((t: any) => this.tagTransformer.fromDb(t));
+            },
+
+            getTagWithBlogs: async (
+                tagId: string,
+                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+            ): Promise<{ tag: Tag | null; blogs: HydratedBlog[] }> => {
+                const raw = await tagsCol().findOne({_id: tagId});
+                if (!raw) return {tag: null, blogs: []};
+                const blogs = await self.generated.getHydratedBlogs(
+                    {status: 'published', tagIds: {$in: [tagId]}},
+                    options
+                );
+                return {tag: this.tagTransformer.fromDb(raw), blogs};
+            },
+
+            getBlogsByTag: async (
+                tagSlug: string,
+                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+            ): Promise<HydratedBlog[]> => {
+                const raw = await tagsCol().findOne({slug: tagSlug});
+                if (!raw) return [];
+                return self.generated.getHydratedBlogs(
+                    {status: 'published', tagIds: {$in: [raw._id]}},
+                    options
+                );
+            },
+
+            getBlogsByCategory: async (
+                categorySlug: string,
+                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+            ): Promise<HydratedBlog[]> => {
+                const raw = await catsCol().findOne({slug: categorySlug});
+                if (!raw) return [];
+                return self.generated.getHydratedBlogs(
+                    {status: 'published', categoryId: raw._id},
+                    options
+                );
+            },
+        };
     }
 
     private getCollectionOperations<T extends U, U>(

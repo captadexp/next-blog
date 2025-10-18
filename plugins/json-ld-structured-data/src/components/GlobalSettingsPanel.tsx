@@ -1,5 +1,5 @@
 import type {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
-import {useCallback, useEffect, useState, useRef} from '@supergrowthai/plugin-dev-kit/client';
+import {useCallback, useEffect, useRef, useState} from '@supergrowthai/plugin-dev-kit/client';
 import {SCHEMA_TYPES} from './SchemaTypePicker.js';
 
 const AUTHOR_TYPES = [
@@ -7,7 +7,7 @@ const AUTHOR_TYPES = [
     {value: 'Organization', label: 'Organization'}
 ];
 
-export function GlobalSettingsPanel({sdk}: {sdk: ClientSDK; context: any}) {
+export function GlobalSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
     const [config, setConfig] = useState<any>({});
     const [saving, setSaving] = useState(false);
     const [activeSection, setActiveSection] = useState<'organization' | 'website' | 'defaults'>('organization');
@@ -159,7 +159,10 @@ export function GlobalSettingsPanel({sdk}: {sdk: ClientSDK; context: any}) {
                                                 placeholder="Alt text"
                                                 value={config.organization.logoMedia.alt || ''}
                                                 onChange={e => {
-                                                    const updated = {...config.organization.logoMedia, alt: e.target.value};
+                                                    const updated = {
+                                                        ...config.organization.logoMedia,
+                                                        alt: e.target.value
+                                                    };
                                                     updateField('organization.logoMedia', updated);
                                                 }}
                                             />
@@ -199,7 +202,8 @@ export function GlobalSettingsPanel({sdk}: {sdk: ClientSDK; context: any}) {
                                     value={(config.organization?.sameAs || []).join('\n')}
                                     onChange={e => updateField('organization.sameAs', e.target.value.split('\n').filter(Boolean))}
                                 />
-                                <p className="text-xs text-gray-500 mt-1">Social media profile URLs for your organization</p>
+                                <p className="text-xs text-gray-500 mt-1">Social media profile URLs for your
+                                    organization</p>
                             </div>
 
                             <div>
@@ -239,7 +243,8 @@ export function GlobalSettingsPanel({sdk}: {sdk: ClientSDK; context: any}) {
                                     value={config.website?.url || ''}
                                     onChange={e => updateField('website.url', e.target.value)}
                                 />
-                                <p className="text-xs text-gray-500 mt-1">Base URL for generating absolute URLs in JSON-LD</p>
+                                <p className="text-xs text-gray-500 mt-1">Base URL for generating absolute URLs in
+                                    JSON-LD</p>
                             </div>
 
                             <div>
@@ -251,11 +256,13 @@ export function GlobalSettingsPanel({sdk}: {sdk: ClientSDK; context: any}) {
                                     />
                                     <span className="font-medium text-gray-700">Enable search action</span>
                                 </label>
-                                <p className="text-xs text-gray-500 mt-1 ml-6">Adds website search box in search results</p>
+                                <p className="text-xs text-gray-500 mt-1 ml-6">Adds website search box in search
+                                    results</p>
                             </div>
 
                             <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Search URL Template</label>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Search URL
+                                    Template</label>
                                 <input
                                     type="text"
                                     className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
@@ -264,7 +271,8 @@ export function GlobalSettingsPanel({sdk}: {sdk: ClientSDK; context: any}) {
                                     onChange={e => updateField('website.searchUrlTemplate', e.target.value)}
                                     disabled={!config.website?.searchAction}
                                 />
-                                <p className="text-xs text-gray-500 mt-1">Use {'{search_term_string}'} as placeholder</p>
+                                <p className="text-xs text-gray-500 mt-1">Use {'{search_term_string}'} as
+                                    placeholder</p>
                             </div>
                         </div>
                     )}
@@ -275,7 +283,8 @@ export function GlobalSettingsPanel({sdk}: {sdk: ClientSDK; context: any}) {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Default Schema Type</label>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Default Schema
+                                        Type</label>
                                     <select
                                         className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500"
                                         value={config.article?.defaultType || 'Article'}
@@ -287,7 +296,8 @@ export function GlobalSettingsPanel({sdk}: {sdk: ClientSDK; context: any}) {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Default Author Type</label>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">Default Author
+                                        Type</label>
                                     <select
                                         className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500"
                                         value={config.article?.authorType || 'Person'}
