@@ -12,7 +12,7 @@ export default async function UITest_Tags_Cloud_Page() {
     return (
         <div style={{padding: 24}}>
             <h1 style={{marginBottom: 16}}>TagCloud</h1>
-            <TagCloud tags={tags}/>
+            <TagCloud tags={tags.map(t => ({...t, count: Math.round(Math.random() * 10)}))}/>
         </div>
     );
 }
