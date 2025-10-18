@@ -1,6 +1,6 @@
 import type {ClientSDK} from "@supergrowthai/plugin-dev-kit/client";
+import {useEffect, useState} from "@supergrowthai/plugin-dev-kit/client";
 import {defineClient} from "@supergrowthai/plugin-dev-kit";
-import {useState, useEffect} from "@supergrowthai/plugin-dev-kit/client";
 import "./styles.css"
 
 // Type definitions for API responses and data structures
@@ -78,9 +78,9 @@ function DashboardWidget(sdk: ClientSDK) {
         try {
             const response = await sdk.apis.getBlogs();
 
-            if (response.code === 0 && response.payload && response.payload.length > 0) {
+            if (response.code === 0 && response.payload && response.payload.data.length > 0) {
                 // Get the latest blog post (last item in array)
-                const latestBlog = response.payload[response.payload.length - 1];
+                const latestBlog = response.payload.data[response.payload.data.length - 1];
                 if (latestBlog) {
                     sdk.notify("Latest blog loaded");
                     setCachedData(latestBlog);

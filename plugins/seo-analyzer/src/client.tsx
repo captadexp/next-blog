@@ -109,9 +109,9 @@ const editorSidebarWidget: ClientHookFunction = (sdk: ClientSDK, prev, context: 
     const runAnalysis = useCallback(async (keyword: string) => {
         setIsTyping(false);
 
-        const contentObject = context.editor.getContent();
+        const contentObject = context.form.data.content || {version: 1, content: []};
         const textContent = extractTextFromContent(contentObject);
-        const title = context.editor.getTitle();
+        const title = context.form.data.title || "";
         const wordCount = getWordCount(contentObject);
         const keywordLower = keyword.trim().toLowerCase();
 
@@ -311,10 +311,10 @@ const editorSidebarWidget: ClientHookFunction = (sdk: ClientSDK, prev, context: 
             setContentVersion(v => v + 1);
         };
 
-        context.on('content:change', handleContentChange);
+        context.form.on('content:change', handleContentChange);
 
         return () => {
-            context.off('content:change', handleContentChange);
+            context.form.off('content:change', handleContentChange);
         };
     }, [context]);
 

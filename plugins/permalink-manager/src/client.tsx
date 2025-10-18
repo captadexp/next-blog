@@ -1,6 +1,7 @@
 import {defineClient} from '@supergrowthai/plugin-dev-kit';
+import type {BlogEditorContext, ClientSDK,} from '@supergrowthai/plugin-dev-kit/client';
 import {useCallback, useEffect, useState} from '@supergrowthai/plugin-dev-kit/client';
-import {BlogEditorContext, ClientSDK} from "@supergrowthai/next-blog-types";
+
 
 function PermalinkWidget({sdk, context}: { sdk: ClientSDK; context: BlogEditorContext }) {
     const blogId = context?.blogId as string | undefined;
