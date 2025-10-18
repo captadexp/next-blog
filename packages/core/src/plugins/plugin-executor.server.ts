@@ -55,7 +55,7 @@ export class PluginExecutor {
     } = {exact: new Map(), patterns: new Map()};
 
     async initialize(db: DatabaseAdapter, config: any = {}) {
-        if (this.initalized) return;
+        if (process.env.NODE_ENV === "production" && this.initalized) return;
         this.initalized = true;
         this.db = db;
 
@@ -202,8 +202,6 @@ export class PluginExecutor {
 
         let currentContext = context;
         const mappings = matchingMappings;
-
-        console.log(mappings.join(", "))
 
         for (const mapping of mappings) {
             await this.runMapping(mapping, rpcName, sdk, currentContext, 'rpcs', (newContext) => {
