@@ -1,6 +1,7 @@
 import React from 'react';
 import {getTestTag, getTestTagBlogs} from '../../test-data';
 import {TagPage} from '@supergrowthai/next-blog-ui';
+import "@supergrowthai/next-blog-ui/style.css";
 
 export default async function TestTagPage() {
     const tag = await getTestTag();

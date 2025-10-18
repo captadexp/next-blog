@@ -1,6 +1,7 @@
 import React from 'react';
 import {getTestCategory, getTestCategoryBlogs} from '../../test-data';
 import {CategoryPage} from '@supergrowthai/next-blog-ui';
+import "@supergrowthai/next-blog-ui/style.css";
 
 export default async function TestCategoryPage() {
     const category = await getTestCategory();

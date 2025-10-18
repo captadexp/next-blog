@@ -1,6 +1,7 @@
 import {AuthorList} from '@supergrowthai/next-blog-ui';
 import {getTestAuthors} from '../../test-data';
 import {dbProvider} from '@/lib/db';
+import "@supergrowthai/next-blog-ui/style.css";
 
 export default async function AuthorListTestPage() {
     const authors = await getTestAuthors();

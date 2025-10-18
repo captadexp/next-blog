@@ -1,5 +1,6 @@
 import {TagList} from '@supergrowthai/next-blog-ui';
 import {getTestTags} from '../../test-data';
+import "@supergrowthai/next-blog-ui/style.css";
 
 export default async function TagListTestPage() {
     const tags = await getTestTags();

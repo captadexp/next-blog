@@ -1,5 +1,6 @@
 import {CategoryList} from '@supergrowthai/next-blog-ui';
 import {getTestCategories} from '../../test-data';
+import "@supergrowthai/next-blog-ui/style.css";
 
 export default async function CategoryListTestPage() {
     const categories = await getTestCategories();

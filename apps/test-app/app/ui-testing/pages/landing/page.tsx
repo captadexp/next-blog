@@ -1,5 +1,6 @@
 import {BlogGrid, CategoryList, JsonLd, MetaTags, RecentBlogs, TagCloud} from '@supergrowthai/next-blog-ui';
 import {getTestBlogs, getTestCategories, getTestTags} from '../../test-data';
+import "@supergrowthai/next-blog-ui/style.css";
 
 export default async function LandingPageTestPage() {
     const blogs = await getTestBlogs(12);

@@ -2,6 +2,7 @@
 
 import {Pagination} from '@supergrowthai/next-blog-ui';
 import {useState} from 'react';
+import "@supergrowthai/next-blog-ui/style.css";
 
 export default function PaginationTestPage() {
     const [currentPage1, setCurrentPage1] = useState(1);

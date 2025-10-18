@@ -1,5 +1,6 @@
 import {BlogGrid} from '@supergrowthai/next-blog-ui';
 import {getTestBlogs} from '../../test-data';
+import "@supergrowthai/next-blog-ui/style.css";
 
 export default async function BlogGridTestPage() {
     const blogs = await getTestBlogs(9);

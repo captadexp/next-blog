@@ -1,6 +1,7 @@
 import React from 'react';
 import {getTestAuthor, getTestAuthorBlogs} from '../../test-data';
 import {AuthorPage} from '@supergrowthai/next-blog-ui';
+import "@supergrowthai/next-blog-ui/style.css";
 
 export default async function TestAuthorPage() {
     const author = await getTestAuthor();

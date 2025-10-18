@@ -1,5 +1,6 @@
 import {BlogExcerpt} from '@supergrowthai/next-blog-ui';
 import {getTestBlogs} from '../../test-data';
+import "@supergrowthai/next-blog-ui/style.css";
 
 export default async function BlogExcerptTestPage() {
     const blogs = await getTestBlogs(3);
