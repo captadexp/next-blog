@@ -223,7 +223,7 @@ export const executePluginRpc = secure(async (session: SessionData, request: Min
 
     return {
         code: 0,
-        message: `Hook ${rpcName} executed successfully`,
+        message: `RPC ${rpcName} executed successfully`,
         payload: result
     };
 });

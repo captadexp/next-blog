@@ -6,7 +6,7 @@ import {ProviderConfig} from "./client/components/ProviderConfig";
 import {TopicsManager} from "./client/components/TopicsManager";
 import {CustomPrompt} from "./client/components/CustomPrompt";
 import {RecentBlogs} from "./client/components/RecentBlogs";
-
+import "./styles.css"
 
 const renderSettingsPanel = (sdk: ClientSDK) => {
 

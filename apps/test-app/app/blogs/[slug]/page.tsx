@@ -18,7 +18,7 @@ export default async function (props: { params: Promise<{ slug: string }> }) {
     const {params} = props;
     const {slug} = await params;
     const blogDb = await dbProvider();
-    const blog = await blogDb.generated.getDetailedBlogObject({slug});
+    const blog = await blogDb.generated.getHydratedBlog({slug});
 
     if (blog?.status !== "published")
         return notFound();

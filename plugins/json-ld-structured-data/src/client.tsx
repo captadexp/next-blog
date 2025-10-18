@@ -1,16 +1,12 @@
 import {defineClient} from '@supergrowthai/plugin-dev-kit';
-import {useBlogSidebarHook, useSettingsPanelHook} from './client/index.js';
-import './types/rpc-types.js';
-import './styles.css';
+import {BlogSidebarWidget} from './components/BlogSidebarWidget.js';
+import {GlobalSettingsPanel} from './components/GlobalSettingsPanel.js';
+import "./styles.css"
 
-// Client-side hooks that run in the browser
 export default defineClient({
     hooks: {
-        // Global settings panel
-        'system:plugin:settings-panel': useSettingsPanelHook,
-
-        // Below Blog Editor form on update page
-        'editor-sidebar-widget': useBlogSidebarHook
+        'editor-sidebar-widget': (sdk, _prev, context) => <BlogSidebarWidget sdk={sdk} context={context}/>,
+        'system:plugin:settings-panel': (sdk, _prev, context) => <GlobalSettingsPanel sdk={sdk} context={context}/>
     },
     hasSettingsPanel: true
 });

@@ -1,34 +1,38 @@
-import type {SchemaType} from '../types/plugin-types.js';
-import {getAllSchemaTypes, getSchemaTypeDefinition} from '../schema/schema-definitions.js';
+export const SCHEMA_TYPES = [
+    {value: 'Article', label: 'Article', description: 'Standard article or blog post'},
+    {value: 'BlogPosting', label: 'Blog Post', description: 'Blog-specific content'},
+    {value: 'NewsArticle', label: 'News Article', description: 'Time-sensitive news content'},
+    {value: 'Review', label: 'Review', description: 'Product or service review'},
+    {value: 'HowTo', label: 'How-To Guide', description: 'Step-by-step instructions'},
+    {value: 'FAQ', label: 'FAQ', description: 'Frequently asked questions'},
+    {value: 'Recipe', label: 'Recipe', description: 'Cooking or food recipe'},
+    {value: 'Product', label: 'Product', description: 'Product description'},
+    {value: 'Event', label: 'Event', description: 'Event information'},
+    {value: 'Course', label: 'Course', description: 'Educational course'}
+];
 
 interface SchemaTypePickerProps {
-    selectedType: SchemaType;
-    onTypeChange: (type: SchemaType) => void;
+    value: string;
+    onChange: (value: string) => void;
 }
 
-export function SchemaTypePicker({ selectedType, onTypeChange }: SchemaTypePickerProps) {
-    const schemaTypes = getAllSchemaTypes();
-    const schemaTypeDefinition = getSchemaTypeDefinition(selectedType);
+export function SchemaTypePicker({value, onChange}: SchemaTypePickerProps) {
+    const selectedType = SCHEMA_TYPES.find(t => t.value === value);
 
     return (
-        <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">Content Type</label>
+        <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Schema Type</label>
             <select
-                value={selectedType}
-                onChange={(e) => onTypeChange(e.target.value as SchemaType)}
-                className="w-full p-2 border border-gray-300 rounded outline-none focus:border-blue-500 focus:shadow-[0_0_0_2px_rgba(59,130,246,0.5)]"
+                className="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                value={value}
+                onChange={e => onChange(e.target.value)}
             >
-                {schemaTypes.map(type => (
-                    <option
-                        key={type.type}
-                        value={type.type}
-                    >
-                        {type.icon} {type.label}
-                    </option>
+                {SCHEMA_TYPES.map(type => (
+                    <option key={type.value} value={type.value}>{type.label}</option>
                 ))}
             </select>
-            {schemaTypeDefinition && (
-                <p className="text-xs text-gray-500 mt-1">{schemaTypeDefinition.description}</p>
+            {selectedType && (
+                <p className="text-xs text-gray-500 mt-1">{selectedType.description}</p>
             )}
         </div>
     );
