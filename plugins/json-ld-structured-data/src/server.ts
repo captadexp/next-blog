@@ -1,6 +1,5 @@
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
-import type {ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
-import type {HydratedBlog} from '@supergrowthai/next-blog-types';
+import type {HydratedBlog, ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
 
 // Type definitions
 interface OrganizationConfig {

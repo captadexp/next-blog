@@ -26,6 +26,7 @@ COPY plugins/seo-rss/package.json ./plugins/seo-rss/package.json
 COPY plugins/seo-sitemap/package.json ./plugins/seo-sitemap/package.json
 COPY plugins/system-update-manager/package.json ./plugins/system-update-manager/package.json
 COPY plugins/test-plugin/package.json ./plugins/test-plugin/package.json
+COPY plugins/permalink-manager/package.json ./plugins/permalink-manager/package.json
 
 # Copy test-app package.json
 COPY apps/test-app/package.json ./apps/test-app/package.json

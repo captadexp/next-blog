@@ -40,7 +40,8 @@
   "peerDependencies": {
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "@supergrowthai/next-blog": "workspace:*"
+    "@supergrowthai/next-blog": "workspace:*",
+    "@supergrowthai/next-blog-types": "workspace:*"
   },
   "devDependencies": {
     "@supergrowthai/plugin-dev-kit": "workspace:*",

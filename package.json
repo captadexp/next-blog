@@ -30,14 +30,14 @@
   ],
   "dependencies": {
     "rimraf": "^6.0.1",
-    "vite": "^7.1.9"
+    "vite": "^7.1.10"
   },
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "MIT",
   "packageManager": "bun@1.2.23",
   "devDependencies": {
-    "@typescript/native-preview": "^7.0.0-dev.20251009.1",
-    "jsdom": "^27.0.0",
+    "@typescript/native-preview": "^7.0.0-dev.20251018.1",
+    "jsdom": "^27.0.1",
     "turbo": "^2.5.8",
     "typescript": "^5.9.3"
   },

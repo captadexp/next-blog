@@ -1,6 +1,5 @@
 import {Blog, defineServer} from '@supergrowthai/plugin-dev-kit';
-import type {ServerSDK, SitemapData, SitemapIndexData, SitemapUrl} from '@supergrowthai/plugin-dev-kit/server';
-import {Filter} from "@supergrowthai/next-blog-types";
+import type {Filter, ServerSDK, SitemapData, SitemapIndexData, SitemapUrl} from '@supergrowthai/plugin-dev-kit/server';
 
 const SETTINGS_KEY = 'seo-sitemap:settings';
 

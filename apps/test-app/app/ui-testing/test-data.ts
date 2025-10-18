@@ -1,5 +1,5 @@
 import {dbProvider} from '@/lib/db';
-import type {Category, HydratedBlog, Tag, User} from '@supergrowthai/next-blog-types/server';
+import type {Category, HydratedBlog, Tag, User} from '@supergrowthai/next-blog';
 
 export async function getTestBlogs(limit: number = 10): Promise<HydratedBlog[]> {
     const db = await dbProvider();

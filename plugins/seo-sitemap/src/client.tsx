@@ -1,6 +1,5 @@
 import {defineClient} from '@supergrowthai/plugin-dev-kit';
-import {useCallback, useEffect, useState} from '@supergrowthai/plugin-dev-kit/client';
-import {ClientSDK} from "@supergrowthai/next-blog-types";
+import {ClientSDK, useCallback, useEffect, useState} from '@supergrowthai/plugin-dev-kit/client';
 import "./styles.css"
 
 interface SitemapSettings {
