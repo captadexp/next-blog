@@ -470,6 +470,11 @@ export class MongoDBAdapter implements DatabaseAdapter {
                 return results.map(result => transformer.fromDb(result));
             },
 
+            count: async (filter: Filter<User>) => {
+                const dbFilter = transformer.toDb(filter);
+                return await collection.countDocuments(dbFilter);
+            },
+
             findById: async (id: string) => {
                 const result = await collection.findOne({_id: oid(id)});
                 return result ? transformer.fromDb(result) : null;
@@ -658,6 +663,11 @@ export class MongoDBAdapter implements DatabaseAdapter {
 
                 const results = await query.toArray();
                 return results.map(result => transformer.fromDb(result));
+            },
+
+            count: async (filter: Filter<T>) => {
+                const dbFilter = transformer.toDb(filter);
+                return await collection.countDocuments(dbFilter);
             },
 
             findById: async (id: string) => {

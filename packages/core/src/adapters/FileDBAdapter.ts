@@ -63,6 +63,12 @@ export class FileDBAdapter implements DatabaseAdapter {
                 return filtered;
             },
 
+            count: async (filter: Filter<Blog>): Promise<number> => {
+                const blogs = await this.readData<Blog>('blogs.json');
+                const filtered = blogs.filter(sift(filter));
+                return filtered.length;
+            },
+
             findById: async (id: string): Promise<Blog | null> => {
                 const blogs = await this.readData<Blog>('blogs.json');
                 return blogs.find(blog => blog._id === id) || null;
@@ -142,6 +148,12 @@ export class FileDBAdapter implements DatabaseAdapter {
 
                 return filtered;
             },
+
+            count: async (filter: Filter<Category>): Promise<number> => {
+                const categories = await this.readData<Category>('categories.json');
+                const filtered = categories.filter(sift(filter));
+                return filtered.length;
+            },
             findById: async (id: string): Promise<Category | null> => {
                 const categories = await this.readData<Category>('categories.json');
                 return categories.find(category => category._id === id) || null;
@@ -219,6 +231,12 @@ export class FileDBAdapter implements DatabaseAdapter {
                 }
 
                 return filtered;
+            },
+
+            count: async (filter: Filter<Tag>): Promise<number> => {
+                const tags = await this.readData<Tag>('tags.json');
+                const filtered = tags.filter(sift(filter));
+                return filtered.length;
             },
             findById: async (id: string): Promise<Tag | null> => {
                 const tags = await this.readData<Tag>('tags.json');
@@ -298,6 +316,12 @@ export class FileDBAdapter implements DatabaseAdapter {
                 }
 
                 return filtered;
+            },
+
+            count: async (filter: Filter<User>): Promise<number> => {
+                const users = await this.readData<User>('users.json');
+                const filtered = users.filter(sift(filter));
+                return filtered.length;
             },
             findById: async (id: string): Promise<User | null> => {
                 const users = await this.readData<User>('users.json');
@@ -387,6 +411,12 @@ export class FileDBAdapter implements DatabaseAdapter {
 
                 return filtered;
             },
+
+            count: async (filter: Filter<SettingsEntry>): Promise<number> => {
+                const settings = await this.readData<SettingsEntry>('settings.json');
+                const filtered = settings.filter(sift(filter));
+                return filtered.length;
+            },
             findById: async (id: string): Promise<SettingsEntry | null> => {
                 const settings = await this.readData<SettingsEntry>('settings.json');
                 return settings.find(setting => setting._id === id) || null;
@@ -467,6 +497,12 @@ export class FileDBAdapter implements DatabaseAdapter {
 
                 return filtered;
             },
+
+            count: async (filter: Filter<Plugin>): Promise<number> => {
+                const plugins = await this.readData<Plugin>('plugins.json');
+                const filtered = plugins.filter(sift(filter));
+                return filtered.length;
+            },
             findById: async (id: string): Promise<Plugin | null> => {
                 const plugins = await this.readData<Plugin>('plugins.json');
                 return plugins.find(plugin => plugin._id === id) || null;
@@ -535,6 +571,12 @@ export class FileDBAdapter implements DatabaseAdapter {
                 const mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
                 return mappings.filter(sift(filter));
             },
+
+            count: async (filter: Filter<PluginHookMapping>): Promise<number> => {
+                const mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
+                const filtered = mappings.filter(sift(filter));
+                return filtered.length;
+            },
             findById: async (id: string): Promise<PluginHookMapping | null> => {
                 const mappings = await this.readData<PluginHookMapping>('plugin-hook-mappings.json');
                 return mappings.find(mapping => mapping._id === id) || null;
@@ -602,6 +644,12 @@ export class FileDBAdapter implements DatabaseAdapter {
                 const comments = await this.readData<Comment>('comments.json');
                 return comments.filter(sift(filter));
             },
+
+            count: async (filter: Filter<Comment>): Promise<number> => {
+                const comments = await this.readData<Comment>('comments.json');
+                const filtered = comments.filter(sift(filter));
+                return filtered.length;
+            },
             findById: async (id: string): Promise<Comment | null> => {
                 const comments = await this.readData<Comment>('comments.json');
                 return comments.find(comment => comment._id === id) || null;
@@ -668,6 +716,12 @@ export class FileDBAdapter implements DatabaseAdapter {
             find: async (filter: Filter<Revision>): Promise<Revision[]> => {
                 const revisions = await this.readData<Revision>('revisions.json');
                 return revisions.filter(sift(filter));
+            },
+
+            count: async (filter: Filter<Revision>): Promise<number> => {
+                const revisions = await this.readData<Revision>('revisions.json');
+                const filtered = revisions.filter(sift(filter));
+                return filtered.length;
             },
             findById: async (id: string): Promise<Revision | null> => {
                 const revisions = await this.readData<Revision>('revisions.json');
@@ -748,6 +802,12 @@ export class FileDBAdapter implements DatabaseAdapter {
                 }
 
                 return filtered;
+            },
+
+            count: async (filter: Filter<Media>): Promise<number> => {
+                const media = await this.readData<Media>('media.json');
+                const filtered = media.filter(sift(filter));
+                return filtered.length;
             },
             findById: async (id: string): Promise<Media | null> => {
                 const media = await this.readData<Media>('media.json');

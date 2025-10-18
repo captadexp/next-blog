@@ -24,7 +24,8 @@ const render = createRenderer(h, Fragment, hooks);
 
 const logger = new Logger('PluginSystem', LogLevel.INFO);
 
-const ProxyComponent = memo(({refreshKey, hookFn, context, pluginId, sdk}: {
+const ProxyComponent = memo(({hookName, refreshKey, hookFn, context, pluginId, sdk}: {
+    hookName: string,
     refreshKey: number,
     hookFn: any,
     pluginId: string,
@@ -36,7 +37,7 @@ const ProxyComponent = memo(({refreshKey, hookFn, context, pluginId, sdk}: {
     try {
         renderedContent = hookFn(sdk, null, context);
     } catch (e: any) {
-        logger.error(`Hook execution failed for plugin "${pluginId}":`, e?.message?.toString());
+        logger.error(`Hook "${hookName}" execution failed for plugin "${pluginId}":`, e?.message?.toString());
     }
 
     try {
@@ -80,6 +81,7 @@ const PluginHost = memo(({hookName, plugin, hookFn, context}: {
 
     return (
         <ProxyComponent
+            hookName={hookName}
             refreshKey={refreshKey}
             context={context}
             hookFn={hookFn}
