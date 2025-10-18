@@ -11,6 +11,21 @@ import {
 import {extractTextFromContent, getWordCount} from "@supergrowthai/plugin-dev-kit/content";
 import "./styles.css"
 
+// SEO Analysis Constants
+const SEO_CONSTANTS = {
+    MIN_WORD_COUNT: 300,
+    MIN_KEYWORD_LENGTH: 3,
+    MAX_KEYWORD_DENSITY: 2.5,
+    MIN_KEYWORD_DENSITY: 0.5,
+    GOOD_READABILITY_SCORE: 60,
+    OK_READABILITY_SCORE: 30,
+    DEBOUNCE_DELAY: 1500,
+    SCORE_THRESHOLDS: {
+        GOOD: 75,
+        OK: 50
+    }
+} as const;
+
 interface AnalysisResult {
     label: string;
     status: 'good' | 'ok' | 'bad' | 'loading';
@@ -53,8 +68,8 @@ function ScoreIndicator({results}: { results: AnalysisResult[] }) {
     if (total === 0) return null;
 
     const percentage = Math.round((goodCount / total) * 100);
-    const color = percentage >= 75 ? 'text-green-600' : percentage >= 50 ? 'text-yellow-600' : 'text-red-600';
-    const bgColor = percentage >= 75 ? 'bg-green-500' : percentage >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+    const color = percentage >= SEO_CONSTANTS.SCORE_THRESHOLDS.GOOD ? 'text-green-600' : percentage >= SEO_CONSTANTS.SCORE_THRESHOLDS.OK ? 'text-yellow-600' : 'text-red-600';
+    const bgColor = percentage >= SEO_CONSTANTS.SCORE_THRESHOLDS.GOOD ? 'bg-green-500' : percentage >= SEO_CONSTANTS.SCORE_THRESHOLDS.OK ? 'bg-yellow-500' : 'bg-red-500';
 
     return (
         <div className="mb-4 p-3 bg-gray-50 rounded">
@@ -171,13 +186,13 @@ const editorSidebarWidget: ClientHookFunction = (sdk: ClientSDK, prev, context: 
                 };
             }
             const density = calculateKeywordDensity(analysisData.text, analysisData.keyword, analysisData.wordCount);
-            if (density > 2.5) {
+            if (density > SEO_CONSTANTS.MAX_KEYWORD_DENSITY) {
                 return {
                     label: "Keyword Density",
                     status: 'bad',
-                    advice: `Keyword density is ${density.toFixed(1)}%. Try to reduce it to below 2.5%.`
+                    advice: `Keyword density is ${density.toFixed(1)}%. Try to reduce it to below ${SEO_CONSTANTS.MAX_KEYWORD_DENSITY}%.`
                 };
-            } else if (density < 0.5) {
+            } else if (density < SEO_CONSTANTS.MIN_KEYWORD_DENSITY) {
                 return {
                     label: "Keyword Density",
                     status: 'bad',
@@ -194,9 +209,9 @@ const editorSidebarWidget: ClientHookFunction = (sdk: ClientSDK, prev, context: 
         const contentLength = (): AnalysisResult => {
             return {
                 label: "Content Length",
-                status: analysisData.wordCount >= 300 ? 'good' : 'bad',
-                advice: analysisData.wordCount < 300
-                    ? `Your content is ${analysisData.wordCount} words. Aim for at least 300 words.`
+                status: analysisData.wordCount >= SEO_CONSTANTS.MIN_WORD_COUNT ? 'good' : 'bad',
+                advice: analysisData.wordCount < SEO_CONSTANTS.MIN_WORD_COUNT
+                    ? `Your content is ${analysisData.wordCount} words. Aim for at least ${SEO_CONSTANTS.MIN_WORD_COUNT} words.`
                     : `${analysisData.wordCount} words. Good length for SEO!`
             };
         };
@@ -211,10 +226,10 @@ const editorSidebarWidget: ClientHookFunction = (sdk: ClientSDK, prev, context: 
             }
             return {
                 label: "Focus Keyword Length",
-                status: analysisData.keyword.length >= 3 ? 'good' : 'bad',
-                advice: analysisData.keyword.length >= 3
+                status: analysisData.keyword.length >= SEO_CONSTANTS.MIN_KEYWORD_LENGTH ? 'good' : 'bad',
+                advice: analysisData.keyword.length >= SEO_CONSTANTS.MIN_KEYWORD_LENGTH
                     ? 'The keyword has a suitable length.'
-                    : 'Your focus keyword is too short. Aim for at least 3 characters.'
+                    : `Your focus keyword is too short. Aim for at least ${SEO_CONSTANTS.MIN_KEYWORD_LENGTH} characters.`
             };
         };
 
@@ -250,13 +265,13 @@ const editorSidebarWidget: ClientHookFunction = (sdk: ClientSDK, prev, context: 
                 const {payload} = response.payload;
                 const score = payload.score;
 
-                if (score >= 60) {
+                if (score >= SEO_CONSTANTS.GOOD_READABILITY_SCORE) {
                     readabilityResult = {
                         label: "Readability Score",
                         status: 'good',
                         advice: `Score is ${score}. Easy to read!`
                     };
-                } else if (score >= 30) {
+                } else if (score >= SEO_CONSTANTS.OK_READABILITY_SCORE) {
                     readabilityResult = {
                         label: "Readability Score",
                         status: 'ok',
@@ -313,27 +328,17 @@ const editorSidebarWidget: ClientHookFunction = (sdk: ClientSDK, prev, context: 
         };
     }, [context]);
 
-    // Debounced analysis on content change
+    // Debounced analysis on content or keyword change
     useEffect(() => {
-        if (contentVersion === 0) return; // Skip initial render
+        // Skip during initialization or if content hasn't been modified yet
+        if (isLoading || (contentVersion === 0 && !focusKeyword)) return;
 
         const timer = setTimeout(() => {
             runAnalysis(focusKeyword);
-        }, 1500);
+        }, SEO_CONSTANTS.DEBOUNCE_DELAY);
 
         return () => clearTimeout(timer);
-    }, [contentVersion, focusKeyword, runAnalysis]);
-
-    // Debounced analysis on keyword change
-    useEffect(() => {
-        if (isLoading) return; // Skip during initialization
-
-        const timer = setTimeout(() => {
-            runAnalysis(focusKeyword);
-        }, 1500);
-
-        return () => clearTimeout(timer);
-    }, [focusKeyword, runAnalysis, isLoading]);
+    }, [contentVersion, focusKeyword, runAnalysis, isLoading]);
 
     // Save keyword metadata on change
     useEffect(() => {
@@ -352,7 +357,7 @@ const editorSidebarWidget: ClientHookFunction = (sdk: ClientSDK, prev, context: 
             } catch (err) {
                 console.error("Failed to save focus keyword:", err);
             }
-        }, 1500);
+        }, SEO_CONSTANTS.DEBOUNCE_DELAY);
 
         return () => clearTimeout(timer);
     }, [focusKeyword, blogId, sdk, isLoading]);
