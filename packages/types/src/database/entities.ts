@@ -70,6 +70,7 @@ export interface Category {
     parentId?: BrandedId<"Category">;
     createdAt: number;
     updatedAt: number;
+    metadata?: Record<string, any>;
 }
 
 export interface CategoryData extends Partial<Category> {
@@ -85,6 +86,7 @@ export interface Tag {
     description: string;
     createdAt: number;
     updatedAt: number;
+    metadata?: Record<string, any>;
 }
 
 export interface TagData extends Partial<Tag> {
@@ -104,6 +106,7 @@ export interface User {
     isSystem?: boolean;
     createdAt: number;
     updatedAt: number;
+    metadata?: Record<string, any>;
 }
 
 export interface UserData extends Partial<User> {
@@ -126,6 +129,7 @@ export interface SettingsEntry {
     masked?: boolean; // Indicates if the value is masked in the response
     createdAt: number;
     updatedAt: number;
+    metadata?: Record<string, any>;
 }
 
 export interface SettingsEntryData extends Partial<SettingsEntry> {

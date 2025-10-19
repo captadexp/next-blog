@@ -6,13 +6,23 @@ import type {
     ServerSDK,
     User
 } from '@supergrowthai/next-blog-types/server';
-import {ServerSettingsHelper} from './settings-helper.server.js';
 import {ServerCacheHelper} from './cache-helper.server.js';
 import {ServerEventsHelper} from './events-helper.server.js';
 import {StorageFactory} from '../storage/storage-factory.js';
 import {VERSION_INFO} from '../version.js';
-import {PluginExecutor} from "./plugin-executor.server.ts";
-import {createScopedBlogDb} from '../services/ScopedBlogDb.js';
+import {PluginExecutor} from "./plugin-executor.server.js";
+import {
+    createScopedBlogDb,
+    createScopedCategoryDb,
+    createScopedCommentsDb,
+    createScopedMediaDb,
+    createScopedPluginDb,
+    createScopedPluginMappingDb,
+    createScopedRevisionsDb,
+    createScopedTagDb,
+    createScopedUserDb,
+} from '../services/ScopedCollectionDb.js';
+import {ServerSettingsHelper} from "./settings-helper.server.js";
 
 /**
  * Dependencies required to create a server SDK instance
@@ -105,19 +115,20 @@ export class ServerSDKFactory {
         return {
             ...originalDb,
 
-            // Use scoped blog database for automatic metadata scoping
+            // Scoped collections with automatic metadata scoping
             blogs: createScopedBlogDb(originalDb.blogs, pluginId),
+            comments: createScopedCommentsDb(originalDb.comments, pluginId),
+            revisions: createScopedRevisionsDb(originalDb.revisions, pluginId),
+            media: createScopedMediaDb(originalDb.media, pluginId),
+            categories: createScopedCategoryDb(originalDb.categories, pluginId),
+            tags: createScopedTagDb(originalDb.tags, pluginId),
+            users: createScopedUserDb(originalDb.users, pluginId),
 
-            // Keep other collections unchanged for now
-            categories: originalDb.categories,
-            tags: originalDb.tags,
-            users: originalDb.users,
-            settings: originalDb.settings,
-            plugins: originalDb.plugins,
-            pluginHookMappings: originalDb.pluginHookMappings,
-            comments: originalDb.comments,
-            revisions: originalDb.revisions,
-            media: originalDb.media,
+            // Read-only scoped collections
+            plugins: createScopedPluginDb(originalDb.plugins, pluginId),
+            pluginHookMappings: createScopedPluginMappingDb(originalDb.pluginHookMappings, pluginId),
+
+            // Collections without scoping
             generated: originalDb.generated
         };
     }

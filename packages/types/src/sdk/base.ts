@@ -40,7 +40,6 @@ export interface PluginEvents {
 export interface BaseSDK {
     executionContext: User | null;
     pluginId: string;
-    settings: PluginSettings;
 }
 
 export interface Logger {

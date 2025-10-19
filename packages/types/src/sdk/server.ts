@@ -1,4 +1,4 @@
-import type {BaseSDK, Logger, PluginCache, PluginEvents, SystemInfo} from './base';
+import type {BaseSDK, Logger, PluginCache, PluginEvents, PluginSettings, SystemInfo} from './base';
 import type {DatabaseAdapter} from '../database/adapter';
 import type {CallServerHookFunction, CallServerRPCFunction, RPCMethods, ServerHooks} from '../plugin/server';
 
@@ -24,6 +24,9 @@ export interface ServerSDK extends BaseSDK {
     storage?: StorageAdapter;
     callRPC: CallServerRPCFunction<RPCMethods>;
     callHook: CallServerHookFunction<ServerHooks>;
+
+    //we should remove this and update the plugins in the future
+    settings: PluginSettings;
 }
 
 export interface StorageAdapter {
