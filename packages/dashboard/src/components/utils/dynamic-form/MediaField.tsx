@@ -1,11 +1,11 @@
 import {h} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
 import {useIntent} from '../../../intent';
-import {DynamicFormFieldType} from './types';
+import {MediaDynamicFormField} from './types';
 import {INTENT_TYPES} from "@supergrowthai/next-blog-types";
 
 interface MediaFieldProps {
-    field: DynamicFormFieldType;
+    field: MediaDynamicFormField;
     onChange: <T>(key: string, value: T) => void;
 }
 

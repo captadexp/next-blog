@@ -1,9 +1,9 @@
 import {h} from 'preact';
 import {useState} from 'preact/hooks';
-import {DynamicFormFieldType} from './types';
+import {PasswordDynamicFormField} from './types';
 
 interface PasswordFieldProps {
-    field: DynamicFormFieldType;
+    field: PasswordDynamicFormField;
     onChange: (key: string, value: any) => void;
 }
 

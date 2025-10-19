@@ -1,6 +1,6 @@
 import {h} from 'preact';
 import {useEffect, useRef, useState} from 'preact/hooks';
-import {DynamicFormFieldType} from './types';
+import {RichTextDynamicFormField} from './types';
 import {memo} from "preact/compat"
 import contentObjectToEditorJS from './htmlToJson/contentobject-to-editorjs';
 import editorJSToContentObject from './htmlToJson/editorjs-to-contentobject';
@@ -8,7 +8,7 @@ import type {OutputBlockData} from '@editorjs/editorjs';
 import ImageSelectorTool from './editorjs-tools/ImageSelectorTool.ts';
 
 interface RichTextProps {
-    field: DynamicFormFieldType;
+    field: RichTextDynamicFormField;
     onChange: (key: string, value: any) => void;
 }
 

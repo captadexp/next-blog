@@ -1,9 +1,9 @@
 import {h} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
-import {DynamicFormFieldType} from './types';
+import {CheckboxGroupDynamicFormField} from './types';
 
 interface CheckboxGroupFieldProps {
-    field: DynamicFormFieldType;
+    field: CheckboxGroupDynamicFormField;
     onChange: (key: string, value: any) => void;
 }
 

@@ -1,10 +1,10 @@
 import {h} from 'preact';
 import {useEffect, useRef, useState} from 'preact/hooks';
-import {DynamicFormFieldType} from './types';
+import {MultiSelectDynamicFormField, SelectDynamicFormField} from './types';
 
 interface AutocompleteFieldProps {
-    field: DynamicFormFieldType;
-    onChange: (key: string, value: any) => void;
+    field: SelectDynamicFormField | MultiSelectDynamicFormField;
+    onChange: <T>(key: string, value: T) => void;
     multiple?: boolean;
 }
 
@@ -20,9 +20,9 @@ const AutocompleteField = ({field, onChange, multiple = false}: AutocompleteFiel
                 const option = (field.options || []).find(opt => opt.value === v);
                 return option || {value: v, label: v};
             })
-            : field.value ? [(field.options || []).find(opt => opt.value === field.value) || {
-                value: field.value,
-                label: field.value
+            : field.value ? [(field.options || []).find(opt => opt.value === field.value as string) || {
+                value: field.value as string,
+                label: field.value as string
             }] : []
     );
     const [isFocused, setIsFocused] = useState(false);

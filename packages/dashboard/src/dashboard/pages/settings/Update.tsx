@@ -5,6 +5,7 @@ import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynam
 import {useUser} from "../../../context/UserContext";
 import {SettingsEntry} from '@supergrowthai/next-blog-types';
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
+import {PasswordDynamicFormField, TextAreaDynamicFormField} from "../../../components/utils/dynamic-form/types.ts";
 
 interface SettingsEntryWithScope extends SettingsEntry {
     scope?: 'global' | 'user' | 'plugin';
@@ -58,7 +59,7 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
         }
 
         // For secure settings, show a password field for new value entry
-        const valueField = setting.isSecure || setting.masked
+        const valueField: PasswordDynamicFormField | TextAreaDynamicFormField = setting.isSecure || setting.masked
             ? {
                 key: 'value',
                 label: 'Value (Secure)',

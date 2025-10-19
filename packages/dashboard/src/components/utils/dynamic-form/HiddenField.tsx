@@ -1,9 +1,9 @@
 import {h} from 'preact';
 import {useEffect} from 'preact/hooks';
-import {DynamicFormFieldType} from './types';
+import {HiddenDynamicFormField} from './types';
 
 interface HiddenFieldProps {
-    field: DynamicFormFieldType;
+    field: HiddenDynamicFormField;
     onChange: (key: string, value: any) => void;
 }
 

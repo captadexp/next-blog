@@ -1,9 +1,9 @@
 import {h} from 'preact';
 import {useState} from 'preact/hooks';
-import {DynamicFormFieldType} from './types';
+import {TextDynamicFormField} from './types';
 
 interface TextFieldProps {
-    field: DynamicFormFieldType;
+    field: TextDynamicFormField;
     onChange: (key: string, value: any) => void;
 }
 
