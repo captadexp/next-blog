@@ -55,7 +55,7 @@ export const MetaTags: React.FC<MetaTagsProps> = (props) => {
             case 'blog': {
                 const {blog} = props;
                 const permalink = blog.metadata?.['permalink-manager:permalink']?.permalink;
-                const jsonLdOverrides = blog.metadata?.['json-ld:overrides'];
+                const jsonLdOverrides = blog.metadata?.['json-ld-structured-data:overrides'];
                 const seoConfig = blog.metadata?.['seo-analyzer:config'];
 
                 const title = jsonLdOverrides?.headline || blog.title;

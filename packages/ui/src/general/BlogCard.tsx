@@ -135,7 +135,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({
     };
 
     const imageUrl = blog.featuredMedia?.url ||
-        blog.metadata?.['json-ld:overrides']?.featuredImageMedia?.url;
+        blog.metadata?.['json-ld-structured-data:overrides']?.featuredImageMedia?.url;
 
     return (
         <article

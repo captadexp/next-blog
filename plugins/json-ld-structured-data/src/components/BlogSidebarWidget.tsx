@@ -20,8 +20,8 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
     useEffect(() => {
         if (!blogId) return;
         Promise.all([
-            sdk.callRPC('json-ld:blog:get', {blogId}),
-            sdk.callRPC('json-ld:config:get', {})
+            sdk.callRPC('json-ld-structured-data:blog:get', {blogId}),
+            sdk.callRPC('json-ld-structured-data:config:get', {})
         ]).then(([blogResp, configResp]) => {
             setOverrides(blogResp?.payload?.payload || {});
             setConfig(configResp?.payload?.payload || {});
@@ -32,7 +32,7 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
         if (!blogId) return;
         setSaving(true);
         try {
-            await sdk.callRPC('json-ld:blog:set', {blogId, overrides: newOverrides});
+            await sdk.callRPC('json-ld-structured-data:blog:set', {blogId, overrides: newOverrides});
             setOverrides(newOverrides);
         } finally {
             setSaving(false);
@@ -55,7 +55,7 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
 
     const generatePreview = useCallback(async () => {
         if (!blogId) return;
-        const resp = await sdk.callRPC('json-ld:generate', {blogId});
+        const resp = await sdk.callRPC('json-ld-structured-data:generate', {blogId});
         setPreview(resp?.payload?.payload);
         setShowPreview(true);
 

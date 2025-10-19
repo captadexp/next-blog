@@ -103,8 +103,8 @@ interface JsonLdOverrides {
     recipe?: RecipeData;
 }
 
-const SETTINGS_KEY = 'json-ld:config';
-const METADATA_KEY = 'json-ld:overrides';
+const SETTINGS_KEY = 'json-ld-structured-data:config';
+const METADATA_KEY = 'json-ld-structured-data:overrides';
 
 const DEFAULT_CONFIG: JsonLdConfig = {
     organization: {
@@ -129,23 +129,23 @@ const DEFAULT_CONFIG: JsonLdConfig = {
 
 export default defineServer({
     rpcs: {
-        'json-ld:config:get': async (sdk: ServerSDK) => {
+        'json-ld-structured-data:config:get': async (sdk: ServerSDK) => {
             const config = await sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG;
             return {code: 0, message: 'ok', payload: config};
         },
 
-        'json-ld:config:set': async (sdk: ServerSDK, {config}: { config: JsonLdConfig }) => {
+        'json-ld-structured-data:config:set': async (sdk: ServerSDK, {config}: { config: JsonLdConfig }) => {
             await sdk.settings.set(SETTINGS_KEY, config);
             return {code: 0, message: 'saved', payload: config};
         },
 
-        'json-ld:blog:get': async (sdk: ServerSDK, {blogId}: { blogId: string }) => {
+        'json-ld-structured-data:blog:get': async (sdk: ServerSDK, {blogId}: { blogId: string }) => {
             const blog = await sdk.db.generated.getHydratedBlog({_id: blogId});
             const overrides = blog?.metadata?.[METADATA_KEY] || {};
             return {code: 0, message: 'ok', payload: overrides};
         },
 
-        'json-ld:blog:set': async (sdk: ServerSDK, {blogId, overrides}: {
+        'json-ld-structured-data:blog:set': async (sdk: ServerSDK, {blogId, overrides}: {
             blogId: string;
             overrides: JsonLdOverrides
         }) => {
@@ -163,7 +163,7 @@ export default defineServer({
             return {code: 0, message: 'saved', payload: overrides};
         },
 
-        'json-ld:generate': async (sdk: ServerSDK, {blogId}: { blogId: string }) => {
+        'json-ld-structured-data:generate': async (sdk: ServerSDK, {blogId}: { blogId: string }) => {
             const [blog, config] = await Promise.all([
                 sdk.db.generated.getHydratedBlog({_id: blogId}),
                 sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG

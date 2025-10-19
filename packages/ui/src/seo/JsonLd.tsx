@@ -32,7 +32,7 @@ export const JsonLd: React.FC<JsonLdProps> = ({
     const generateBlogJsonLd = () => {
         if (!blog) return null;
 
-        const jsonLdOverrides = blog.metadata?.['json-ld:overrides'] || {};
+        const jsonLdOverrides = blog.metadata?.['json-ld-structured-data:overrides'] || {};
         const permalink = blog.metadata?.['permalink-manager:permalink']?.permalink;
         const baseUrl = website?.url || '';
 

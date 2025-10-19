@@ -14,7 +14,7 @@ export function GlobalSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
     const saveTimeoutRef = useRef<number | null>(null);
 
     useEffect(() => {
-        sdk.callRPC('json-ld:config:get', {}).then(resp => {
+        sdk.callRPC('json-ld-structured-data:config:get', {}).then(resp => {
             setConfig(resp?.payload?.payload || {});
         });
     }, [sdk]);
@@ -22,7 +22,7 @@ export function GlobalSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
     const saveConfig = useCallback(async (newConfig: any) => {
         setSaving(true);
         try {
-            await sdk.callRPC('json-ld:config:set', {config: newConfig});
+            await sdk.callRPC('json-ld-structured-data:config:set', {config: newConfig});
             setConfig(newConfig);
             sdk.notify('Settings saved successfully', 'success');
         } catch (error) {
