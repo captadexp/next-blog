@@ -49,8 +49,8 @@ export const listUsers = secure(async (session: SessionData, request: MinimumReq
     const db = await extra.db();
     const params = request.query as PaginationParams | undefined;
 
-    const page = params?.page || 1;
-    const limit = params?.limit || 10;
+    const page = Number(params?.page) || 1;
+    const limit = Number(params?.limit) || 10;
     const skip = (page - 1) * limit;
 
     let users = await db.users.find({}, {skip, limit});

@@ -14,8 +14,8 @@ export const getSettings = secure(async (session: SessionData, request: MinimumR
     const params = request.query as PaginationParams & { search?: string } | undefined;
     const systemPluginId = await getSystemPluginId(db);
 
-    const page = params?.page || 1;
-    const limit = params?.limit || 10;
+    const page = Number(params?.page) || 1;
+    const limit = Number(params?.limit) || 10;
     const search = params?.search || '';
 
     let filter: any = {};

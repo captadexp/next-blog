@@ -20,8 +20,8 @@ export interface APIResponse<T = any> {
 }
 
 export interface PaginationParams {
-    page?: number;
-    limit?: number;
+    page?: string;
+    limit?: string;
 }
 
 export interface PaginatedResponse<T = any> {

@@ -14,8 +14,8 @@ export const getMedia = secure(async (session, request, extra) => {
         userId?: string;
     } | undefined;
 
-    const page = params?.page || 1;
-    const limit = params?.limit || 10;
+    const page = Number(params?.page) || 1;
+    const limit = Number(params?.limit) || 10;
     const search = params?.search;
     const userId = params?.userId;
 
