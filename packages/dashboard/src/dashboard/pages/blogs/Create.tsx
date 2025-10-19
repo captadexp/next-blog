@@ -106,6 +106,18 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
         {key: 'title', label: 'Title', type: 'text', required: true},
         {key: 'slug', label: 'Slug', type: 'text', required: true},
         {key: 'excerpt', label: 'Excerpt', type: 'textarea'},
+        {
+            key: 'featuredMediaId',
+            label: 'Featured Media',
+            type: 'media',
+            intentOptions: {
+                options: {
+                    mimeTypes: ['image/png', 'image/jpeg', 'image/svg+xml'],
+                    maxSize: 2 * 1024 * 1024,
+                    allowUpload: true
+                }
+            }
+        },
         {key: 'content', label: 'Content', type: 'richtext', required: true},
         {
             key: 'status',
@@ -143,6 +155,7 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
             status: data.status,
             category: data.category,
             tags: Array.isArray(data.tags) ? data.tags : [],
+            featuredMediaId: data.featuredMediaId || null,
         };
 
         return apis.createBlog(blogData);

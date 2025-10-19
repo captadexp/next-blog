@@ -7,6 +7,7 @@ import PasswordField from './PasswordField';
 import AutocompleteField from './AutocompleteField';
 import CheckboxGroupField from './CheckboxGroupField';
 import HiddenField from './HiddenField';
+import MediaField from './MediaField';
 
 interface FormFieldProps {
     field: DynamicFormFieldType;
@@ -31,6 +32,8 @@ const FormField = ({field, onChange}: FormFieldProps) => {
             return <CheckboxGroupField field={field} onChange={onChange}/>;
         case 'hidden':
             return <HiddenField field={field} onChange={onChange}/>;
+        case 'media':
+            return <MediaField field={field} onChange={onChange}/>;
         default:
             return null;
     }

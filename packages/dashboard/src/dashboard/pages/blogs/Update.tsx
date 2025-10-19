@@ -3,7 +3,7 @@ import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import {useLocation} from 'preact-iso';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {useUser} from "../../../context/UserContext.tsx";
-import {Blog, BlogEditorContext, Category, Tag} from "@supergrowthai/next-blog-types";
+import {Blog, BlogEditorContext, Category, Media, Tag} from "@supergrowthai/next-blog-types";
 import {ExtensionPoint, ExtensionZone} from "../../components/ExtensionZone";
 
 const uniqById = <T extends { _id: string }>(arr: T[]) => {
@@ -22,6 +22,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
 
     const [categories, setCategories] = useState<Category[]>([]);
     const [tags, setTags] = useState<Tag[]>([]);
+    const [featuredMedia, setFeaturedMedia] = useState<Media | null>(null);
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -77,17 +78,20 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
 
                 const selectedCatId: string | undefined = blogData?.categoryId;
                 const selectedTagIds: string[] = Array.isArray(blogData?.tagIds) ? blogData.tagIds : [];
+                const featuredMediaId: string | undefined = blogData?.featuredMediaId;
 
                 const needCatFetch = selectedCatId && !catsPage1.some(c => c._id === selectedCatId);
                 const needTagsFetch = selectedTagIds.length > 0 && !selectedTagIds.every(id => tagsPage1.some(t => t._id === id));
 
-                const [selectedCats, selectedTags] = await Promise.all([
+                const [selectedCats, selectedTags, selectedMedia] = await Promise.all([
                     needCatFetch ? apis.getCategories({ids: selectedCatId}).then(r => Array.isArray(r.payload?.data) ? r.payload?.data : []) : Promise.resolve([]),
                     needTagsFetch ? apis.getTags({ids: selectedTagIds.join(',')}).then(r => Array.isArray(r.payload?.data) ? r.payload?.data : []) : Promise.resolve([]),
+                    featuredMediaId ? apis.getMediaById(featuredMediaId).then(r => r.payload).catch(() => null) : Promise.resolve(null),
                 ]);
 
                 setCategories(uniqById<Category>([...catsPage1, ...selectedCats]));
                 setTags(uniqById<Tag>([...tagsPage1, ...selectedTags]));
+                setFeaturedMedia(selectedMedia || null);
             } catch (err) {
                 console.error('Error fetching data:', err);
                 setError(err instanceof Error ? err.message : 'Unknown error');
@@ -186,6 +190,20 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
             {key: 'slug', label: 'Slug', type: 'text', value: formData.slug, required: true},
             {key: 'excerpt', label: 'Excerpt', type: 'textarea', value: formData.excerpt},
             {
+                key: 'featuredMediaId',
+                label: 'Featured Media',
+                type: 'media',
+                value: formData.featuredMediaId,
+                mediaData: featuredMedia || undefined,
+                intentOptions: {
+                    options: {
+                        mimeTypes: ['image/png', 'image/jpeg', 'image/svg+xml'],
+                        maxSize: 2 * 1024 * 1024,
+                        allowUpload: true
+                    }
+                }
+            },
+            {
                 key: 'content',
                 label: 'Content',
                 type: 'richtext',
@@ -220,7 +238,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                 onAdd: addNewTag
             },
         ];
-    }, [formData, categories, tags, apis, editorRef.current]);
+    }, [formData, categories, tags, featuredMedia, apis, editorRef.current]);
 
     useEffect(() => {
         if (!!editorRef.current) return
