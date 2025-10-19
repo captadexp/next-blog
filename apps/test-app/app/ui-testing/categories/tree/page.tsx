@@ -1,5 +1,4 @@
-'use client'
-import {CategoryTree} from '@supergrowthai/next-blog-ui';
+import CategoryTree from './CategoryTreeClientWrapper';
 import {getTestCategories} from '../../test-data';
 import "@supergrowthai/next-blog-ui/style.css";
 
