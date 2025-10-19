@@ -37,6 +37,23 @@ export interface QueryOptions {
     projection?: Record<string, 0 | 1>;
 }
 
+// Options for hydrated blog queries
+export interface HydratedBlogQueryOptions extends QueryOptions {
+    // Extended projection that includes both blog fields and relationship projections
+    // e.g., { content: 0, user: { password: 0 }, category: { description: 0 } }
+    projections?: {
+        // Blog-level projections
+        [K in keyof Blog]?: 0 | 1;
+    } & {
+        // Relationship projections
+        user?: Record<string, 0 | 1>;
+        category?: Record<string, 0 | 1>;
+        tag?: Record<string, 0 | 1>;
+        featuredMedia?: Record<string, 0 | 1>;
+        parent?: Record<string, 0 | 1>;
+    };
+}
+
 // Generic collection operations interface
 export interface CollectionOperations<T, U> {
     findOne(filter: Filter<T>): Promise<T | null>;
@@ -72,23 +89,23 @@ export interface DatabaseAdapter {
     // Generated/computed operations
     generated: {
         getHydratedBlog(filter: Filter<Blog>): Promise<HydratedBlog | null>;
-        getHydratedBlogs(filter: Filter<Blog>, options?: { skip?: number, limit?: number }): Promise<HydratedBlog[]>;
+        getHydratedBlogs(filter: Filter<Blog>, options?: HydratedBlogQueryOptions): Promise<HydratedBlog[]>;
         getRecentBlogs(limit?: number): Promise<HydratedBlog[]>;
         getRelatedBlogs(blogId: string, limit?: number): Promise<HydratedBlog[]>;
         getHydratedAuthor(userId: string): Promise<User | null>;
-        getAuthorBlogs(userId: string, options?: { skip?: number, limit?: number }): Promise<HydratedBlog[]>;
+        getAuthorBlogs(userId: string, options?: HydratedBlogQueryOptions): Promise<HydratedBlog[]>;
         getHydratedCategories(): Promise<Category[]>;
-        getCategoryWithBlogs(categoryId: string, options?: { skip?: number, limit?: number }): Promise<{
+        getCategoryWithBlogs(categoryId: string, options?: HydratedBlogQueryOptions): Promise<{
             category: Category | null,
             blogs: HydratedBlog[]
         }>;
         getHydratedTags(): Promise<Tag[]>;
-        getTagWithBlogs(tagId: string, options?: { skip?: number, limit?: number }): Promise<{
+        getTagWithBlogs(tagId: string, options?: HydratedBlogQueryOptions): Promise<{
             tag: Tag | null,
             blogs: HydratedBlog[]
         }>;
-        getBlogsByTag(tagSlug: string, options?: { skip?: number, limit?: number }): Promise<HydratedBlog[]>;
-        getBlogsByCategory(categorySlug: string, options?: { skip?: number, limit?: number }): Promise<HydratedBlog[]>;
+        getBlogsByTag(tagSlug: string, options?: HydratedBlogQueryOptions): Promise<HydratedBlog[]>;
+        getBlogsByCategory(categorySlug: string, options?: HydratedBlogQueryOptions): Promise<HydratedBlog[]>;
     };
 
     // Optional transaction support

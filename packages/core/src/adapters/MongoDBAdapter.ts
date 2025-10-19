@@ -11,6 +11,7 @@ import {
     DatabaseAdapter,
     Filter,
     HydratedBlog,
+    HydratedBlogQueryOptions,
     Media,
     MediaData,
     Permission,
@@ -572,38 +573,51 @@ export class MongoDBAdapter implements DatabaseAdapter {
         };
 
         // ---------- swappable loaders (cache-ready) ----------
-        const loadUsersByIds = async (ids: string[]) => {
+        const loadUsersByIds = async (ids: string[], projection?: Record<string, 0 | 1>) => {
             if (!ids.length) return new Map<string, any>();
-            const rows = await usersCol().find({_id: {$in: uniq(ids)}}).toArray();
+            let query = usersCol().find({_id: {$in: uniq(ids)}});
+            if (projection) query = query.project(projection);
+            const rows = await query.toArray();
             return indexById(rows);
         };
 
-        const loadCategoriesByIds = async (ids: string[]) => {
+        const loadCategoriesByIds = async (ids: string[], projection?: Record<string, 0 | 1>) => {
             if (!ids.length) return new Map<string, any>();
-            const rows = await catsCol().find({_id: {$in: uniq(ids)}}).toArray();
+            let query = catsCol().find({_id: {$in: uniq(ids)}});
+            if (projection) query = query.project(projection);
+            const rows = await query.toArray();
             return indexById(rows);
         };
 
-        const loadTagsByIds = async (ids: string[]) => {
+        const loadTagsByIds = async (ids: string[], projection?: Record<string, 0 | 1>) => {
             if (!ids.length) return new Map<string, any>();
-            const rows = await tagsCol().find({_id: {$in: uniq(ids)}}).toArray();
+            let query = tagsCol().find({_id: {$in: uniq(ids)}});
+            if (projection) query = query.project(projection);
+            const rows = await query.toArray();
             return indexById(rows);
         };
 
-        const loadMediaByIds = async (ids: string[]) => {
+        const loadMediaByIds = async (ids: string[], projection?: Record<string, 0 | 1>) => {
             if (!ids.length) return new Map<string, any>();
-            const rows = await mediaCol().find({_id: {$in: uniq(ids)}}).toArray();
+            let query = mediaCol().find({_id: {$in: uniq(ids)}});
+            if (projection) query = query.project(projection);
+            const rows = await query.toArray();
             return indexById(rows);
         };
 
-        const loadBlogsByIds = async (ids: string[]) => {
+        const loadBlogsByIds = async (ids: string[], projection?: Record<string, 0 | 1>) => {
             if (!ids.length) return new Map<string, any>();
-            const rows = await blogsCol().find({_id: {$in: uniq(ids)}}).toArray();
+            let query = blogsCol().find({_id: {$in: uniq(ids)}});
+            if (projection) query = query.project(projection);
+            const rows = await query.toArray();
             return indexById(rows);
         };
 
         // ---------- core hydrator (from raw DB rows) ----------
-        const hydrateRawBlogs = async (rawBlogs: any[]): Promise<HydratedBlog[]> => {
+        const hydrateRawBlogs = async (
+            rawBlogs: any[],
+            projections?: HydratedBlogQueryOptions['projections']
+        ): Promise<HydratedBlog[]> => {
             if (!rawBlogs.length) return [];
 
             // collect all foreign keys
@@ -613,13 +627,20 @@ export class MongoDBAdapter implements DatabaseAdapter {
             const mediaIds = uniq(rawBlogs.map(b => b.featuredMediaId).filter(truthy));
             const parentIds = uniq(rawBlogs.map(b => b.parentId).filter(truthy));
 
-            // batch fetch
+            // extract relationship projections
+            const userProjection = projections?.user;
+            const categoryProjection = projections?.category;
+            const tagProjection = projections?.tag;
+            const featuredMediaProjection = projections?.featuredMedia;
+            const parentProjection = projections?.parent;
+
+            // batch fetch with projections
             const [usersMap, catsMap, tagsMap, mediaMap, parentsMap] = await Promise.all([
-                loadUsersByIds(userIds),
-                loadCategoriesByIds(categoryIds),
-                loadTagsByIds(allTagIds),
-                loadMediaByIds(mediaIds),
-                loadBlogsByIds(parentIds),
+                loadUsersByIds(userIds, userProjection),
+                loadCategoriesByIds(categoryIds, categoryProjection),
+                loadTagsByIds(allTagIds, tagProjection),
+                loadMediaByIds(mediaIds, featuredMediaProjection),
+                loadBlogsByIds(parentIds, parentProjection),
             ]);
 
             // transform + stitch
@@ -659,9 +680,11 @@ export class MongoDBAdapter implements DatabaseAdapter {
         const applyFindOptions = (cursor: any, options?: {
             skip?: number;
             limit?: number;
-            sort?: Record<string, 1 | -1>
+            sort?: Record<string, 1 | -1>;
+            projection?: Record<string, 0 | 1>;
         }) => {
             if (!options) return cursor;
+            if (options.projection) cursor = cursor.project(options.projection);
             if (options.sort) cursor = cursor.sort(options.sort);
             if (typeof options.skip === 'number') cursor = cursor.skip(options.skip);
             if (typeof options.limit === 'number') cursor = cursor.limit(options.limit);
@@ -678,13 +701,26 @@ export class MongoDBAdapter implements DatabaseAdapter {
 
             getHydratedBlogs: async (
                 filter: Filter<Blog>,
-                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+                options?: HydratedBlogQueryOptions
             ): Promise<HydratedBlog[]> => {
                 const dbFilter = this.blogTransformer.toDb(filter);
                 let cursor = blogsCol().find(dbFilter);
-                cursor = applyFindOptions(cursor, options);
+
+                // Extract blog-level projections (exclude relationship projections)
+                const blogProjection = options?.projections ?
+                    Object.fromEntries(
+                        Object.entries(options.projections)
+                            .filter(([key]) => !['user', 'category', 'tag', 'featuredMedia', 'parent'].includes(key))
+                    ) as Record<string, 0 | 1> : options?.projection;
+
+                // Apply query options including blog-level projections
+                cursor = applyFindOptions(cursor, {
+                    ...options,
+                    projection: blogProjection
+                });
+
                 const raw = await cursor.toArray();
-                return hydrateRawBlogs(raw);
+                return hydrateRawBlogs(raw, options?.projections);
             },
 
             getRecentBlogs: async (limit: number = 10): Promise<HydratedBlog[]> => {
@@ -735,7 +771,7 @@ export class MongoDBAdapter implements DatabaseAdapter {
 
             getAuthorBlogs: async (
                 userId: string,
-                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+                options?: HydratedBlogQueryOptions
             ): Promise<HydratedBlog[]> => {
                 return self.generated.getHydratedBlogs({userId, status: 'published'}, options);
             },
@@ -747,7 +783,7 @@ export class MongoDBAdapter implements DatabaseAdapter {
 
             getCategoryWithBlogs: async (
                 categoryId: string,
-                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+                options?: HydratedBlogQueryOptions
             ): Promise<{ category: Category | null; blogs: HydratedBlog[] }> => {
                 const raw = await catsCol().findOne({_id: categoryId});
                 if (!raw) return {category: null, blogs: []};
@@ -762,7 +798,7 @@ export class MongoDBAdapter implements DatabaseAdapter {
 
             getTagWithBlogs: async (
                 tagId: string,
-                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+                options?: HydratedBlogQueryOptions
             ): Promise<{ tag: Tag | null; blogs: HydratedBlog[] }> => {
                 const raw = await tagsCol().findOne({_id: tagId});
                 if (!raw) return {tag: null, blogs: []};
@@ -775,7 +811,7 @@ export class MongoDBAdapter implements DatabaseAdapter {
 
             getBlogsByTag: async (
                 tagSlug: string,
-                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+                options?: HydratedBlogQueryOptions
             ): Promise<HydratedBlog[]> => {
                 const raw = await tagsCol().findOne({slug: tagSlug});
                 if (!raw) return [];
@@ -787,7 +823,7 @@ export class MongoDBAdapter implements DatabaseAdapter {
 
             getBlogsByCategory: async (
                 categorySlug: string,
-                options?: { skip?: number; limit?: number; sort?: Record<string, 1 | -1> }
+                options?: HydratedBlogQueryOptions
             ): Promise<HydratedBlog[]> => {
                 const raw = await catsCol().findOne({slug: categorySlug});
                 if (!raw) return [];
