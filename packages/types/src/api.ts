@@ -24,6 +24,11 @@ export interface PaginationParams {
     limit?: string;
 }
 
+export interface ClientPaginationParams {
+    page?: number;
+    limit?: number;
+}
+
 export interface PaginatedResponse<T = any> {
     data: T[];
     page: number;
@@ -31,7 +36,7 @@ export interface PaginatedResponse<T = any> {
 }
 
 export interface BlogAPI {
-    getBlogs(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<Blog>>>;
+    getBlogs(params?: ClientPaginationParams): Promise<APIResponse<PaginatedResponse<Blog>>>;
 
     getBlog(id: string): Promise<APIResponse<Blog>>;
 
@@ -64,7 +69,7 @@ export interface BlogAPI {
 }
 
 export interface UserAPI {
-    getUsers(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<User>>>;
+    getUsers(params?: ClientPaginationParams): Promise<APIResponse<PaginatedResponse<User>>>;
 
     getUser(id: string): Promise<APIResponse<User>>;
 
@@ -94,7 +99,7 @@ export interface UserAPI {
 }
 
 export interface CategoryAPI {
-    getCategories(params?: PaginationParams & {
+    getCategories(params?: ClientPaginationParams & {
         search?: string;
         ids?: string
     }): Promise<APIResponse<PaginatedResponse<Category>>>;
@@ -117,7 +122,7 @@ export interface CategoryAPI {
 }
 
 export interface TagAPI {
-    getTags(params?: PaginationParams & {
+    getTags(params?: ClientPaginationParams & {
         search?: string;
         ids?: string
     }): Promise<APIResponse<PaginatedResponse<Tag>>>;
@@ -138,7 +143,7 @@ export interface TagAPI {
 }
 
 export interface SettingsAPI {
-    getSettings(params?: PaginationParams & {
+    getSettings(params?: ClientPaginationParams & {
         search?: string;
     }): Promise<APIResponse<PaginatedResponse<SettingsEntry>>>;
 
@@ -160,7 +165,7 @@ export interface SettingsAPI {
 }
 
 export interface PluginAPI {
-    getPlugins(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<Plugin>>>;
+    getPlugins(params?: ClientPaginationParams): Promise<APIResponse<PaginatedResponse<Plugin>>>;
 
     getPlugin(id: string): Promise<APIResponse<Plugin>>;
 
@@ -210,7 +215,7 @@ export interface ConfigAPI {
 }
 
 export interface MediaAPI {
-    getMedia(params?: PaginationParams & {
+    getMedia(params?: ClientPaginationParams & {
         mimeType?: string;
         userId?: string;
     }): Promise<APIResponse<PaginatedResponse<Media>>>;

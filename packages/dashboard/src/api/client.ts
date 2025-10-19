@@ -3,9 +3,9 @@ import type {
     APIResponse,
     Blog,
     Category,
+    ClientPaginationParams,
     Media,
     PaginatedResponse,
-    PaginationParams,
     Permission,
     Plugin,
     PluginHookMapping,
@@ -47,7 +47,7 @@ class ApiClientImpl implements APIClient {
     }
 
     // Blog APIs
-    async getBlogs(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<Blog>>> {
+    async getBlogs(params?: ClientPaginationParams): Promise<APIResponse<PaginatedResponse<Blog>>> {
         const queryString = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
         return this.request<PaginatedResponse<Blog>>(`/blogs${queryString}`);
     }
@@ -92,7 +92,7 @@ class ApiClientImpl implements APIClient {
     }
 
     // User APIs
-    async getUsers(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<User>>> {
+    async getUsers(params?: ClientPaginationParams): Promise<APIResponse<PaginatedResponse<User>>> {
         const queryString = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
         return this.request<PaginatedResponse<User>>(`/users${queryString}`);
     }
@@ -135,7 +135,7 @@ class ApiClientImpl implements APIClient {
     }
 
     // Category APIs
-    async getCategories(params?: PaginationParams & {
+    async getCategories(params?: ClientPaginationParams & {
         search?: string;
         ids?: string
     }): Promise<APIResponse<PaginatedResponse<Category>>> {
@@ -168,7 +168,7 @@ class ApiClientImpl implements APIClient {
     }
 
     // Tag APIs
-    async getTags(params?: PaginationParams & {
+    async getTags(params?: ClientPaginationParams & {
         search?: string;
         ids?: string
     }): Promise<APIResponse<PaginatedResponse<Tag>>> {
@@ -199,7 +199,7 @@ class ApiClientImpl implements APIClient {
     }
 
     // Settings APIs
-    async getSettings(params?: PaginationParams & {
+    async getSettings(params?: ClientPaginationParams & {
         search?: string;
     }): Promise<APIResponse<PaginatedResponse<SettingsEntry>>> {
         const queryString = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
@@ -231,7 +231,7 @@ class ApiClientImpl implements APIClient {
     }
 
     // Plugin APIs
-    async getPlugins(params?: PaginationParams): Promise<APIResponse<PaginatedResponse<Plugin>>> {
+    async getPlugins(params?: ClientPaginationParams): Promise<APIResponse<PaginatedResponse<Plugin>>> {
         const queryString = params ? '?' + new URLSearchParams(params as Record<string, string>).toString() : '';
         return this.request<PaginatedResponse<Plugin>>(`/plugins${queryString}`);
     }
@@ -281,7 +281,7 @@ class ApiClientImpl implements APIClient {
     }
 
     // Media APIs
-    async getMedia(params?: PaginationParams & {
+    async getMedia(params?: ClientPaginationParams & {
         mimeType?: string;
         userId?: string;
     }): Promise<APIResponse<PaginatedResponse<Media>>> {

@@ -3,10 +3,10 @@ import type {
     APIResponse,
     Blog,
     BrandedId,
+    ClientPaginationParams,
     ClientSDK,
     Media,
     PaginatedResponse,
-    PaginationParams,
     PluginSettings,
     Storage,
     User
@@ -57,7 +57,7 @@ class MockAPIClient implements APIClient {
     };
 
     // Blog APIs
-    async getBlogs(params?: PaginationParams) {
+    async getBlogs(params?: ClientPaginationParams) {
         console.log('[Mock Client API] getBlogs');
         const blogs: Blog[] = this.mockData['/api/blogs'] || [];
         return this.mockResponse(this.mockPaginatedResponse(blogs, params));
@@ -106,7 +106,7 @@ class MockAPIClient implements APIClient {
     }
 
     // User APIs
-    async getUsers(params?: PaginationParams) {
+    async getUsers(params?: ClientPaginationParams) {
         console.log('[Mock Client API] getUsers');
         const users: User[] = this.mockData['/api/users'] || [];
         return this.mockResponse(this.mockPaginatedResponse(users, params));
@@ -139,7 +139,7 @@ class MockAPIClient implements APIClient {
     }
 
     // Category APIs
-    async getCategories(params?: PaginationParams) {
+    async getCategories(params?: ClientPaginationParams) {
         console.log('[Mock Client API] getCategories');
         const categories = [
             {
@@ -190,7 +190,7 @@ class MockAPIClient implements APIClient {
     }
 
     // Tag APIs
-    async getTags(params?: PaginationParams) {
+    async getTags(params?: ClientPaginationParams) {
         console.log('[Mock Client API] getTags');
         const tags = [
             {
@@ -241,7 +241,7 @@ class MockAPIClient implements APIClient {
     }
 
     // Settings APIs
-    async getSettings(params?: PaginationParams) {
+    async getSettings(params?: ClientPaginationParams) {
         console.log('[Mock Client API] getSettings');
         const settings: any[] = [];
         return this.mockResponse(this.mockPaginatedResponse(settings, params));
@@ -276,7 +276,7 @@ class MockAPIClient implements APIClient {
     }
 
     // Plugin APIs
-    async getPlugins(params?: PaginationParams) {
+    async getPlugins(params?: ClientPaginationParams) {
         console.log('[Mock Client API] getPlugins');
         const plugins: any[] = [];
         return this.mockResponse(this.mockPaginatedResponse(plugins, params));
@@ -376,7 +376,7 @@ class MockAPIClient implements APIClient {
     }
 
     // Media APIs
-    async getMedia(params?: PaginationParams & {
+    async getMedia(params?: ClientPaginationParams & {
         mimeType?: string;
         userId?: string;
     }) {
@@ -457,7 +457,7 @@ class MockAPIClient implements APIClient {
         };
     }
 
-    private mockPaginatedResponse<T>(data: T[], params?: PaginationParams): PaginatedResponse<T> {
+    private mockPaginatedResponse<T>(data: T[], params?: ClientPaginationParams): PaginatedResponse<T> {
         const page = params?.page || 1;
         const limit = params?.limit || 10;
 
