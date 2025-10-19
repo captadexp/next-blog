@@ -566,9 +566,12 @@ export class MongoDBAdapter implements DatabaseAdapter {
         const uniq = <T>(xs: T[]) => Array.from(new Set(xs));
         const truthy = <T>(x: T | null | undefined): x is T => !!x;
 
-        const indexById = <T extends { _id: string }>(rows: T[]) => {
+        const indexById = <T extends { _id: ObjectId }>(rows: T[]) => {
             const m = new Map<string, T>();
-            for (const r of rows) m.set(r._id, r);
+            for (const r of rows) {
+                const key = r._id.toString();
+                m.set(key, r);
+            }
             return m;
         };
 
@@ -646,22 +649,32 @@ export class MongoDBAdapter implements DatabaseAdapter {
             // transform + stitch
             const out: HydratedBlog[] = [];
             for (const row of rawBlogs) {
-                const dbUser = usersMap.get(row.userId);
-                const dbCat = catsMap.get(row.categoryId);
+                const userKey = row.userId.toString();
+                const categoryKey = row.categoryId.toString();
+
+                const dbUser = usersMap.get(userKey);
+                const dbCat = catsMap.get(categoryKey);
                 if (!dbUser || !dbCat) continue; // skip incomplete
 
                 const blog = this.blogTransformer.fromDb(row);
                 const user = this.userTransformer.fromDb(dbUser);
                 const category = this.categoryTransformer.fromDb(dbCat);
                 const tags = (row.tagIds || [])
-                    .map((tid: string) => tagsMap.get(tid))
+                    .map((tid: ObjectId) => {
+                        const tagKey = tid.toString();
+                        return tagsMap.get(tagKey);
+                    })
                     .filter(truthy)
-                    .map((t: any) => this.tagTransformer.fromDb(t));
-                const featuredMedia = row.featuredMediaId
-                    ? (mediaMap.get(row.featuredMediaId) ? this.mediaTransformer.fromDb(mediaMap.get(row.featuredMediaId)) : undefined)
+                    .map((t: Tag) => this.tagTransformer.fromDb(t));
+
+                const featuredMediaKey = row.featuredMediaId?.toString();
+                const featuredMedia = featuredMediaKey
+                    ? (mediaMap.get(featuredMediaKey) ? this.mediaTransformer.fromDb(mediaMap.get(featuredMediaKey)) : undefined)
                     : undefined;
-                const parent = row.parentId
-                    ? (parentsMap.get(row.parentId) ? this.blogTransformer.fromDb(parentsMap.get(row.parentId)) : undefined)
+
+                const parentKey = row.parentId?.toString();
+                const parent = parentKey
+                    ? (parentsMap.get(parentKey) ? this.blogTransformer.fromDb(parentsMap.get(parentKey)) : undefined)
                     : undefined;
 
                 out.push({
