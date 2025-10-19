@@ -44,7 +44,6 @@ import {
     reinstallPlugin,
     setPluginSetting,
     updateBlog,
-    updateBlogMetadata,
     updateCategory,
     updateMedia,
     updateSetting,
@@ -84,7 +83,6 @@ const cmsPaths: PathObject = {
             ':id': {
                 update: methodHandler({POST: updateBlog}),
                 delete: methodHandler({POST: deleteBlog}),
-                'update-metadata': methodHandler({POST: updateBlogMetadata})
             }
         },
         categories: {

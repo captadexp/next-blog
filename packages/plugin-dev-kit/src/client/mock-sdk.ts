@@ -81,25 +81,6 @@ class MockAPIClient implements APIClient {
         return this.mockResponse({_id: id, ...data});
     }
 
-    async updateBlogMetadata(id: string, metadata: Record<string, any>) {
-        console.log('[Mock Client API] updateBlogMetadata', id, metadata);
-        const blogs = this.mockData['/api/blogs'] || [];
-        const blog = blogs.find((b: any) => b._id === id);
-        const updatedBlog = blog ? {...blog, metadata, updatedAt: Date.now()} : {
-            _id: id,
-            title: 'Blog',
-            slug: 'blog',
-            content: 'Content',
-            category: 'general',
-            tags: [],
-            userId: '1',
-            metadata,
-            createdAt: Date.now(),
-            updatedAt: Date.now()
-        };
-        return this.mockResponse(updatedBlog);
-    }
-
     async deleteBlog(id: string) {
         console.log('[Mock Client API] deleteBlog', id);
         return this.mockResponse(null);

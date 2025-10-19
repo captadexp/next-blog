@@ -20,7 +20,6 @@ export type EventPayload =
     | { event: "createBlog"; payload: Blog }
     | { event: "updateBlog"; payload: Blog }
     | { event: "deleteBlog"; payload: Blog }
-    | { event: "updateBlogMetadata"; payload: Blog }
 
     | { event: "createTag"; payload: Tag }
     | { event: "updateTag"; payload: Tag }

@@ -83,10 +83,6 @@ class ApiClientImpl implements APIClient {
         return this.request<Blog>(`/blog/${id}/update`, 'POST', data);
     }
 
-    async updateBlogMetadata(id: string, metadata: Record<string, any>): Promise<APIResponse<Blog>> {
-        return this.request<Blog>(`/blog/${id}/update-metadata`, 'POST', {metadata});
-    }
-
     async deleteBlog(id: string): Promise<APIResponse<null>> {
         return this.request<null>(`/blog/${id}/delete`, 'POST');
     }

@@ -63,8 +63,6 @@ export interface BlogAPI {
         featuredImage?: string;
     }): Promise<APIResponse<Blog>>;
 
-    updateBlogMetadata(id: string, metadata: Record<string, any>): Promise<APIResponse<Blog>>;
-
     deleteBlog(id: string): Promise<APIResponse<null>>;
 }
 

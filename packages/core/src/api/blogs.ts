@@ -185,69 +185,6 @@ export const updateBlog = secure(async (session: SessionData, request: MinimumRe
     }
 }, {requirePermission: 'blogs:update'});
 
-// Update blog metadata
-export const updateBlogMetadata = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
-    const db = await extra.db();
-    const blogId = request._params?.id;
-
-    try {
-        const body = request.body as { metadata?: Record<string, unknown> };
-        let metadata = body.metadata;
-
-        if (!metadata) {
-            throw new ValidationError("Metadata is required");
-        }
-
-        const existingBlog = await db.blogs.findOne({_id: blogId}) as (Blog & {
-            metadata?: Record<string, unknown>
-        }) | null;
-        if (!existingBlog) {
-            throw new NotFound(`Blog with id ${blogId} not found`);
-        }
-
-        const callingPluginId = request.headers['x-plugin-id'] || request.headers['X-Plugin-Id'];
-        //X-Plugin-Manifest-Id contains the id we need but lets just make it such that it takes more effort to make a mistake
-        if (callingPluginId) {
-            const plugin = await db.plugins.findOne({_id: callingPluginId});
-            if (plugin) {
-                const prefixedMetadata: Record<string, unknown> = {};
-
-                for (const [key, value] of Object.entries(metadata)) {
-                    // Safety check: only prefix keys that don't already have a plugin prefix
-                    // This prevents double-prefixing and data loss
-                    if (!key.includes(':') || !key.match(/^[a-zA-Z0-9_-]+:[a-zA-Z0-9_-]/)) {
-                        const prefixedKey = `${plugin.id}:${key}`;
-                        prefixedMetadata[prefixedKey] = value;
-                    } else {
-                        prefixedMetadata[key] = value;
-                    }
-                }
-
-                metadata = prefixedMetadata;
-            }
-        }
-
-        // Merge existing metadata with new metadata
-        const updatedMetadata = {
-            ...existingBlog.metadata,
-            ...metadata
-        };
-
-        const updation = await db.blogs.updateOne(
-            {_id: blogId},
-            {metadata: updatedMetadata, updatedAt: Date.now()}
-        );
-
-        extra.configuration.callbacks?.on?.("updateBlog", updation);
-
-        throw new Success("Blog metadata updated successfully", updation);
-    } catch (error) {
-        if (error instanceof Success || error instanceof NotFound || error instanceof ValidationError) throw error;
-
-        console.error(`Error updating blog metadata for blog ${blogId}:`, error);
-        throw new DatabaseError("Failed to update blog metadata: " + (error instanceof Error ? error.message : String(error)));
-    }
-}, {requirePermission: 'blogs:update'});
 
 // Delete a blog
 export const deleteBlog = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
