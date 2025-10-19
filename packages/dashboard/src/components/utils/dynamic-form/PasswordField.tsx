@@ -4,7 +4,7 @@ import {PasswordDynamicFormField} from './types';
 
 interface PasswordFieldProps {
     field: PasswordDynamicFormField;
-    onChange: (key: string, value: any) => void;
+    onChange: (key: string, value: string) => void;
 }
 
 const PasswordField = ({field, onChange}: PasswordFieldProps) => {

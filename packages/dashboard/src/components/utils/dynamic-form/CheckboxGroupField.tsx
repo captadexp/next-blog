@@ -4,7 +4,7 @@ import {CheckboxGroupDynamicFormField} from './types';
 
 interface CheckboxGroupFieldProps {
     field: CheckboxGroupDynamicFormField;
-    onChange: (key: string, value: any) => void;
+    onChange: (key: string, value: string[]) => void;
 }
 
 const CheckboxGroupField = ({field, onChange}: CheckboxGroupFieldProps) => {

@@ -4,7 +4,7 @@ import {MultiSelectDynamicFormField, SelectDynamicFormField} from './types';
 
 interface AutocompleteFieldProps {
     field: SelectDynamicFormField | MultiSelectDynamicFormField;
-    onChange: <T>(key: string, value: T) => void;
+    onChange: (key: string, value: string | string[]) => void;
     multiple?: boolean;
 }
 

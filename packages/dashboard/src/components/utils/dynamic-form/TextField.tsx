@@ -4,7 +4,7 @@ import {TextDynamicFormField} from './types';
 
 interface TextFieldProps {
     field: TextDynamicFormField;
-    onChange: (key: string, value: any) => void;
+    onChange: (key: string, value: string) => void;
 }
 
 const TextField = ({field, onChange}: TextFieldProps) => {

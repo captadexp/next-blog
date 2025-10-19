@@ -6,7 +6,7 @@ import {INTENT_TYPES} from "@supergrowthai/next-blog-types";
 
 interface MediaFieldProps {
     field: MediaDynamicFormField;
-    onChange: <T>(key: string, value: T) => void;
+    onChange: (key: string, value: string | null) => void;
 }
 
 interface MediaItem {
