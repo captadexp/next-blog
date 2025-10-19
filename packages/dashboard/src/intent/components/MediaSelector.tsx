@@ -1,21 +1,94 @@
 import {h} from 'preact';
 import {useEffect, useRef, useState} from 'preact/hooks';
 import {
-    ImageSelectRequest,
     IntentRequest,
     IntentResponse,
     Media,
+    MediaSelectRequest,
     PaginatedResponse
 } from '@supergrowthai/next-blog-types';
 import {useUser} from '../../context/UserContext';
 import toast from 'react-hot-toast';
 import {PaginationControls} from '../../components/PaginationControls';
 
-interface ImageSelectorProps {
-    request: IntentRequest<ImageSelectRequest>;
+interface MediaSelectorProps {
+    request: IntentRequest<MediaSelectRequest>;
 }
 
-export const ImageSelector = ({request}: ImageSelectorProps) => {
+const getDefaultMimeTypes = (mediaType: string) => {
+    switch (mediaType) {
+        case 'image':
+            return ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        case 'video':
+            return ['video/mp4', 'video/webm', 'video/ogg'];
+        case 'audio':
+            return ['audio/mp3', 'audio/wav', 'audio/ogg'];
+        case 'all':
+        default:
+            return [
+                'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+                'video/mp4', 'video/webm', 'video/ogg',
+                'audio/mp3', 'audio/wav', 'audio/ogg'
+            ];
+    }
+};
+
+const getMediaTypeFromMime = (mimeType: string): 'image' | 'video' | 'audio' | 'unknown' => {
+    if (mimeType.startsWith('image/')) return 'image';
+    if (mimeType.startsWith('video/')) return 'video';
+    if (mimeType.startsWith('audio/')) return 'audio';
+    return 'unknown';
+};
+
+const MediaPreview = ({media}: { media: Media }) => {
+    const mediaType = getMediaTypeFromMime(media.mimeType);
+
+    switch (mediaType) {
+        case 'image':
+            return (
+                <img
+                    src={media.url}
+                    alt={media.filename}
+                    className="rounded-lg h-32 w-full object-cover"
+                />
+            );
+        case 'video':
+            return (
+                <video
+                    src={media.url}
+                    className="rounded-lg h-32 w-full object-cover"
+                    controls={false}
+                    muted
+                    onMouseEnter={(e) => (e.target as HTMLVideoElement).play()}
+                    onMouseLeave={(e) => {
+                        const video = e.target as HTMLVideoElement;
+                        video.pause();
+                        video.currentTime = 0;
+                    }}
+                />
+            );
+        case 'audio':
+            return (
+                <div className="rounded-lg h-32 w-full bg-gray-200 flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="text-4xl mb-2">🎵</div>
+                        <div className="text-xs text-gray-600">Audio File</div>
+                    </div>
+                </div>
+            );
+        default:
+            return (
+                <div className="rounded-lg h-32 w-full bg-gray-200 flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="text-4xl mb-2">📄</div>
+                        <div className="text-xs text-gray-600">Unknown Type</div>
+                    </div>
+                </div>
+            );
+    }
+};
+
+export const MediaSelector = ({request}: MediaSelectorProps) => {
     const {apis} = useUser();
     const [mediaItems, setMediaItems] = useState<Media[]>([]);
     const [loading, setLoading] = useState(false);
@@ -29,10 +102,12 @@ export const ImageSelector = ({request}: ImageSelectorProps) => {
 
     const options = request.payload.options || {};
     const {
-        mimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+        mediaType = 'all',
         maxSize = 10 * 1024 * 1024, // 10MB default
         allowUpload = true
     } = options;
+
+    const mimeTypes = options.mimeTypes || getDefaultMimeTypes(mediaType);
 
     useEffect(() => {
         // Open modal on mount
@@ -184,6 +259,39 @@ export const ImageSelector = ({request}: ImageSelectorProps) => {
         sendResponse(null, true);
     };
 
+    const getModalTitle = () => {
+        switch (mediaType) {
+            case 'image':
+                return 'Select Image';
+            case 'video':
+                return 'Select Video';
+            case 'audio':
+                return 'Select Audio';
+            default:
+                return 'Select Media';
+        }
+    };
+
+    const getSearchPlaceholder = () => {
+        switch (mediaType) {
+            case 'image':
+                return 'Search images...';
+            case 'video':
+                return 'Search videos...';
+            case 'audio':
+                return 'Search audio...';
+            default:
+                return 'Search media...';
+        }
+    };
+
+    const getEmptyMessage = () => {
+        const typeText = mediaType === 'all' ? 'media files' : `${mediaType}s`;
+        return search
+            ? `No ${typeText} found matching your search.`
+            : `No ${typeText} found. Upload a file to get started.`;
+    };
+
     return (
         <dialog ref={dialogRef} className="modal">
             <div
@@ -193,7 +301,7 @@ export const ImageSelector = ({request}: ImageSelectorProps) => {
                 }}
             >
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold">Select Image</h2>
+                    <h2 className="text-xl font-bold">{getModalTitle()}</h2>
                     <button
                         className="btn btn-sm btn-ghost btn-circle"
                         onClick={handleCancel}
@@ -224,7 +332,7 @@ export const ImageSelector = ({request}: ImageSelectorProps) => {
                 <div className="mb-4">
                     <input
                         type="text"
-                        placeholder="Search images..."
+                        placeholder={getSearchPlaceholder()}
                         value={search}
                         onInput={(e) => setSearch((e.target as HTMLInputElement).value)}
                         className="input input-bordered w-full"
@@ -246,11 +354,7 @@ export const ImageSelector = ({request}: ImageSelectorProps) => {
                                 onClick={() => setSelectedMedia(media)}
                             >
                                 <figure className="px-4 pt-4">
-                                    <img
-                                        src={media.url}
-                                        alt={media.filename}
-                                        className="rounded-lg h-32 w-full object-cover"
-                                    />
+                                    <MediaPreview media={media}/>
                                 </figure>
                                 <div className="card-body p-4">
                                     <p className="text-sm truncate">{media.filename}</p>
@@ -262,7 +366,7 @@ export const ImageSelector = ({request}: ImageSelectorProps) => {
 
                 {mediaItems.length === 0 && !loading && (
                     <div className="text-center py-8 text-base-content/60">
-                        {search ? 'No images found matching your search.' : 'No images found. Upload an image to get started.'}
+                        {getEmptyMessage()}
                     </div>
                 )}
 

@@ -193,9 +193,10 @@ class ImageSelectorTool implements BlockTool {
 
         const intentRequest = {
             requestId,
-            intentType: 'select-image',
+            intentType: 'select-media',
             payload: {
                 options: {
+                    mediaType: 'image',
                     mimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
                     maxSize: 10 * 1024 * 1024, // 10MB
                     allowUpload: true

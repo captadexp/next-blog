@@ -47,7 +47,7 @@ const MediaField = ({field, onChange}: MediaFieldProps) => {
 
         setLoading(true);
         try {
-            const result: { media: MediaItem } = await startIntent(INTENT_TYPES.SELECT_IMAGE, field.intentOptions);
+            const result: { media: MediaItem } = await startIntent(INTENT_TYPES.SELECT_MEDIA, field.intentOptions);
 
             if (result) {
                 setSelectedMedia(result.media);

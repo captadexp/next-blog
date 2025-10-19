@@ -64,8 +64,9 @@ export function GlobalSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
 
     const selectLogo = useCallback(async () => {
         try {
-            const response: any = await sdk.startIntent('select-image', {
+            const response: any = await sdk.startIntent('select-media', {
                 options: {
+                    mediaType: 'image',
                     mimeTypes: ['image/png', 'image/jpeg', 'image/svg+xml'],
                     maxSize: 2 * 1024 * 1024,
                     allowUpload: true

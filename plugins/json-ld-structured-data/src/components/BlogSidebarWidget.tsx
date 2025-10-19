@@ -104,8 +104,9 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
 
     const selectImage = useCallback(async (field: string) => {
         try {
-            const response: any = await sdk.startIntent('select-image', {
+            const response: any = await sdk.startIntent('select-media', {
                 options: {
+                    mediaType: 'image',
                     mimeTypes: ['image/png', 'image/jpeg', 'image/webp'],
                     maxSize: 5 * 1024 * 1024,
                     allowUpload: false
