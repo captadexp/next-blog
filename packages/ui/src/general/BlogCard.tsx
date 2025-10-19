@@ -1,5 +1,6 @@
 import React from 'react';
 import type {HydratedBlog} from '@supergrowthai/next-blog-types/server';
+import {FeaturedMedia} from '../blog/FeaturedMedia';
 
 interface BlogCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     blog: HydratedBlog;
@@ -134,7 +135,7 @@ export const BlogCard: React.FC<BlogCardProps> = ({
         });
     };
 
-    const imageUrl = blog.featuredMedia?.url ||
+    const hasFeaturedMedia = blog.featuredMedia?.url ||
         blog.metadata?.['json-ld-structured-data:overrides']?.featuredImageMedia?.url;
 
     return (
@@ -143,10 +144,15 @@ export const BlogCard: React.FC<BlogCardProps> = ({
             className={className}
             {...rest}
         >
-            {showImage && imageUrl && (
-                <img src={imageUrl} alt={blog.title} style={defaultImageStyles}/>
+            {showImage && hasFeaturedMedia && (
+                <FeaturedMedia
+                    blog={blog}
+                    style={{marginBottom: 0}}
+                    imageStyle={defaultImageStyles}
+                    videoStyle={defaultImageStyles}
+                />
             )}
-            {showImage && !imageUrl && (
+            {showImage && !hasFeaturedMedia && (
                 <div style={{...defaultImageStyles, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
                     <span style={{fontSize: '48px', color: '#d1d5db'}}>📄</span>
                 </div>
