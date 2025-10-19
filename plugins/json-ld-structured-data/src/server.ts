@@ -155,7 +155,7 @@ export default defineServer({
             await sdk.db.blogs.updateOne(
                 {_id: blogId},
                 {
-                    metadata: {...(blog.metadata || {}), [METADATA_KEY]: overrides},
+                    metadata: {[METADATA_KEY]: overrides},
                     updatedAt: Date.now()
                 }
             );

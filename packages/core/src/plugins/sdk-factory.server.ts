@@ -12,6 +12,7 @@ import {ServerEventsHelper} from './events-helper.server.js';
 import {StorageFactory} from '../storage/storage-factory.js';
 import {VERSION_INFO} from '../version.js';
 import {PluginExecutor} from "./plugin-executor.server.ts";
+import {createScopedBlogDb} from '../services/ScopedBlogDb.js';
 
 /**
  * Dependencies required to create a server SDK instance
@@ -101,36 +102,17 @@ export class ServerSDKFactory {
     private createScopedDatabase(pluginId: string): DatabaseAdapter {
         const originalDb = this.deps.db;
 
-        // Wrap database operations to add plugin metadata
         return {
             ...originalDb,
 
-            // Example: Auto-add plugin metadata to blog operations
-            blogs: {
-                ...originalDb.blogs,
-                create: async (data: any) => {
-                    // Add plugin ID to metadata
-                    const enhancedData = {
-                        ...data,
-                        metadata: {
-                            ...data.metadata,
-                            createdByPlugin: pluginId
-                        }
-                    };
-                    return originalDb.blogs.create(enhancedData);
-                }
-            },
+            // Use scoped blog database for automatic metadata scoping
+            blogs: createScopedBlogDb(originalDb.blogs, pluginId),
 
-            // Plugin-specific settings are already scoped via owner field
-            settings: originalDb.settings,
-
-            // Could add plugin-specific collections
-            // e.g., plugin_data: createPluginCollection(pluginId)
-
-            // Keep other collections as-is for now
+            // Keep other collections unchanged for now
             categories: originalDb.categories,
             tags: originalDb.tags,
             users: originalDb.users,
+            settings: originalDb.settings,
             plugins: originalDb.plugins,
             pluginHookMappings: originalDb.pluginHookMappings,
             comments: originalDb.comments,

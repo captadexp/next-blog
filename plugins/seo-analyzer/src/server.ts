@@ -108,7 +108,7 @@ export default defineServer({
             await sdk.db.blogs.updateOne(
                 {_id: blogId},
                 {
-                    metadata: {...(blog.metadata || {}), [META_KEY]: sanitizedConfig},
+                    metadata: {[META_KEY]: sanitizedConfig},
                     updatedAt: Date.now()
                 }
             );
