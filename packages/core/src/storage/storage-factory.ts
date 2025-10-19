@@ -66,7 +66,7 @@ export class StorageFactory {
                 });
             }
         } catch (error) {
-            console.error('Error creating storage adapter:', error);
+            console.error(`Error creating storage adapter for ${pluginId}:`, error);
         }
 
         // Default to local storage

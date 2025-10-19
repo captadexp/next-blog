@@ -48,7 +48,10 @@ export class ServerSDKFactory {
      * All operations performed through this SDK will be automatically scoped to the plugin
      */
     async createSDK(plugin: Plugin): Promise<ServerSDK> {
-        // Create plugin-specific helpers
+
+        if (!plugin.id)
+            throw new Error(`Plugin re-install ${plugin.name}`);
+
         const settingsHelper = new ServerSettingsHelper(plugin, this.deps.db);
         const cacheHelper = new ServerCacheHelper(plugin.id);
         const eventsHelper = new ServerEventsHelper(plugin.id);
