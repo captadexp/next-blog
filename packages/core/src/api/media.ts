@@ -72,9 +72,7 @@ export const getMedia = secure(async (session, request, extra) => {
 
 export const getMediaById = secure(async (session, request, extra) => {
     const db = await extra.db();
-    const url = new URL(request.url);
-    const pathParts = url.pathname.split('/');
-    const id = pathParts[pathParts.length - 1];
+    const id = request._params?.id;
 
     if (!id) {
         throw new ValidationError('Media ID is required');
@@ -115,9 +113,7 @@ export const createMedia = secure(async (session, request, extra) => {
 
 export const updateMedia = secure(async (session, request, extra) => {
     const db = await extra.db();
-    const url = new URL(request.url);
-    const pathParts = url.pathname.split('/');
-    const id = pathParts[pathParts.indexOf('media') + 1];
+    const id = request._params?.id;
 
     if (!id) {
         throw new ValidationError('Media ID is required');
@@ -141,9 +137,7 @@ export const updateMedia = secure(async (session, request, extra) => {
 
 export const deleteMedia = secure(async (session, request, extra) => {
     const db = await extra.db();
-    const url = new URL(request.url);
-    const pathParts = url.pathname.split('/');
-    const id = pathParts[pathParts.length - 1];
+    const id = request._params?.id;
 
     if (!id) {
         throw new ValidationError('Media ID is required');
@@ -158,10 +152,11 @@ export const deleteMedia = secure(async (session, request, extra) => {
 
     // Delete from storage if it's a managed file
     try {
-        const storageAdapter = await StorageFactory.create('system', db);
-
         // Extract the storage path from the media URL
         // Expected URL format: /storage/media/{mediaId}/{filename} or full URL
+        const storageAdapter = extra.sdk.storage;
+
+        //this definitely needs to be written better
         let storagePath: string;
         if (media.url.startsWith('/storage/')) {
             storagePath = media.url.substring('/storage/'.length);
@@ -179,15 +174,15 @@ export const deleteMedia = secure(async (session, request, extra) => {
             storagePath = `media/${media._id}/${path.basename(media.url)}`;
         }
 
-        if (await storageAdapter.exists(storagePath)) {
-            await storageAdapter.delete(storagePath);
+        if (await storageAdapter?.exists(storagePath)) {
+            await storageAdapter?.delete(storagePath);
         }
     } catch (error) {
         console.error('Failed to delete media file from storage:', error);
         // Continue with database deletion even if storage deletion fails
     }
 
-    await db.media.delete(id);
+    await db.media.deleteOne({_id: id})
 
     await extra.callHook('media:onDelete:after', {mediaId: id});
 

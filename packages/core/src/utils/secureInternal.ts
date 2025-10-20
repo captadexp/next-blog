@@ -2,6 +2,7 @@ import type {MinimumRequest, OneApiFunction, SessionData} from "@supergrowthai/o
 import type {Permission} from "@supergrowthai/next-blog-types/server";
 import {hasAllPermissions, hasAnyPermission, hasPermission} from "./permissions.js";
 import {Session} from "../auth/sessions.ts";
+import type {ApiExtra} from "../types/api.ts";
 
 type SecureOptions = {
     requirePermission?: Permission;
@@ -19,7 +20,7 @@ type SecureOptions = {
  * @returns A wrapped oneapi function that checks permissions before executing
  */
 export default function secure(
-    fn: OneApiFunction,
+    fn: OneApiFunction<ApiExtra>,
     options?: SecureOptions
 ): OneApiFunction {
     const wrappedFn = async (session: SessionData, request: MinimumRequest, extra: any) => {

@@ -325,7 +325,7 @@ class ApiClientImpl implements APIClient {
         const formData = new FormData();
         formData.append('file', file);
 
-        return this.request<Media>(`${this.baseUrl}/media/upload/${mediaId}`, "POST", formData, {"Content-Type": undefined});
+        return this.request<Media>(`/media/upload/${mediaId}`, "POST", formData, {"Content-Type": undefined});
     }
 
     getCsrfHeaders(): {} {
