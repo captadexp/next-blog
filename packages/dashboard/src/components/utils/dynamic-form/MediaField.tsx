@@ -47,7 +47,14 @@ const MediaField = ({field, onChange}: MediaFieldProps) => {
 
         setLoading(true);
         try {
-            const result: { media: MediaItem } = await startIntent(INTENT_TYPES.SELECT_MEDIA, field.intentOptions);
+            const intentOptions = {
+                options: {
+                    ...field.intentOptions.options,
+                    selectedMediaId: selectedMedia?._id
+                }
+            };
+
+            const result: { media: MediaItem } = await startIntent(INTENT_TYPES.SELECT_MEDIA, intentOptions);
 
             if (result) {
                 setSelectedMedia(result.media);
@@ -73,7 +80,11 @@ const MediaField = ({field, onChange}: MediaFieldProps) => {
         return (
             <div className="mt-2 p-3 border border-gray-200 rounded-md bg-gray-50">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
+                    <div
+                        className="flex items-center space-x-3 flex-1 cursor-pointer hover:bg-gray-100 p-2 rounded transition-colors"
+                        onClick={handleSelectMedia}
+                        title="Click to replace media"
+                    >
                         {isImage && selectedMedia.url ? (
                             <img
                                 src={selectedMedia.url}
@@ -87,22 +98,35 @@ const MediaField = ({field, onChange}: MediaFieldProps) => {
                                 </span>
                             </div>
                         )}
-                        <div>
+                        <div className="flex-1">
                             <p className="text-sm font-medium text-gray-900">
                                 {selectedMedia.filename}
                             </p>
                             <p className="text-xs text-gray-500">
                                 {selectedMedia.mimeType} • {formatFileSize(selectedMedia.size || 0)}
                             </p>
+                            <p className="text-xs text-blue-600 mt-1">
+                                Click to replace
+                            </p>
                         </div>
                     </div>
-                    <button
-                        type="button"
-                        onClick={handleRemoveMedia}
-                        className="text-red-600 hover:text-red-800 text-sm"
-                    >
-                        Remove
-                    </button>
+                    <div className="flex flex-col gap-1 ml-2">
+                        <button
+                            type="button"
+                            onClick={handleSelectMedia}
+                            disabled={loading || field.disabled}
+                            className="text-blue-600 hover:text-blue-800 text-sm px-2 py-1 border border-blue-300 rounded hover:bg-blue-50 disabled:opacity-50"
+                        >
+                            Replace
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleRemoveMedia}
+                            className="text-red-600 hover:text-red-800 text-sm px-2 py-1 border border-red-300 rounded hover:bg-red-50"
+                        >
+                            Remove
+                        </button>
+                    </div>
                 </div>
             </div>
         );

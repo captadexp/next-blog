@@ -1,5 +1,5 @@
 import {RefObject} from "preact";
-import {Media} from "@supergrowthai/next-blog-types";
+import {Media, MediaSelectRequest} from "@supergrowthai/next-blog-types";
 
 interface BaseDynamicFormField {
     label?: string;
@@ -75,7 +75,7 @@ export interface MediaDynamicFormField extends BaseDynamicFormField {
     type: "media";
     value?: string; // Media ID
     mediaData?: Media; // For media fields to store fetched media data
-    intentOptions?: any; // For media fields to pass options to the intent
+    intentOptions?: MediaSelectRequest; // For media fields to pass options to the intent
 }
 
 // Union type for all dynamic form fields

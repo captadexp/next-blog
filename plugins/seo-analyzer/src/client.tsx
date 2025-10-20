@@ -131,7 +131,7 @@ const editorSidebarWidget: ClientHookFunction = (sdk: ClientSDK, prev, context: 
         const textContent = extractTextFromContent(contentObject);
         const title = context.form.data.title || "";
         const wordCount = getWordCount(contentObject);
-        const keywordLower = keyword.trim().toLowerCase();
+        const keywordLower = keyword?.trim().toLowerCase() || "";
 
         const analysisData: AnalysisData = {
             text: textContent,

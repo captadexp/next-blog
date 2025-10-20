@@ -5,6 +5,7 @@ export interface MediaSelectOptions {
     maxSize?: number;
     allowUpload?: boolean;
     mediaType?: 'image' | 'video' | 'audio' | 'all';
+    selectedMediaId?: string;
 }
 
 export interface MediaSelectRequest {

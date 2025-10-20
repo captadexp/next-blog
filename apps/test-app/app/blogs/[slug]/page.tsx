@@ -12,6 +12,7 @@ import {
 } from '@supergrowthai/next-blog-ui';
 import '@supergrowthai/next-blog-ui/style.css';
 import {dbProvider} from "@/lib/db";
+import {SEOAnalyzer} from "../_components/seo/SEOAnalyzer";
 
 export default async function (props: { params: Promise<{ slug: string }> }) {
     const {params} = props;
@@ -109,6 +110,8 @@ export default async function (props: { params: Promise<{ slug: string }> }) {
                         columns={2}
                     />
                 )}
+
+                <SEOAnalyzer blog={blog}/>
             </article>
         </>
     );

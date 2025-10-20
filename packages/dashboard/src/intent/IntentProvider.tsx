@@ -80,7 +80,7 @@ export const IntentProvider = ({children}: { children: any }) => {
             const timeoutId = setTimeout(() => {
                 cleanup();
                 reject(new Error('Intent timeout'));
-            }, 60000);
+            }, 60000 * 10);
 
             // Listen for request-specific response
             window.addEventListener(`intent:response:${requestId}`, handleResponse);
