@@ -3,17 +3,15 @@ import type {ApiExtra} from "../types/api.js";
 
 // 5-minute cron job
 export async function cron5Minute(session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const tasks: any[] = [];
 
     // Execute hook for 5-minute cron
-    if (extra?.callHook) {
-        const result = await extra.callHook('cron:5-minute', {
-            timestamp: Date.now()
-        });
-        if (result) {
-            tasks.push({task: '5minute-hook', result});
-        }
+    const result = await extra.sdk.callHook('cron:5-minute', {
+        timestamp: Date.now()
+    });
+    if (result) {
+        tasks.push({task: '5minute-hook', result});
     }
 
     return {
@@ -28,20 +26,18 @@ export async function cron5Minute(session: SessionData, request: MinimumRequest,
 
 // Hourly cron job
 export async function cronHourly(session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const tasks: any[] = [];
 
     // Clean up old sessions or temporary data
     // Example: Remove expired tokens, clean cache, etc.
 
     // Execute hook for hourly cron
-    if (extra?.callHook) {
-        const result = await extra.callHook('cron:hourly', {
-            timestamp: Date.now()
-        });
-        if (result) {
-            tasks.push({task: 'hourly-hook', result});
-        }
+    const result = await extra.sdk.callHook('cron:hourly', {
+        timestamp: Date.now()
+    });
+    if (result) {
+        tasks.push({task: 'hourly-hook', result});
     }
 
     return {
@@ -56,20 +52,18 @@ export async function cronHourly(session: SessionData, request: MinimumRequest, 
 
 // Daily cron job
 export async function cronDaily(session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const tasks: any[] = [];
 
     // Daily maintenance tasks
     // Example: Generate reports, backup, cleanup old data, etc.
 
     // Execute hook for daily cron
-    if (extra?.callHook) {
-        const result = await extra.callHook('cron:daily', {
-            timestamp: Date.now()
-        });
-        if (result) {
-            tasks.push({task: 'daily-hook', result});
-        }
+    const result = await extra.sdk.callHook('cron:daily', {
+        timestamp: Date.now()
+    });
+    if (result) {
+        tasks.push({task: 'daily-hook', result});
     }
 
     // Clean up old data (example: delete drafts older than 30 days)

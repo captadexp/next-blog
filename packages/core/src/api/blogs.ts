@@ -7,7 +7,7 @@ import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../
 
 // List all blogs
 export const getBlogs = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const params = request.query as PaginationParams | undefined;
 
     try {
@@ -17,8 +17,8 @@ export const getBlogs = secure(async (session: SessionData, request: MinimumRequ
         let blogs = await db.blogs.find({}, {skip, limit});
 
         // Execute hook for list operation if available
-        if (extra?.callHook) {
-            const hookResult = await extra.callHook('blog:onList', {data: blogs});
+        if (extra?.sdk.callHook) {
+            const hookResult = await extra.sdk.callHook('blog:onList', {data: blogs});
             if (hookResult?.data) {
                 blogs = hookResult.data;
             }
@@ -41,7 +41,7 @@ export const getBlogs = secure(async (session: SessionData, request: MinimumRequ
 
 // Get a single blog by ID
 export const getBlogById = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const blogId = request._params?.id;
 
     try {
@@ -52,11 +52,9 @@ export const getBlogById = secure(async (session: SessionData, request: MinimumR
         }
 
         // Execute hook for read operation
-        if (extra?.callHook) {
-            const hookResult = await extra.callHook('blog:onRead', {blogId: blog._id, data: blog});
-            if (hookResult?.data) {
-                blog = hookResult.data;
-            }
+        const hookResult = await extra.sdk.callHook('blog:onRead', {blogId: blog._id, data: blog});
+        if (hookResult?.data) {
+            blog = hookResult.data;
         }
 
         throw new Success("Blog retrieved successfully", blog);
@@ -70,7 +68,7 @@ export const getBlogById = secure(async (session: SessionData, request: MinimumR
 
 // Create a new blog
 export const createBlog = secure(async (session: SessionData, request: MinimumRequest<any, Partial<BlogData>>, extra: ApiExtra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     let body = request.body as Partial<BlogData>;
 
     try {
@@ -84,15 +82,13 @@ export const createBlog = secure(async (session: SessionData, request: MinimumRe
         }
 
         // Execute before create hook
-        if (extra?.callHook) {
-            const beforeResult = await extra.callHook('blog:beforeCreate', {
-                title: body.title,
-                content: body.content,
-                data: body
-            });
-            if (beforeResult) {
-                body = {...body, ...beforeResult};
-            }
+        const beforeResult = await extra.sdk.callHook('blog:beforeCreate', {
+            title: body.title,
+            content: body.content,
+            data: body
+        });
+        if (beforeResult) {
+            body = {...body, ...beforeResult};
         }
 
         const extras = {
@@ -107,12 +103,10 @@ export const createBlog = secure(async (session: SessionData, request: MinimumRe
         } as BlogData);
 
         // Execute after create hook
-        if (extra?.callHook) {
-            await extra.callHook('blog:afterCreate', {
-                blogId: creation._id,
-                data: creation
-            });
-        }
+        await extra.sdk.callHook('blog:afterCreate', {
+            blogId: creation._id,
+            data: creation
+        });
 
         extra.configuration.callbacks?.on?.("createBlog", creation);
 
@@ -127,7 +121,7 @@ export const createBlog = secure(async (session: SessionData, request: MinimumRe
 
 // Update a blog
 export const updateBlog = secure(async (session: SessionData, request: MinimumRequest<any, Partial<Blog>>, extra: ApiExtra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const blogId = request._params?.id;
     let body = request.body as Partial<Blog>;
 
@@ -149,15 +143,13 @@ export const updateBlog = secure(async (session: SessionData, request: MinimumRe
         }
 
         // Execute before update hook
-        if (extra?.callHook) {
-            const beforeResult = await extra.callHook('blog:beforeUpdate', {
-                blogId: blogId!,
-                updates: body,
-                previousData: existingBlog
-            });
-            if (beforeResult?.updates) {
-                body = beforeResult.updates;
-            }
+        const beforeResult = await extra.sdk.callHook('blog:beforeUpdate', {
+            blogId: blogId!,
+            updates: body,
+            previousData: existingBlog
+        });
+        if (beforeResult?.updates) {
+            body = beforeResult.updates;
         }
 
         const updation = await db.blogs.updateOne(
@@ -166,13 +158,11 @@ export const updateBlog = secure(async (session: SessionData, request: MinimumRe
         );
 
         // Execute after update hook
-        if (extra?.callHook) {
-            await extra.callHook('blog:afterUpdate', {
-                blogId: blogId!,
-                data: updation,
-                previousData: existingBlog
-            });
-        }
+        await extra.sdk.callHook('blog:afterUpdate', {
+            blogId: blogId!,
+            data: updation,
+            previousData: existingBlog
+        });
 
         extra.configuration.callbacks?.on?.("updateBlog", updation);
 
@@ -185,10 +175,9 @@ export const updateBlog = secure(async (session: SessionData, request: MinimumRe
     }
 }, {requirePermission: 'blogs:update'});
 
-
 // Delete a blog
 export const deleteBlog = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const blogId = request._params?.id;
 
     try {
@@ -209,25 +198,21 @@ export const deleteBlog = secure(async (session: SessionData, request: MinimumRe
         }
 
         // Execute before delete hook
-        if (extra?.callHook) {
-            const beforeResult = await extra.callHook('blog:beforeDelete', {
-                blogId: blogId!,
-                data: existingBlog
-            });
-            if (beforeResult?.cancel) {
-                throw new BadRequest("Blog deletion cancelled by plugin");
-            }
+        const beforeResult = await extra.sdk.callHook('blog:beforeDelete', {
+            blogId: blogId!,
+            data: existingBlog
+        });
+        if (beforeResult?.cancel) {
+            throw new BadRequest("Blog deletion cancelled by plugin");
         }
 
         const deletion = await db.blogs.deleteOne({_id: blogId});
 
         // Execute after delete hook
-        if (extra?.callHook) {
-            await extra.callHook('blog:afterDelete', {
-                blogId: blogId!,
-                previousData: existingBlog
-            });
-        }
+        await extra.sdk.callHook('blog:afterDelete', {
+            blogId: blogId!,
+            previousData: existingBlog
+        });
 
         extra.configuration.callbacks?.on?.("deleteBlog", deletion);
 

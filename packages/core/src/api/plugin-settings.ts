@@ -12,7 +12,7 @@ export const getPluginSettings = secure(async (session: SessionData, request: Mi
         throw new BadRequest("Plugin ID is required");
     }
 
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const systemPluginId = await getSystemPluginId(db);
 
     // Get all settings with plugin prefix
@@ -47,7 +47,7 @@ export const getPluginSetting = secure(async (session: SessionData, request: Min
         throw new BadRequest("Plugin ID and key are required");
     }
 
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const systemPluginId = await getSystemPluginId(db);
     const prefixedKey = `plugin:${pluginId}:${key}`;
 
@@ -84,7 +84,7 @@ export const setPluginSetting = secure(async (session: SessionData, request: Min
         throw new BadRequest("Setting value is required");
     }
 
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const systemPluginId = await getSystemPluginId(db);
     const prefixedKey = `plugin:${pluginId}:${key}`;
 
@@ -142,7 +142,7 @@ export const deletePluginSetting = secure(async (session: SessionData, request: 
         throw new BadRequest("Plugin ID and key are required");
     }
 
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const systemPluginId = await getSystemPluginId(db);
     const prefixedKey = `plugin:${pluginId}:${key}`;
 

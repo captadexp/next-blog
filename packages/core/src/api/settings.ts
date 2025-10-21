@@ -10,7 +10,7 @@ import {encrypt, isSecureKey, maskValue} from "../utils/crypto.js";
 
 // List all settings
 export const getSettings = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const params = request.query as PaginationParams & { search?: string } | undefined;
     const systemPluginId = await getSystemPluginId(db);
 
@@ -46,16 +46,14 @@ export const getSettings = secure(async (session: SessionData, request: MinimumR
     });
 
     // Execute hook for list operation
-    if (extra?.callHook) {
-        const hookResult = await extra.callHook('setting:onList', {
-            entity: 'setting',
-            operation: 'list',
-            filters: filter,
-            data: settings
-        });
-        if (hookResult?.data) {
-            settings = hookResult.data;
-        }
+    const hookResult = await extra.sdk.callHook('setting:onList', {
+        entity: 'setting',
+        operation: 'list',
+        filters: filter,
+        data: settings
+    });
+    if (hookResult?.data) {
+        settings = hookResult.data;
     }
 
     const paginatedResponse: PaginatedResponse<SettingsEntry> = {
@@ -79,7 +77,7 @@ export const getSettingById = secure(async (session: SessionData, request: Minim
         throw new BadRequest("Setting ID is required");
     }
 
-    const db = await extra.db();
+    const db = extra.sdk.db;
     let setting = await db.settings.findOne({_id: settingId});
 
     if (!setting) {
@@ -94,16 +92,14 @@ export const getSettingById = secure(async (session: SessionData, request: Minim
 
 
     // Execute hook for read operation
-    if (extra?.callHook) {
-        const hookResult = await extra.callHook('setting:onRead', {
-            entity: 'setting',
-            operation: 'read',
-            id: settingId,
-            data: setting
-        });
-        if (hookResult?.data) {
-            setting = hookResult.data;
-        }
+    const hookResult = await extra.sdk.callHook('setting:onRead', {
+        entity: 'setting',
+        operation: 'read',
+        id: settingId,
+        data: setting
+    });
+    if (hookResult?.data) {
+        setting = hookResult.data;
     }
 
     return {
@@ -118,7 +114,7 @@ export const createSetting = secure(async (session: SessionData, request: Minimu
     scope?: 'global' | 'user',
     masked?: boolean
 }>, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     let settingData = request.body as Partial<SettingsEntryData> & { scope?: 'global' | 'user', masked?: boolean };
 
     if (!settingData.key) throw new BadRequest("Setting key is required");
@@ -149,14 +145,12 @@ export const createSetting = secure(async (session: SessionData, request: Minimu
     delete (settingData as any).scope;
     delete (settingData as any).masked; // never persist
 
-    if (extra?.callHook) {
-        const beforeResult = await extra.callHook('setting:beforeCreate', {
-            entity: 'setting',
-            operation: 'create',
-            data: settingData
-        });
-        if (beforeResult?.data) settingData = beforeResult.data;
-    }
+    const beforeResult = await extra.sdk.callHook('setting:beforeCreate', {
+        entity: 'setting',
+        operation: 'create',
+        data: settingData
+    });
+    if (beforeResult?.data) settingData = beforeResult.data;
 
     settingData.createdAt = Date.now();
     settingData.updatedAt = Date.now();
@@ -173,14 +167,12 @@ export const createSetting = secure(async (session: SessionData, request: Minimu
         };
     }
 
-    if (extra?.callHook) {
-        await extra.callHook('setting:afterCreate', {
-            entity: 'setting',
-            operation: 'create',
-            id: setting._id,
-            data: setting
-        });
-    }
+    await extra.sdk.callHook('setting:afterCreate', {
+        entity: 'setting',
+        operation: 'create',
+        id: setting._id,
+        data: setting
+    });
 
     return {code: 0, message: "Setting created successfully", payload: setting};
 }, {requirePermission: 'settings:create'});
@@ -190,7 +182,7 @@ export const updateSetting = secure(async (session: SessionData, request: Minimu
     const settingId = request._params?.id;
     if (!settingId) throw new BadRequest("Setting ID is required");
 
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const existingSetting = await db.settings.findOne({_id: settingId});
     if (!existingSetting) throw new NotFound(`Setting with id ${settingId} not found`);
 
@@ -228,16 +220,14 @@ export const updateSetting = secure(async (session: SessionData, request: Minimu
 
     // Execute before update hook
     let finalUpdates = updates;
-    if (extra?.callHook) {
-        const beforeResult = await extra.callHook('setting:beforeUpdate', {
-            entity: 'setting',
-            operation: 'update',
-            id: settingId,
-            data: updates,
-            previousData: existingSetting
-        });
-        if (beforeResult?.data) finalUpdates = beforeResult.data;
-    }
+    const beforeResult = await extra.sdk.callHook('setting:beforeUpdate', {
+        entity: 'setting',
+        operation: 'update',
+        id: settingId,
+        data: updates,
+        previousData: existingSetting
+    });
+    if (beforeResult?.data) finalUpdates = beforeResult.data;
 
     finalUpdates.updatedAt = Date.now();
 
@@ -255,15 +245,13 @@ export const updateSetting = secure(async (session: SessionData, request: Minimu
         };
     }
 
-    if (extra?.callHook) {
-        await extra.callHook('setting:afterUpdate', {
-            entity: 'setting',
-            operation: 'update',
-            id: settingId,
-            data: setting,
-            previousData: existingSetting
-        });
-    }
+    await extra.sdk.callHook('setting:afterUpdate', {
+        entity: 'setting',
+        operation: 'update',
+        id: settingId,
+        data: setting,
+        previousData: existingSetting
+    });
 
     return {code: 0, message: "Setting updated successfully", payload: setting};
 }, {requirePermission: 'settings:update'});
@@ -276,7 +264,7 @@ export const deleteSetting = secure(async (session: SessionData, request: Minimu
         throw new BadRequest("Setting ID is required");
     }
 
-    const db = await extra.db();
+    const db = extra.sdk.db;
 
     // Check if setting exists first
     const existingSetting = await db.settings.findOne({_id: settingId});
@@ -285,29 +273,25 @@ export const deleteSetting = secure(async (session: SessionData, request: Minimu
     }
 
     // Execute before delete hook
-    if (extra?.callHook) {
-        const beforeResult = await extra.callHook('setting:beforeDelete', {
-            entity: 'setting',
-            operation: 'delete',
-            id: settingId,
-            data: existingSetting
-        });
-        if (beforeResult?.cancel) {
-            throw new BadRequest("Setting deletion cancelled by plugin");
-        }
+    const beforeResult = await extra.sdk.callHook('setting:beforeDelete', {
+        entity: 'setting',
+        operation: 'delete',
+        id: settingId,
+        data: existingSetting
+    });
+    if (beforeResult?.cancel) {
+        throw new BadRequest("Setting deletion cancelled by plugin");
     }
 
     await db.settings.deleteOne({_id: settingId});
 
     // Execute after delete hook
-    if (extra?.callHook) {
-        await extra.callHook('setting:afterDelete', {
-            entity: 'setting',
-            operation: 'delete',
-            id: settingId,
-            previousData: existingSetting
-        });
-    }
+    await extra.sdk.callHook('setting:afterDelete', {
+        entity: 'setting',
+        operation: 'delete',
+        id: settingId,
+        previousData: existingSetting
+    });
 
     return {
         code: 0,

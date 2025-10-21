@@ -6,7 +6,7 @@ import {ApiExtra} from "../types/api.ts";
 import {PaginatedResponse, PaginationParams} from '@supergrowthai/next-blog-types';
 
 export const getMedia = secure(async (session, request, extra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const params = request.query as PaginationParams & {
         search?: string
         mimeType?: string;
@@ -48,16 +48,14 @@ export const getMedia = secure(async (session, request, extra) => {
 
     let media = await db.media.find(filter, {skip, limit});
 
-    if (extra?.callHook) {
-        const hookResult = await extra.callHook('media:onList', {
-            entity: 'media',
-            operation: 'list',
-            filters: filter,
-            data: media
-        });
-        if (hookResult?.data) {
-            media = hookResult.data;
-        }
+    const hookResult = await extra.sdk.callHook('media:onList', {
+        entity: 'media',
+        operation: 'list',
+        filters: filter,
+        data: media
+    });
+    if (hookResult?.data) {
+        media = hookResult.data;
     }
 
     const paginatedResponse: PaginatedResponse<any> = {
@@ -70,7 +68,7 @@ export const getMedia = secure(async (session, request, extra) => {
 }, {requirePermission: 'media:list'});
 
 export const getMediaById = secure(async (session, request, extra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const id = request._params?.id;
 
     if (!id) {
@@ -83,13 +81,13 @@ export const getMediaById = secure(async (session, request, extra) => {
         throw new NotFound('Media not found');
     }
 
-    await extra.callHook('media:onRead', {media});
+    await extra.sdk.callHook('media:onRead', {media});
 
     throw new Success('Media retrieved successfully', media);
 }, {requirePermission: 'media:read'});
 
 export const createMedia = secure(async (session, request, extra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const data = request.body as any;
 
     if (!data.filename || !data.mimeType) {
@@ -101,17 +99,17 @@ export const createMedia = secure(async (session, request, extra) => {
         userId: session.user.id
     };
 
-    await extra.callHook('media:onCreate:before', {data: mediaData});
+    await extra.sdk.callHook('media:onCreate:before', {data: mediaData});
 
     const media = await db.media.create(mediaData);
 
-    await extra.callHook('media:onCreate:after', {media});
+    await extra.sdk.callHook('media:onCreate:after', {media});
 
     throw new Success('Media created successfully', media);
 }, {requirePermission: 'media:create'});
 
 export const updateMedia = secure(async (session, request, extra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const id = request._params?.id;
 
     if (!id) {
@@ -125,17 +123,17 @@ export const updateMedia = secure(async (session, request, extra) => {
         throw new NotFound('Media not found');
     }
 
-    await extra.callHook('media:onUpdate:before', {media: existingMedia, updates: data});
+    await extra.sdk.callHook('media:onUpdate:before', {media: existingMedia, updates: data});
 
     const updatedMedia = await db.media.updateOne({_id: id}, data);
 
-    await extra.callHook('media:onUpdate:after', {media: updatedMedia});
+    await extra.sdk.callHook('media:onUpdate:after', {media: updatedMedia});
 
     throw new Success('Media updated successfully', updatedMedia);
 }, {requirePermission: 'media:update'});
 
 export const deleteMedia = secure(async (session, request, extra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const id = request._params?.id;
 
     if (!id) {
@@ -147,7 +145,7 @@ export const deleteMedia = secure(async (session, request, extra) => {
         throw new NotFound('Media not found');
     }
 
-    await extra.callHook('media:onDelete:before', {media});
+    await extra.sdk.callHook('media:onDelete:before', {media});
 
     // Delete from storage if it's a managed file
     try {
@@ -183,13 +181,13 @@ export const deleteMedia = secure(async (session, request, extra) => {
 
     await db.media.deleteOne({_id: id})
 
-    await extra.callHook('media:onDelete:after', {mediaId: id});
+    await extra.sdk.callHook('media:onDelete:after', {mediaId: id});
 
     throw new Success('Media deleted successfully', null);
 }, {requirePermission: 'media:delete'});
 
 const uploadMediaHandler: OneApiFunction<ApiExtra> = async (session, request, extra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const storageAdapter = extra.sdk.storage;
 
     if (!storageAdapter)
@@ -244,7 +242,7 @@ const uploadMediaHandler: OneApiFunction<ApiExtra> = async (session, request, ex
                 size: buffer.length
             });
 
-            await extra.callHook('media:onUpload:after', {media});
+            await extra.sdk.callHook('media:onUpload:after', {media});
 
             throw new Success('File uploaded successfully', media);
         } else {
@@ -307,7 +305,7 @@ const uploadMediaHandler: OneApiFunction<ApiExtra> = async (session, request, ex
                 userId: session.user.id
             });
 
-            await extra.callHook('media:onUpload:after', {media});
+            await extra.sdk.callHook('media:onUpload:after', {media});
 
             throw new Success('File uploaded successfully', media);
         } else {

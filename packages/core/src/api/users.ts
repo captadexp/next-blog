@@ -9,7 +9,7 @@ import {BasicAuthHandler} from "../auth/basic-auth-handler.ts";
 
 // Get the currently logged in user - requires authentication but no special permission
 export const getCurrentUser = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const user = await db.users.findById(session.user._id);
 
     if (!user) {
@@ -46,7 +46,7 @@ export const logout = secure(async (session: SessionData, request: MinimumReques
 
 // List all users
 export const listUsers = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const params = request.query as PaginationParams | undefined;
 
     const page = Number(params?.page) || 1;
@@ -62,15 +62,13 @@ export const listUsers = secure(async (session: SessionData, request: MinimumReq
     });
 
     // Execute hook for list operation
-    if (extra?.callHook) {
-        const hookResult = await extra.callHook('user:onList', {
-            entity: 'user',
-            operation: 'list',
-            data: sanitizedUsers
-        });
-        if (hookResult?.data) {
-            sanitizedUsers = hookResult.data;
-        }
+    const hookResult = await extra.sdk.callHook('user:onList', {
+        entity: 'user',
+        operation: 'list',
+        data: sanitizedUsers
+    });
+    if (hookResult?.data) {
+        sanitizedUsers = hookResult.data;
     }
 
     const paginatedResponse: PaginatedResponse<Omit<User, 'password'>> = {
@@ -86,7 +84,7 @@ export const listUsers = secure(async (session: SessionData, request: MinimumReq
 export const getUser = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const userId = request._params?.id;
 
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const user = await db.users.findById(userId!);
 
     if (!user) {
@@ -97,16 +95,14 @@ export const getUser = secure(async (session: SessionData, request: MinimumReque
     let {password, ...userWithoutPassword} = user;
 
     // Execute hook for read operation
-    if (extra?.callHook) {
-        const hookResult = await extra.callHook('user:onRead', {
-            entity: 'user',
-            operation: 'read',
-            id: userId!,
-            data: userWithoutPassword
-        });
-        if (hookResult?.data) {
-            userWithoutPassword = hookResult.data;
-        }
+    const hookResult = await extra.sdk.callHook('user:onRead', {
+        entity: 'user',
+        operation: 'read',
+        id: userId!,
+        data: userWithoutPassword
+    });
+    if (hookResult?.data) {
+        userWithoutPassword = hookResult.data;
     }
 
     throw new Success("User retrieved successfully", userWithoutPassword);
@@ -120,7 +116,7 @@ export const createUser = secure(async (session: SessionData, request: MinimumRe
         throw new ValidationError("Username, email, password, and name are required");
     }
 
-    const db = await extra.db();
+    const db = extra.sdk.db;
 
     // Check if username or email already exists
     const existingUserWithEmail = await db.users.findOne({email: body.email});
@@ -133,15 +129,13 @@ export const createUser = secure(async (session: SessionData, request: MinimumRe
     let userData = body;
 
     // Execute before create hook
-    if (extra?.callHook) {
-        const beforeResult = await extra.callHook('user:beforeCreate', {
-            entity: 'user',
-            operation: 'create',
-            data: userData
-        });
-        if (beforeResult?.data) {
-            userData = beforeResult.data;
-        }
+    const beforeResult = await extra.sdk.callHook('user:beforeCreate', {
+        entity: 'user',
+        operation: 'create',
+        data: userData
+    });
+    if (beforeResult?.data) {
+        userData = beforeResult.data;
     }
 
     // Hash the password
@@ -166,14 +160,12 @@ export const createUser = secure(async (session: SessionData, request: MinimumRe
     const {password, ...userWithoutPassword} = newUser;
 
     // Execute after create hook
-    if (extra?.callHook) {
-        await extra.callHook('user:afterCreate', {
-            entity: 'user',
-            operation: 'create',
-            id: newUser._id,
-            data: userWithoutPassword
-        });
-    }
+    await extra.sdk.callHook('user:afterCreate', {
+        entity: 'user',
+        operation: 'create',
+        id: newUser._id,
+        data: userWithoutPassword
+    });
 
     throw new Success("User created successfully", userWithoutPassword);
 }, {requirePermission: 'users:create'});
@@ -184,7 +176,7 @@ export const updateUser = secure(async (session: SessionData, request: MinimumRe
 
     let updates = request.body as any;
 
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const existingUser = await db.users.findById(userId!);
 
     if (!existingUser) {
@@ -197,17 +189,15 @@ export const updateUser = secure(async (session: SessionData, request: MinimumRe
     }
 
     // Execute before update hook
-    if (extra?.callHook) {
-        const beforeResult = await extra.callHook('user:beforeUpdate', {
-            entity: 'user',
-            operation: 'update',
-            id: userId!,
-            data: updates,
-            previousData: existingUser
-        });
-        if (beforeResult?.data) {
-            updates = beforeResult.data;
-        }
+    const beforeResult = await extra.sdk.callHook('user:beforeUpdate', {
+        entity: 'user',
+        operation: 'update',
+        id: userId!,
+        data: updates,
+        previousData: existingUser
+    });
+    if (beforeResult?.data) {
+        updates = beforeResult.data;
     }
 
     // Create update object
@@ -238,15 +228,13 @@ export const updateUser = secure(async (session: SessionData, request: MinimumRe
     const {password, ...userWithoutPassword} = updatedUser;
 
     // Execute after update hook
-    if (extra?.callHook) {
-        await extra.callHook('user:afterUpdate', {
-            entity: 'user',
-            operation: 'update',
-            id: userId!,
-            data: userWithoutPassword,
-            previousData: existingUser
-        });
-    }
+    await extra.sdk.callHook('user:afterUpdate', {
+        entity: 'user',
+        operation: 'update',
+        id: userId!,
+        data: userWithoutPassword,
+        previousData: existingUser
+    });
 
     throw new Success("User updated successfully", userWithoutPassword);
 }, {requirePermission: 'users:update'});
@@ -255,7 +243,7 @@ export const updateUser = secure(async (session: SessionData, request: MinimumRe
 export const deleteUser = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const userId = request._params?.id;
 
-    const db = await extra.db();
+    const db = extra.sdk.db;
 
     // Check if the user exists
     const existingUser = await db.users.findById(userId!);
@@ -269,16 +257,14 @@ export const deleteUser = secure(async (session: SessionData, request: MinimumRe
     }
 
     // Execute before delete hook
-    if (extra?.callHook) {
-        const beforeResult = await extra.callHook('user:beforeDelete', {
-            entity: 'user',
-            operation: 'delete',
-            id: userId!,
-            data: existingUser
-        });
-        if (beforeResult?.cancel) {
-            throw new BadRequest("User deletion cancelled by plugin");
-        }
+    const beforeResult = await extra.sdk.callHook('user:beforeDelete', {
+        entity: 'user',
+        operation: 'delete',
+        id: userId!,
+        data: existingUser
+    });
+    if (beforeResult?.cancel) {
+        throw new BadRequest("User deletion cancelled by plugin");
     }
 
     // Delete the user
@@ -292,14 +278,12 @@ export const deleteUser = secure(async (session: SessionData, request: MinimumRe
     const {password, ...userWithoutPassword} = deletedUser;
 
     // Execute after delete hook
-    if (extra?.callHook) {
-        await extra.callHook('user:afterDelete', {
-            entity: 'user',
-            operation: 'delete',
-            id: userId!,
-            previousData: existingUser
-        });
-    }
+    await extra.sdk.callHook('user:afterDelete', {
+        entity: 'user',
+        operation: 'delete',
+        id: userId!,
+        previousData: existingUser
+    });
 
     throw new Success("User deleted successfully", {_id: userId});
 }, {requirePermission: 'users:delete'});

@@ -13,7 +13,7 @@ export async function getSitemap(session: SessionData, request: MinimumRequest, 
     const protocol = request.headers['x-forwarded-proto'] || 'https';
     const siteUrl = `${protocol}://${baseUrl}`;
 
-    const hookResult = await extra.callHook('seo:sitemap', {
+    const hookResult = await extra.sdk.callHook('seo:sitemap', {
         siteUrl,
         request
     });
@@ -47,7 +47,7 @@ export async function getSitemapIndex(session: SessionData, request: MinimumRequ
     const protocol = request.headers['x-forwarded-proto'] || 'https';
     const siteUrl = `${protocol}://${baseUrl}`;
 
-    const hookResult = await extra.callHook('seo:sitemap-index', {
+    const hookResult = await extra.sdk.callHook('seo:sitemap-index', {
         siteUrl,
         request
     });
@@ -81,7 +81,7 @@ export async function getRobotsTxt(session: SessionData, request: MinimumRequest
     const protocol = request.headers['x-forwarded-proto'] || 'https';
     const siteUrl = `${protocol}://${baseUrl}`;
 
-    const hookResult = await extra.callHook('seo:robots.txt', {
+    const hookResult = await extra.sdk.callHook('seo:robots.txt', {
         siteUrl,
         request
     });
@@ -131,12 +131,12 @@ export async function getRobotsTxt(session: SessionData, request: MinimumRequest
 }
 
 export async function getLlmsTxt(session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse | Response> {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const baseUrl = request.headers['host'];
     const protocol = request.headers['x-forwarded-proto'] || 'https';
     const siteUrl = `${protocol}://${baseUrl}`;
 
-    const hookResult = await extra.callHook('seo:llms.txt', {
+    const hookResult = await extra.sdk.callHook('seo:llms.txt', {
         siteUrl,
         request
     });
@@ -163,12 +163,12 @@ export async function getLlmsTxt(session: SessionData, request: MinimumRequest, 
 }
 
 export async function getRssFeed(session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse | Response> {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const baseUrl = request.headers['host'];
     const protocol = request.headers['x-forwarded-proto'] || 'https';
     const siteUrl = `${protocol}://${baseUrl}`;
 
-    const hookResult = await extra.callHook('seo:rss', {
+    const hookResult = await extra.sdk.callHook('seo:rss', {
         siteUrl,
         request
     });

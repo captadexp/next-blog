@@ -7,7 +7,7 @@ import type {ApiExtra} from "../types/api.js";
 import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
 
 export const getTags = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const params = request.query as (PaginationParams & { search?: string; ids?: string }) | undefined;
 
     try {
@@ -31,15 +31,13 @@ export const getTags = secure(async (session: SessionData, request: MinimumReque
         let tags = await db.tags.find(query, {skip, limit});
 
         // Execute hook for list operation
-        if (extra?.callHook) {
-            const hookResult = await extra.callHook('tag:onList', {
-                entity: 'tag',
-                operation: 'list',
-                data: tags
-            });
-            if (hookResult?.data) {
-                tags = hookResult.data;
-            }
+        const hookResult = await extra.sdk.callHook('tag:onList', {
+            entity: 'tag',
+            operation: 'list',
+            data: tags
+        });
+        if (hookResult?.data) {
+            tags = hookResult.data;
         }
 
         const paginatedResponse: PaginatedResponse<Tag> = {
@@ -58,7 +56,7 @@ export const getTags = secure(async (session: SessionData, request: MinimumReque
 }, {requirePermission: 'tags:list'});
 
 export const getTagById = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const tagId = request._params?.id;
 
     try {
@@ -69,16 +67,14 @@ export const getTagById = secure(async (session: SessionData, request: MinimumRe
         }
 
         // Execute hook for read operation
-        if (extra?.callHook) {
-            const hookResult = await extra.callHook('tag:onRead', {
-                entity: 'tag',
-                operation: 'read',
-                id: tagId!,
-                data: tag
-            });
-            if (hookResult?.data) {
-                tag = hookResult.data;
-            }
+        const hookResult = await extra.sdk.callHook('tag:onRead', {
+            entity: 'tag',
+            operation: 'read',
+            id: tagId!,
+            data: tag
+        });
+        if (hookResult?.data) {
+            tag = hookResult.data;
         }
 
         throw new Success("Tag retrieved successfully", tag);
@@ -91,7 +87,7 @@ export const getTagById = secure(async (session: SessionData, request: MinimumRe
 }, {requirePermission: 'tags:read'});
 
 export const createTag = secure(async (session: SessionData, request: MinimumRequest<any, Partial<TagData>>, extra: ApiExtra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
 
     try {
         let data = request.body as Partial<TagData>;
@@ -101,15 +97,13 @@ export const createTag = secure(async (session: SessionData, request: MinimumReq
         }
 
         // Execute before create hook
-        if (extra?.callHook) {
-            const beforeResult = await extra.callHook('tag:beforeCreate', {
-                entity: 'tag',
-                operation: 'create',
-                data
-            });
-            if (beforeResult?.data) {
-                data = beforeResult.data;
-            }
+        const beforeResult = await extra.sdk.callHook('tag:beforeCreate', {
+            entity: 'tag',
+            operation: 'create',
+            data
+        });
+        if (beforeResult?.data) {
+            data = beforeResult.data;
         }
 
         const creation = await db.tags.create({
@@ -119,14 +113,12 @@ export const createTag = secure(async (session: SessionData, request: MinimumReq
         } as TagData);
 
         // Execute after create hook
-        if (extra?.callHook) {
-            await extra.callHook('tag:afterCreate', {
-                entity: 'tag',
-                operation: 'create',
-                id: creation._id,
-                data: creation
-            });
-        }
+        await extra.sdk.callHook('tag:afterCreate', {
+            entity: 'tag',
+            operation: 'create',
+            id: creation._id,
+            data: creation
+        });
 
         extra.configuration.callbacks?.on?.("createTag", creation);
 
@@ -140,7 +132,7 @@ export const createTag = secure(async (session: SessionData, request: MinimumReq
 }, {requirePermission: 'tags:create'});
 
 export const updateTag = secure(async (session: SessionData, request: MinimumRequest<any, Partial<TagData>>, extra: ApiExtra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const tagId = request._params?.id;
 
     try {
@@ -153,17 +145,15 @@ export const updateTag = secure(async (session: SessionData, request: MinimumReq
         }
 
         // Execute before update hook
-        if (extra?.callHook) {
-            const beforeResult = await extra.callHook('tag:beforeUpdate', {
-                entity: 'tag',
-                operation: 'update',
-                id: tagId!,
-                data,
-                previousData: existingTag
-            });
-            if (beforeResult?.data) {
-                data = beforeResult.data;
-            }
+        const beforeResult = await extra.sdk.callHook('tag:beforeUpdate', {
+            entity: 'tag',
+            operation: 'update',
+            id: tagId!,
+            data,
+            previousData: existingTag
+        });
+        if (beforeResult?.data) {
+            data = beforeResult.data;
         }
 
         const updation = await db.tags.updateOne(
@@ -175,15 +165,13 @@ export const updateTag = secure(async (session: SessionData, request: MinimumReq
         );
 
         // Execute after update hook
-        if (extra?.callHook) {
-            await extra.callHook('tag:afterUpdate', {
-                entity: 'tag',
-                operation: 'update',
-                id: tagId!,
-                data: updation,
-                previousData: existingTag
-            });
-        }
+        await extra.sdk.callHook('tag:afterUpdate', {
+            entity: 'tag',
+            operation: 'update',
+            id: tagId!,
+            data: updation,
+            previousData: existingTag
+        });
 
         extra.configuration.callbacks?.on?.("updateTag", updation);
 
@@ -197,7 +185,7 @@ export const updateTag = secure(async (session: SessionData, request: MinimumReq
 }, {requirePermission: 'tags:update'});
 
 export const deleteTag = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const tagId = request._params?.id;
 
     try {
@@ -208,29 +196,25 @@ export const deleteTag = secure(async (session: SessionData, request: MinimumReq
         }
 
         // Execute before delete hook
-        if (extra?.callHook) {
-            const beforeResult = await extra.callHook('tag:beforeDelete', {
-                entity: 'tag',
-                operation: 'delete',
-                id: tagId!,
-                data: existingTag
-            });
-            if (beforeResult?.cancel) {
-                throw new BadRequest("Tag deletion cancelled by plugin");
-            }
+        const beforeResult = await extra.sdk.callHook('tag:beforeDelete', {
+            entity: 'tag',
+            operation: 'delete',
+            id: tagId!,
+            data: existingTag
+        });
+        if (beforeResult?.cancel) {
+            throw new BadRequest("Tag deletion cancelled by plugin");
         }
 
         const deletion = await db.tags.deleteOne({_id: tagId});
 
         // Execute after delete hook
-        if (extra?.callHook) {
-            await extra.callHook('tag:afterDelete', {
-                entity: 'tag',
-                operation: 'delete',
-                id: tagId!,
-                previousData: existingTag
-            });
-        }
+        await extra.sdk.callHook('tag:afterDelete', {
+            entity: 'tag',
+            operation: 'delete',
+            id: tagId!,
+            previousData: existingTag
+        });
 
         extra.configuration.callbacks?.on?.("deleteTag", deletion);
 

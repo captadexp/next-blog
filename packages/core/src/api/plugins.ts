@@ -12,7 +12,7 @@ const logger = new Logger('plugins-api', LogLevel.ERROR);
 
 // List all plugins
 export const getPlugins = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const params = request.query as PaginationParams | undefined;
     logger.info('Listing all plugins');
 
@@ -46,7 +46,7 @@ export const getPluginById = secure(async (session: SessionData, request: Minimu
         throw new BadRequest("Plugin ID is required");
     }
 
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const plugin = await db.plugins.findOne({_id: pluginId});
 
     if (!plugin) {
@@ -65,7 +65,7 @@ export const getPluginById = secure(async (session: SessionData, request: Minimu
 
 // Create/install a plugin
 export const createPlugin = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     logger.time('Create plugin');
     logger.info('Attempting to create a new plugin');
 
@@ -106,7 +106,7 @@ export const deletePlugin = secure(async (session: SessionData, request: Minimum
             throw new BadRequest("Plugin ID is required");
         }
 
-        const db = await extra.db();
+        const db = extra.sdk.db;
         const existing = await db.plugins.findOne({_id: pluginId});
 
         if (!existing) {
@@ -148,7 +148,7 @@ export const reinstallPlugin = secure(async (session: SessionData, request: Mini
             throw new BadRequest("Plugin ID is required");
         }
 
-        const db = await extra.db();
+        const db = extra.sdk.db;
         const existing = await db.plugins.findOne({_id: pluginId});
 
         if (!existing) {
@@ -193,7 +193,7 @@ export const getPluginHookMappings = secure(async (session: SessionData, request
     const type = request.query?.type;
     logger.info(`Listing plugin hook mappings for pluginId: ${pluginId || 'all'}`);
 
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const filter: any = pluginId ? {pluginId} : {};
     if (type) filter.type = type;
 

@@ -7,7 +7,7 @@ import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../
 
 // List all categories
 export const getCategories = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const params = request.query as (PaginationParams & { search?: string; ids?: string }) | undefined;
 
     try {
@@ -31,15 +31,13 @@ export const getCategories = secure(async (session: SessionData, request: Minimu
         let categories = await db.categories.find(query, {skip, limit});
 
         // Execute hook for list operation
-        if (extra?.callHook) {
-            const hookResult = await extra.callHook('category:onList', {
-                entity: 'category',
-                operation: 'list',
-                data: categories
-            });
-            if (hookResult?.data) {
-                categories = hookResult.data;
-            }
+        const hookResult = await extra.sdk.callHook('category:onList', {
+            entity: 'category',
+            operation: 'list',
+            data: categories
+        });
+        if (hookResult?.data) {
+            categories = hookResult.data;
         }
 
         const paginatedResponse: PaginatedResponse<Category> = {
@@ -59,7 +57,7 @@ export const getCategories = secure(async (session: SessionData, request: Minimu
 
 // Get a single category by ID
 export const getCategoryById = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const categoryId = request._params?.id;
 
     try {
@@ -70,16 +68,14 @@ export const getCategoryById = secure(async (session: SessionData, request: Mini
         }
 
         // Execute hook for read operation
-        if (extra?.callHook) {
-            const hookResult = await extra.callHook('category:onRead', {
-                entity: 'category',
-                operation: 'read',
-                id: categoryId!,
-                data: category
-            });
-            if (hookResult?.data) {
-                category = hookResult.data;
-            }
+        const hookResult = await extra.sdk.callHook('category:onRead', {
+            entity: 'category',
+            operation: 'read',
+            id: categoryId!,
+            data: category
+        });
+        if (hookResult?.data) {
+            category = hookResult.data;
         }
 
         throw new Success("Category retrieved successfully", category);
@@ -93,7 +89,7 @@ export const getCategoryById = secure(async (session: SessionData, request: Mini
 
 // Create a new category
 export const createCategory = secure(async (session: SessionData, request: MinimumRequest<any, Partial<CategoryData>>, extra: ApiExtra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
 
     try {
         let data = request.body as Partial<CategoryData>;
@@ -103,15 +99,13 @@ export const createCategory = secure(async (session: SessionData, request: Minim
         }
 
         // Execute before create hook
-        if (extra?.callHook) {
-            const beforeResult = await extra.callHook('category:beforeCreate', {
-                entity: 'category',
-                operation: 'create',
-                data
-            });
-            if (beforeResult?.data) {
-                data = beforeResult.data;
-            }
+        const beforeResult = await extra.sdk.callHook('category:beforeCreate', {
+            entity: 'category',
+            operation: 'create',
+            data
+        });
+        if (beforeResult?.data) {
+            data = beforeResult.data;
         }
 
         const creation = await db.categories.create({
@@ -121,14 +115,12 @@ export const createCategory = secure(async (session: SessionData, request: Minim
         } as CategoryData);
 
         // Execute after create hook
-        if (extra?.callHook) {
-            await extra.callHook('category:afterCreate', {
-                entity: 'category',
-                operation: 'create',
-                id: creation._id,
-                data: creation
-            });
-        }
+        await extra.sdk.callHook('category:afterCreate', {
+            entity: 'category',
+            operation: 'create',
+            id: creation._id,
+            data: creation
+        });
 
         extra.configuration.callbacks?.on?.("createCategory", creation);
 
@@ -143,7 +135,7 @@ export const createCategory = secure(async (session: SessionData, request: Minim
 
 // Update a category
 export const updateCategory = secure(async (session: SessionData, request: MinimumRequest<any, Partial<CategoryData>>, extra: ApiExtra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const categoryId = request._params?.id;
 
     try {
@@ -156,17 +148,15 @@ export const updateCategory = secure(async (session: SessionData, request: Minim
         }
 
         // Execute before update hook
-        if (extra?.callHook) {
-            const beforeResult = await extra.callHook('category:beforeUpdate', {
-                entity: 'category',
-                operation: 'update',
-                id: categoryId!,
-                data,
-                previousData: existingCategory
-            });
-            if (beforeResult?.data) {
-                data = beforeResult.data;
-            }
+        const beforeResult = await extra.sdk.callHook('category:beforeUpdate', {
+            entity: 'category',
+            operation: 'update',
+            id: categoryId!,
+            data,
+            previousData: existingCategory
+        });
+        if (beforeResult?.data) {
+            data = beforeResult.data;
         }
 
         const updation = await db.categories.updateOne(
@@ -178,15 +168,13 @@ export const updateCategory = secure(async (session: SessionData, request: Minim
         );
 
         // Execute after update hook
-        if (extra?.callHook) {
-            await extra.callHook('category:afterUpdate', {
-                entity: 'category',
-                operation: 'update',
-                id: categoryId!,
-                data: updation,
-                previousData: existingCategory
-            });
-        }
+        await extra.sdk.callHook('category:afterUpdate', {
+            entity: 'category',
+            operation: 'update',
+            id: categoryId!,
+            data: updation,
+            previousData: existingCategory
+        });
 
         extra.configuration.callbacks?.on?.("updateCategory", updation);
 
@@ -201,7 +189,7 @@ export const updateCategory = secure(async (session: SessionData, request: Minim
 
 // Delete a category
 export const deleteCategory = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
-    const db = await extra.db();
+    const db = extra.sdk.db;
     const categoryId = request._params?.id;
 
     try {
@@ -212,29 +200,25 @@ export const deleteCategory = secure(async (session: SessionData, request: Minim
         }
 
         // Execute before delete hook
-        if (extra?.callHook) {
-            const beforeResult = await extra.callHook('category:beforeDelete', {
-                entity: 'category',
-                operation: 'delete',
-                id: categoryId!,
-                data: existingCategory
-            });
-            if (beforeResult?.cancel) {
-                throw new BadRequest("Category deletion cancelled by plugin");
-            }
+        const beforeResult = await extra.sdk.callHook('category:beforeDelete', {
+            entity: 'category',
+            operation: 'delete',
+            id: categoryId!,
+            data: existingCategory
+        });
+        if (beforeResult?.cancel) {
+            throw new BadRequest("Category deletion cancelled by plugin");
         }
 
         const deletion = await db.categories.deleteOne({_id: categoryId});
 
         // Execute after delete hook
-        if (extra?.callHook) {
-            await extra.callHook('category:afterDelete', {
-                entity: 'category',
-                operation: 'delete',
-                id: categoryId!,
-                previousData: existingCategory
-            });
-        }
+        await extra.sdk.callHook('category:afterDelete', {
+            entity: 'category',
+            operation: 'delete',
+            id: categoryId!,
+            previousData: existingCategory
+        });
 
         extra.configuration.callbacks?.on?.("deleteCategory", deletion);
 
