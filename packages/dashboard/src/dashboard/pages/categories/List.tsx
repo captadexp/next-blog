@@ -58,6 +58,23 @@ const CategoriesList: FunctionComponent<CategoriesListProps> = () => {
         return timestamp ? new Date(timestamp).toLocaleDateString() : 'N/A';
     };
 
+    const handleDelete = async (category: Category) => {
+        if (!confirm(`Are you sure you want to delete the category "${category.name}"?`)) {
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await apis.deleteCategory(category._id);
+            await fetchCategories();
+        } catch (err) {
+            console.error('Error deleting category:', err);
+            setError(err instanceof Error ? err.message : 'Failed to delete category');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <ExtensionZone name="categories-list" context={{zone: 'categories-list', page: 'categories', data: categories}}>
             <div className="flex justify-between items-center mb-5">
@@ -117,8 +134,9 @@ const CategoriesList: FunctionComponent<CategoriesListProps> = () => {
                                                 Edit
                                             </a>
                                             <button
-                                                onClick={() => alert(`Delete category: ${category._id}`)}
-                                                className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit"
+                                                onClick={() => handleDelete(category)}
+                                                disabled={loading}
+                                                className={`text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             >
                                                 Delete
                                             </button>

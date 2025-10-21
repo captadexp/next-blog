@@ -60,6 +60,23 @@ const TagsList: FunctionComponent<TagsListProps> = () => {
         return timestamp ? new Date(timestamp).toLocaleDateString() : 'N/A';
     };
 
+    const handleDelete = async (tag: Tag) => {
+        if (!confirm(`Are you sure you want to delete the tag "${tag.name}"?`)) {
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await apis.deleteTag(tag._id);
+            await fetchTags();
+        } catch (err) {
+            console.error('Error deleting tag:', err);
+            setError(err instanceof Error ? err.message : 'Failed to delete tag');
+        } finally {
+            setLoading(false);
+        }
+    }
+
     return (
         <ExtensionZone name="tags-list" context={{zone: 'tags-list', page: 'tags', data: tags}}>
             <div className="flex justify-between items-center mb-5">
@@ -118,13 +135,9 @@ const TagsList: FunctionComponent<TagsListProps> = () => {
                                                 Edit
                                             </a>
                                             <button
-                                                onClick={() => {
-                                                    if (confirm(`Delete tag: ${tag._id}`)) {
-                                                        apis.deleteTag(tag._id)
-                                                            .then(() => fetchTags());
-                                                    }
-                                                }}
-                                                className="text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit"
+                                                onClick={() => handleDelete(tag)}
+                                                disabled={loading}
+                                                className={`text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer p-0 font-inherit ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             >
                                                 Delete
                                             </button>
