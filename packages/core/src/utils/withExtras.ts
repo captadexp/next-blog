@@ -26,8 +26,6 @@ export const createWithExtras = (configuration: Configuration) => {
             const sdk: ServerSDK = {
                 log: console,
                 db,
-                //fixme clean this up if needed
-                executionContext: session.user,  // Pass the authenticated user as execution context
                 config: {},
                 system: {
                     version: VERSION_INFO.version,

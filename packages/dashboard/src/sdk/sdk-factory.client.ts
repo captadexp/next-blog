@@ -41,9 +41,6 @@ class ClientSDKFactory {
 
             log: this.createScopedLogger(plugin.id),
 
-            // Execution context
-            executionContext: this.deps.user,
-
             // Settings with automatic plugin scoping
             settings: settingsHelper,
 

@@ -551,7 +551,6 @@ export function createMockClientSDK(options: {
         log: null,
         apis: new MockAPIClient(),
         user: mockUser,
-        executionContext: mockUser,
         pluginId: 'mock-plugin',
         settings: new MockClientSettings('mock-plugin'),
 

@@ -1,5 +1,4 @@
 import type {DatabaseAdapter, Logger, PluginSettings, ServerSDK, User} from '@supergrowthai/next-blog-types';
-import {createId} from "@supergrowthai/next-blog-types/server";
 
 // Mock database implementation - simplified version
 // In real implementation, would use the full DatabaseAdapter interface from @supergrowthai/next-blog-types
@@ -198,18 +197,6 @@ export function createMockServerSDK(options: {
     user?: User | null;
     config?: Record<string, any>;
 } = {}): ServerSDK {
-    const mockUser: User | null = options.user !== undefined ? options.user : {
-        _id: createId.user('server-user-123'),
-        username: 'server',
-        email: 'server@example.com',
-        password: 'hashed',
-        name: 'Server User',
-        slug: 'server',
-        bio: 'System user',
-        permissions: [],
-        createdAt: Date.now(),
-        updatedAt: Date.now()
-    };
 
     const mockConfig = options.config || {
         environment: 'development',
@@ -223,7 +210,6 @@ export function createMockServerSDK(options: {
     return {
         log: new MockLogger(),
         db: new MockDatabase(),
-        executionContext: mockUser,
         config: mockConfig,
         system: {
             version: '2.0.0-mock',

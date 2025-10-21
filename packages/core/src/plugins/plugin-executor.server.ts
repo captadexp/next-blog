@@ -64,7 +64,6 @@ export class PluginExecutor {
             db,
             log: this.logger,
             config: config,
-            executionContext: null, // Will be set per request
             pluginExecutor: this
         });
 

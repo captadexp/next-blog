@@ -1,5 +1,3 @@
-import type {User} from '../database/entities';
-
 export interface PluginSettings {
     get<T = any>(key: string): T | null | Promise<T | null>;
 
@@ -38,7 +36,6 @@ export interface PluginEvents {
 
 
 export interface BaseSDK {
-    executionContext: User | null;
     pluginId: string;
 }
 
