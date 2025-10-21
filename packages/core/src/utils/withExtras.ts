@@ -6,6 +6,9 @@ import pluginExecutor from "../plugins/plugin-executor.server.js";
 import {ServerSettingsHelper} from "../plugins/settings-helper.server.js";
 import {VERSION_INFO} from "../version.js";
 import {getSystemPluginId} from "./defaultSettings.js";
+import {StorageFactory} from "../storage/storage-factory.ts";
+import {ServerCacheHelper} from "../plugins/cache-helper.server.ts";
+import {ServerEventsHelper} from "../plugins/events-helper.server.ts";
 
 export const createWithExtras = (configuration: Configuration) => {
     return (fn: OneApiFunction<ApiExtra>): OneApiFunction => {
@@ -23,6 +26,7 @@ export const createWithExtras = (configuration: Configuration) => {
             const sdk: ServerSDK = {
                 log: console,
                 db,
+                //fixme clean this up if needed
                 executionContext: session.user,  // Pass the authenticated user as execution context
                 config: {},
                 system: {
@@ -30,6 +34,9 @@ export const createWithExtras = (configuration: Configuration) => {
                     buildTime: VERSION_INFO.buildTime,
                     buildMode: VERSION_INFO.buildMode
                 },
+                cache: new ServerCacheHelper("system"),
+                events: new ServerEventsHelper("events"),
+                storage: await StorageFactory.create("system", db),
                 pluginId: systemPlugin.id,
                 settings: new ServerSettingsHelper(systemPlugin, db, session.user?._id),
                 callHook: async (hookName, payload) => {

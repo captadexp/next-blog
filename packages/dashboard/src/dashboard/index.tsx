@@ -1,9 +1,8 @@
 import {h, render} from 'preact';
+import {createPortal} from 'preact/compat';
 import {LocationProvider, Route, Router, useLocation} from 'preact-iso';
 import {UserProvider} from '../context/UserContext';
-
 import '../styles/styles.css';
-
 // Import pages
 import {Layout} from './components/Layout';
 
@@ -76,13 +75,17 @@ function DashboardApp() {
 
                                 {/* Blog routes */}
                                 <Route path="/api/next-blog/dashboard/blogs" component={withLayout(BlogsList)}/>
-                                <Route path="/api/next-blog/dashboard/blogs/create" component={withLayout(CreateBlog)}/>
-                                <Route path="/api/next-blog/dashboard/blogs/:id" component={withLayout(UpdateBlog)}/>
+                                <Route path="/api/next-blog/dashboard/blogs/create"
+                                       component={withLayout(CreateBlog)}/>
+                                <Route path="/api/next-blog/dashboard/blogs/:id"
+                                       component={withLayout(UpdateBlog)}/>
 
                                 {/* User routes */}
                                 <Route path="/api/next-blog/dashboard/users" component={withLayout(UsersList)}/>
-                                <Route path="/api/next-blog/dashboard/users/create" component={withLayout(CreateUser)}/>
-                                <Route path="/api/next-blog/dashboard/users/:id" component={withLayout(UpdateUser)}/>
+                                <Route path="/api/next-blog/dashboard/users/create"
+                                       component={withLayout(CreateUser)}/>
+                                <Route path="/api/next-blog/dashboard/users/:id"
+                                       component={withLayout(UpdateUser)}/>
 
                                 {/* Category routes */}
                                 <Route path="/api/next-blog/dashboard/categories"
@@ -94,11 +97,13 @@ function DashboardApp() {
 
                                 {/* Tag routes */}
                                 <Route path="/api/next-blog/dashboard/tags" component={withLayout(TagsList)}/>
-                                <Route path="/api/next-blog/dashboard/tags/create" component={withLayout(CreateTag)}/>
+                                <Route path="/api/next-blog/dashboard/tags/create"
+                                       component={withLayout(CreateTag)}/>
                                 <Route path="/api/next-blog/dashboard/tags/:id" component={withLayout(UpdateTag)}/>
 
                                 {/* Settings routes */}
-                                <Route path="/api/next-blog/dashboard/settings" component={withLayout(SettingsList)}/>
+                                <Route path="/api/next-blog/dashboard/settings"
+                                       component={withLayout(SettingsList)}/>
                                 <Route path="/api/next-blog/dashboard/settings/create"
                                        component={withLayout(CreateSetting)}/>
                                 <Route path="/api/next-blog/dashboard/settings/:id"
@@ -118,9 +123,8 @@ function DashboardApp() {
                         </IntentProvider>
                     </PluginProvider>
                 </UserProvider>
-                <Toaster/>
+                {createPortal(<Toaster/>, document.body)}
             </>
-
         </LocationProvider>
     );
 }

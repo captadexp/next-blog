@@ -1,8 +1,7 @@
 import secure from '../utils/secureInternal.js';
 import {NotFound, Success, ValidationError} from '../utils/errors.js';
-import {StorageFactory} from '../storage/storage-factory.js';
 import path from 'path';
-import type {OneApiFunction} from "@supergrowthai/oneapi";
+import {InternalServerError, OneApiFunction} from "@supergrowthai/oneapi";
 import {ApiExtra} from "../types/api.ts";
 import {PaginatedResponse, PaginationParams} from '@supergrowthai/next-blog-types';
 
@@ -191,7 +190,10 @@ export const deleteMedia = secure(async (session, request, extra) => {
 
 const uploadMediaHandler: OneApiFunction<ApiExtra> = async (session, request, extra) => {
     const db = await extra.db();
-    const storageAdapter = await StorageFactory.create('system', db);
+    const storageAdapter = extra.sdk.storage;
+
+    if (!storageAdapter)
+        throw new InternalServerError("storageAdapter not found")
 
     // Get the raw Next.js request for streaming
     const rawRequest = request._request;
