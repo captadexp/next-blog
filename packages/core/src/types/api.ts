@@ -1,16 +1,9 @@
-import type {Configuration, DatabaseAdapter, ServerHooks, ServerSDK} from "@supergrowthai/next-blog-types/server";
-import type {CallServerHookFunction} from "@supergrowthai/next-blog-types";
+import type {Configuration, ServerSDK} from "@supergrowthai/next-blog-types/server";
 
 /**
  * Extra context passed to all API handlers
  */
 export interface ApiExtra {
-    /** Database factory function */
-    db: () => Promise<DatabaseAdapter>;
-
-    /** Execute plugin hooks */
-    callHook: CallServerHookFunction<ServerHooks>;
-
     /** Configuration callbacks */
     callbacks?: {
         on?: <T = unknown>(event: string, data: T) => void;

@@ -54,7 +54,6 @@ const CategoriesList: FunctionComponent<CategoriesListProps> = () => {
         fetchCategories();
     }, [page]);
 
-    // Format date for display
     const formatDate = (timestamp?: number) => {
         return timestamp ? new Date(timestamp).toLocaleDateString() : 'N/A';
     };
