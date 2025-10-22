@@ -20,7 +20,7 @@ if (useMongo) {
 
     dbProvider = async () => {
         const client = await clientPromise;
-        return new adapters.MongoDBAdapter("next-blog", client);
+        return new adapters.MongoDBAdapter(process.env.MONGO_DB_NAME || "next-blog", client);
     };
     console.log("Using MongoDBAdapter.");
 } else {
