@@ -7,7 +7,7 @@ export default defineConfig({
         lib: {
             entry: {
                 'index': resolve(__dirname, 'src/index.ts'),
-                'express': resolve(__dirname, 'src/expressjs.ts'),
+                'expressjs': resolve(__dirname, 'src/expressjs.ts'),
                 'nextjs': resolve(__dirname, 'src/nextjs.ts')
             },
             fileName: (format, entryName) => `${entryName}.js`,
