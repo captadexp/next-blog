@@ -26,7 +26,7 @@ function PermalinkWidget({sdk, context}: { sdk: ClientSDK; context: BlogEditorCo
     useEffect(() => {
         if (!blogId) return;
         Promise.all([
-            sdk.callRPC('permalink:get', {blogId}),
+            sdk.callRPC('permalink:blogs:get', {blogId}),
             sdk.callRPC('permalink:settings:blogs:get', {blogId})
         ]).then(([getResp, settings]) => {
 
@@ -43,7 +43,7 @@ function PermalinkWidget({sdk, context}: { sdk: ClientSDK; context: BlogEditorCo
         if (!blogId) return;
         setSaving(true);
         try {
-            await sdk.callRPC('permalink:set', {
+            await sdk.callRPC('permalink:blogs:set', {
                 blogId,
                 state: {permalink: permalink.trim(), pattern}
             });
