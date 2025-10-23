@@ -1,8 +1,8 @@
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
 
 const META_KEY = 'permalink-manager:permalink';
-const SETTINGS_KEY = 'settings:blogs';
-const DEFAULT_FORMATS = ['{slug}', '{category}/{slug}', '{year}/{month}/{slug}'];
+const SETTINGS_KEY_BLOGS = 'settings:blogs';
+const DEFAULT_FORMATS_BLOGS = ['{slug}', '{category}/{slug}', '{year}/{month}/{slug}'];
 
 export default defineServer({
     rpcs: {
@@ -34,11 +34,11 @@ export default defineServer({
         },
         'permalink:settings:blogs:get': async (sdk, {}: {}) => {
 
-            const settings = await sdk.settings.get(SETTINGS_KEY) as {
+            const settings = await sdk.settings.get(SETTINGS_KEY_BLOGS) as {
                 formats?: string[];
                 activeFormat?: string
             } || {};
-            const formats = settings.formats?.length ? settings.formats : DEFAULT_FORMATS;
+            const formats = settings.formats?.length ? settings.formats : DEFAULT_FORMATS_BLOGS;
             const activeFormat = formats.includes(settings.activeFormat || '') ? settings.activeFormat! : formats[0];
 
             return {code: 0, message: 'ok', payload: {formats, activeFormat}};
@@ -50,14 +50,14 @@ export default defineServer({
         }) => {
 
 
-            const current = await sdk.settings.get(SETTINGS_KEY) as { formats?: string[]; activeFormat?: string } || {};
-            const nextFormats = formats?.length ? formats : (current.formats || DEFAULT_FORMATS);
+            const current = await sdk.settings.get(SETTINGS_KEY_BLOGS) as { formats?: string[]; activeFormat?: string } || {};
+            const nextFormats = formats?.length ? formats : (current.formats || DEFAULT_FORMATS_BLOGS);
             const nextActive = nextFormats.includes(activeFormat || '')
                 ? activeFormat!
                 : (nextFormats.includes(current.activeFormat || '') ? current.activeFormat! : nextFormats[0]);
 
             await sdk.settings.set(
-                SETTINGS_KEY,
+                SETTINGS_KEY_BLOGS,
                 {formats: nextFormats, activeFormat: nextActive}
             );
 
