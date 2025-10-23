@@ -27,7 +27,7 @@ function PermalinkWidget({sdk, context}: { sdk: ClientSDK; context: BlogEditorCo
         if (!blogId) return;
         Promise.all([
             sdk.callRPC('permalink:get', {blogId}),
-            sdk.callRPC('permalink:settings:get', {blogId})
+            sdk.callRPC('permalink:settings:blogs:get', {blogId})
         ]).then(([getResp, settings]) => {
 
             const stored = getResp?.payload?.payload?.state || {};
@@ -101,7 +101,7 @@ function SettingsPanel({sdk, context}: { sdk: ClientSDK; context: any }) {
     const [newFormat, setNewFormat] = useState('');
 
     useEffect(() => {
-        sdk.callRPC('permalink:settings:get', {}).then((resp: any) => {
+        sdk.callRPC('permalink:settings:blogs:get', {}).then((resp: any) => {
             const fmts = resp?.payload?.payload?.formats || [];
             setFormats(fmts);
             setActive(resp?.payload?.payload?.activeFormat);
@@ -110,7 +110,7 @@ function SettingsPanel({sdk, context}: { sdk: ClientSDK; context: any }) {
     }, [sdk]);
 
     const saveSettings = useCallback(async (nextFormats: string[], nextActive?: string) => {
-        const resp = await sdk.callRPC('permalink:settings:set', {
+        const resp = await sdk.callRPC('permalink:settings:blogs:set', {
             formats: nextFormats,
             activeFormat: nextActive ?? active
         });
@@ -127,7 +127,7 @@ function SettingsPanel({sdk, context}: { sdk: ClientSDK; context: any }) {
 
     return (
         <div className="p-3 bg-white rounded shadow-sm">
-            <h3 className="text-sm font-medium mb-2">Permalink Settings</h3>
+            <h3 className="text-sm font-medium mb-2">Permalink Settings: Blogs</h3>
             <label className="block text-xs text-gray-600 mb-1">Active format</label>
             <select
                 className="w-full border border-gray-200 rounded px-2 py-1 text-sm mb-3"

@@ -1,7 +1,7 @@
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
 
 const META_KEY = 'permalink-manager:permalink';
-const SETTINGS_KEY = 'permalink-manager:settings';
+const SETTINGS_KEY = 'settings:blogs';
 const DEFAULT_FORMATS = ['{slug}', '{category}/{slug}', '{year}/{month}/{slug}'];
 
 export default defineServer({
@@ -32,7 +32,7 @@ export default defineServer({
 
             return {code: 0, message: 'saved', payload: {state}};
         },
-        'permalink:settings:get': async (sdk, {}: {}) => {
+        'permalink:settings:blogs:get': async (sdk, {}: {}) => {
 
             const settings = await sdk.settings.get(SETTINGS_KEY) as {
                 formats?: string[];
@@ -43,7 +43,7 @@ export default defineServer({
 
             return {code: 0, message: 'ok', payload: {formats, activeFormat}};
         },
-        'permalink:settings:set': async (sdk, {formats, activeFormat}: {
+        'permalink:settings:blogs:set': async (sdk, {formats, activeFormat}: {
             blogId: string;
             formats?: string[];
             activeFormat?: string
