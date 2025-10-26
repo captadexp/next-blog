@@ -1,4 +1,5 @@
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
+import {PermalinkState} from "./types";
 
 const META_KEY = 'permalink-manager:permalink';
 const SETTINGS_KEY = 'permalink-manager:settings';
@@ -6,19 +7,20 @@ const DEFAULT_FORMATS = ['{slug}', '{category}/{slug}', '{year}/{month}/{slug}']
 
 export default defineServer({
     rpcs: {
-        'permalink:get': async (sdk, {blogId}: { blogId: string }) => {
+        'permalink:get': async (sdk, {blogId}) => {
             const blog = await sdk.db.blogs.findOne({_id: blogId});
+            if (!blog) return {code: 404, message: 'Blog not found'};
+
+            const state: PermalinkState = blog.metadata?.[META_KEY];
+            if (!state) return {code: 404, message: 'No permalink configuration found'};
 
             return {
                 code: 0,
                 message: 'ok',
-                payload: {state: blog?.metadata?.[META_KEY] ?? ''}
+                payload: {state}
             };
         },
-        'permalink:set': async (sdk, {blogId, state}: {
-            blogId: string;
-            state: { permalink: string, pattern: string }
-        }) => {
+        'permalink:set': async (sdk, {blogId, state}) => {
             const blog = await sdk.db.blogs.findOne({_id: blogId});
             if (!blog) return {code: 404, message: 'Blog not found'};
 
@@ -43,11 +45,7 @@ export default defineServer({
 
             return {code: 0, message: 'ok', payload: {formats, activeFormat}};
         },
-        'permalink:settings:set': async (sdk, {formats, activeFormat}: {
-            blogId: string;
-            formats?: string[];
-            activeFormat?: string
-        }) => {
+        'permalink:settings:set': async (sdk, {formats, activeFormat}) => {
 
 
             const current = await sdk.settings.get(SETTINGS_KEY) as { formats?: string[]; activeFormat?: string } || {};

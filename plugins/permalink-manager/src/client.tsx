@@ -25,18 +25,21 @@ function PermalinkWidget({sdk, context}: { sdk: ClientSDK; context: BlogEditorCo
 
     useEffect(() => {
         if (!blogId) return;
+
         Promise.all([
             sdk.callRPC('permalink:get', {blogId}),
             sdk.callRPC('permalink:settings:get', {blogId})
-        ]).then(([getResp, settings]) => {
+        ])
+            .then(([getResp, settings]) => {
 
-            const stored = getResp?.payload?.payload?.state || {};
-            setValue(stored.permalink || '');
-            const fmts = settings?.payload?.payload?.formats || [];
-            setFormats(fmts);
-            setSelectedFormat(stored.pattern || settings?.payload?.payload?.activeFormat || fmts[0] || '{slug}');
-        }).catch(() => {
-        });
+                const stored = getResp?.payload?.payload?.state;
+                setValue(stored?.permalink || '');
+                const fmts = settings?.payload?.payload?.formats || [];
+                setFormats(fmts);
+                setSelectedFormat(stored?.pattern || settings?.payload?.payload?.activeFormat || fmts[0] || '{slug}');
+            })
+            .catch(() => {
+            });
     }, [blogId, sdk]);
 
     const saveState = useCallback(async (permalink: string, pattern: string) => {
@@ -101,12 +104,14 @@ function SettingsPanel({sdk, context}: { sdk: ClientSDK; context: any }) {
     const [newFormat, setNewFormat] = useState('');
 
     useEffect(() => {
-        sdk.callRPC('permalink:settings:get', {}).then((resp: any) => {
-            const fmts = resp?.payload?.payload?.formats || [];
-            setFormats(fmts);
-            setActive(resp?.payload?.payload?.activeFormat);
-        }).catch(() => {
-        });
+        sdk.callRPC('permalink:settings:get', {})
+            .then((resp) => {
+                const fmts = resp?.payload?.payload?.formats || [];
+                setFormats(fmts);
+                setActive(resp?.payload?.payload?.activeFormat || fmts[0] || '{slug}');
+            })
+            .catch(() => {
+            });
     }, [sdk]);
 
     const saveSettings = useCallback(async (nextFormats: string[], nextActive?: string) => {
