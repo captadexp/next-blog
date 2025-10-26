@@ -2,7 +2,7 @@ import type {MinimumRequest, OneApiFunctionResponse, SessionData} from "@supergr
 import {BadRequest, NotFound} from "@supergrowthai/oneapi";
 import type {SettingsEntryData} from "@supergrowthai/next-blog-types/server";
 import {createId, SettingsEntry} from "@supergrowthai/next-blog-types/server";
-import {PaginatedResponse, PaginationParams,} from "@supergrowthai/next-blog-types";
+import {BrandedId, ExtendedSettingsEntry, PaginatedResponse, PaginationParams,} from "@supergrowthai/next-blog-types";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import {getSystemPluginId} from "../utils/defaultSettings.js";
@@ -24,17 +24,29 @@ export const getSettings = secure(async (session: SessionData, request: MinimumR
     }
 
     const skip = (page - 1) * limit;
-    let settings = await db.settings.find(filter, {skip, limit});
+    let settings: ExtendedSettingsEntry[] = await db.settings.find(filter, {skip, limit});
+
+    const pluginOwnerIds = settings
+        .filter(setting => setting.ownerType === 'plugin')
+        .map(setting => setting.ownerId)
+        .filter((id, index, arr) => arr.indexOf(id) === index); // unique values
+
+    const existingPlugins = pluginOwnerIds.length > 0
+        ? await db.plugins.find({_id: {$in: pluginOwnerIds}}, {projection: {_id: 1}})
+        : [];
+    const existingPluginIds = new Set(existingPlugins.map(p => p._id.toString()));
 
     // Add scope information and mask secure values
-    settings = settings.map((setting: any) => {
+    settings = settings.map((setting) => {
         const isUserSetting = setting.ownerType === 'user';
         const isSystemPlugin = setting.ownerId === createId.plugin(systemPluginId);
+        const isOrphaned = setting.ownerType === 'plugin' && !existingPluginIds.has(setting.ownerId.toString() as BrandedId<"Plugin">);
 
         // Mask secure values
         let maskedSetting = {
             ...setting,
-            scope: isUserSetting ? 'user' : (isSystemPlugin ? 'global' : 'plugin')
+            scope: isUserSetting ? 'user' : (isSystemPlugin ? 'global' : 'plugin') as "global" | "user" | "plugin",
+            isOrphaned
         };
 
         if (setting.isSecure) {
@@ -78,18 +90,24 @@ export const getSettingById = secure(async (session: SessionData, request: Minim
     }
 
     const db = extra.sdk.db;
-    let setting = await db.settings.findOne({_id: settingId});
+    let setting: ExtendedSettingsEntry | null = await db.settings.findOne({_id: settingId});
 
     if (!setting) {
         throw new NotFound(`Setting with id ${settingId} not found`);
     }
 
-    // Mask secure values
+    let isOrphaned = undefined;
+    if (setting.ownerType === 'plugin') {
+        const pluginExists = await db.plugins.findOne({_id: setting.ownerId});
+        isOrphaned = !pluginExists;
+    }
+
     if (setting.isSecure) {
         const masked = typeof setting.value === 'string' ? maskValue(setting.value) : '********';
         setting = {...setting, value: masked, masked: true, isSecure: true};
     }
 
+    setting = {...setting, isOrphaned}
 
     // Execute hook for read operation
     const hookResult = await extra.sdk.callHook('setting:onRead', {
@@ -131,7 +149,7 @@ export const createSetting = secure(async (session: SessionData, request: Minimu
     if (scope === 'user') {
         settingData.ownerId = createId.user(session.user._id);
         settingData.ownerType = 'user';
-        settingData.key = `user:${session.user._id}:${settingData.key}`;
+        settingData.key = `user:${session.user.username}:${settingData.key}`;
     } else {
         const systemPluginId = await getSystemPluginId(db);
         settingData.ownerId = createId.plugin(systemPluginId);
@@ -233,10 +251,18 @@ export const updateSetting = secure(async (session: SessionData, request: Minimu
 
     await db.settings.updateOne({_id: settingId}, finalUpdates);
     // Re-fetch the updated doc to return the actual record
-    let setting = await db.settings.findOne({_id: settingId});
+    let setting: ExtendedSettingsEntry | null = await db.settings.findOne({_id: settingId});
+
+    if (!setting) return {code: 404, message: "Setting not found."};
+
+    let isOrphaned = undefined;
+    if (setting.ownerType === 'plugin') {
+        const pluginExists = await db.plugins.find({_id: setting.ownerId}, {projection: {_id: 1}});
+        isOrphaned = !pluginExists;
+    }
 
     // Mask secure values in response
-    if (setting?.isSecure) {
+    if (setting.isSecure) {
         setting = {
             ...setting,
             value: typeof setting.value === 'string' ? maskValue(setting.value) : '********',
@@ -244,6 +270,8 @@ export const updateSetting = secure(async (session: SessionData, request: Minimu
             isSecure: true
         };
     }
+
+    setting = {...setting!, isOrphaned};
 
     await extra.sdk.callHook('setting:afterUpdate', {
         entity: 'setting',

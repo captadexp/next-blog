@@ -2,15 +2,10 @@ import {FunctionComponent, h} from 'preact';
 import {useLocation} from 'preact-iso';
 import {useEffect, useState} from 'preact/hooks';
 import {useUser} from '../../../context/UserContext';
-import {PaginatedResponse, SettingsEntry} from '@supergrowthai/next-blog-types';
+import {ExtendedSettingsEntry, PaginatedResponse, SettingsEntry} from '@supergrowthai/next-blog-types';
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 import {usePagination} from '../../../hooks/usePagination';
 import {PaginationControls} from '../../../components/PaginationControls';
-
-interface SettingsEntryWithScope extends SettingsEntry {
-    scope?: 'global' | 'user' | 'plugin';
-    masked?: boolean;
-}
 
 interface SettingsListProps {
     path?: string;
@@ -19,7 +14,7 @@ interface SettingsListProps {
 const SettingsList: FunctionComponent<SettingsListProps> = () => {
     const location = useLocation();
     const {apis, user, hasPermission} = useUser();
-    const [settings, setSettings] = useState<SettingsEntryWithScope[]>([]);
+    const [settings, setSettings] = useState<ExtendedSettingsEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [pagination, setPagination] = useState<PaginatedResponse<SettingsEntry> | null>(null);
@@ -152,6 +147,9 @@ const SettingsList: FunctionComponent<SettingsListProps> = () => {
                                             {setting.key}
                                             {setting.isSecure && (
                                                 <span className="ml-2 text-yellow-600" title="Secure Setting">🔒</span>
+                                            )}
+                                            {setting.isOrphaned && (
+                                                <span className="ml-2 text-red-600" title="Orphaned Setting - Plugin Deleted">⚠️</span>
                                             )}
                                         </td>
                                         <td className="p-3">{formatValue(setting.value, setting.masked)}</td>

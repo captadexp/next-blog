@@ -19,6 +19,12 @@ export interface APIResponse<T = any> {
     payload?: T;
 }
 
+export type ExtendedSettingsEntry = SettingsEntry & {
+    isOrphaned?: boolean,
+    scope?: 'global' | 'user' | 'plugin';
+    masked?: boolean;
+}
+
 export interface PaginationParams {
     page?: string;
     limit?: string;
@@ -143,21 +149,21 @@ export interface TagAPI {
 export interface SettingsAPI {
     getSettings(params?: ClientPaginationParams & {
         search?: string;
-    }): Promise<APIResponse<PaginatedResponse<SettingsEntry>>>;
+    }): Promise<APIResponse<PaginatedResponse<ExtendedSettingsEntry>>>;
 
-    getSetting(id: string): Promise<APIResponse<SettingsEntry>>;
+    getSetting(id: string): Promise<APIResponse<ExtendedSettingsEntry>>;
 
     createSetting(data: {
         key: string;
         value: string | boolean | number | boolean[] | string[] | number[];
         scope?: 'global' | 'user';
         isSecure?: boolean;
-    }): Promise<APIResponse<SettingsEntry>>;
+    }): Promise<APIResponse<ExtendedSettingsEntry>>;
 
     updateSetting(id: string, data: {
         key?: string;
         value?: string | boolean | number | boolean[] | string[] | number[];
-    }): Promise<APIResponse<SettingsEntry>>;
+    }): Promise<APIResponse<ExtendedSettingsEntry>>;
 
     deleteSetting(id: string): Promise<APIResponse<null>>;
 }
