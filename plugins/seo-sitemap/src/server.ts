@@ -352,7 +352,7 @@ async function generateAuthorsSitemap(sdk: ServerSDK, siteUrl: string, page: num
     const skip = page * perPage;
 
     const authors = await sdk.db!.users!.find!(
-        {},
+        {isSystem: false},
         {skip, limit: perPage}
     );
 
