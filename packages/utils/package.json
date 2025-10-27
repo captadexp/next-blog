@@ -1,0 +1,73 @@
+{
+  "name": "@supergrowthai/utils",
+  "version": "1.0.1",
+  "description": "Common utility classes and functions for SupergrowthAI projects",
+  "repository": "https://github.com/captadexp/next-blog",
+  "homepage": "https://github.com/captadexp/next-blog/tree/main#readme",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.mjs",
+      "require": "./dist/server.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.mjs",
+      "require": "./dist/client.js"
+    },
+    "./Logger": {
+      "types": "./dist/utility-classes/Logger.d.ts",
+      "import": "./dist/utility-classes/Logger.mjs",
+      "require": "./dist/utility-classes/Logger.js"
+    },
+    "./LockManager": {
+      "types": "./dist/utility-classes/LockManager.d.ts",
+      "import": "./dist/utility-classes/LockManager.mjs",
+      "require": "./dist/utility-classes/LockManager.js"
+    },
+    "./ShutdownManager": {
+      "types": "./dist/utility-classes/ShutdownManager.d.ts",
+      "import": "./dist/utility-classes/ShutdownManager.mjs",
+      "require": "./dist/utility-classes/ShutdownManager.js"
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "dev": "vite build --watch",
+    "build": "vite build",
+    "test": "bun test --bail --reporter=junit --reporter-outfile=./tests-report.xml",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist"
+  ],
+  "author": "Capt ADExp <tech@developer.toys>",
+  "license": "MIT",
+  "dependencies": {
+    "memoose-js": "^1.1.2"
+  },
+  "devDependencies": {
+    "@smithy/types": "^4.2.0",
+    "@types/bun": "^1.2.11",
+    "@types/node": "^24.5.2",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5",
+    "vite-plugin-dts": "^4.5.4"
+  },
+  "trustedDependencies": [
+    "geolite2"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

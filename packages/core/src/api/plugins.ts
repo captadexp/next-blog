@@ -6,7 +6,7 @@ import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import pluginExecutor from "../plugins/plugin-executor.server.js";
 import pluginManager from "../plugins/pluginManager.js";
-import Logger, {LogLevel} from "../utils/Logger.js";
+import {Logger, LogLevel} from "@supergrowthai/utils";
 
 const logger = new Logger('plugins-api', LogLevel.ERROR);
 

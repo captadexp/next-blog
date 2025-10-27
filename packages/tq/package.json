@@ -1,0 +1,101 @@
+{
+  "name": "@supergrowthai/tq",
+  "version": "1.0.1",
+  "description": "Task queue management library with multiple executor types and async task handling",
+  "repository": "https://github.com/captadexp/next-blog",
+  "homepage": "https://github.com/captadexp/next-blog/tree/main#readme",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.mjs",
+      "require": "./dist/types.js"
+    },
+    "./adapters": {
+      "types": "./dist/adapters/index.d.ts",
+      "import": "./dist/adapters/index.mjs",
+      "require": "./dist/adapters/index.js"
+    },
+    "./adapters/database": {
+      "types": "./dist/adapters/database-adapter.d.ts",
+      "import": "./dist/adapters/database-adapter.mjs",
+      "require": "./dist/adapters/database-adapter.js"
+    },
+    "./core/base/interfaces": {
+      "types": "./dist/core/base/interfaces.d.ts",
+      "import": "./dist/core/base/interfaces.mjs",
+      "require": "./dist/core/base/interfaces.js"
+    },
+    "./core/task-store": {
+      "types": "./dist/core/task-store.d.ts",
+      "import": "./dist/core/task-store.mjs",
+      "require": "./dist/core/task-store.js"
+    },
+    "./core/task-handler": {
+      "types": "./dist/core/task-handler.d.ts",
+      "import": "./dist/core/task-handler.mjs",
+      "require": "./dist/core/task-handler.js"
+    },
+    "./core/task-runner": {
+      "types": "./dist/core/task-runner.d.ts",
+      "import": "./dist/core/task-runner.mjs",
+      "require": "./dist/core/task-runner.js"
+    },
+    "./core/actions": {
+      "types": "./dist/core/actions/Actions.d.ts",
+      "import": "./dist/core/actions/Actions.mjs",
+      "require": "./dist/core/actions/Actions.js"
+    },
+    "./core/actions/async": {
+      "types": "./dist/core/actions/AsyncActions.d.ts",
+      "import": "./dist/core/actions/AsyncActions.mjs",
+      "require": "./dist/core/actions/AsyncActions.js"
+    },
+    "./core/async": {
+      "types": "./dist/core/async/AsyncTaskManager.d.ts",
+      "import": "./dist/core/async/AsyncTaskManager.mjs",
+      "require": "./dist/core/async/AsyncTaskManager.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/task-id-gen.d.ts",
+      "import": "./dist/utils/task-id-gen.mjs",
+      "require": "./dist/utils/task-id-gen.js"
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "dev": "vite build --watch",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist"
+  ],
+  "author": "Capt ADExp <tech@developer.toys>",
+  "license": "MIT",
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "mongodb": "^6.16.0",
+    "moment": "^2.30.1",
+    "@supergrowthai/mq": "workspace:*",
+    "@supergrowthai/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5",
+    "vite-plugin-dts": "^4.5.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

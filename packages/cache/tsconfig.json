@@ -1,0 +1,44 @@
+{
+  "compilerOptions": {
+    "types": [
+      "bun"
+    ],
+    "target": "es6",
+    "lib": [
+      "esnext"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
+    "noEmit": true,
+    "incremental": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "rootDir": ".",
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "jsx": "preserve",
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    },
+    "plugins": [],
+    "strictNullChecks": true
+  },
+  "typeAcquisition": {
+    "enable": true
+  },
+  "include": [
+    "**/*.ts",
+    "*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "name": "@supergrowthai/mq",
+  "version": "1.0.1",
+  "description": "Message queue library with multiple provider backends (Kinesis, MongoDB, Memory, Immediate)",
+  "repository": "https://github.com/captadexp/next-blog",
+  "homepage": "https://github.com/captadexp/next-blog/tree/main#readme",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "import": "./dist/types.mjs",
+      "require": "./dist/types.js"
+    },
+    "./utils": {
+      "types": "./dist/utils.d.ts",
+      "import": "./dist/utils.mjs",
+      "require": "./dist/utils.js"
+    },
+    "./adapters": {
+      "types": "./dist/adapters/index.d.ts",
+      "import": "./dist/adapters/index.mjs",
+      "require": "./dist/adapters/index.js"
+    },
+    "./queues": {
+      "types": "./dist/queues/IMessageQueue.d.ts",
+      "import": "./dist/queues/IMessageQueue.mjs",
+      "require": "./dist/queues/IMessageQueue.js"
+    },
+    "./queues/in-memory": {
+      "types": "./dist/queues/InMemoryQueue.d.ts",
+      "import": "./dist/queues/InMemoryQueue.mjs",
+      "require": "./dist/queues/InMemoryQueue.js"
+    },
+    "./queues/immediate": {
+      "types": "./dist/queues/ImmediateQueue.d.ts",
+      "import": "./dist/queues/ImmediateQueue.mjs",
+      "require": "./dist/queues/ImmediateQueue.js"
+    },
+    "./queues/mongodb": {
+      "types": "./dist/queues/MongoDBQueue.d.ts",
+      "import": "./dist/queues/MongoDBQueue.mjs",
+      "require": "./dist/queues/MongoDBQueue.js"
+    },
+    "./queues/kinesis": {
+      "types": "./dist/queues/KinesisQueue.d.ts",
+      "import": "./dist/queues/KinesisQueue.mjs",
+      "require": "./dist/queues/KinesisQueue.js"
+    },
+    "./queues/kinesis/*": {
+      "types": "./dist/queues/kinesis/*.d.ts",
+      "import": "./dist/queues/kinesis/*.mjs",
+      "require": "./dist/queues/kinesis/*.js"
+    },
+    "./shard-lock-provider": {
+      "types": "./dist/shard-lock-provider/index.d.ts",
+      "import": "./dist/shard-lock-provider/index.mjs",
+      "require": "./dist/shard-lock-provider/index.js"
+    },
+    "./shard-lock-provider/*": {
+      "types": "./dist/shard-lock-provider/*.d.ts",
+      "import": "./dist/shard-lock-provider/*.mjs",
+      "require": "./dist/shard-lock-provider/*.js"
+    },
+    "./shard-leaser": {
+      "types": "./dist/shard-leaser/index.d.ts",
+      "import": "./dist/shard-leaser/index.mjs",
+      "require": "./dist/shard-leaser/index.js"
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "dev": "vite build --watch",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist"
+  ],
+  "author": "Capt ADExp <tech@developer.toys>",
+  "license": "MIT",
+  "dependencies": {
+    "ioredis": "^5.6.1",
+    "memoose-js": "^1.1.2",
+    "mongodb": "^6.16.0",
+    "moment": "^2.30.1",
+    "bson": "^6.10.3",
+    "@aws-sdk/client-kinesis": "^3.797.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.5",
+    "vite-plugin-dts": "^4.5.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
