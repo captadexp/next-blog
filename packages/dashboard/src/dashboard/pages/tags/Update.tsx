@@ -127,7 +127,7 @@ const UpdateTag: FunctionComponent<UpdateTagProps> = ({id}) => {
             ) : (
                 <ExtensionZone name="tag-update-form" context={context}>
 
-                    <div className="bg-white p-6 rounded-lg shadow-md">
+                    <div className="flex-grow bg-white p-6 rounded-lg shadow-md mb-6">
                         <ExtensionPoint name="tag-update-before" context={context}/>
                         <DynamicForm
                             id="updateTag"
@@ -139,7 +139,7 @@ const UpdateTag: FunctionComponent<UpdateTagProps> = ({id}) => {
                         />
                         <ExtensionPoint name="tag-update-after" context={context}/>
                     </div>
-                    <ExtensionPoint name="tag-sidebar-widget" context={context}/>
+                    <ExtensionPoint name="tag-update-sidebar-widget" context={context}/>
                 </ExtensionZone>
             )}
         </div>

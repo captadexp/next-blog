@@ -262,7 +262,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                     <div className="p-4 bg-yellow-100 text-yellow-800 rounded">Blog not found</div> : (
                         <ExtensionZone name="blog-update-form" context={pluginContext}>
                             <div className="flex flex-col md:flex-row gap-8">
-                                <div className="flex-grow bg-white p-6 rounded-lg shadow-md">
+                                <div className="flex-grow bg-white p-6 rounded-lg shadow-md mb-6">
                                     <ExtensionPoint name="blog-update-before" context={pluginContext}/>
                                     <DynamicForm
                                         id="updateBlog"
@@ -278,7 +278,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                                     <div className="sticky flex flex-col gap-2">
                                         {/*for backward compat*/}
                                         <ExtensionPoint name="editor-sidebar-widget" context={pluginContext}/>
-                                        <ExtensionPoint name="blog-sidebar-widget" context={pluginContext}/>
+                                        <ExtensionPoint name="blog-update-sidebar-widget" context={pluginContext}/>
                                     </div>
                                 </div>
                             </div>

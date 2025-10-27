@@ -178,7 +178,7 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
                 </div>
                 <ExtensionPoint name="blog-create-form:toolbar" context={{fields}}/>
                 <ExtensionZone name="blog-create-form" context={{data: {fields}}}>
-                    <div className="bg-white p-6 rounded-lg shadow-md">
+                    <div className="flex-grow bg-white p-6 rounded-lg shadow-md mb-6">
                         <DynamicForm
                             id="createBlog"
                             submitLabel="Create Blog"

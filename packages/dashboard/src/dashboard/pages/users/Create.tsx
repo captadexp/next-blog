@@ -105,7 +105,7 @@ const CreateUser: FunctionComponent<CreateUserProps> = () => {
 
                 <ExtensionPoint name="user-create-form:toolbar" context={{fields, availablePermissions}}/>
                 <ExtensionZone name="user-create-form" context={{data: {fields, availablePermissions}}}>
-                    <div className="bg-white p-6 rounded-lg shadow-md">
+                    <div className="flex-grow bg-white p-6 rounded-lg shadow-md mb-6">
                         <DynamicForm
                             id="createUser"
                             submitLabel="Create User"

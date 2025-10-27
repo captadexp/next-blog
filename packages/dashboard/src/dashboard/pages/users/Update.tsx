@@ -205,7 +205,7 @@ const UpdateUser: FunctionComponent<UpdateUserProps> = ({id: propId}) => {
                 </div>
             ) : (
                 <ExtensionZone name="user-update-form" context={context}>
-                    <div className="bg-white p-6 rounded-lg shadow-md mb-6">
+                    <div className="flex-grow bg-white p-6 rounded-lg shadow-md mb-6">
                         <ExtensionPoint name="user-update-before" context={context}/>
                         <DynamicForm
                             id="updateUser"
@@ -218,7 +218,7 @@ const UpdateUser: FunctionComponent<UpdateUserProps> = ({id: propId}) => {
                         />
                         <ExtensionPoint name="user-update-after" context={context}/>
                     </div>
-                    <ExtensionPoint name="user-sidebar-widget" context={context}/>
+                    <ExtensionPoint name="user-update-sidebar-widget" context={context}/>
                 </ExtensionZone>
             )}
         </div>

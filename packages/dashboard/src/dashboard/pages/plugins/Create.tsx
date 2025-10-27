@@ -52,7 +52,7 @@ const CreatePlugin = () => {
             <AvailablePlugins/>
 
             {/* Custom URL Section */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="flex-grow bg-white p-6 rounded-lg shadow-md mb-6">
                 <h3 className="text-lg font-semibold mb-4">Install from URL</h3>
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">

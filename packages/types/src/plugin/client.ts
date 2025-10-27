@@ -104,7 +104,7 @@ export interface ClientHooks extends Record<string, { payload?: any; response: a
     'blog-update-before': { payload: { context: BlogEditorContext }; response: any };
     'blog-update-after': { payload: { context: BlogEditorContext }; response: any };
     'editor-sidebar-widget': { payload: { context: BlogEditorContext }; response: any };
-    'blog-sidebar-widget': { payload: { context: BlogEditorContext }; response: any };
+    'blog-update-sidebar-widget': { payload: { context: BlogEditorContext }; response: any };
 
     // User Pages
     'users-list:before': { payload: { context: ClientHookContext }; response: any };
@@ -124,7 +124,7 @@ export interface ClientHooks extends Record<string, { payload?: any; response: a
     'user-update-form:toolbar': { payload: { context?: ClientHookContext }; response: any };
     'user-update-before': { payload: { context: UserEditorContext }; response: any };
     'user-update-after': { payload: { context: UserEditorContext }; response: any };
-    'user-sidebar-widget': { payload: { context: UserEditorContext }; response: any };
+    'user-update-sidebar-widget': { payload: { context: UserEditorContext }; response: any };
 
     // Tag Pages
     'tags-list:before': { payload: { context: ClientHookContext }; response: any };
@@ -144,7 +144,7 @@ export interface ClientHooks extends Record<string, { payload?: any; response: a
     'tag-update-form:toolbar': { payload: { context?: ClientHookContext }; response: any };
     'tag-update-before': { payload: { context: TagEditorContext }; response: any };
     'tag-update-after': { payload: { context: TagEditorContext }; response: any };
-    'tag-sidebar-widget': { payload: { context: TagEditorContext }; response: any };
+    'tag-update-sidebar-widget': { payload: { context: TagEditorContext }; response: any };
 
     // Category Pages
     'categories-list:before': { payload: { context: ClientHookContext }; response: any };
@@ -164,7 +164,7 @@ export interface ClientHooks extends Record<string, { payload?: any; response: a
     'category-update-form:toolbar': { payload: { context?: ClientHookContext }; response: any };
     'category-update-before': { payload: { context: CategoryEditorContext }; response: any };
     'category-update-after': { payload: { context: CategoryEditorContext }; response: any };
-    'category-sidebar-widget': { payload: { context: CategoryEditorContext }; response: any };
+    'category-update-sidebar-widget': { payload: { context: CategoryEditorContext }; response: any };
 
     // Settings Pages
     'settings-list:before': { payload: { context: ClientHookContext }; response: any };
@@ -184,7 +184,7 @@ export interface ClientHooks extends Record<string, { payload?: any; response: a
     'setting-update-form:toolbar': { payload: { context?: ClientHookContext }; response: any };
     'setting-update-before': { payload: { context: SettingEditorContext }; response: any };
     'setting-update-after': { payload: { context: SettingEditorContext }; response: any };
-    'setting-sidebar-widget': { payload: { context: SettingEditorContext }; response: any };
+    'setting-update-sidebar-widget': { payload: { context: SettingEditorContext }; response: any };
 
     // Plugin Pages
     'plugins-list:before': { payload: { context: ClientHookContext }; response: any };

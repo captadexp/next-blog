@@ -32,7 +32,7 @@ const CreateCategory: FunctionComponent<CreateCategoryProps> = () => {
 
                 <ExtensionPoint name="category-create-form:toolbar" context={{fields}}/>
                 <ExtensionZone name="category-create-form" context={{data: {fields}}}>
-                    <div className="bg-white p-6 rounded-lg shadow-md">
+                    <div className="flex-grow bg-white p-6 rounded-lg shadow-md mb-6">
                         <DynamicForm
                             id="createCategory"
                             submitLabel="Create Category"

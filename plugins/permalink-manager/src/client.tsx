@@ -1,90 +1,161 @@
 import {defineClient} from '@supergrowthai/plugin-dev-kit';
-import type {BlogEditorContext, ClientSDK,} from '@supergrowthai/plugin-dev-kit/client';
-import {useCallback, useEffect, useState} from '@supergrowthai/plugin-dev-kit/client';
-import "./styles.css"
+import type {
+    BlogEditorContext,
+    CategoryEditorContext,
+    ClientSDK,
+    TagEditorContext,
+    UserEditorContext
+} from '@supergrowthai/plugin-dev-kit/client';
+import {useCallback, useEffect, useMemo, useState} from '@supergrowthai/plugin-dev-kit/client';
+import type {ContentType, NormalizedSection as ContentSettings} from './types.js';
+import {CONTENT_TYPES} from './types.js';
+import {useDebouncedEffect} from './utils.js';
+import './styles.css';
 
-function PermalinkWidget({sdk, context}: { sdk: ClientSDK; context: BlogEditorContext }) {
-    const blogId = context?.blogId as string | undefined;
+type Tokens = Record<string, string>;
+
+const LABELS: Record<ContentType, string> = {
+    posts: 'Posts',
+    tags: 'Tags',
+    categories: 'Categories',
+    users: 'Users'
+};
+
+const FORMAT_PLACEHOLDERS: Record<ContentType, string> = {
+    posts: '{category}/{slug}, {year}/{month}/{slug}',
+    tags: 'tag/{slug}, tags/{slug}',
+    categories: '{slug}, category/{slug}',
+    users: 'author/{username}, user/{username}'
+};
+
+function normalizePath(s: string) {
+    return s.replace(/\/+/g, '/').replace(/^(?!\/)/, '/').replace(/\/$/, '');
+}
+
+function buildPermalink(pattern: string, tokens: Tokens) {
+    return normalizePath(
+        Object.entries(tokens).reduce(
+            (out, [k, v]) => out.replaceAll(`{${k}}`, v),
+            pattern
+        )
+    );
+}
+
+function FormatSelect(props: {
+    value: string;
+    formats: string[];
+    onChange: (v: string) => void;
+    className?: string;
+}) {
+    const {value, formats, onChange, className} = props;
+    return (
+        <select className={className} value={value} onChange={(e) => onChange(e.target.value)}>
+            {formats.map((f) => (
+                <option key={f} value={f}>
+                    {f}
+                </option>
+            ))}
+        </select>
+    );
+}
+
+function PermalinkWidget({sdk, context, type, _id}: {
+    sdk: ClientSDK;
+    context: BlogEditorContext | TagEditorContext | UserEditorContext | CategoryEditorContext;
+    type: "posts" | "tags" | "categories" | "users",
+    _id: string;
+}) {
     const [value, setValue] = useState('');
     const [saving, setSaving] = useState(false);
     const [formats, setFormats] = useState<string[]>([]);
     const [selectedFormat, setSelectedFormat] = useState('');
 
-    const getTokens = useCallback(() => {
-        const slug = context?.form.data.slug
-        const category = context?.form?.getCategory();
-        const now = new Date();
+    const tokens = useMemo(() => {
+        const formData: any = context?.form
+        if (!formData) return {};
+
+        //old stuff
+        const slug = formData?.data?.slug;//incase of blog/category/tag
+        const username = formData?.data?.username;//incase of user
+        const category = formData?.getCategory?.()?.slug;
+
+        const createdAt = new Date(formData?.data?.createdAt || 0);
+        const standardTokens = formData?.data?.createdAt ? {
+            year: String(createdAt.getFullYear()),
+            month: String(createdAt.getMonth() + 1).padStart(2, '0'),
+            day: String(createdAt.getDate()).padStart(2, '0'),
+        } : ({} as {});
+
         return {
-            slug: slug || '',
-            category: category?.slug || '',
-            year: String(now.getFullYear()),
-            month: String(now.getMonth() + 1).padStart(2, '0'),
-            day: String(now.getDate()).padStart(2, '0')
+            ...standardTokens,
+
+            // Legacy simple tokens for backward compatibility
+            slug,
+            category,
+
+            post_slug: slug,
+            category_slug: slug,
+            tag_slug: slug,
+            user_username: username
         };
-    }, [sdk, context]);
+    }, [context?.form?.data, context?.form]);
 
     useEffect(() => {
-        if (!blogId) return;
+        if (!_id) return;
 
-        Promise.all([
-            sdk.callRPC('permalink:get', {blogId}),
-            sdk.callRPC('permalink:settings:get', {blogId})
-        ])
-            .then(([getResp, settings]) => {
+        void (async () => {
+            const [stored, settings] = await Promise.all([
+                sdk.callRPC('permalink:get', {type: type, _id: _id}),
+                sdk.callRPC('permalink:settings:get', {}),
+            ]);
+            const state = stored.payload?.payload?.state;
+            const fmts = settings.payload?.payload?.[type]?.formats ?? [];
+            setFormats(fmts);
+            setValue(state?.permalink ?? '');
+            setSelectedFormat(state?.pattern ?? settings.payload?.payload?.[type]?.activeFormat ?? fmts[0]);
+        })();
+    }, [_id, sdk]);
 
-                const stored = getResp?.payload?.payload?.state;
-                setValue(stored?.permalink || '');
-                const fmts = settings?.payload?.payload?.formats || [];
-                setFormats(fmts);
-                setSelectedFormat(stored?.pattern || settings?.payload?.payload?.activeFormat || fmts[0] || '{slug}');
-            })
-            .catch(() => {
-            });
-    }, [blogId, sdk]);
-
-    const saveState = useCallback(async (permalink: string, pattern: string) => {
-        if (!blogId) return;
-        setSaving(true);
-        try {
-            await sdk.callRPC('permalink:set', {
-                blogId,
-                state: {permalink: permalink.trim(), pattern}
-            });
-        } finally {
-            setSaving(false);
-        }
-    }, [blogId, sdk]);
+    const saveState = useCallback(
+        async (permalink: string, pattern: string) => {
+            if (!_id) return;
+            setSaving(true);
+            try {
+                await sdk.callRPC('permalink:set', {
+                    type: type,
+                    _id: _id,
+                    state: {permalink: permalink.trim(), pattern}
+                });
+            } finally {
+                setSaving(false);
+            }
+        },
+        [_id, sdk]
+    );
 
     useEffect(() => {
         if (!selectedFormat) return;
-        const tokens = getTokens();
-        const permalink = Object.entries(tokens)
-            .reduce(
-                (out, [key, value]) => out.replace(new RegExp(`{${key}}`, 'g'), value),
-                selectedFormat
-            ).replace(/\/+/g, '/').replace(/^(?!\/)/, '/').replace(/\/$/, '');
-        setValue(permalink);
-    }, [selectedFormat, getTokens]);
+        setValue(buildPermalink(selectedFormat, tokens));
+    }, [selectedFormat, tokens]);
 
-    useEffect(() => {
-        if (!blogId || !value || !selectedFormat) return;
-        const t = setTimeout(() => saveState(value, selectedFormat), 600);
-        return () => clearTimeout(t);
-    }, [value, selectedFormat, blogId, saveState]);
+    useDebouncedEffect(() => {
+        if (!_id || !value || !selectedFormat) return;
+        void saveState(value, selectedFormat);
+    }, 600, [value, selectedFormat, _id]);
 
     return (
         <div className="p-3 bg-white border border-gray-200 rounded shadow-sm">
             <label className="block text-sm font-medium text-gray-700 mb-1">Permalink</label>
+
             <div className="flex items-center gap-2 mb-2">
-                <select
+                <FormatSelect
                     className="flex-1 border border-gray-200 rounded px-2 py-1 text-sm"
                     value={selectedFormat}
-                    onChange={e => setSelectedFormat(e.target.value)}
-                >
-                    {formats.map(f => <option key={f} value={f}>{f}</option>)}
-                    {!formats.length && <option value="{slug}">{'{slug}'}</option>}
-                </select>
+                    formats={formats}
+                    onChange={setSelectedFormat}
+                />
             </div>
+
             <input
                 type="text"
                 className="w-full border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring"
@@ -92,73 +163,128 @@ function PermalinkWidget({sdk, context}: { sdk: ClientSDK; context: BlogEditorCo
                 value={value}
                 disabled
             />
+
             {saving && <div className="mt-1 text-xs text-gray-500">Saving…</div>}
         </div>
     );
 }
 
-function SettingsPanel({sdk, context}: { sdk: ClientSDK; context: any }) {
-
-    const [formats, setFormats] = useState<string[]>([]);
-    const [active, setActive] = useState('');
+function SettingsPanel({sdk}: {
+    sdk: ClientSDK;
+    context: any;
+}) {
+    const [activeTab, setActiveTab] = useState<ContentType>('posts');
+    const [allSettings, setAllSettings] = useState<Record<ContentType, ContentSettings> | null>(null);
     const [newFormat, setNewFormat] = useState('');
 
     useEffect(() => {
-        sdk.callRPC('permalink:settings:get', {})
-            .then((resp) => {
-                const fmts = resp?.payload?.payload?.formats || [];
-                setFormats(fmts);
-                setActive(resp?.payload?.payload?.activeFormat || fmts[0] || '{slug}');
-            })
-            .catch(() => {
+        void (async () => {
+            const rpcResponse = await sdk.callRPC('permalink:settings:get', {});
+            if (!rpcResponse || rpcResponse.code !== 0) return;
+            const response = rpcResponse.payload!;
+            if (response.code !== 0) return;
+
+            setAllSettings({
+                posts: response.payload!.posts,
+                tags: response.payload!.tags,
+                categories: response.payload!.categories,
+                users: response.payload!.users
             });
+        })();
     }, [sdk]);
 
-    const saveSettings = useCallback(async (nextFormats: string[], nextActive?: string) => {
-        const resp = await sdk.callRPC('permalink:settings:set', {
-            formats: nextFormats,
-            activeFormat: nextActive ?? active
+    const saveSettings = useCallback(async (type: ContentType, nextFormats: string[], nextActive?: string) => {
+        if (!allSettings) return;
+
+        const update = {[type]: {formats: nextFormats, activeFormat: nextActive ?? allSettings[type].activeFormat}};
+        const rpcResponse = await sdk.callRPC('permalink:settings:set', update);
+        if (!rpcResponse || rpcResponse.code !== 0) return;
+        const response = rpcResponse.payload!;
+        if (response.code !== 0) return;
+
+        setAllSettings({
+            posts: response.payload!.posts,
+            tags: response.payload!.tags,
+            categories: response.payload!.categories,
+            users: response.payload!.users
         });
-        setFormats(resp?.payload?.payload?.formats || nextFormats);
-        setActive(resp?.payload?.payload?.activeFormat || nextActive || active);
-    }, [active, sdk]);
+    }, [sdk, allSettings]);
 
     const addFormat = useCallback(() => {
-        const format = newFormat.trim();
-        if (!format || formats.includes(format)) return;
+        if (!allSettings) return;
+        const current = allSettings[activeTab];
+        const fmt = newFormat.trim();
+        if (!fmt || current.formats.includes(fmt)) return;
         setNewFormat('');
-        saveSettings([...formats, format], active || format);
-    }, [newFormat, formats, active, saveSettings]);
+        const nextFormats = [...current.formats, fmt];
+        void saveSettings(activeTab, nextFormats, current.activeFormat || fmt);
+    }, [newFormat, activeTab, saveSettings, allSettings]);
+
+    if (!allSettings) return null;
+
+    const current = allSettings[activeTab];
 
     return (
         <div className="p-3 bg-white rounded shadow-sm">
-            <h3 className="text-sm font-medium mb-2">Permalink Settings</h3>
-            <label className="block text-xs text-gray-600 mb-1">Active format</label>
-            <select
-                className="w-full border border-gray-200 rounded px-2 py-1 text-sm mb-3"
-                value={active}
-                onChange={e => {
-                    setActive(e.target.value);
-                    saveSettings(formats, e.target.value);
-                }}
-            >
-                {formats.map(f => <option key={f} value={f}>{f}</option>)}
-                {!formats.length && <option value="{slug}">{'{slug}'}</option>}
-            </select>
+            <h3 className="text-sm font-medium mb-3">Permalink Settings</h3>
 
+            {/* Tabs */}
+            <div className="flex border-b border-gray-200 mb-3">
+                {CONTENT_TYPES.map((t) => (
+                    <button
+                        key={t}
+                        className={`px-3 py-1 text-xs font-medium border-b-2 ${
+                            activeTab === t ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+                        }`}
+                        onClick={() => setActiveTab(t)}
+                    >
+                        {LABELS[t]}
+                    </button>
+                ))}
+            </div>
+
+            {/* Active format */}
+            <label className="block text-xs text-gray-600 mb-1">
+                Active format for {LABELS[activeTab].toLowerCase()}
+            </label>
+            <FormatSelect
+                className="w-full border border-gray-200 rounded px-2 py-1 text-sm mb-3"
+                value={current.activeFormat}
+                formats={current.formats}
+                onChange={(v) => void saveSettings(activeTab, current.formats, v)}
+            />
+
+            {/* List of formats */}
+            {current.formats.length > 0 && (
+                <div className="mb-3">
+                    <label className="block text-xs text-gray-600 mb-1">Available formats</label>
+                    <div className="space-y-1">
+                        {current.formats.map((f) => (
+                            <div key={f}
+                                 className="flex items-center justify-between bg-gray-50 px-2 py-1 rounded text-sm">
+                                <span className="font-mono">{f}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Add new format */}
             <label className="block text-xs text-gray-600 mb-1">Add format</label>
             <div className="flex gap-2">
                 <input
                     className="flex-1 border border-gray-200 rounded px-2 py-1 text-sm"
-                    placeholder="e.g. {category}/{slug}"
+                    placeholder={`e.g. ${FORMAT_PLACEHOLDERS[activeTab]}`}
                     value={newFormat}
-                    onChange={e => setNewFormat(e.target.value)}
+                    onChange={(e) => setNewFormat(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addFormat()}
                 />
                 <button
-                    className="btn px-3 py-1 text-sm border border-gray-200 rounded bg-gray-50 hover:bg-gray-100 disabled:opacity-50"
+                    className="px-3 py-1 text-sm border border-gray-200 rounded bg-gray-50 hover:bg-gray-100 disabled:opacity-50"
                     onClick={addFormat}
                     disabled={!newFormat.trim()}
-                >Add
+                >
+                    Add
                 </button>
             </div>
         </div>
@@ -167,7 +293,14 @@ function SettingsPanel({sdk, context}: { sdk: ClientSDK; context: any }) {
 
 export default defineClient({
     hooks: {
-        'editor-sidebar-widget': (sdk, _prev, context) => <PermalinkWidget sdk={sdk} context={context}/>,
+        'blog-update-sidebar-widget': (sdk, _prev, context) => <PermalinkWidget
+            sdk={sdk} context={context} type={"posts"} _id={context.blogId}/>,
+        'tag-update-sidebar-widget': (sdk, _prev, context) => <PermalinkWidget
+            sdk={sdk} context={context} type={"tags"} _id={context.tagId}/>,
+        'category-update-sidebar-widget': (sdk, _prev, context) => <PermalinkWidget
+            sdk={sdk} context={context} type={"categories"} _id={context.categoryId}/>,
+        'user-update-sidebar-widget': (sdk, _prev, context) => <PermalinkWidget
+            sdk={sdk} context={context} type={"users"} _id={context.userId}/>,
         'system:plugin:settings-panel': (sdk, _prev, context) => <SettingsPanel sdk={sdk} context={context}/>
     },
     hasSettingsPanel: true

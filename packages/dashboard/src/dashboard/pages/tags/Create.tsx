@@ -32,7 +32,7 @@ const CreateTag: FunctionComponent<CreateTagProps> = () => {
 
                 <ExtensionPoint name="tag-create-form:toolbar" context={{fields}}/>
                 <ExtensionZone name="tag-create-form" context={{data: {fields}}}>
-                    <div className="bg-white p-6 rounded-lg shadow-md">
+                    <div className="flex-grow bg-white p-6 rounded-lg shadow-md mb-6">
                         <DynamicForm
                             id="createTag"
                             submitLabel="Create Tag"

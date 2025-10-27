@@ -127,7 +127,7 @@ const UpdateCategory: FunctionComponent<UpdateCategoryProps> = ({id}) => {
                 </div>
             ) : (
                 <ExtensionZone name="category-update-form" context={context}>
-                    <div className="bg-white p-6 rounded-lg shadow-md">
+                    <div className="flex-grow bg-white p-6 rounded-lg shadow-md mb-6">
                         <ExtensionPoint name="category-update-before" context={context}/>
                         <DynamicForm
                             id="updateCategory"
@@ -139,7 +139,7 @@ const UpdateCategory: FunctionComponent<UpdateCategoryProps> = ({id}) => {
                         />
                         <ExtensionPoint name="category-update-after" context={context}/>
                     </div>
-                    <ExtensionPoint name="category-sidebar-widget" context={context}/>
+                    <ExtensionPoint name="category-update-sidebar-widget" context={context}/>
                 </ExtensionZone>
             )}
         </div>

@@ -98,7 +98,7 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
 
                 <ExtensionPoint name="setting-create-form:toolbar" context={{fields}}/>
                 <ExtensionZone name="setting-create-form" context={{data: {fields}}}>
-                    <div className="bg-white p-6 rounded-lg shadow-md">
+                    <div className="flex-grow bg-white p-6 rounded-lg shadow-md mb-6">
                         <DynamicForm
                             id="createSetting"
                             submitLabel="Create Setting"

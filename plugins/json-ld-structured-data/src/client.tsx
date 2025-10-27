@@ -5,7 +5,7 @@ import "./styles.css"
 
 export default defineClient({
     hooks: {
-        'editor-sidebar-widget': (sdk, _prev, context) => <BlogSidebarWidget sdk={sdk} context={context}/>,
+        'blog-update-sidebar-widget': (sdk, _prev, context) => <BlogSidebarWidget sdk={sdk} context={context}/>,
         'system:plugin:settings-panel': (sdk, _prev, context) => <GlobalSettingsPanel sdk={sdk} context={context}/>
     },
     hasSettingsPanel: true

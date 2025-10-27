@@ -403,6 +403,6 @@ const editorSidebarWidget: ClientHookFunction = (sdk: ClientSDK, prev, context: 
 
 export default defineClient({
     hooks: {
-        'editor-sidebar-widget': editorSidebarWidget,
+        'blog-update-sidebar-widget': editorSidebarWidget,
     }
 });

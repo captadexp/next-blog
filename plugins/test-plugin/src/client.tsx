@@ -103,10 +103,10 @@ export default defineClient({
         },
 
         // Editor sidebar widget
-        'editor-sidebar-widget': (sdk, prev, context) => {
+        'blog-update-sidebar-widget': (sdk, prev, context) => {
             return (
                 <div className="p-2 border rounded">
-                    <HookIndicator hookName="editor-sidebar-widget"/>
+                    <HookIndicator hookName="blog-update-sidebar-widget"/>
                     <span className="ml-2 text-xs">Widget</span>
                 </div>
             );

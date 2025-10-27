@@ -197,7 +197,7 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
                 </div>
             ) : (
                 <ExtensionZone name="setting-update-form" context={context}>
-                    <div className="bg-white p-6 rounded-lg shadow-md">
+                    <div className="flex-grow bg-white p-6 rounded-lg shadow-md mb-6">
                         <ExtensionPoint name="setting-update-before" context={context}/>
                         <DynamicForm
                             id="updateSetting"
@@ -216,7 +216,7 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
                         />
                         <ExtensionPoint name="setting-update-after" context={context}/>
                     </div>
-                    <ExtensionPoint name="setting-sidebar-widget" context={context}/>
+                    <ExtensionPoint name="setting-update-sidebar-widget" context={context}/>
                 </ExtensionZone>
             )}
         </div>
