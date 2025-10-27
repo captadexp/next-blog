@@ -1,6 +1,6 @@
 import {RPCMethods} from "./common";
 import type {ClientHooksDefinition, ClientRPCsDefinition} from './types';
-import type {Blog, Category, Tag, User} from '../database/entities';
+import type {Blog, Category, Permission, SettingsEntry, Tag, User} from '../database/entities';
 
 export type * from './common';
 
@@ -11,37 +11,67 @@ export interface ClientPluginModule {
 }
 
 // Generic context type with common properties
-export interface ClientHookContext<T = any> {
-    data?: T;
+export interface ClientHookContext {
 }
 
-// Specific context for blog editor pages
-export interface BlogEditorContext extends ClientHookContext<Blog> {
+// Common form interface for all editor contexts
+interface EditorFormBase<T> {
+    data: Partial<T>;
+    on: (event: string, callback: Function) => void;
+    off: (event: string, callback: Function) => void;
+}
+
+// Specific context for editor pages
+export interface BlogEditorContext extends ClientHookContext {
     blogId: string;
     contentOwnerId?: string;
-    form: {
-        data: Partial<Blog>;
+    form: EditorFormBase<Blog> & {
         getCategory: () => Category | undefined;
         getTags: () => Tag[] | undefined;
-        on: (event: string, callback: Function) => void;
-        off: (event: string, callback: Function) => void;
     };
+    data: Blog;
+}
+
+export interface CategoryEditorContext extends ClientHookContext {
+    categoryId: string;
+    form: EditorFormBase<Category>;
+    data: Category
+}
+
+export interface TagEditorContext extends ClientHookContext {
+    tagId: string;
+    form: EditorFormBase<Tag>;
+    data: Tag
+}
+
+export interface UserEditorContext extends ClientHookContext {
+    userId: string;
+    form: EditorFormBase<User> & {
+        availablePermissions: Permission[];
+    };
+    data: User
+}
+
+export interface SettingEditorContext extends ClientHookContext {
+    settingId: string;
+    form: EditorFormBase<SettingsEntry>;
+    data: SettingsEntry;
 }
 
 // Context for list views
-export interface BlogListContext extends ClientHookContext<Blog> {
+export interface BlogListItemContext extends ClientHookContext {
     blog: Blog;
 }
 
-export interface UserListContext extends ClientHookContext<User> {
+export interface UserListItemContext extends ClientHookContext {
     user: User;
 }
 
-export interface TagListContext extends ClientHookContext<Tag> {
+export interface TagListItemContext extends ClientHookContext {
     tag: Tag;
 }
 
-export interface CategoryListContext extends ClientHookContext<Category> {
+export interface CategoryListItemContext extends ClientHookContext {
     category: Category;
 }
 
@@ -51,216 +81,119 @@ export interface ClientHooks extends Record<string, { payload?: any; response: a
     'dashboard-widget': { payload: { context?: ClientHookContext }; response: any };
 
     // Dashboard Home
-    'dashboard-home:before': { payload: { context: ClientHookContext & { page: 'dashboard' } }; response: any };
-    'dashboard-home:after': { payload: { context: ClientHookContext & { page: 'dashboard' } }; response: any };
+    'dashboard-home:before': { payload: { context: ClientHookContext }; response: any };
+    'dashboard-home:after': { payload: { context: ClientHookContext }; response: any };
     'stats-section:before': { payload: { context: ClientHookContext }; response: any };
     'stats-section:after': { payload: { context: ClientHookContext }; response: any };
-    'quick-draft:before': { payload: { context: ClientHookContext }; response: any };
-    'quick-draft:after': { payload: { context: ClientHookContext }; response: any };
 
     // Blog Pages
-    'blogs-list:before': { payload: { context: ClientHookContext<Blog[]> & { page: 'blogs' } }; response: any };
-    'blogs-list:after': { payload: { context: ClientHookContext<Blog[]> & { page: 'blogs' } }; response: any };
+    'blogs-list:before': { payload: { context: ClientHookContext }; response: any };
+    'blogs-list:after': { payload: { context: ClientHookContext }; response: any };
     'blogs-list-toolbar': { payload: { context?: ClientHookContext }; response: any };
-    'blog-table:before': { payload: { context: ClientHookContext<Blog[]> & { page: 'blogs' } }; response: any };
-    'blog-table:after': { payload: { context: ClientHookContext<Blog[]> & { page: 'blogs' } }; response: any };
-    'blog-item:before': { payload: { context: BlogListContext }; response: any };
-    'blog-item:after': { payload: { context: BlogListContext }; response: any };
-    'blog-create-form:before': {
-        payload: { context: ClientHookContext & { page: 'blogs'; entity: 'blog' } };
-        response: any
-    };
-    'blog-create-form:after': {
-        payload: { context: ClientHookContext & { page: 'blogs'; entity: 'blog' } };
-        response: any
-    };
+    'blogs-table:before': { payload: { context: ClientHookContext }; response: any };
+    'blogs-table:after': { payload: { context: ClientHookContext }; response: any };
+    'blog-item:before': { payload: { context: BlogListItemContext }; response: any };
+    'blog-item:after': { payload: { context: BlogListItemContext }; response: any };
+    'blog-create:before': { payload: { context: ClientHookContext }; response: any };
+    'blog-create:after': { payload: { context: ClientHookContext }; response: any };
+    'blog-create-form:before': { payload: { context: ClientHookContext }; response: any };
+    'blog-create-form:after': { payload: { context: ClientHookContext }; response: any };
+    'blog-create-form:toolbar': { payload: { context?: ClientHookContext }; response: any };
     'blog-update-form:before': { payload: { context: BlogEditorContext }; response: any };
     'blog-update-form:after': { payload: { context: BlogEditorContext }; response: any };
+    'blog-update-before': { payload: { context: BlogEditorContext }; response: any };
+    'blog-update-after': { payload: { context: BlogEditorContext }; response: any };
     'editor-sidebar-widget': { payload: { context: BlogEditorContext }; response: any };
+    'blog-sidebar-widget': { payload: { context: BlogEditorContext }; response: any };
 
     // User Pages
-    'users-list:before': { payload: { context: ClientHookContext<User[]> & { page: 'users' } }; response: any };
-    'users-list:after': { payload: { context: ClientHookContext<User[]> & { page: 'users' } }; response: any };
+    'users-list:before': { payload: { context: ClientHookContext }; response: any };
+    'users-list:after': { payload: { context: ClientHookContext }; response: any };
     'users-list-toolbar': { payload: { context?: ClientHookContext }; response: any };
-    'user-table:before': { payload: { context: ClientHookContext<User[]> & { page: 'users' } }; response: any };
-    'user-table:after': { payload: { context: ClientHookContext<User[]> & { page: 'users' } }; response: any };
-    'user-item:before': { payload: { context: UserListContext }; response: any };
-    'user-item:after': { payload: { context: UserListContext }; response: any };
-    'user-create:before': {
-        payload: { context: ClientHookContext & { page: 'users'; entity: 'user' } };
-        response: any
-    };
-    'user-create:after': { payload: { context: ClientHookContext & { page: 'users'; entity: 'user' } }; response: any };
-    'user-create-form:before': {
-        payload: { context: ClientHookContext & { page: 'users'; entity: 'user' } };
-        response: any
-    };
-    'user-create-form:after': {
-        payload: { context: ClientHookContext & { page: 'users'; entity: 'user' } };
-        response: any
-    };
+    'users-table:before': { payload: { context: ClientHookContext }; response: any };
+    'users-table:after': { payload: { context: ClientHookContext }; response: any };
+    'user-item:before': { payload: { context: UserListItemContext }; response: any };
+    'user-item:after': { payload: { context: UserListItemContext }; response: any };
+    'user-create:before': { payload: { context: ClientHookContext }; response: any };
+    'user-create:after': { payload: { context: ClientHookContext }; response: any };
+    'user-create-form:before': { payload: { context: ClientHookContext }; response: any };
+    'user-create-form:after': { payload: { context: ClientHookContext }; response: any };
     'user-create-form:toolbar': { payload: { context?: ClientHookContext }; response: any };
-    'user-update:before': {
-        payload: { context: ClientHookContext<User> & { page: 'users'; entity: 'user' } };
-        response: any
-    };
-    'user-update:after': {
-        payload: { context: ClientHookContext<User> & { page: 'users'; entity: 'user' } };
-        response: any
-    };
-    'user-update-form:before': {
-        payload: { context: ClientHookContext<User> & { page: 'users'; entity: 'user' } };
-        response: any
-    };
-    'user-update-form:after': {
-        payload: { context: ClientHookContext<User> & { page: 'users'; entity: 'user' } };
-        response: any
-    };
+    'user-update-form:before': { payload: { context: UserEditorContext }; response: any };
+    'user-update-form:after': { payload: { context: UserEditorContext }; response: any };
     'user-update-form:toolbar': { payload: { context?: ClientHookContext }; response: any };
+    'user-update-before': { payload: { context: UserEditorContext }; response: any };
+    'user-update-after': { payload: { context: UserEditorContext }; response: any };
+    'user-sidebar-widget': { payload: { context: UserEditorContext }; response: any };
 
     // Tag Pages
-    'tags-list:before': { payload: { context: ClientHookContext<Tag[]> & { page: 'tags' } }; response: any };
-    'tags-list:after': { payload: { context: ClientHookContext<Tag[]> & { page: 'tags' } }; response: any };
+    'tags-list:before': { payload: { context: ClientHookContext }; response: any };
+    'tags-list:after': { payload: { context: ClientHookContext }; response: any };
     'tags-list-toolbar': { payload: { context?: ClientHookContext }; response: any };
-    'tags-table:before': { payload: { context: ClientHookContext<Tag[]> & { page: 'tags' } }; response: any };
-    'tags-table:after': { payload: { context: ClientHookContext<Tag[]> & { page: 'tags' } }; response: any };
-    'tag-item:before': { payload: { context: TagListContext }; response: any };
-    'tag-item:after': { payload: { context: TagListContext }; response: any };
-    'tag-create:before': { payload: { context: ClientHookContext & { page: 'tags'; entity: 'tag' } }; response: any };
-    'tag-create:after': { payload: { context: ClientHookContext & { page: 'tags'; entity: 'tag' } }; response: any };
-    'tag-create-form:before': {
-        payload: { context: ClientHookContext & { page: 'tags'; entity: 'tag' } };
-        response: any
-    };
-    'tag-create-form:after': {
-        payload: { context: ClientHookContext & { page: 'tags'; entity: 'tag' } };
-        response: any
-    };
+    'tags-table:before': { payload: { context: ClientHookContext }; response: any };
+    'tags-table:after': { payload: { context: ClientHookContext }; response: any };
+    'tag-item:before': { payload: { context: TagListItemContext }; response: any };
+    'tag-item:after': { payload: { context: TagListItemContext }; response: any };
+    'tag-create:before': { payload: { context: ClientHookContext }; response: any };
+    'tag-create:after': { payload: { context: ClientHookContext }; response: any };
+    'tag-create-form:before': { payload: { context: ClientHookContext }; response: any };
+    'tag-create-form:after': { payload: { context: ClientHookContext }; response: any };
     'tag-create-form:toolbar': { payload: { context?: ClientHookContext }; response: any };
-    'tag-update:before': {
-        payload: { context: ClientHookContext<Tag> & { page: 'tags'; entity: 'tag' } };
-        response: any
-    };
-    'tag-update:after': {
-        payload: { context: ClientHookContext<Tag> & { page: 'tags'; entity: 'tag' } };
-        response: any
-    };
-    'tag-update-form:before': {
-        payload: { context: ClientHookContext<Tag> & { page: 'tags'; entity: 'tag' } };
-        response: any
-    };
-    'tag-update-form:after': {
-        payload: { context: ClientHookContext<Tag> & { page: 'tags'; entity: 'tag' } };
-        response: any
-    };
+    'tag-update-form:before': { payload: { context: TagEditorContext }; response: any };
+    'tag-update-form:after': { payload: { context: TagEditorContext }; response: any };
     'tag-update-form:toolbar': { payload: { context?: ClientHookContext }; response: any };
+    'tag-update-before': { payload: { context: TagEditorContext }; response: any };
+    'tag-update-after': { payload: { context: TagEditorContext }; response: any };
+    'tag-sidebar-widget': { payload: { context: TagEditorContext }; response: any };
 
     // Category Pages
-    'categories-list:before': {
-        payload: { context: ClientHookContext<Category[]> & { page: 'categories' } };
-        response: any
-    };
-    'categories-list:after': {
-        payload: { context: ClientHookContext<Category[]> & { page: 'categories' } };
-        response: any
-    };
+    'categories-list:before': { payload: { context: ClientHookContext }; response: any };
+    'categories-list:after': { payload: { context: ClientHookContext }; response: any };
     'categories-list-toolbar': { payload: { context?: ClientHookContext }; response: any };
-    'categories-table:before': {
-        payload: { context: ClientHookContext<Category[]> & { page: 'categories' } };
-        response: any
-    };
-    'categories-table:after': {
-        payload: { context: ClientHookContext<Category[]> & { page: 'categories' } };
-        response: any
-    };
-    'category-item:before': { payload: { context: CategoryListContext }; response: any };
-    'category-item:after': { payload: { context: CategoryListContext }; response: any };
-    'category-create:before': {
-        payload: { context: ClientHookContext & { page: 'categories'; entity: 'category' } };
-        response: any
-    };
-    'category-create:after': {
-        payload: { context: ClientHookContext & { page: 'categories'; entity: 'category' } };
-        response: any
-    };
-    'category-create-form:before': {
-        payload: { context: ClientHookContext & { page: 'categories'; entity: 'category' } };
-        response: any
-    };
-    'category-create-form:after': {
-        payload: { context: ClientHookContext & { page: 'categories'; entity: 'category' } };
-        response: any
-    };
+    'categories-table:before': { payload: { context: ClientHookContext }; response: any };
+    'categories-table:after': { payload: { context: ClientHookContext }; response: any };
+    'category-item:before': { payload: { context: CategoryListItemContext }; response: any };
+    'category-item:after': { payload: { context: CategoryListItemContext }; response: any };
+    'category-create:before': { payload: { context: ClientHookContext }; response: any };
+    'category-create:after': { payload: { context: ClientHookContext }; response: any };
+    'category-create-form:before': { payload: { context: ClientHookContext }; response: any };
+    'category-create-form:after': { payload: { context: ClientHookContext }; response: any };
     'category-create-form:toolbar': { payload: { context?: ClientHookContext }; response: any };
-    'category-update:before': {
-        payload: { context: ClientHookContext<Category> & { page: 'categories'; entity: 'category' } };
-        response: any
-    };
-    'category-update:after': {
-        payload: { context: ClientHookContext<Category> & { page: 'categories'; entity: 'category' } };
-        response: any
-    };
-    'category-update-form:before': {
-        payload: { context: ClientHookContext<Category> & { page: 'categories'; entity: 'category' } };
-        response: any
-    };
-    'category-update-form:after': {
-        payload: { context: ClientHookContext<Category> & { page: 'categories'; entity: 'category' } };
-        response: any
-    };
+    'category-update-form:before': { payload: { context: CategoryEditorContext }; response: any };
+    'category-update-form:after': { payload: { context: CategoryEditorContext }; response: any };
     'category-update-form:toolbar': { payload: { context?: ClientHookContext }; response: any };
+    'category-update-before': { payload: { context: CategoryEditorContext }; response: any };
+    'category-update-after': { payload: { context: CategoryEditorContext }; response: any };
+    'category-sidebar-widget': { payload: { context: CategoryEditorContext }; response: any };
 
     // Settings Pages
-    'settings-list:before': { payload: { context: ClientHookContext<any[]> & { page: 'settings' } }; response: any };
-    'settings-list:after': { payload: { context: ClientHookContext<any[]> & { page: 'settings' } }; response: any };
+    'settings-list:before': { payload: { context: ClientHookContext }; response: any };
+    'settings-list:after': { payload: { context: ClientHookContext }; response: any };
     'settings-list-toolbar': { payload: { context?: ClientHookContext }; response: any };
-    'settings-table:before': { payload: { context: ClientHookContext<any[]> & { page: 'settings' } }; response: any };
-    'settings-table:after': { payload: { context: ClientHookContext<any[]> & { page: 'settings' } }; response: any };
-    'setting-item:before': { payload: { context: ClientHookContext<any> & { setting: any } }; response: any };
-    'setting-item:after': { payload: { context: ClientHookContext<any> & { setting: any } }; response: any };
-    'setting-create:before': {
-        payload: { context: ClientHookContext & { page: 'settings'; entity: 'setting' } };
-        response: any
-    };
-    'setting-create:after': {
-        payload: { context: ClientHookContext & { page: 'settings'; entity: 'setting' } };
-        response: any
-    };
-    'setting-create-form:before': {
-        payload: { context: ClientHookContext & { page: 'settings'; entity: 'setting' } };
-        response: any
-    };
-    'setting-create-form:after': {
-        payload: { context: ClientHookContext & { page: 'settings'; entity: 'setting' } };
-        response: any
-    };
+    'settings-table:before': { payload: { context: ClientHookContext }; response: any };
+    'settings-table:after': { payload: { context: ClientHookContext }; response: any };
+    'setting-item:before': { payload: { context: ClientHookContext }; response: any };
+    'setting-item:after': { payload: { context: ClientHookContext }; response: any };
+    'setting-create:before': { payload: { context: ClientHookContext }; response: any };
+    'setting-create:after': { payload: { context: ClientHookContext }; response: any };
+    'setting-create-form:before': { payload: { context: ClientHookContext }; response: any };
+    'setting-create-form:after': { payload: { context: ClientHookContext }; response: any };
     'setting-create-form:toolbar': { payload: { context?: ClientHookContext }; response: any };
-    'setting-update:before': {
-        payload: { context: ClientHookContext<any> & { page: 'settings'; entity: 'setting' } };
-        response: any
-    };
-    'setting-update:after': {
-        payload: { context: ClientHookContext<any> & { page: 'settings'; entity: 'setting' } };
-        response: any
-    };
-    'setting-update-form:before': {
-        payload: { context: ClientHookContext<any> & { page: 'settings'; entity: 'setting' } };
-        response: any
-    };
-    'setting-update-form:after': {
-        payload: { context: ClientHookContext<any> & { page: 'settings'; entity: 'setting' } };
-        response: any
-    };
+    'setting-update-form:before': { payload: { context: SettingEditorContext }; response: any };
+    'setting-update-form:after': { payload: { context: SettingEditorContext }; response: any };
     'setting-update-form:toolbar': { payload: { context?: ClientHookContext }; response: any };
+    'setting-update-before': { payload: { context: SettingEditorContext }; response: any };
+    'setting-update-after': { payload: { context: SettingEditorContext }; response: any };
+    'setting-sidebar-widget': { payload: { context: SettingEditorContext }; response: any };
 
     // Plugin Pages
-    'plugins-list:before': { payload: { context: ClientHookContext<any[]> & { page: 'plugins' } }; response: any };
-    'plugins-list:after': { payload: { context: ClientHookContext<any[]> & { page: 'plugins' } }; response: any };
+    'plugins-list:before': { payload: { context: ClientHookContext }; response: any };
+    'plugins-list:after': { payload: { context: ClientHookContext }; response: any };
     'plugins-list-toolbar': { payload: { context?: ClientHookContext }; response: any };
-    'plugins-table:before': { payload: { context: ClientHookContext<any[]> & { page: 'plugins' } }; response: any };
-    'plugins-table:after': { payload: { context: ClientHookContext<any[]> & { page: 'plugins' } }; response: any };
-    'plugin-item:before': { payload: { context: ClientHookContext<any> & { plugin: any } }; response: any };
-    'plugin-item:after': { payload: { context: ClientHookContext<any> & { plugin: any } }; response: any };
+    'plugins-table:before': { payload: { context: ClientHookContext }; response: any };
+    'plugins-table:after': { payload: { context: ClientHookContext }; response: any };
+    'plugin-item:before': { payload: { context: ClientHookContext }; response: any };
+    'plugin-item:after': { payload: { context: ClientHookContext }; response: any };
 
     // Plugin system hooks
     'system:plugin:settings-panel': { payload: { context?: ClientHookContext }; response: any };
