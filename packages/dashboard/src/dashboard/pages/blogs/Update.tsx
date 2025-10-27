@@ -263,6 +263,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                         <ExtensionZone name="blog-update-form" context={pluginContext}>
                             <div className="flex flex-col md:flex-row gap-8">
                                 <div className="flex-grow bg-white p-6 rounded-lg shadow-md">
+                                    <ExtensionPoint name="blog-update-before" context={pluginContext}/>
                                     <DynamicForm
                                         id="updateBlog"
                                         submitLabel="Update Blog"
@@ -271,10 +272,13 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                                         fields={getFormFields}
                                         onFieldChange={handleFieldChange}
                                     />
+                                    <ExtensionPoint name="blog-update-after" context={pluginContext}/>
                                 </div>
                                 <div className="w-full md:w-1/3 lg:w-1/4 flex-shrink-0">
                                     <div className="sticky flex flex-col gap-2">
+                                        {/*for backward compat*/}
                                         <ExtensionPoint name="editor-sidebar-widget" context={pluginContext}/>
+                                        <ExtensionPoint name="blog-sidebar-widget" context={pluginContext}/>
                                     </div>
                                 </div>
                             </div>

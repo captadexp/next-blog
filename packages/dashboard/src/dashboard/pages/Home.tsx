@@ -39,7 +39,7 @@ const Home: FunctionComponent<HomeProps> = () => {
     }
 
     return (
-        <ExtensionZone name="dashboard-home" context={{zone: 'dashboard-home', page: 'dashboard'}}>
+        <ExtensionZone name="dashboard-home" context={{data: {user}}}>
             <h2 className="text-xl font-semibold mb-5">Dashboard Home</h2>
 
             <div className="mb-8">
@@ -56,7 +56,7 @@ const Home: FunctionComponent<HomeProps> = () => {
                 <p className="mb-4">{welcomeText}</p>
             </div>
 
-            <ExtensionZone name="stats-section" context={{zone: 'stats-section', page: 'dashboard', data: {user}}}>
+            <ExtensionZone name="stats-section" context={{data: {user}}}>
                 <div className="flex flex-wrap gap-5">
                     <div className="flex-1">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">

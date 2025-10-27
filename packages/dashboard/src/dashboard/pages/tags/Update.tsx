@@ -1,20 +1,14 @@
 import {FunctionComponent, h} from 'preact';
-import {useEffect, useState} from 'preact/hooks';
+import {useEffect, useMemo, useState} from 'preact/hooks';
 import {useLocation} from 'preact-iso';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {useUser} from "../../../context/UserContext.tsx";
+import {Tag, TagEditorContext} from '@supergrowthai/next-blog-types';
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 
 interface UpdateTagProps {
     path?: string;
     id?: string;
-}
-
-interface Tag {
-    _id: string;
-    name: string;
-    slug: string;
-    description?: string;
 }
 
 const UpdateTag: FunctionComponent<UpdateTagProps> = ({id}) => {
@@ -66,54 +60,89 @@ const UpdateTag: FunctionComponent<UpdateTagProps> = ({id}) => {
         ];
     };
 
+    // Event bus for form field changes
+    const eventBus = useMemo(() => {
+        const listeners: Record<string, Function[]> = {};
+        return {
+            on(event: string, callback: Function) {
+                if (!listeners[event]) {
+                    listeners[event] = [];
+                }
+                listeners[event].push(callback);
+                return () => this.off(event, callback);
+            },
+            off(event: string, callback: Function) {
+                if (listeners[event]) {
+                    listeners[event] = listeners[event].filter(c => c !== callback);
+                }
+            },
+            emit(event: string, data?: any) {
+                if (listeners[event]) {
+                    listeners[event].forEach(cb => cb(data));
+                }
+            },
+        };
+    }, []);
+
+    const handleFieldChange = (key: string, value: any) => {
+        eventBus.emit(`${key}:change`, value);
+        return null;
+    };
+
+    const context = useMemo<TagEditorContext | undefined>(() => {
+        if (!tag) return undefined;
+        return {
+            tagId: id!,
+            data: tag,
+            form: {
+                data: tag,
+                on: eventBus.on,
+                off: eventBus.off
+            }
+        };
+    }, [id, tag, eventBus]);
+
     return (
-        <ExtensionZone name="tag-update"
-                       context={{zone: 'tag-update', page: 'tags', entity: 'tag', data: {tag, loading, error}}}>
-            <div className="max-w-4xl mx-auto p-2 md:p-6">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-semibold">Update Tag</h2>
-                    <button
-                        onClick={() => location.route('/api/next-blog/dashboard/tags')}
-                        className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
-                    >
-                        Back to List
-                    </button>
-                </div>
-
-                {loading ? (
-                    <p>Loading tag data...</p>
-                ) : error ? (
-                    <div className="p-4 bg-red-100 text-red-800 rounded">
-                        Error: {error}
-                    </div>
-                ) : !tag ? (
-                    <div className="p-4 bg-yellow-100 text-yellow-800 rounded">
-                        Tag not found
-                    </div>
-                ) : (
-                    <>
-                        <ExtensionPoint name="tag-update-form:toolbar" context={{tag, fields: getFormFields()}}/>
-
-                        <ExtensionZone name="tag-update-form" context={{
-                            zone: 'tag-update-form',
-                            page: 'tags',
-                            entity: 'tag',
-                            data: {tag, fields: getFormFields()}
-                        }}>
-                            <div className="bg-white p-6 rounded-lg shadow-md">
-                                <DynamicForm
-                                    id="updateTag"
-                                    submitLabel="Update Tag"
-                                    postTo={`/api/next-blog/api/tag/${tag._id}/update`}
-                                    redirectTo={"/api/next-blog/dashboard/tags"}
-                                    fields={getFormFields()}
-                                />
-                            </div>
-                        </ExtensionZone>
-                    </>
-                )}
+        <div className="max-w-4xl mx-auto p-2 md:p-6">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-semibold">Update Tag</h2>
+                <button
+                    onClick={() => location.route('/api/next-blog/dashboard/tags')}
+                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
+                >
+                    Back to List
+                </button>
             </div>
-        </ExtensionZone>
+
+            {loading ? (
+                <p>Loading tag data...</p>
+            ) : error ? (
+                <div className="p-4 bg-red-100 text-red-800 rounded">
+                    Error: {error}
+                </div>
+            ) : !tag ? (
+                <div className="p-4 bg-yellow-100 text-yellow-800 rounded">
+                    Tag not found
+                </div>
+            ) : (
+                <ExtensionZone name="tag-update-form" context={context}>
+
+                    <div className="bg-white p-6 rounded-lg shadow-md">
+                        <ExtensionPoint name="tag-update-before" context={context}/>
+                        <DynamicForm
+                            id="updateTag"
+                            submitLabel="Update Tag"
+                            postTo={`/api/next-blog/api/tag/${tag._id}/update`}
+                            redirectTo={"/api/next-blog/dashboard/tags"}
+                            fields={getFormFields()}
+                            onFieldChange={handleFieldChange}
+                        />
+                        <ExtensionPoint name="tag-update-after" context={context}/>
+                    </div>
+                    <ExtensionPoint name="tag-sidebar-widget" context={context}/>
+                </ExtensionZone>
+            )}
+        </div>
     );
 };
 
