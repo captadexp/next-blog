@@ -57,7 +57,7 @@ const BlogsList: FunctionComponent<BlogsListProps> = () => {
     };
 
     return (
-        <ExtensionZone name="blogs-list" context={{zone: 'blogs-list', page: 'blogs', data: blogs}}>
+        <ExtensionZone name="blogs-list" context={{data: blogs}}>
             <div className="flex justify-between items-center mb-5">
                 <h2 className="text-xl font-semibold m-0">Blogs</h2>
                 {hasPermission('blogs:create') && (
@@ -85,7 +85,7 @@ const BlogsList: FunctionComponent<BlogsListProps> = () => {
             ) : blogs.length === 0 ? (
                 <p>No blogs found. Create your first blog post!</p>
             ) : (
-                <ExtensionZone name="blog-table" context={{zone: 'blog-table', page: 'blogs', data: blogs}}>
+                <ExtensionZone name="blogs-table" context={{data: blogs}}>
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
                             <thead>

@@ -150,7 +150,7 @@ const PluginsList = () => {
     }
 
     return (
-        <ExtensionZone name="plugins-list" context={{zone: 'plugins-list', page: 'plugins', data: plugins}}>
+        <ExtensionZone name="plugins-list" context={{data: plugins}}>
             <div className="p-4">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold">Plugins</h1>
@@ -173,8 +173,7 @@ const PluginsList = () => {
                 ) : plugins.length === 0 ? (
                     <div className="text-gray-500">No plugins found.</div>
                 ) : (
-                    <ExtensionZone name="plugins-table"
-                                   context={{zone: 'plugins-table', page: 'plugins', data: {plugins, loadedPlugins}}}>
+                    <ExtensionZone name="plugins-table" context={{data: {plugins, loadedPlugins}}}>
                         <div className="overflow-x-auto">
                             <table className="min-w-full bg-white border border-gray-200">
                                 <thead>

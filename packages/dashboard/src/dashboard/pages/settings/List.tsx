@@ -81,7 +81,7 @@ const SettingsList: FunctionComponent<SettingsListProps> = () => {
     };
 
     return (
-        <ExtensionZone name="settings-list" context={{zone: 'settings-list', page: 'settings', data: settings}}>
+        <ExtensionZone name="settings-list" context={{data: settings}}>
             <div className="flex justify-between items-center mb-5">
                 <h2 className="text-xl font-semibold m-0">Settings</h2>
                 {hasPermission('settings:create') && (
@@ -124,8 +124,7 @@ const SettingsList: FunctionComponent<SettingsListProps> = () => {
             ) : settings.length === 0 ? (
                 <p>No settings found. Create your first setting!</p>
             ) : (
-                <ExtensionZone name="settings-table"
-                               context={{zone: 'settings-table', page: 'settings', data: settings}}>
+                <ExtensionZone name="settings-table" context={{data: settings}}>
                     <div className="overflow-x-auto">
                         <table className="w-full border-collapse">
                             <thead>
