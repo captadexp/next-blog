@@ -24,8 +24,6 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
     const {apis, user, loading: userLoading} = useUser();
     const [categories, setCategories] = useState<Category[]>([]);
     const [tags, setTags] = useState<Tag[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         // Skip if not authenticated
@@ -42,11 +40,8 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
 
                 setCategories(catsPage1);
                 setTags(tagsPage1);
-                setLoading(false);
             } catch (err) {
                 console.error('Error fetching data:', err);
-                setError(err instanceof Error ? err.message : 'Unknown error');
-                setLoading(false);
             }
         };
 
@@ -166,7 +161,7 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
     }
 
     if (!user) {
-        return null; // Will redirect to login
+        return null;
     }
 
     return (

@@ -35,35 +35,31 @@ const CreateUser: FunctionComponent<CreateUserProps> = () => {
         });
         return grouped;
     };
+    const groupedPermissions = groupPermissions(availablePermissions);
 
     // Define form fields
-    const getFormFields = (): DynamicFormFieldType[] => {
-        // Group permissions for UI display
-        const groupedPermissions = groupPermissions(availablePermissions);
-
-        return [
-            {key: 'username', label: 'Username', type: 'text', required: true},
-            {key: 'email', label: 'Email', type: 'text', required: true},
-            {key: 'name', label: 'Name', type: 'text', required: true},
-            {
-                key: 'slug',
-                label: 'Slug',
-                type: 'text',
-                required: true,
-                placeholder: 'URL-friendly identifier. Auto-generated from name if left empty.'
-            },
-            {key: 'password', label: 'Password', type: 'password', required: true},
-            {key: 'bio', label: 'Bio', type: 'textarea'},
-            {
-                key: 'permissions',
-                label: 'User Permissions',
-                type: 'checkboxgroup',
-                value: ['blogs:read', 'blogs:list'], // Default permissions
-                groupedOptions: groupedPermissions,
-                showLabels: true
-            }
-        ];
-    };
+    const fields: DynamicFormFieldType[] = [
+        {key: 'username', label: 'Username', type: 'text', required: true},
+        {key: 'email', label: 'Email', type: 'text', required: true},
+        {key: 'name', label: 'Name', type: 'text', required: true},
+        {
+            key: 'slug',
+            label: 'Slug',
+            type: 'text',
+            required: true,
+            placeholder: 'URL-friendly identifier. Auto-generated from name if left empty.'
+        },
+        {key: 'password', label: 'Password', type: 'password', required: true},
+        {key: 'bio', label: 'Bio', type: 'textarea'},
+        {
+            key: 'permissions',
+            label: 'User Permissions',
+            type: 'checkboxgroup',
+            value: ['blogs:read', 'blogs:list'], // Default permissions
+            groupedOptions: groupedPermissions,
+            showLabels: true
+        }
+    ]
 
     // Auto-generate slug from name if slug is empty
     const handleFieldChange = (key: string, value: any, formData: any) => {

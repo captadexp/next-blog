@@ -1,5 +1,5 @@
 import {FunctionComponent, h} from 'preact';
-import {useEffect, useState} from 'preact/hooks';
+import {useEffect} from 'preact/hooks';
 import {useLocation} from 'preact-iso';
 import {useUser} from '../../../context/UserContext';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
@@ -12,8 +12,6 @@ interface CreateSettingProps {
 const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
     const location = useLocation();
     const {apis, user, loading: userLoading} = useUser();
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         // Skip if not authenticated
@@ -99,38 +97,24 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
                 </div>
 
                 <ExtensionPoint name="setting-create-form:toolbar" context={{fields}}/>
-
-                {loading ? (
-                    <p>Loading form...</p>
-                ) : error ? (
-                    <div className="p-4 bg-red-100 text-red-800 rounded">
-                        Error: {error}
+                <ExtensionZone name="setting-create-form" context={{data: {fields}}}>
+                    <div className="bg-white p-6 rounded-lg shadow-md">
+                        <DynamicForm
+                            id="createSetting"
+                            submitLabel="Create Setting"
+                            postTo={"/api/next-blog/api/settings/create"}
+                            apiMethod={handleCreateSetting}
+                            redirectTo={"/api/next-blog/dashboard/settings"}
+                            fields={fields}
+                            onSubmitSuccess={(data) => {
+                                console.log('Setting created successfully:', data);
+                            }}
+                            onSubmitError={(error) => {
+                                console.error('Error creating setting:', error);
+                            }}
+                        />
                     </div>
-                ) : (
-                    <ExtensionZone name="setting-create-form" context={{
-                        zone: 'setting-create-form',
-                        page: 'settings',
-                        entity: 'setting',
-                        data: {fields}
-                    }}>
-                        <div className="bg-white p-6 rounded-lg shadow-md">
-                            <DynamicForm
-                                id="createSetting"
-                                submitLabel="Create Setting"
-                                postTo={"/api/next-blog/api/settings/create"}
-                                apiMethod={handleCreateSetting}
-                                redirectTo={"/api/next-blog/dashboard/settings"}
-                                fields={fields}
-                                onSubmitSuccess={(data) => {
-                                    console.log('Setting created successfully:', data);
-                                }}
-                                onSubmitError={(error) => {
-                                    console.error('Error creating setting:', error);
-                                }}
-                            />
-                        </div>
-                    </ExtensionZone>
-                )}
+                </ExtensionZone>
             </div>
         </ExtensionZone>
     );
