@@ -95,7 +95,7 @@ const CreateUser: FunctionComponent<CreateUserProps> = () => {
     };
 
     return (
-        <ExtensionZone name="user-create" context={{zone: 'user-create', page: 'users', entity: 'user'}}>
+        <ExtensionZone name="user-create" context={{data: {fields}}}>
             <div className="max-w-4xl mx-auto p-2 md:p-6">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-semibold">Create New User</h2>
@@ -107,22 +107,15 @@ const CreateUser: FunctionComponent<CreateUserProps> = () => {
                     </button>
                 </div>
 
-                <ExtensionPoint name="user-create-form:toolbar"
-                                context={{fields: getFormFields(), availablePermissions}}/>
-
-                <ExtensionZone name="user-create-form" context={{
-                    zone: 'user-create-form',
-                    page: 'users',
-                    entity: 'user',
-                    data: {fields: getFormFields(), availablePermissions}
-                }}>
+                <ExtensionPoint name="user-create-form:toolbar" context={{fields, availablePermissions}}/>
+                <ExtensionZone name="user-create-form" context={{data: {fields, availablePermissions}}}>
                     <div className="bg-white p-6 rounded-lg shadow-md">
                         <DynamicForm
                             id="createUser"
                             submitLabel="Create User"
                             postTo={"/api/next-blog/api/users/create"}
                             redirectTo={"/api/next-blog/dashboard/users"}
-                            fields={getFormFields()}
+                            fields={fields}
                             apiMethod={handleCreateUser}
                             onFieldChange={handleFieldChange}
                         />

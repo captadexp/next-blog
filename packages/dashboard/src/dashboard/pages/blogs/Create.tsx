@@ -4,7 +4,7 @@ import {useLocation} from 'preact-iso';
 import {useUser} from '../../../context/UserContext';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {Category, Tag} from '@supergrowthai/next-blog-types';
-import {ExtensionZone} from '../../components/ExtensionZone';
+import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 
 const uniqById = <T extends { _id: string }>(arr: T[]) => {
     const map = new Map<string, T>();
@@ -170,26 +170,19 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
     }
 
     return (
-        <div className="max-w-4xl mx-auto p-2 md:p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold">Create New Blog</h2>
-                <button
-                    onClick={() => location.route('/api/next-blog/dashboard/blogs')}
-                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
-                >
-                    Back to List
-                </button>
-            </div>
-
-            {loading ? (
-                <p>Loading form...</p>
-            ) : error ? (
-                <div className="p-4 bg-red-100 text-red-800 rounded">
-                    Error: {error}
+        <ExtensionZone name="blog-create" context={{data: {fields}}}>
+            <div className="max-w-4xl mx-auto p-2 md:p-6">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-semibold">Create New Blog</h2>
+                    <button
+                        onClick={() => location.route('/api/next-blog/dashboard/blogs')}
+                        className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
+                    >
+                        Back to List
+                    </button>
                 </div>
-            ) : (
-                <ExtensionZone name="blog-create-form"
-                               context={{zone: 'blog-create-form', page: 'blogs', entity: 'blog'}}>
+                <ExtensionPoint name="blog-create-form:toolbar" context={{fields}}/>
+                <ExtensionZone name="blog-create-form" context={{data: {fields}}}>
                     <div className="bg-white p-6 rounded-lg shadow-md">
                         <DynamicForm
                             id="createBlog"
@@ -207,9 +200,10 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
                         />
                     </div>
                 </ExtensionZone>
-            )}
-        </div>
-    );
+            </div>
+        </ExtensionZone>
+    )
+
 };
 
 export default CreateBlog;
