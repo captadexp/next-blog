@@ -68,6 +68,16 @@ jobs:
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Version and publish MQ
+        run: ./.github/scripts/publish-package.sh packages/mq "${{ inputs.release_type }}"
+        env:
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Version and publish TQ
+        run: ./.github/scripts/publish-package.sh packages/tq "${{ inputs.release_type }}"
+        env:
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Commit and push version changes
         if: inputs.release_type == 'latest' || inputs.release_type == 'beta'
         run: |
