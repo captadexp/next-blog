@@ -18,7 +18,8 @@
     "stripInternal": true,
     "target": "es2020",
     "noEmit": true,
-    "outDir": "dist",
+    "outDir": "./dist",
+    "rootDir": "./src",
     "types": [
       "bun"
     ],
@@ -26,13 +27,13 @@
     },
     "lib": [
       "esnext"
-    ],
-    "rootDir": "src"
+    ]
   },
   "include": [
-    "src/**/*"
+    "src"
   ],
   "exclude": [
+    "node_modules",
     "dist"
   ]
 }

@@ -133,6 +133,7 @@
         "mongodb": "^6.16.0",
       },
       "devDependencies": {
+        "@supergrowthai/utils": "workspace:*",
         "@types/node": "^24.5.2",
         "typescript": "^5.9.2",
         "vite": "^7.1.5",

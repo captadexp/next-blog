@@ -3,7 +3,7 @@ import {EJSON} from "bson";
 import {GetRecordsCommandOutput} from "@aws-sdk/client-kinesis";
 import {PROCESSOR_TIMEOUT_MS} from "./constants.js";
 import {transformTask} from "./task-transformer.js";
-import * as NodeUtils from 'util';
+import * as NodeUtils from 'node:util';
 import {BaseTask, ProcessedTaskResult} from "../../adapters/index.js";
 import {Processor} from "../IMessageQueue.js";
 

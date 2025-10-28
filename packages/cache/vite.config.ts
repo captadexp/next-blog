@@ -19,7 +19,7 @@ export default defineConfig({
             external: [
                 'ioredis',
                 'memoose-js',
-                'node:*'
+                /^node:/
             ],
             output: {
                 preserveModules: false,

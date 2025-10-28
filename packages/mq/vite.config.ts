@@ -4,6 +4,7 @@ import dts from 'vite-plugin-dts';
 
 export default defineConfig({
     build: {
+        target: 'node18',
         lib: {
             entry: {
                 index: resolve(__dirname, 'src/index.ts'),
@@ -29,9 +30,6 @@ export default defineConfig({
                 'bson',
                 '@aws-sdk/client-kinesis',
 
-                // Workspace dependencies (will be removed for npm publishing)
-                '@supergrowthai/cache',
-
                 // Node.js builtin modules
                 'fs',
                 'fs/promises',
@@ -40,7 +38,7 @@ export default defineConfig({
                 'url',
                 'events',
                 'process',
-                'node:*'
+                /^node:/
             ],
             output: {
                 preserveModules: false,
@@ -55,6 +53,7 @@ export default defineConfig({
         dts({
             include: ['src/**/*.ts'],
             outDir: 'dist',
+            bundledPackages: ["@supergrowthai/utils"],
             rollupTypes: false,
             copyDtsFiles: true,
             insertTypesEntry: true,

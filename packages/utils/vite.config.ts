@@ -47,7 +47,7 @@ export default defineConfig({
                 'url',
                 'events',
                 'process',
-                'node:*'
+                /^node:/
             ],
             output: {
                 preserveModules: false,

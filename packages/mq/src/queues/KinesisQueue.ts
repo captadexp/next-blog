@@ -5,7 +5,7 @@ import {
     PutRecordsCommand,
     ShardIteratorType
 } from '@aws-sdk/client-kinesis';
-import * as NodeUtils from 'util';
+import * as NodeUtils from 'node:util';
 import ShardLeaser from '../shard-leaser/index.js';
 import shardLockProvider from "../shard-lock-provider/index.js";
 import {IMessageQueue, Processor} from './IMessageQueue.js';

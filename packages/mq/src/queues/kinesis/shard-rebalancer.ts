@@ -6,7 +6,7 @@ import {Logger, LogLevel} from "@supergrowthai/utils";
 import {QueueName} from '../../types.js';
 import {Processor} from "../IMessageQueue.js";
 import {REBALANCE_INTERVAL} from "./constants.js";
-import * as NodeUtils from 'util';
+import * as NodeUtils from 'node:util';
 
 const logger = new Logger('ShardRebalancer', LogLevel.INFO);
 

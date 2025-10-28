@@ -18,7 +18,7 @@ import {
     PROCESSOR_TIMEOUT_MS
 } from "./constants";
 import {transformTask} from "./task-transformer.js";
-import * as NodeUtils from 'util';
+import * as NodeUtils from 'node:util';
 import {BaseTask} from "../../adapters/index.js";
 
 const logger = new Logger('ShardConsumer', LogLevel.INFO);

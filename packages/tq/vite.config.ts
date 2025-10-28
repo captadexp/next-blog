@@ -4,6 +4,7 @@ import dts from 'vite-plugin-dts';
 
 export default defineConfig({
     build: {
+        target: 'node18',
         lib: {
             entry: {
                 index: resolve(__dirname, 'src/index.ts'),
@@ -37,7 +38,7 @@ export default defineConfig({
                 'url',
                 'events',
                 'process',
-                'node:*'
+                /^node:/
             ],
             output: {
                 preserveModules: false,
