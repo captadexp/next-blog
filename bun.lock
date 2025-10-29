@@ -92,7 +92,6 @@
       "dependencies": {
         "@supergrowthai/jsx-runtime": "workspace:*",
         "@supergrowthai/next-blog-types": "workspace:*",
-        "@supergrowthai/utils": "workspace:*",
         "dom-serializer": "^2.0.0",
         "domelementtype": "^2.3.0",
         "domhandler": "^5.0.3",
@@ -103,6 +102,7 @@
       },
       "devDependencies": {
         "@editorjs/editorjs": "^2.31.0",
+        "@supergrowthai/utils": "workspace:*",
         "@tailwindcss/typography": "^0.5.16",
         "@tailwindcss/vite": "^4.1.11",
         "@types/react": "^19.1.8",
@@ -216,12 +216,12 @@
       "version": "1.0.1",
       "dependencies": {
         "@supergrowthai/mq": "workspace:*",
-        "@supergrowthai/utils": "workspace:*",
         "lodash": "^4.17.21",
         "moment": "^2.30.1",
         "mongodb": "^6.16.0",
       },
       "devDependencies": {
+        "@supergrowthai/utils": "workspace:*",
         "@types/bun": "^1.3.1",
         "@types/node": "^24.5.2",
         "typescript": "^5.9.2",
