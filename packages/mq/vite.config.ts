@@ -8,10 +8,12 @@ export default defineConfig({
         lib: {
             entry: {
                 index: resolve(__dirname, 'src/index.ts'),
-                'queues/IMessageQueue': resolve(__dirname, 'src/queues/IMessageQueue.ts'),
-                'types': resolve(__dirname, 'src/types.ts'),
-                'utils': resolve(__dirname, 'src/utils.ts'),
+                'core/index': resolve(__dirname, 'src/core/index.ts'),
+                'core/types': resolve(__dirname, 'src/core/types.ts'),
+                'core/utils': resolve(__dirname, 'src/core/utils.ts'),
                 'adapters/index': resolve(__dirname, 'src/adapters/index.ts'),
+                'queues/index': resolve(__dirname, 'src/queues/index.ts'),
+                'shard/index': resolve(__dirname, 'src/shard/index.ts'),
             },
             name: 'SupergrowthAIMQ',
             formats: ['es', 'cjs'],

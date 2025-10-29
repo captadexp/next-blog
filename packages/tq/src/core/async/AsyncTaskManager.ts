@@ -1,6 +1,6 @@
 import {Logger, LogLevel} from "@supergrowthai/utils";
 import {CronTask} from "../../adapters/index.js";
-import {IAsyncTaskManager} from "@supergrowthai/mq";
+import {IAsyncTaskManager} from "./async-task-manager";
 
 const logger = new Logger('AsyncTaskManager', LogLevel.INFO);
 

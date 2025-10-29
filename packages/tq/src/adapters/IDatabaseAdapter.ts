@@ -1,10 +1,10 @@
-import {CronTask} from "./CronTasksAdapter.js";
-import {ObjectId} from "mongodb";
+import {CronTask} from "./types.js";
 
 /**
  * Database adapter interface for task storage operations
+ * @template ID - The type of the ID used for tasks (e.g., ObjectId, string, number)
  */
-export interface IDatabaseAdapter {
+export interface IDatabaseAdapter<ID = any> {
     /**
      * Add tasks to the scheduled collection
      */
@@ -18,27 +18,27 @@ export interface IDatabaseAdapter {
     /**
      * Update task status to processing
      */
-    markTasksAsProcessing(taskIds: ObjectId[], processingStartedAt: Date): Promise<void>;
+    markTasksAsProcessing(taskIds: ID[], processingStartedAt: Date): Promise<void>;
 
     /**
      * Update task status to executed
      */
-    markTasksAsExecuted(taskIds: ObjectId[]): Promise<void>;
+    markTasksAsExecuted(taskIds: ID[]): Promise<void>;
 
     /**
      * Update task status to failed
      */
-    markTasksAsFailed(taskIds: ObjectId[]): Promise<void>;
+    markTasksAsFailed(taskIds: ID[]): Promise<void>;
 
     /**
      * Get tasks by IDs
      */
-    getTasksByIds(taskIds: ObjectId[]): Promise<CronTask<any>[]>;
+    getTasksByIds(taskIds: ID[]): Promise<CronTask<any>[]>;
 
     /**
      * Update multiple tasks
      */
-    updateTasks(updates: Array<{ id: ObjectId; updates: Partial<CronTask<any>> }>): Promise<void>;
+    updateTasks(updates: Array<{ id: ID; updates: Partial<CronTask<any>> }>): Promise<void>;
 
     /**
      * Get stats for cleanup
@@ -62,4 +62,9 @@ export interface IDatabaseAdapter {
      * Close database connection
      */
     close(): Promise<void>;
+
+    /**
+     * Storage specific id generator
+     */
+    generateId(): ID
 }

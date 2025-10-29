@@ -1,6 +1,6 @@
 import {Collection, Db, MongoClient, ObjectId} from "mongodb";
 import {IDatabaseAdapter} from "./IDatabaseAdapter.js";
-import {CronTask} from "./CronTasksAdapter.js";
+import {CronTask} from "./types.js";
 import {Logger, LogLevel} from "@supergrowthai/utils";
 
 const logger = new Logger('MongoDbAdapter', LogLevel.INFO);
@@ -10,7 +10,7 @@ const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
 /**
  * MongoDB implementation of IDatabaseAdapter
  */
-export class MongoDbAdapter implements IDatabaseAdapter {
+export class MongoDbAdapter implements IDatabaseAdapter<ObjectId> {
     private client: MongoClient | null = null;
     private db: Db | null = null;
     private tasksCollection: Collection<any> | null = null;
@@ -243,5 +243,9 @@ export class MongoDbAdapter implements IDatabaseAdapter {
             await this.initialize();
         }
         return this.tasksCollection!;
+    }
+
+    generateId() {
+        return new ObjectId();
     }
 }

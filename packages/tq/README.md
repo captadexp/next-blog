@@ -1,15 +1,17 @@
 # @supergrowthai/tq
 
-A task queue management library with multiple executor types and async task handling. Built on top of @supergrowthai/mq
-for flexible message queue backends.
+A clean, dependency-injection based task queue management library with multiple executor types and async task handling.
+Built on top of `@supergrowthai/mq` for flexible message queue backends.
 
 ## Features
 
+- **Clean Architecture**: Constructor-based dependency injection with no global state
 - **Multiple Executor Types**: Single task (parallel/non-parallel) and multi-task executors
 - **Async Task Management**: Handle long-running tasks with configurable timeouts
 - **Type-Safe**: Full TypeScript support with generic task types
-- **Queue Integration**: Works with any message queue backend via @supergrowthai/mq
-- **Flexible Registration**: Register task executors for different queue types
+- **Queue Integration**: Works with any message queue backend via `@supergrowthai/mq`
+- **Named Exports**: Tree-shakable, explicit imports
+- **Fail-Fast Design**: Required dependencies enforce proper configuration
 
 ## Installation
 
@@ -17,17 +19,39 @@ for flexible message queue backends.
 npm install @supergrowthai/tq @supergrowthai/mq
 ```
 
-## Basic Usage
-
-### Setting Up Task Executors
+## Quick Start
 
 ```typescript
-import taskQueue from '@supergrowthai/tq';
-import messageQueue from '@supergrowthai/mq';
-import {ISingleTaskNonParallel} from '@supergrowthai/tq/core/base/interfaces';
+import {TaskQueue, TaskHandler} from '@supergrowthai/tq';
+import {InMemoryQueue, ITasksAdapter} from '@supergrowthai/mq';
 
-// Define a simple task executor
-const emailExecutor: ISingleTaskNonParallel<EmailTaskData> = {
+// 1. Set up your adapters (see @supergrowthai/mq docs for details)
+const tasksAdapter: ITasksAdapter = {
+    // Your implementation
+    findScheduledTasks: () => Promise.resolve([]),
+    generateTaskId: () => `task-${Date.now()}`,
+    insertTasks: () => Promise.resolve(),
+    markTasksAsExecuted: () => Promise.resolve(),
+    markTasksAsFailed: () => Promise.resolve(),
+    markTasksAsProcessing: () => Promise.resolve()
+};
+
+const databaseAdapter = /* your database adapter */;
+const cacheAdapter = /* your cache adapter */;
+
+// 2. Create instances with dependency injection
+const messageQueue = new InMemoryQueue(tasksAdapter);
+const taskQueue = new TaskQueue(messageQueue);
+const taskHandler = new TaskHandler(
+    messageQueue,
+    taskQueue,
+    databaseAdapter,
+    cacheAdapter
+    // asyncTaskManager optional
+);
+
+// 3. Register task executors
+taskQueue.register('email-queue', 'send-email', {
     multiple: false,
     parallel: false,
     default_retries: 3,
@@ -35,58 +59,130 @@ const emailExecutor: ISingleTaskNonParallel<EmailTaskData> = {
 
     async onTask(task, actions) {
         try {
-            await sendEmail(task.data.to, task.data.subject, task.data.body);
+            await sendEmail(task.payload.to, task.payload.subject);
             actions.success(task);
         } catch (error) {
             console.error('Failed to send email:', error);
             actions.fail(task);
         }
     }
-};
+});
 
-// Register the executor
-taskQueue.register(
-    messageQueue,     // Message queue instance
-    'email-queue',    // Queue name
-    'send-email',     // Task type
-    emailExecutor     // Executor implementation
+// 4. Start processing
+taskHandler.taskProcessServer();
+```
+
+## Core Components
+
+### TaskQueue
+
+Manages task executor registration and retrieval:
+
+```typescript
+import {TaskQueue} from '@supergrowthai/tq';
+import {IMessageQueue} from '@supergrowthai/mq';
+
+const taskQueue = new TaskQueue(messageQueue);
+
+// Register executors
+taskQueue.register('queue-name', 'task-type', executor);
+
+// Get executor
+const executor = taskQueue.getExecutor('queue-name', 'task-type');
+
+// Get queue information
+const queues = taskQueue.getQueues();
+const taskTypes = taskQueue.getTasksForQueue('queue-name');
+```
+
+### TaskHandler
+
+Manages task processing, retries, and queue consumption:
+
+```typescript
+import {TaskHandler} from '@supergrowthai/tq';
+
+const taskHandler = new TaskHandler(
+    messageQueue,      // IMessageQueue
+    taskQueue,         // TaskQueue
+    databaseAdapter,   // IDatabaseAdapter
+    cacheAdapter,      // BaseCacheProvider<any>
+    asyncTaskManager   // IAsyncTaskManager (optional)
+);
+
+// Start processing all registered queues
+taskHandler.taskProcessServer();
+
+// Or process specific queues
+taskHandler.startConsumingTasks('email-queue');
+
+// Process mature tasks (scheduled for future execution)
+taskHandler.processMatureTasks();
+```
+
+### TaskRunner
+
+Handles task execution with locking and async support:
+
+```typescript
+import {TaskRunner} from '@supergrowthai/tq';
+
+const taskRunner = new TaskRunner(
+    messageQueue,
+    taskQueue,
+    taskStore,
+    cacheProvider
+);
+
+// Run tasks
+const result = await taskRunner.run(
+    'runner-id',
+    tasks,
+    asyncTaskManager  // optional
 );
 ```
 
-### Task Types and Interfaces
+## Task Executor Types
 
-#### Single Task Non-Parallel Executor
+### Single Task Non-Parallel Executor
 
 For tasks that should be processed one at a time:
 
 ```typescript
-import {ISingleTaskNonParallel} from '@supergrowthai/tq/core/base/interfaces';
+import {ISingleTaskNonParallel} from '@supergrowthai/tq';
 
-const reportExecutor: ISingleTaskNonParallel<ReportData> = {
+interface EmailData {
+    to: string;
+    subject: string;
+    body: string;
+}
+
+const emailExecutor: ISingleTaskNonParallel<EmailData> = {
     multiple: false,
     parallel: false,
-    default_retries: 2,
+    default_retries: 3,
     store_on_failure: true,
 
     async onTask(task, actions) {
-        console.log(`Generating report: ${task.data.reportId}`);
-
         try {
-            const report = await generateReport(task.data);
+            await sendEmail(task.payload);
             actions.success(task);
         } catch (error) {
+            console.error('Email sending failed:', error);
             actions.fail(task);
         }
     }
 };
+
+taskQueue.register('email-queue', 'send-email', emailExecutor);
 ```
 
-#### Single Task Parallel Executor
+### Single Task Parallel Executor
 
 For tasks that can be processed in parallel batches:
 
 ```typescript
-import {ISingleTaskParallel} from '@supergrowthai/tq/core/base/interfaces';
+import {ISingleTaskParallel} from '@supergrowthai/tq';
 
 const imageProcessorExecutor: ISingleTaskParallel<ImageData> = {
     multiple: false,
@@ -97,7 +193,7 @@ const imageProcessorExecutor: ISingleTaskParallel<ImageData> = {
 
     async onTask(task, actions) {
         try {
-            await processImage(task.data.imageUrl, task.data.filters);
+            await processImage(task.payload.imageUrl, task.payload.filters);
             actions.success(task);
         } catch (error) {
             console.error('Image processing failed:', error);
@@ -105,14 +201,16 @@ const imageProcessorExecutor: ISingleTaskParallel<ImageData> = {
         }
     }
 };
+
+taskQueue.register('image-queue', 'process-image', imageProcessorExecutor);
 ```
 
-#### Multi-Task Executor
+### Multi-Task Executor
 
 For processing multiple tasks together as a batch:
 
 ```typescript
-import {IMultiTaskExecutor} from '@supergrowthai/tq/core/base/interfaces';
+import {IMultiTaskExecutor} from '@supergrowthai/tq';
 
 const batchProcessorExecutor: IMultiTaskExecutor<BatchData> = {
     multiple: true,
@@ -124,14 +222,14 @@ const batchProcessorExecutor: IMultiTaskExecutor<BatchData> = {
 
         for (const task of tasks) {
             try {
-                await processBatchItem(task.data);
+                await processBatchItem(task.payload);
                 actions.success(task);
             } catch (error) {
                 console.error('Batch item failed:', error);
                 actions.fail(task);
 
                 // Optionally add retry tasks
-                if (task.retries < 3) {
+                if ((task.retries || 0) < 3) {
                     actions.addTasks([{
                         ...task,
                         retries: (task.retries || 0) + 1,
@@ -142,13 +240,24 @@ const batchProcessorExecutor: IMultiTaskExecutor<BatchData> = {
         }
     }
 };
+
+taskQueue.register('batch-queue', 'process-batch', batchProcessorExecutor);
 ```
 
-### Async Task Management
+## Async Task Management
 
 For long-running tasks that might exceed normal timeouts:
 
 ```typescript
+import {AsyncTaskManager} from '@supergrowthai/tq';
+
+// Set up async task manager
+const asyncTaskManager = new AsyncTaskManager(maxConcurrent
+:
+5
+)
+;
+
 const heavyProcessingExecutor: ISingleTaskNonParallel<ProcessingData> = {
     multiple: false,
     parallel: false,
@@ -157,48 +266,31 @@ const heavyProcessingExecutor: ISingleTaskNonParallel<ProcessingData> = {
 
     // Configure async handoff for tasks taking longer than 30 seconds
     asyncConfig: {
-        handoffTimeout: 30000,        // 30 seconds
-        maxConcurrentAsync: 2         // Max 2 concurrent heavy tasks
+        handoffTimeout: 30000        // 30 seconds
     },
 
     async onTask(task, actions) {
         try {
             // This might take a very long time
-            const result = await performHeavyComputation(task.data);
+            const result = await performHeavyComputation(task.payload);
             actions.success(task);
         } catch (error) {
             actions.fail(task);
         }
     }
 };
+
+// Pass async task manager to TaskHandler
+const taskHandler = new TaskHandler(
+    messageQueue,
+    taskQueue,
+    databaseAdapter,
+    cacheAdapter,
+    asyncTaskManager  // Now tasks can be handed off to async processing
+);
 ```
 
-## Advanced Usage
-
-### Task Queue Management
-
-```typescript
-import {TaskQueue} from '@supergrowthai/tq';
-
-// Create a custom task queue instance
-const customTaskQueue = new TaskQueue();
-
-// Get information about registered queues
-const queues = taskQueue.getQueues();
-console.log('Registered queues:', queues);
-
-// Get task types for a specific queue
-const taskTypes = taskQueue.getTasksForQueue('email-queue');
-console.log('Email queue task types:', taskTypes);
-
-// Get a specific executor
-const executor = taskQueue.getExecutor('email-queue', 'send-email');
-if (executor) {
-    console.log('Found email executor');
-}
-```
-
-### Error Handling and Retries
+## Error Handling and Retries
 
 ```typescript
 const resilientExecutor: ISingleTaskNonParallel<ApiCallData> = {
@@ -208,10 +300,8 @@ const resilientExecutor: ISingleTaskNonParallel<ApiCallData> = {
     store_on_failure: true,
 
     async onTask(task, actions) {
-        const maxRetries = task.retries || this.default_retries;
-
         try {
-            const response = await callExternalAPI(task.data.endpoint, task.data.payload);
+            const response = await callExternalAPI(task.payload.endpoint, task.payload.data);
 
             if (response.status === 200) {
                 actions.success(task);
@@ -219,15 +309,16 @@ const resilientExecutor: ISingleTaskNonParallel<ApiCallData> = {
                 throw new Error(`API returned status: ${response.status}`);
             }
         } catch (error) {
-            console.error(`API call failed (attempt ${task.retries || 0 + 1}/${maxRetries}):`, error);
+            const currentRetries = task.retries || 0;
+            console.error(`API call failed (attempt ${currentRetries + 1}/${this.default_retries}):`, error);
 
-            if ((task.retries || 0) < maxRetries) {
+            if (currentRetries < this.default_retries) {
                 // Create retry task with exponential backoff
-                const retryDelay = Math.pow(2, task.retries || 0) * 1000; // 1s, 2s, 4s, 8s, 16s
+                const retryDelay = Math.pow(2, currentRetries) * 1000; // 1s, 2s, 4s, 8s, 16s
 
                 actions.addTasks([{
                     ...task,
-                    retries: (task.retries || 0) + 1,
+                    retries: currentRetries + 1,
                     execute_at: new Date(Date.now() + retryDelay)
                 }]);
             } else {
@@ -238,37 +329,67 @@ const resilientExecutor: ISingleTaskNonParallel<ApiCallData> = {
 };
 ```
 
-### Working with Different Message Queue Providers
+## Working with Different Queue Providers
 
 ```typescript
-import {QueueFactory} from '@supergrowthai/mq';
-import {MemoryCacheAdapter} from '@supergrowthai/mq/adapters';
+import {MongoDBQueue, KinesisQueue, FileShardLockProvider} from '@supergrowthai/mq';
+import {TaskQueue, TaskHandler} from '@supergrowthai/tq';
 
-// Use with MongoDB queue
-const mongoQueue = QueueFactory.create({
-    provider: 'mongodb',
-    cacheAdapter: new MemoryCacheAdapter()
+// MongoDB Queue Setup
+const mongoQueue = new MongoDBQueue(cacheAdapter, tasksAdapter);
+const mongoTaskQueue = new TaskQueue(mongoQueue);
+const mongoTaskHandler = new TaskHandler(
+    mongoQueue,
+    mongoTaskQueue,
+    databaseAdapter,
+    cacheAdapter
+);
+
+// Kinesis Queue Setup
+const shardLockProvider = new FileShardLockProvider();
+const kinesisQueue = new KinesisQueue({
+    shardLockProvider,
+    instanceId: 'worker-1'
 });
+const kinesisTaskQueue = new TaskQueue(kinesisQueue);
+const kinesisTaskHandler = new TaskHandler(
+    kinesisQueue,
+    kinesisTaskQueue,
+    databaseAdapter,
+    cacheAdapter
+);
 
-taskQueue.register(mongoQueue, 'heavy-processing', 'compute', heavyProcessingExecutor);
-
-// Use with Kinesis queue
-const kinesisQueue = QueueFactory.create({
-    provider: 'kinesis',
-    kinesis: {instanceId: 'worker-1'}
-});
-
-taskQueue.register(kinesisQueue, 'real-time', 'notification', notificationExecutor);
+// Register different executors on different queues
+mongoTaskQueue.register('heavy-processing', 'compute', heavyProcessingExecutor);
+kinesisTaskQueue.register('real-time', 'notification', notificationExecutor);
 ```
+
+## Architecture Benefits
+
+### No Global State
+
+- All dependencies are injected via constructors
+- No singletons or global variables
+- Easy to test and mock
+
+### Fail-Fast Design
+
+- Required dependencies are enforced at compile time
+- No optional parameters with defaults
+- Clear error messages when dependencies are missing
+
+### Clean Separation
+
+- Queue management separate from task execution
+- Pluggable storage and cache adapters
+- Each component has a single responsibility
 
 ## TypeScript Support
 
-The library provides full TypeScript support with generic task types:
+Full TypeScript definitions with generic task types:
 
 ```typescript
-import {TaskExecutor, ExecutorActions} from '@supergrowthai/tq/core/base/interfaces';
-import {CronTask} from '@supergrowthai/database/types.server';
-import {WithId} from 'mongodb';
+import {TaskExecutor, ExecutorActions, CronTask} from '@supergrowthai/tq';
 
 // Define your task data type
 interface EmailTaskData {
@@ -286,14 +407,14 @@ const typedExecutor: ISingleTaskNonParallel<EmailTaskData> = {
     store_on_failure: true,
 
     async onTask(
-        task: WithId<CronTask<EmailTaskData>>,
+        task: CronTask<EmailTaskData>,
         actions: ExecutorActions<EmailTaskData>
     ) {
-        // task.data is properly typed as EmailTaskData
-        console.log(`Sending email to: ${task.data.to}`);
+        // task.payload is properly typed as EmailTaskData
+        console.log(`Sending email to: ${task.payload.to}`);
 
         try {
-            await sendEmail(task.data);
+            await sendEmail(task.payload);
             actions.success(task);
         } catch (error) {
             actions.fail(task);
@@ -302,17 +423,48 @@ const typedExecutor: ISingleTaskNonParallel<EmailTaskData> = {
 };
 ```
 
-## Environment Integration
-
-Task queue automatically handles environment-specific queue naming:
+## Production Example
 
 ```typescript
-// Queue names are automatically prefixed based on environment
-// Development: 'dev-email-queue'
-// Production: 'prod-email-queue'
-// Test: 'test-email-queue'
+import {
+    TaskQueue,
+    TaskHandler,
+    TaskStore,
+    AsyncTaskManager
+} from '@supergrowthai/tq';
+import {MongoDBQueue, ITasksAdapter} from '@supergrowthai/mq';
+import {RedisCacheProvider} from 'memoose-js';
 
-taskQueue.register(messageQueue, 'email-queue', 'send', emailExecutor);
+// Production setup with all components
+class ProductionTasksAdapter implements ITasksAdapter {
+    // Your database implementation
+}
+
+const cacheProvider = new RedisCacheProvider('redis', {
+    host: process.env.REDIS_HOST,
+    port: parseInt(process.env.REDIS_PORT || '6379')
+});
+
+const messageQueue = new MongoDBQueue(cacheProvider, new ProductionTasksAdapter());
+const taskQueue = new TaskQueue(messageQueue);
+const asyncTaskManager = new AsyncTaskManager(10); // 10 concurrent async tasks
+
+const taskHandler = new TaskHandler(
+    messageQueue,
+    taskQueue,
+    new MongoDbAdapter(), // Your database adapter
+    cacheProvider,
+    cacheProvider,
+    asyncTaskManager
+);
+
+// Register all your executors
+taskQueue.register('email', 'send', emailExecutor);
+taskQueue.register('notifications', 'push', pushNotificationExecutor);
+taskQueue.register('reports', 'generate', reportGeneratorExecutor);
+
+// Start processing
+taskHandler.taskProcessServer();
 ```
 
 ## Best Practices
@@ -331,14 +483,14 @@ const idempotentExecutor: ISingleTaskNonParallel<UserUpdateData> = {
     async onTask(task, actions) {
         try {
             // Check if already processed
-            const user = await getUser(task.data.userId);
-            if (user.lastUpdated >= task.data.timestamp) {
+            const user = await getUser(task.payload.userId);
+            if (user.lastUpdated >= task.payload.timestamp) {
                 console.log('Update already applied, skipping');
                 actions.success(task);
                 return;
             }
 
-            await updateUser(task.data.userId, task.data.updates);
+            await updateUser(task.payload.userId, task.payload.updates);
             actions.success(task);
         } catch (error) {
             actions.fail(task);
@@ -364,7 +516,7 @@ const apiExecutor: ISingleTaskParallel<ApiTaskData> = {
         await rateLimiter.acquire();
 
         try {
-            const result = await callAPI(task.data);
+            const result = await callAPI(task.payload);
             actions.success(task);
         } catch (error) {
             actions.fail(task);
@@ -375,50 +527,10 @@ const apiExecutor: ISingleTaskParallel<ApiTaskData> = {
 };
 ```
 
-### 3. Monitoring and Observability
-
-Add logging and metrics to your executors:
-
-```typescript
-const monitoredExecutor: ISingleTaskNonParallel<TaskData> = {
-    multiple: false,
-    parallel: false,
-    default_retries: 3,
-    store_on_failure: true,
-
-    async onTask(task, actions) {
-        const startTime = Date.now();
-        const taskId = task._id.toString();
-
-        console.log(`Starting task ${taskId} of type ${task.type}`);
-
-        try {
-            await processTask(task.data);
-
-            const duration = Date.now() - startTime;
-            console.log(`Task ${taskId} completed in ${duration}ms`);
-
-            // Send metrics to your monitoring system
-            metrics.histogram('task.duration', duration, {type: task.type, status: 'success'});
-
-            actions.success(task);
-        } catch (error) {
-            const duration = Date.now() - startTime;
-            console.error(`Task ${taskId} failed after ${duration}ms:`, error);
-
-            metrics.histogram('task.duration', duration, {type: task.type, status: 'failure'});
-            metrics.increment('task.failures', {type: task.type});
-
-            actions.fail(task);
-        }
-    }
-};
-```
-
 ## Integration with @supergrowthai/mq
 
-This library requires @supergrowthai/mq for message queue functionality. See
-the [@supergrowthai/mq documentation](../mq/README.md) for details on configuring different queue providers and cache
+This library requires `@supergrowthai/mq` for message queue functionality. See
+the [@supergrowthai/mq documentation](../mq/README.md) for details on configuring different queue providers and
 adapters.
 
 ## License

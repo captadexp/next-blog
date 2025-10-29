@@ -24,6 +24,7 @@ export default defineConfig({
                 'lodash',
                 'mongodb',
                 'moment',
+                'bson',
 
                 // Workspace dependencies
                 '@supergrowthai/mq',

@@ -24,40 +24,20 @@
       "import": "./dist/adapters/index.mjs",
       "require": "./dist/adapters/index.js"
     },
-    "./adapters/database": {
-      "types": "./dist/adapters/database-adapter.d.ts",
-      "import": "./dist/adapters/database-adapter.mjs",
-      "require": "./dist/adapters/database-adapter.js"
-    },
     "./core/base/interfaces": {
       "types": "./dist/core/base/interfaces.d.ts",
       "import": "./dist/core/base/interfaces.mjs",
       "require": "./dist/core/base/interfaces.js"
     },
-    "./core/task-store": {
-      "types": "./dist/core/task-store.d.ts",
-      "import": "./dist/core/task-store.mjs",
-      "require": "./dist/core/task-store.js"
-    },
-    "./core/task-handler": {
-      "types": "./dist/core/task-handler.d.ts",
-      "import": "./dist/core/task-handler.mjs",
-      "require": "./dist/core/task-handler.js"
-    },
-    "./core/task-runner": {
-      "types": "./dist/core/task-runner.d.ts",
-      "import": "./dist/core/task-runner.mjs",
-      "require": "./dist/core/task-runner.js"
-    },
     "./core/actions": {
-      "types": "./dist/core/actions/Actions.d.ts",
-      "import": "./dist/core/actions/Actions.mjs",
-      "require": "./dist/core/actions/Actions.js"
+      "types": "./dist/core/Actions.d.ts",
+      "import": "./dist/core/Actions.mjs",
+      "require": "./dist/core/Actions.js"
     },
     "./core/actions/async": {
-      "types": "./dist/core/actions/AsyncActions.d.ts",
-      "import": "./dist/core/actions/AsyncActions.mjs",
-      "require": "./dist/core/actions/AsyncActions.js"
+      "types": "./dist/core/async/AsyncActions.d.ts",
+      "import": "./dist/core/async/AsyncActions.mjs",
+      "require": "./dist/core/async/AsyncActions.js"
     },
     "./core/async": {
       "types": "./dist/core/async/AsyncTaskManager.d.ts",
@@ -75,21 +55,25 @@
     "dev": "vite build --watch",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
+    "test": "bun src/test",
     "prepublishOnly": "npm run build"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "package.json"
   ],
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "MIT",
   "dependencies": {
-    "lodash": "^4.17.21",
-    "mongodb": "^6.16.0",
-    "moment": "^2.30.1",
     "@supergrowthai/mq": "workspace:*",
-    "@supergrowthai/utils": "workspace:*"
+    "@supergrowthai/utils": "workspace:*",
+    "lodash": "^4.17.21",
+    "moment": "^2.30.1",
+    "mongodb": "^6.16.0"
   },
   "devDependencies": {
+    "@types/bun": "^1.3.1",
     "@types/node": "^24.5.2",
     "typescript": "^5.9.2",
     "vite": "^7.1.5",
@@ -97,5 +81,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "peerDependencies": {
+    "memoose-js": "^1.1.2"
   }
 }

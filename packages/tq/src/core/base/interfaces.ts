@@ -1,4 +1,4 @@
-import {CronTask} from "../../adapters/CronTasksAdapter.js";
+import {CronTask} from "../../adapters/types.js";
 
 export type ExecutorActions<T> = {
     addTasks(task: CronTask<any>[]): void;

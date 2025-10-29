@@ -1,1 +1,1 @@
-export enum CronTaskType {}
+export {};

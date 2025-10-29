@@ -1,15 +1,16 @@
 # @supergrowthai/mq
 
-A message queue library with multiple provider backends (Kinesis, MongoDB, Memory, Immediate) and cache adapters for
-distributed task processing.
+A lightweight, dependency-injection based message queue library with multiple provider backends for distributed task
+processing.
 
 ## Features
 
+- **Clean Architecture**: Constructor-based dependency injection with no global state
 - **Multiple Queue Providers**: Kinesis, MongoDB, In-Memory, and Immediate queues
-- **Cache Adapter Pattern**: Pluggable cache providers for locking and coordination
+- **Pluggable Adapters**: Tasks adapters for different storage backends
 - **TypeScript Support**: Full type definitions included
-- **Graceful Shutdown**: Automatic cleanup on process termination
-- **Environment Configuration**: Easy configuration based on environment variables
+- **Named Exports**: Tree-shakable, explicit imports
+- **Fail-Fast Design**: Required dependencies enforce proper configuration
 
 ## Installation
 
@@ -17,194 +18,223 @@ distributed task processing.
 npm install @supergrowthai/mq
 ```
 
-## Basic Usage
-
-### Using the Default Queue Factory
+## Quick Start
 
 ```typescript
-import messageQueue from '@supergrowthai/mq';
-import {CronTask} from '@supergrowthai/database/types.server';
+import {InMemoryQueue, ITasksAdapter, BaseTask} from '@supergrowthai/mq';
 
-// Add tasks to a queue
-const tasks: CronTask<any>[] = [
-    {
-        type: 'email-send',
-        data: {to: 'user@example.com', subject: 'Hello'},
-        execute_at: new Date(),
-        status: 'scheduled'
+// 1. Create a tasks adapter
+const tasksAdapter: ITasksAdapter = {
+    findScheduledTasks(queueId: string, limit: number): Promise<BaseTask[]> {
+        return Promise.resolve([]);
+    },
+    generateTaskId(): string {
+        return `task-${Date.now()}`;
+    },
+    insertTasks(tasks: BaseTask[]): Promise<void> {
+        return Promise.resolve();
+    },
+    markTasksAsExecuted(taskIds: string[]): Promise<void> {
+        return Promise.resolve();
+    },
+    markTasksAsFailed(taskIds: string[]): Promise<void> {
+        return Promise.resolve();
+    },
+    markTasksAsProcessing(taskIds: string[]): Promise<void> {
+        return Promise.resolve();
     }
-];
+};
 
-await messageQueue.addTasks('email-queue', tasks);
+// 2. Create message queue instance
+const messageQueue = new InMemoryQueue(tasksAdapter);
 
-// Process tasks from a queue
+// 3. Register queues
+messageQueue.register('email-queue');
+
+// 4. Add tasks
+await messageQueue.addTasks('email-queue', [
+    {
+        _id: 'task-1',
+        type: 'send-email',
+        payload: {to: 'user@example.com', subject: 'Hello'},
+        execute_at: new Date(),
+        status: 'scheduled',
+        retries: 0,
+        created_at: new Date(),
+        updated_at: new Date(),
+        queue_id: 'email-queue',
+        processing_started_at: new Date()
+    }
+]);
+
+// 5. Process tasks
 await messageQueue.consumeTasks('email-queue', async (queueId, tasks) => {
     console.log(`Processing ${tasks.length} tasks from ${queueId}`);
 
+    // Process your tasks here
+    const processedTasks = await Promise.all(
+        tasks.map(async task => {
+            try {
+                // Your task processing logic
+                console.log(`Processing task: ${task.type}`);
+                return task;
+            } catch (error) {
+                throw error; // Will be handled as failed task
+            }
+        })
+    );
+
     return {
-        successTasks: tasks, // Successfully processed tasks
-        failedTasks: [],     // Failed tasks
-        newTasks: []         // New tasks to queue
+        successTasks: processedTasks,
+        failedTasks: [],
+        newTasks: []
     };
 });
 ```
 
-### Custom Queue Configuration
+## Queue Implementations
 
-```typescript
-import {QueueFactory} from '@supergrowthai/mq';
-import {MemoryCacheAdapter} from '@supergrowthai/mq/adapters';
-
-// Create a custom message queue
-const customQueue = QueueFactory.create({
-    provider: 'mongodb',
-    cacheAdapter: new MemoryCacheAdapter()
-});
-
-// Or with Kinesis
-const kinesisQueue = QueueFactory.create({
-    provider: 'kinesis',
-    kinesis: {
-        instanceId: 'my-worker-instance'
-    }
-});
-```
-
-## Queue Providers
-
-### Memory Queue
+### InMemoryQueue
 
 Fast in-memory queue for development and testing:
 
 ```typescript
-const memoryQueue = QueueFactory.create({
-    provider: 'memory'
-});
+import {InMemoryQueue, ITasksAdapter} from '@supergrowthai/mq';
+
+const messageQueue = new InMemoryQueue(tasksAdapter);
 ```
 
-### MongoDB Queue
-
-Persistent queue using MongoDB with distributed locking:
-
-```typescript
-import {MemooseCacheAdapter} from '@supergrowthai/mq/adapters';
-import {RedisCacheProvider} from 'memoose-js';
-
-const redisCache = new RedisCacheProvider('redis', {
-    host: 'localhost',
-    port: 6379
-});
-
-const mongoQueue = QueueFactory.create({
-    provider: 'mongodb',
-    cacheAdapter: new MemooseCacheAdapter(redisCache)
-});
-```
-
-### Kinesis Queue
-
-Distributed queue using AWS Kinesis for high throughput:
-
-```typescript
-const kinesisQueue = QueueFactory.create({
-    provider: 'kinesis',
-    kinesis: {
-        instanceId: process.env.INSTANCE_ID || 'worker-1'
-    }
-});
-```
-
-### Immediate Queue
+### ImmediateQueue
 
 Executes tasks immediately without queueing:
 
 ```typescript
-const immediateQueue = QueueFactory.create({
-    provider: 'immediate'
+import {ImmediateQueue, ITasksAdapter} from '@supergrowthai/mq';
+
+const messageQueue = new ImmediateQueue(tasksAdapter);
+```
+
+### MongoDBQueue
+
+Persistent queue using MongoDB with distributed locking:
+
+```typescript
+import {MongoDBQueue, ITasksAdapter} from '@supergrowthai/mq';
+import {BaseCacheProvider} from 'memoose-js';
+
+// You need to provide a cache adapter for locking
+const cacheAdapter: BaseCacheProvider<any> = /* your cache implementation */;
+
+const messageQueue = new MongoDBQueue(cacheAdapter, tasksAdapter);
+```
+
+### KinesisQueue
+
+Distributed queue using AWS Kinesis for high throughput:
+
+```typescript
+import {KinesisQueue, IShardLockProvider, FileShardLockProvider} from '@supergrowthai/mq';
+
+// Create shard lock provider
+const shardLockProvider: IShardLockProvider = new FileShardLockProvider();
+
+// Create Kinesis queue
+const messageQueue = new KinesisQueue({
+    shardLockProvider,
+    instanceId: process.env.INSTANCE_ID || 'worker-1'
 });
 ```
 
-## Cache Adapters
+## Shard Lock Providers
 
-The library includes several cache adapters for distributed coordination:
+For Kinesis queues, you need to provide a shard lock provider:
 
-### Memory Cache Adapter
+### FileShardLockProvider
 
-Simple in-memory cache for single-instance deployments:
+File-based locking for single-machine deployments:
 
 ```typescript
-import {MemoryCacheAdapter} from '@supergrowthai/mq/adapters';
+import {FileShardLockProvider} from '@supergrowthai/mq';
 
-const cacheAdapter = new MemoryCacheAdapter();
+const shardLockProvider = new FileShardLockProvider('/tmp/kinesis-locks');
 ```
 
-### Memoose Cache Adapter
+### Custom Shard Lock Provider
 
-Wrapper for memoose-js cache providers:
-
-```typescript
-import {MemooseCacheAdapter} from '@supergrowthai/mq/adapters';
-import {RedisCacheProvider} from 'memoose-js';
-
-const redisProvider = new RedisCacheProvider('redis', {
-    host: 'localhost',
-    port: 6379
-});
-
-const cacheAdapter = new MemooseCacheAdapter(redisProvider);
-```
-
-### Custom Cache Adapter
-
-Implement your own cache adapter:
+Implement your own shard lock provider:
 
 ```typescript
-import {ICacheAdapter} from '@supergrowthai/mq/adapters';
+import {IShardLockProvider} from '@supergrowthai/mq';
 
-class CustomCacheAdapter implements ICacheAdapter {
-    async get(key: string): Promise<string | null> {
+class CustomShardLockProvider implements IShardLockProvider {
+    async acquireLock(key: string, value: any, lockTTLMs: number): Promise<boolean> {
+        // Your implementation
+        return true;
+    }
+
+    async setCheckpoint(shardId: string, sequenceNumber: string): Promise<void> {
+        // Your implementation
+    }
+
+    async getCheckpoint(shardId: string): Promise<string | null> {
         // Your implementation
         return null;
     }
 
-    async set(key: string, value: string, ttlSeconds?: number): Promise<void> {
+    async renewLock(shardId: string, lockTTLMs: number): Promise<void> {
         // Your implementation
     }
 
-    async del(key: string): Promise<boolean> {
+    async releaseLock(key: string, instanceId: string): Promise<void> {
         // Your implementation
-        return false;
     }
 
-    async exists(key: string): Promise<boolean> {
+    async sendHeartbeat(streamId: string, instanceId: string, ttlMs: number): Promise<void> {
         // Your implementation
-        return false;
+    }
+
+    async getActiveInstances(streamId: string): Promise<string[]> {
+        // Your implementation
+        return [];
     }
 }
 ```
 
-## Environment Configuration
+## Tasks Adapter
 
-The library automatically configures based on environment variables:
+The `ITasksAdapter` interface defines how tasks are stored and retrieved:
 
-```bash
-# Environment type (affects default provider selection)
-ENV_TYPE=standalone|serverless|development
+```typescript
+import {ITasksAdapter, BaseTask} from '@supergrowthai/mq';
 
-# Worker instance ID (for Kinesis)
-INSTANCE_ID=worker-1
+class DatabaseTasksAdapter implements ITasksAdapter {
+    async findScheduledTasks(queueId: string, limit: number): Promise<BaseTask[]> {
+        // Query your database for scheduled tasks
+        return [];
+    }
 
-# Test mode
-NODE_ENV=test
+    generateTaskId(): string {
+        // Generate unique task IDs
+        return `task-${Date.now()}-${Math.random()}`;
+    }
+
+    async insertTasks(tasks: BaseTask[]): Promise<void> {
+        // Insert tasks into your database
+    }
+
+    async markTasksAsExecuted(taskIds: string[]): Promise<void> {
+        // Mark tasks as completed in your database
+    }
+
+    async markTasksAsFailed(taskIds: string[]): Promise<void> {
+        // Mark tasks as failed in your database
+    }
+
+    async markTasksAsProcessing(taskIds: string[]): Promise<void> {
+        // Mark tasks as currently being processed
+    }
+}
 ```
-
-Default configurations:
-
-- `standalone[redis-cfg]`: Kinesis queue with Redis cache
-- `standalone`: Kinesis queue
-- `serverless`: Kinesis queue
-- `development`: Redis-based providers
-- `test`: Memory queue
 
 ## Task Processing
 
@@ -213,9 +243,9 @@ Default configurations:
 The processor function receives tasks and returns results:
 
 ```typescript
-import {ProcessedTaskResult, Processor} from '@supergrowthai/mq/queues/IMessageQueue';
+import {Processor, ProcessedTaskResult} from '@supergrowthai/mq';
 
-const processor: Processor = async (queueId: string, tasks: CronTask<any>[]) => {
+const processor: Processor = async (queueId: string, tasks) => {
     const result: ProcessedTaskResult = {
         successTasks: [],
         failedTasks: [],
@@ -249,70 +279,60 @@ const result = await messageQueue.processBatch('my-queue', processor, 10);
 console.log(`Processed ${result.successTasks.length} tasks successfully`);
 ```
 
-## Error Handling and Retries
+## Architecture Benefits
 
-Failed tasks are automatically marked with incremented retry counts. You can implement custom retry logic:
+### No Global State
 
-```typescript
-const processor: Processor = async (queueId, tasks) => {
-    const result: ProcessedTaskResult = {successTasks: [], failedTasks: [], newTasks: []};
+- All dependencies are injected via constructors
+- No singletons or global variables
+- Easy to test and mock
 
-    for (const task of tasks) {
-        try {
-            await processTask(task);
-            result.successTasks.push(task);
-        } catch (error) {
-            // Retry logic
-            if (task.retries && task.retries < 3) {
-                // Schedule retry
-                const retryTask = {
-                    ...task,
-                    execute_at: new Date(Date.now() + 60000), // Retry in 1 minute
-                    retries: (task.retries || 0) + 1
-                };
-                result.newTasks.push(retryTask);
-            } else {
-                result.failedTasks.push(task);
-            }
-        }
-    }
+### Fail-Fast Design
 
-    return result;
-};
-```
+- Required dependencies are enforced at compile time
+- No optional parameters with defaults
+- Clear error messages when dependencies are missing
 
-## Graceful Shutdown
+### Clean Separation
 
-The library automatically handles graceful shutdown:
+- Queue implementations are separate from storage adapters
+- Lock providers are pluggable
+- Each component has a single responsibility
+
+## Example: Production Setup
 
 ```typescript
-// Shutdown is automatically handled on process signals (SIGINT, SIGTERM, SIGQUIT)
-// Or manually shutdown:
-await messageQueue.shutdown();
-```
+import {
+    MongoDBQueue,
+    ITasksAdapter,
+    BaseTask
+} from '@supergrowthai/mq';
+import {RedisCacheProvider} from 'memoose-js';
 
-## Advanced Usage
+// Your database tasks adapter
+class MongoTasksAdapter implements ITasksAdapter {
+    // Implementation for your MongoDB collections
+}
 
-### Custom Lock Manager
-
-For advanced distributed coordination:
-
-```typescript
-import {LockManager} from '@supergrowthai/mq/adapters';
-
-const lockManager = new LockManager(cacheAdapter, {
-    prefix: 'my-locks:',
-    defaultTimeout: 300 // 5 minutes
+// Cache provider for distributed locking
+const cacheProvider = new RedisCacheProvider('redis', {
+    host: process.env.REDIS_HOST,
+    port: parseInt(process.env.REDIS_PORT || '6379')
 });
 
-const acquired = await lockManager.acquire('resource-key', 60);
-if (acquired) {
-    try {
-        // Do work with locked resource
-    } finally {
-        await lockManager.release('resource-key');
-    }
-}
+// Create queue with all dependencies
+const messageQueue = new MongoDBQueue(
+    cacheProvider,
+    new MongoTasksAdapter()
+);
+
+// Register your queues
+messageQueue.register('email-queue');
+messageQueue.register('image-processing-queue');
+
+// Start processing
+await messageQueue.consumeTasks('email-queue', emailProcessor);
+await messageQueue.consumeTasks('image-processing-queue', imageProcessor);
 ```
 
 ## TypeScript Support
@@ -321,18 +341,14 @@ Full TypeScript definitions are included:
 
 ```typescript
 import {
-    QueueFactory,
-    QueueConfig,
     IMessageQueue,
-    ICacheAdapter
+    ITasksAdapter,
+    BaseTask,
+    ProcessedTaskResult,
+    Processor
 } from '@supergrowthai/mq';
 
-const config: QueueConfig = {
-    provider: 'mongodb',
-    cacheAdapter: new MemoryCacheAdapter()
-};
-
-const queue: IMessageQueue = QueueFactory.create(config);
+// All interfaces are fully typed for excellent IDE support
 ```
 
 ## License
