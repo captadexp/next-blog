@@ -6,7 +6,7 @@ import {ActionResults, Actions} from "./Actions.js";
 import {AsyncActions} from "./async/AsyncActions.js";
 import {CronTask} from "../adapters/index.js";
 import {IMessageQueue} from "@supergrowthai/mq";
-import {BaseCacheProvider} from "memoose-js";
+import {CacheProvider} from "memoose-js";
 import {LockManager} from "@supergrowthai/utils";
 import {TaskQueuesManager} from "./TaskQueuesManager";
 import {TaskStore} from "./TaskStore";
@@ -27,7 +27,7 @@ export class TaskRunner<ID = any> {
         private messageQueue: IMessageQueue,
         private taskQueue: TaskQueuesManager,
         private taskStore: TaskStore<ID>,
-        cacheProvider: BaseCacheProvider<any>,
+        cacheProvider: CacheProvider<any>,
         private generateId: () => ID
     ) {
         this.logger = new Logger('TaskRunner', LogLevel.INFO);

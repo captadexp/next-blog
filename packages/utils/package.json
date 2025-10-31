@@ -54,7 +54,7 @@
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "MIT",
   "dependencies": {
-    "memoose-js": "^1.1.2"
+    "memoose-js": "2.0.0-canary.7fa17b2"
   },
   "devDependencies": {
     "@smithy/types": "^4.2.0",

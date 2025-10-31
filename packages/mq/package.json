@@ -96,7 +96,7 @@
   "license": "MIT",
   "dependencies": {
     "ioredis": "^5.6.1",
-    "memoose-js": "^1.1.2",
+    "memoose-js": "2.0.0-canary.7fa17b2",
     "mongodb": "^6.16.0",
     "moment": "^2.30.1",
     "bson": "^6.10.3",

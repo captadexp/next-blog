@@ -14,7 +14,7 @@
     "@supergrowthai/next-blog": "workspace:*",
     "@supergrowthai/next-blog-ui": "workspace:*",
     "@supergrowthai/tq": "workspace:*",
-    "memoose-js": "^1.1.2",
+    "memoose-js": "2.0.0-canary.7fa17b2",
     "mongodb": "^6.12.0",
     "next": "^15.5.3",
     "react": "^19.1.1",

@@ -2,7 +2,7 @@ import {IMessageQueue} from "../../core/interfaces/message-queue.js";
 import {BaseMessage, MessageConsumer} from "../../adapters/index.js";
 import {getEnvironmentQueueName} from "../../core/utils.js";
 import {QueueName} from "../../core/types.js";
-import {BaseCacheProvider} from "memoose-js";
+import {CacheProvider} from "memoose-js";
 import {LockManager} from "@supergrowthai/utils";
 import {ObjectId} from "bson";
 
@@ -15,7 +15,7 @@ export class MongoDBQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, Objec
     private lockManager: LockManager;
     private registeredQueues: Set<QueueName> = new Set();
 
-    constructor(private cacheAdapter: BaseCacheProvider<any>, private mongoCollection: any) {
+    constructor(private cacheAdapter: CacheProvider<any>, private mongoCollection: any) {
         this.lockManager = new LockManager(cacheAdapter, {
             prefix: 'mq-lock:',
             defaultTimeout: 300 // 5 minutes lock by default

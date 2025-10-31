@@ -1,5 +1,5 @@
 import Logger, {LogLevel} from "./Logger";
-import {BaseCacheProvider} from "memoose-js";
+import {CacheProvider} from "memoose-js";
 
 class LockManager {
     private readonly prefix: string;
@@ -7,7 +7,7 @@ class LockManager {
     private acquireLocks: Map<string, Promise<any>> = new Map();
     private readonly logger = new Logger('MetricsCollector', LogLevel.INFO)
 
-    constructor(private cacheProvider: BaseCacheProvider<string>, options?: {
+    constructor(private cacheProvider: CacheProvider<string>, options?: {
         prefix?: string;
         defaultTimeout?: number; // in seconds
         debugLogs?: boolean

@@ -1,4 +1,4 @@
-import type {BaseCacheProvider,} from "memoose-js";
+import type {CacheProvider,} from "memoose-js";
 import {CacheKeyGenerator, RedisCacheProvider} from "memoose-js";
 import DisabledCache from "./DisabledCache";
 import RedisClusterCacheProvider from "./RedisClusterCacheProvider";
@@ -13,7 +13,7 @@ interface CacheConfig {
 }
 
 class CacheFactory {
-    static create(config: CacheConfig): BaseCacheProvider<any> {
+    static create(config: CacheConfig): CacheProvider<any> {
         console.log("Creating cache with config:", JSON.stringify(config));
         switch (config.provider) {
             case 'redis':

@@ -7,7 +7,7 @@ import type {MessageConsumer} from "@supergrowthai/mq";
 import {IMessageQueue, QueueName} from "@supergrowthai/mq";
 import {ProcessedTaskResult} from "./task-processor-types.js";
 import {CronTask, IDatabaseAdapter} from "../adapters/index.js";
-import type {BaseCacheProvider} from "memoose-js";
+import type {CacheProvider} from "memoose-js";
 import {TaskQueuesManager} from "./TaskQueuesManager";
 import {IAsyncTaskManager} from "./async/async-task-manager";
 
@@ -36,7 +36,7 @@ export class TaskHandler<ID = any> {
         private messageQueue: IMessageQueue,
         private taskQueuesManager: TaskQueuesManager,
         private databaseAdapter: IDatabaseAdapter<ID>,
-        private cacheAdapter: BaseCacheProvider<any>,
+        private cacheAdapter: CacheProvider<any>,
         private asyncTaskManager?: IAsyncTaskManager
     ) {
         this.logger = new Logger('TaskHandler', LogLevel.INFO);
