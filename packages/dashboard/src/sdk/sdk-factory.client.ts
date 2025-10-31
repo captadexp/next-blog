@@ -3,7 +3,7 @@ import {ClientSettingsHelper} from './settings-helper.client';
 import {ClientCacheHelper} from './cache-helper.client';
 import {ClientEventsHelper} from './events-helper.client';
 import toast from 'react-hot-toast';
-import Logger, {LogLevel} from "../utils/Logger";
+import {Logger, LogLevel} from "@supergrowthai/utils";
 import ApiClientImpl from '../api/client';
 
 /**

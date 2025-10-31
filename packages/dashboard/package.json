@@ -46,6 +46,7 @@
   },
   "peerDependencies": {},
   "devDependencies": {
+    "@supergrowthai/utils": "workspace:*",
     "@editorjs/editorjs": "^2.31.0",
     "@tailwindcss/typography": "^0.5.16",
     "@tailwindcss/vite": "^4.1.11",

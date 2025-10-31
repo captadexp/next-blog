@@ -25,7 +25,7 @@ export default defineConfig({
             }
         },
         rollupOptions: {
-            external: ['node:*'],
+            external: [/^node:/],
             output: {
                 preserveModules: false,
                 exports: 'named'

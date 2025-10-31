@@ -13,6 +13,10 @@ COPY packages/oneapi/package.json ./packages/oneapi/package.json
 COPY packages/plugin-dev-kit/package.json ./packages/plugin-dev-kit/package.json
 COPY packages/types/package.json ./packages/types/package.json
 COPY packages/ui/package.json ./packages/ui/package.json
+COPY packages/mq/package.json ./packages/mq/package.json
+COPY packages/tq/package.json ./packages/tq/package.json
+COPY packages/utils/package.json ./packages/utils/package.json
+COPY packages/cache/package.json ./packages/cache/package.json
 
 # Copy package.json files from plugins
 COPY plugins/ai-blog-generator/package.json ./plugins/ai-blog-generator/package.json
@@ -41,4 +45,6 @@ COPY . .
 RUN bun run build
 
 # Run typecheck
-RUN bun --filter="*" run typecheck
+RUN bun --filter="./packages/*" run typecheck
+RUN bun --filter="./plugins/*" run typecheck
+RUN bun --filter="./apps/*" run typecheck

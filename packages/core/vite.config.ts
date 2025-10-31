@@ -50,6 +50,7 @@ export default defineConfig(({mode}) => {
 
     return {
         build: {
+            target: 'node18',
             ...filesToIgnoreInWatch,
             lib: {
                 entry: {
