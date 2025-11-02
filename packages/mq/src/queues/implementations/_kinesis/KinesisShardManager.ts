@@ -1,6 +1,6 @@
 import {KinesisClient, ListShardsCommand} from '@aws-sdk/client-kinesis';
 import {Logger, LogLevel} from "@supergrowthai/utils";
-import {QueueName} from '../../../core/types.js';
+import {QueueName} from '../../../core';
 
 const logger = new Logger('ShardManager', LogLevel.INFO);
 
@@ -12,7 +12,7 @@ interface ShardAssignment {
 /**
  * Manages shard discovery and assignment for Kinesis streams
  */
-export class ShardManager {
+export class KinesisShardManager {
     constructor(
         private kinesis: KinesisClient,
         private instanceId: string

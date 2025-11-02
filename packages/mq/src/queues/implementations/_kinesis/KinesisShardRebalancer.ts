@@ -1,6 +1,6 @@
 import {ShardLeaser} from '../../../shard';
-import {ShardManager} from './shard-manager.js';
-import {ShardConsumer} from './shard-consumer.js';
+import {KinesisShardManager} from './KinesisShardManager.js';
+import {KinesisShardConsumer} from './KinesisShardConsumer.js';
 import {KinesisClient} from '@aws-sdk/client-kinesis';
 import {Logger, LogLevel} from "@supergrowthai/utils";
 import {MessageConsumer, QueueName} from '../../../core';
@@ -21,12 +21,12 @@ interface RebalancerConfig {
 /**
  * Orchestrates shard rebalancing across instances
  */
-export class ShardRebalancer {
-    private shardManager: ShardManager;
-    private activeConsumers: Map<string, ShardConsumer> = new Map();
+export class KinesisShardRebalancer {
+    private shardManager: KinesisShardManager;
+    private activeConsumers: Map<string, KinesisShardConsumer> = new Map();
 
     constructor(private config: RebalancerConfig) {
-        this.shardManager = new ShardManager(config.kinesis, config.instanceId);
+        this.shardManager = new KinesisShardManager(config.kinesis, config.instanceId);
     }
 
     /**
@@ -229,7 +229,7 @@ export class ShardRebalancer {
             this.activeConsumers.delete(consumerKey);
         }
 
-        const consumer = new ShardConsumer({
+        const consumer = new KinesisShardConsumer({
             instanceId,
             streamId,
             shardId,

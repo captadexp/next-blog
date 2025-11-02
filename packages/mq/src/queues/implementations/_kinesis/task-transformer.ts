@@ -4,7 +4,7 @@ import {BaseMessage} from "../../../core";
 /**
  * Transform JSON task to CronTask (preserving original logic from KinesisQueue)
  */
-export function transformTask(jsonTask: any): BaseMessage<any> {
+export function transformTask<PAYLOAD>(jsonTask: any): BaseMessage<PAYLOAD> {
     return {
         ...jsonTask,
         _id: jsonTask._id,

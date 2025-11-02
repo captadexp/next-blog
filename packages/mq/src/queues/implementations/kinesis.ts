@@ -6,21 +6,15 @@ import {
     ShardIteratorType
 } from '@aws-sdk/client-kinesis';
 import * as NodeUtils from 'node:util';
-import type {IShardLockProvider} from "../../../shard";
-import {ShardLeaser} from '../../../shard';
-import {
-    BaseMessage,
-    getEnvironmentQueueName,
-    IMessageQueue,
-    MessageConsumer as Processor,
-    QueueName
-} from '../../../core';
+import type {IShardLockProvider} from "../../shard";
+import {ShardLeaser} from '../../shard';
+import {BaseMessage, getEnvironmentQueueName, IMessageQueue, MessageConsumer as Processor, QueueName} from '../../core';
 import {EJSON} from "bson";
 import {Logger, LogLevel} from "@supergrowthai/utils";
-import {ShardManager} from './shard-manager.ts';
-import {KinesisMessageProcessor} from './task-processor.ts';
-import {ShardRebalancer} from './shard-rebalancer.ts';
-import {LOCK_TTL_MS, MAX_SHARDS_PER_BATCH} from './constants.ts';
+import {KinesisShardManager} from './_kinesis/KinesisShardManager.ts';
+import {KinesisMessageProcessor} from './_kinesis/KinesisMessageProcessor.ts';
+import {KinesisShardRebalancer} from './_kinesis/KinesisShardRebalancer.ts';
+import {LOCK_TTL_MS, MAX_SHARDS_PER_BATCH} from './_kinesis/constants.ts';
 
 const logger = new Logger('KinesisQueue', LogLevel.INFO)
 
@@ -43,9 +37,9 @@ export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
     private registeredQueues: Set<QueueName> = new Set();
 
     // Utility instances
-    private shardManager: ShardManager;
+    private shardManager: KinesisShardManager;
     private taskProcessor: KinesisMessageProcessor<PAYLOAD, ID>;
-    private shardRebalancer: ShardRebalancer;
+    private shardRebalancer: KinesisShardRebalancer;
     private readonly shardLockProvider: IShardLockProvider;
 
     // Stats tracking
@@ -64,9 +58,9 @@ export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
         this.instanceId = config?.instanceId || process.env.INSTANCE_ID || `instance-${Date.now()}`;
 
         // Initialize utilities
-        this.shardManager = new ShardManager(this.kinesis, this.instanceId);
+        this.shardManager = new KinesisShardManager(this.kinesis, this.instanceId);
         this.taskProcessor = new KinesisMessageProcessor<PAYLOAD, ID>({textDecoder: this.textDecoder, instanceId: this.instanceId});
-        this.shardRebalancer = new ShardRebalancer({
+        this.shardRebalancer = new KinesisShardRebalancer({
             instanceId: this.instanceId,
             kinesis: this.kinesis,
             textDecoder: this.textDecoder,

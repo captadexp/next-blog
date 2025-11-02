@@ -37,7 +37,7 @@ interface ConsumerConfig {
 /**
  * Handles consumption from a single Kinesis shard
  */
-export class ShardConsumer {
+export class KinesisShardConsumer {
     private shardIterator: string | undefined;
     private renewalTimer: NodeJS.Timeout | null = null;
     private consecutiveErrorCount = 0;
