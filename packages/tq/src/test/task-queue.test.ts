@@ -7,6 +7,7 @@ import {InMemoryQueue} from "@supergrowthai/mq";
 import {CronTask, InMemoryAdapter} from "../adapters";
 import type {ISingleTaskNonParallel} from "../core/base/interfaces.js";
 import {MemoryCacheProvider} from "memoose-js";
+import {AsyncTaskManager} from "../core/async/AsyncTaskManager.js";
 
 declare module "@supergrowthai/mq" {
     interface QueueRegistry {
@@ -123,5 +124,58 @@ describe("simple tq test", () => {
         await messageQueue.shutdown();
 
         console.log("✅ Test passed: Successfully registered, added, and consumed tasks");
+    });
+
+    it("should handle AbortSignal for graceful shutdown", async () => {
+        // Setup
+        const messageQueue = new InMemoryQueue<P>();
+        const queueName: QueueName = "test-tq-queue";
+        const databaseAdapter = new InMemoryAdapter<P>();
+        const cacheProvider = new MemoryCacheProvider();
+        const taskQueue = new TaskQueuesManager<P, string>(messageQueue);
+        const asyncTaskManager = new AsyncTaskManager<P, string>(10);
+        const taskHandler = new TaskHandler<P, string>(messageQueue, taskQueue, databaseAdapter, cacheProvider, asyncTaskManager);
+
+        // Create AbortController for testing
+        const abortController = new AbortController();
+
+        // Test 1: AsyncTaskManager shutdown with AbortSignal
+        const shutdownPromise = asyncTaskManager.shutdown(abortController.signal);
+
+        // Abort after 1 second (should interrupt the 10-second grace period)
+        setTimeout(() => abortController.abort(), 1000);
+
+        const startTime = Date.now();
+        await shutdownPromise;
+        const duration = Date.now() - startTime;
+
+        // Should complete in ~1 second, not the full 10-second grace period
+        expect(duration).toBeLessThan(2000);
+
+        // Test 2: TaskHandler startConsumingTasks with AbortSignal
+        const abortController2 = new AbortController();
+        abortController2.abort(); // Already aborted
+
+        // Register queue and executor for this test
+        const testExecutor: ISingleTaskNonParallel<{ message: string }> = {
+            multiple: false,
+            parallel: false,
+            store_on_failure: true,
+            onTask: async (task, actions) => actions.success(task)
+        };
+        taskQueue.register(queueName, "test-task", testExecutor);
+
+        // This should return early due to abort
+        const consumeResult = taskHandler.startConsumingTasks(queueName, abortController2.signal);
+
+        // Test 3: Batch processing with AbortSignal
+        const abortController3 = new AbortController();
+        abortController3.abort(); // Already aborted
+
+        const batchResult = await taskHandler.processBatch(queueName, async () => {
+        }, 10, abortController3.signal);
+        expect(batchResult).toBeUndefined(); // Should return early due to abort
+
+        console.log("✅ Test passed: AbortSignal properly handles graceful shutdown");
     });
 })

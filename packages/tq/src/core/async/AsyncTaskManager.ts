@@ -1,17 +1,17 @@
 import {Logger, LogLevel} from "@supergrowthai/utils";
-import {CronTask} from "../../adapters/index.js";
+import {CronTask} from "../../adapters";
 import {IAsyncTaskManager} from "./async-task-manager";
 
 const logger = new Logger('AsyncTaskManager', LogLevel.INFO);
 
-interface AsyncTaskEntry {
-    task: CronTask<any>;
+interface AsyncTaskEntry<PAYLOAD = any, ID = any> {
+    task: CronTask<PAYLOAD, ID>;
     promise: Promise<void>;
     startTime: number;
 }
 
-export class AsyncTaskManager implements IAsyncTaskManager {
-    private asyncTasks: Map<string, AsyncTaskEntry> = new Map();
+export class AsyncTaskManager<PAYLOAD = any, ID = any> implements IAsyncTaskManager<PAYLOAD, ID> {
+    private asyncTasks: Map<string, AsyncTaskEntry<PAYLOAD, ID>> = new Map();
     private handedOffTaskIds: Set<string> = new Set();
     private readonly maxTasks: number;
     private totalHandedOff: number = 0;
@@ -21,7 +21,7 @@ export class AsyncTaskManager implements IAsyncTaskManager {
         logger.info(`AsyncTaskManager initialized with max ${maxTasks} concurrent tasks`);
     }
 
-    handoffTask(task: CronTask<any>, runningPromise: Promise<void>): boolean {
+    handoffTask(task: CronTask<PAYLOAD, ID>, runningPromise: Promise<void>): boolean {
         // Require _id for async tasks - we need to track completion in DB
         if (!task._id) {
             logger.error(`Cannot hand off task without _id (type: ${task.type})`);
@@ -37,8 +37,8 @@ export class AsyncTaskManager implements IAsyncTaskManager {
         }
 
         // Add to tracking
-        const entry: AsyncTaskEntry = {
-            task: task as CronTask<any>,
+        const entry: AsyncTaskEntry<PAYLOAD, ID> = {
+            task: task,
             promise: runningPromise,
             startTime: Date.now()
         };
@@ -68,13 +68,28 @@ export class AsyncTaskManager implements IAsyncTaskManager {
     }
 
 
-    async shutdown(): Promise<void> {
+    async shutdown(abortSignal?: AbortSignal): Promise<void> {
         logger.info(`Shutting down AsyncTaskManager with ${this.asyncTasks.size} tasks still running`);
 
         // Wait a bit for tasks to complete
         const gracePeriod = 10000; // 10 seconds
         logger.info(`Waiting ${gracePeriod}ms for tasks to complete...`);
-        await new Promise(resolve => setTimeout(resolve, gracePeriod));
+
+        // Use AbortSignal to support early termination
+        if (abortSignal?.aborted) {
+            logger.info('AbortSignal already aborted, skipping grace period');
+        } else {
+            await new Promise<void>((resolve) => {
+                const timeout = setTimeout(resolve, gracePeriod);
+
+                // Resolve early if aborted
+                abortSignal?.addEventListener('abort', () => {
+                    logger.info('AbortSignal received during shutdown grace period');
+                    clearTimeout(timeout);
+                    resolve();
+                });
+            });
+        }
 
         if (this.asyncTasks.size > 0) {
             logger.warn(`${this.asyncTasks.size} tasks still running after grace period, they will continue in background`);
@@ -98,8 +113,8 @@ export class AsyncTaskManager implements IAsyncTaskManager {
         };
     }
 
-    isHandedOff(taskId: string): boolean {
-        return this.handedOffTaskIds.has(taskId);
+    isHandedOff(taskId: ID): boolean {
+        return this.handedOffTaskIds.has(String(taskId));
     }
 
     canAcceptTask(): boolean {

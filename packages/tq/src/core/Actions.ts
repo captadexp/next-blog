@@ -5,28 +5,28 @@ import {CronTask} from "../adapters";
 
 const logger = new Logger('Actions', LogLevel.INFO);
 
-interface ActionEntry {
+interface ActionEntry<PAYLOAD = any, ID = any> {
     type: 'success' | 'fail' | 'addTasks';
     timestamp: number;
-    task?: CronTask<any>;  // The task passed to success/fail
-    newTasks?: CronTask<any>[];     // Tasks to add
+    task?: CronTask<PAYLOAD, ID>;  // The task passed to success/fail
+    newTasks?: CronTask<PAYLOAD, ID>[];     // Tasks to add
 }
 
-interface TaskContext {
-    task: CronTask<any>;  // The task being executed
-    actions: ActionEntry[];
+interface TaskContext<PAYLOAD = any, ID = any> {
+    task: CronTask<PAYLOAD, ID> | null;  // The task being executed (null for batch contexts)
+    actions: ActionEntry<PAYLOAD, ID>[];
 }
 
-export interface ActionResults {
-    failedTasks: CronTask<any>[];
-    successTasks: CronTask<any>[];
-    newTasks: CronTask<any>[];
-    ignoredTasks: CronTask<any>[];
+export interface ActionResults<PAYLOAD = any, ID = any> {
+    failedTasks: CronTask<PAYLOAD, ID>[];
+    successTasks: CronTask<PAYLOAD, ID>[];
+    newTasks: CronTask<PAYLOAD, ID>[];
+    ignoredTasks: CronTask<PAYLOAD, ID>[];
 }
 
-export class Actions implements ExecutorActions<any> {
+export class Actions<PAYLOAD = any, ID = any> implements ExecutorActions<PAYLOAD, ID> {
     private readonly taskRunnerId: string;
-    private readonly taskContexts = new Map<string, TaskContext>();
+    private readonly taskContexts = new Map<string, TaskContext<PAYLOAD, ID>>();
 
     constructor(taskRunnerId: string) {
         this.taskRunnerId = taskRunnerId;
@@ -35,16 +35,16 @@ export class Actions implements ExecutorActions<any> {
     /**
      * Fork execution context for a specific task (for single-task executors)
      */
-    forkForTask(task: CronTask<any>): ExecutorActions<any> {
+    forkForTask(task: CronTask<PAYLOAD, ID>): ExecutorActions<PAYLOAD, ID> {
         const taskId = tId(task);
 
         // Initialize context for this task
-        const context: TaskContext = {task, actions: []};
+        const context: TaskContext<PAYLOAD, ID> = {task, actions: []};
         this.taskContexts.set(taskId, context);
 
         // Return a scoped actions object that tracks everything in this context
         return {
-            fail: (t: CronTask<any>) => {
+            fail: (t: CronTask<PAYLOAD, ID>) => {
                 context.actions.push({
                     type: 'fail',
                     timestamp: Date.now(),
@@ -53,7 +53,7 @@ export class Actions implements ExecutorActions<any> {
                 logger.error(`[${this.taskRunnerId}] Task failed: ${tId(t)} (${t.type})`);
             },
 
-            success: (t: CronTask<any>) => {
+            success: (t: CronTask<PAYLOAD, ID>) => {
                 context.actions.push({
                     type: 'success',
                     timestamp: Date.now(),
@@ -62,7 +62,7 @@ export class Actions implements ExecutorActions<any> {
                 logger.info(`[${this.taskRunnerId}] Task succeeded: ${tId(t)} (${t.type})`);
             },
 
-            addTasks: (tasks: CronTask<any>[]) => {
+            addTasks: (tasks: CronTask<PAYLOAD, ID>[]) => {
                 context.actions.push({
                     type: 'addTasks',
                     timestamp: Date.now(),
@@ -74,7 +74,7 @@ export class Actions implements ExecutorActions<any> {
     }
 
     // For multi-task executors - they use the root Actions directly (no forking)
-    fail(task: CronTask<any>): void {
+    fail(task: CronTask<PAYLOAD, ID>): void {
         const taskId = tId(task);
         let context = this.taskContexts.get(taskId);
         if (!context) {
@@ -90,7 +90,7 @@ export class Actions implements ExecutorActions<any> {
         logger.error(`[${this.taskRunnerId}] Task failed: ${taskId} (${task.type})`);
     }
 
-    success(task: CronTask<any>): void {
+    success(task: CronTask<PAYLOAD, ID>): void {
         const taskId = tId(task);
         let context = this.taskContexts.get(taskId);
         if (!context) {
@@ -106,14 +106,14 @@ export class Actions implements ExecutorActions<any> {
         logger.info(`[${this.taskRunnerId}] Task succeeded: ${taskId} (${task.type})`);
     }
 
-    addTasks(tasks: CronTask<any>[]): void {
+    addTasks(tasks: CronTask<PAYLOAD, ID>[]): void {
         // For multi-task mode, store in a batch-specific context
         logger.info(`[${this.taskRunnerId}] Adding ${tasks.length} new tasks`);
 
         const batchKey = `__batch_${this.taskRunnerId}__`;
         let batchContext = this.taskContexts.get(batchKey);
         if (!batchContext) {
-            batchContext = {task: null as any, actions: []};
+            batchContext = {task: null, actions: []};
             this.taskContexts.set(batchKey, batchContext);
         }
         batchContext.actions.push({
@@ -123,7 +123,7 @@ export class Actions implements ExecutorActions<any> {
         });
     }
 
-    addIgnoredTask(task: CronTask<any>): void {
+    addIgnoredTask(task: CronTask<PAYLOAD, ID>): void {
         const taskId = tId(task);
         this.taskContexts.set(taskId, {task, actions: []});
         logger.warn(`[${this.taskRunnerId}] Task ignored: ${taskId} (${task.type})`);
@@ -132,8 +132,8 @@ export class Actions implements ExecutorActions<any> {
     /**
      * Extract actions for a single task (used by async tasks)
      */
-    extractTaskActions(taskId: string): ActionResults {
-        const results: ActionResults = {
+    extractTaskActions(taskId: string): ActionResults<PAYLOAD, ID> {
+        const results: ActionResults<PAYLOAD, ID> = {
             failedTasks: [],
             successTasks: [],
             newTasks: [],
@@ -175,8 +175,8 @@ export class Actions implements ExecutorActions<any> {
     /**
      * Extract sync results including batch context (for sync processing)
      */
-    extractSyncResults(excludeTaskIds: string[]): ActionResults {
-        const results: ActionResults = {
+    extractSyncResults(excludeTaskIds: string[]): ActionResults<PAYLOAD, ID> {
+        const results: ActionResults<PAYLOAD, ID> = {
             failedTasks: [],
             successTasks: [],
             newTasks: [],
@@ -228,7 +228,7 @@ export class Actions implements ExecutorActions<any> {
     /**
      * Get all results (mainly for backward compatibility)
      */
-    getResults(): ActionResults {
+    getResults(): ActionResults<PAYLOAD, ID> {
         return this.extractSyncResults([]);
     }
 }

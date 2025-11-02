@@ -39,11 +39,17 @@ export class TaskRunner<PAYLOAD, ID> {
 
     async run(
         taskRunnerId: string,
-        tasksRaw: Array<CronTask<any>>,
-        asyncTaskManager?: IAsyncTaskManager
-    ): Promise<ActionResults & { asyncTasks: AsyncTask<PAYLOAD, ID>[] }> {
+        tasksRaw: Array<CronTask<PAYLOAD, ID>>,
+        asyncTaskManager?: IAsyncTaskManager,
+        abortSignal?: AbortSignal
+    ): Promise<ActionResults<PAYLOAD, ID> & { asyncTasks: AsyncTask<PAYLOAD, ID>[] }> {
         this.logger.info(`[${taskRunnerId}] Starting task runner`);
         this.logger.info(`[${taskRunnerId}] Processing ${tasksRaw.length} provided tasks`);
+
+        if (abortSignal?.aborted) {
+            this.logger.info(`[${taskRunnerId}] AbortSignal already aborted, returning empty results`);
+            return {successTasks: [], failedTasks: [], newTasks: [], ignoredTasks: [], asyncTasks: []};
+        }
 
         const tasks = await this.lockManager.filterLocked(tasksRaw, tId);
 
@@ -51,26 +57,32 @@ export class TaskRunner<PAYLOAD, ID> {
         await Promise.all(tasks.map((t) => this.lockManager!.acquire(tId(t))));
 
         const groupedTasksObject = tasks
-            .reduce((acc: any, task) => {
+            .reduce((acc: Record<TasksType, CronTask<PAYLOAD, ID>[]>, task) => {
                 acc[task.type] = acc[task.type] || [];
                 acc[task.type].push(task);
                 return acc;
-            }, {}) as Record<TasksType, CronTask<any>[]>;
+            }, {} as Record<TasksType, CronTask<PAYLOAD, ID>[]>);
 
         const groupedTasksArray = (Object.keys(groupedTasksObject) as unknown as TasksType[]).reduce((acc: {
             type: TasksType,
-            tasks: CronTask<any>[]
+            tasks: CronTask<PAYLOAD, ID>[]
         }[], type: TasksType) => {
             acc.push({type, tasks: groupedTasksObject[type]})
             return acc;
-        }, [] as { type: TasksType, tasks: CronTask<any>[] }[]);
+        }, [] as { type: TasksType, tasks: CronTask<PAYLOAD, ID>[] }[]);
 
         this.logger.info(`[${taskRunnerId}] Task groups: ${groupedTasksArray.map(g => `${g.type}: ${g.tasks.length}`).join(', ')}`);
 
-        const actions = new Actions(taskRunnerId);
+        const actions = new Actions<PAYLOAD, ID>(taskRunnerId);
         const asyncTasks: AsyncTask<PAYLOAD, ID>[] = [];
+        const processedTaskIds = new Set<string>();
 
         for (let i = 0; i < groupedTasksArray.length; i++) {
+            if (abortSignal?.aborted) {
+                this.logger.info(`[${taskRunnerId}] AbortSignal detected, stopping task group processing`);
+                break;
+            }
+
             const taskGroup = groupedTasksArray[i];
             const firstTask = taskGroup.tasks[0];
             if (!firstTask) {
@@ -81,9 +93,9 @@ export class TaskRunner<PAYLOAD, ID> {
             if (!executor) {
                 this.logger.warn(`[${taskRunnerId}] No executor found for type: ${taskGroup.type} in queue ${firstTask.queue_id}`);
                 for (const task of taskGroup.tasks) {
-                    const taskWithId: CronTask<any> = task._id
-                        ? task as CronTask<any>
-                        : {...task, _id: ""};
+                    const taskWithId: CronTask<PAYLOAD, ID> = task._id
+                        ? task
+                        : {...task, _id: this.generateId()};
                     actions.addIgnoredTask(taskWithId);
                 }
                 continue;
@@ -101,6 +113,9 @@ export class TaskRunner<PAYLOAD, ID> {
                 await this.taskStore.updateTasksForRetry(rescheduledTasks);
                 continue;
             }
+
+            // Track that we're processing this task group
+            taskGroup.tasks.forEach(task => processedTaskIds.add(tId(task)));
 
             this.logger.info(`[${taskRunnerId}] Processing ${taskGroup.tasks.length} tasks of type: ${taskGroup.type}`);
 
@@ -137,12 +152,16 @@ export class TaskRunner<PAYLOAD, ID> {
                                 this.logger.error(`[${taskRunnerId}] executor.onTask failed: ${err}`);
                             });
 
-                            const timeoutPromise = new Promise<'~~~timeout'>(resolve =>
-                                setTimeout(() => {
+                            const timeoutPromise = new Promise<'~~~timeout'>(resolve => {
+                                const timeoutId = setTimeout(() => {
                                     isTimedOut = true;
                                     resolve('~~~timeout');
-                                }, timeoutMs)
-                            );
+                                }, timeoutMs);
+
+                                // Support early cancellation via AbortSignal
+                                // Note: In real usage, this would come from the task execution context
+                                // For now, this is a foundation for future AbortSignal integration
+                            });
 
                             const result = await Promise.race([taskPromise, timeoutPromise]);
 
@@ -186,7 +205,7 @@ export class TaskRunner<PAYLOAD, ID> {
 
         this.logger.info(`[${taskRunnerId}] Completing run - Success: ${results.successTasks.length}, Failed: ${results.failedTasks.length}, New: ${results.newTasks.length}, Async: ${asyncTasks.length}, Ignored: ${results.ignoredTasks.length}`);
 
-        await Promise.all(tasks.map((t) => this.lockManager!.release(tId(t))));
+        await Promise.all(tasks.filter(t => processedTaskIds.has(tId(t))).map((t) => this.lockManager!.release(tId(t))));
 
         return {...results, asyncTasks};
     }

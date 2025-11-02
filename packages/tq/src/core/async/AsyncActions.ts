@@ -9,15 +9,15 @@ import {TaskQueuesManager} from "../TaskQueuesManager.js";
 const logger = new Logger('AsyncActions', LogLevel.INFO);
 
 export class AsyncActions<PAYLOAD, ID = any> {
-    private readonly actions: Actions;
+    private readonly actions: Actions<PAYLOAD, ID>;
     private readonly taskId: string;
 
     constructor(
         private messageQueue: IMessageQueue<PAYLOAD, ID>,
         private taskStore: TaskStore<PAYLOAD, ID>,
         private taskQueue: TaskQueuesManager<PAYLOAD, ID>,
-        actions: Actions,
-        task: CronTask<any>,
+        actions: Actions<PAYLOAD, ID>,
+        task: CronTask<PAYLOAD, ID>,
         private generateId: () => ID
     ) {
         this.actions = actions;
@@ -44,8 +44,7 @@ export class AsyncActions<PAYLOAD, ID = any> {
         // Process all results
         if (results.failedTasks.length > 0) {
             try {
-                const failedTaskIds = results.failedTasks.map(task => task._id as ID);
-                await this.taskStore.markTasksAsFailed(failedTaskIds);
+                await this.taskStore.markTasksAsFailed(results.failedTasks);
                 logger.info(`[AsyncActions] Marked ${results.failedTasks.length} tasks as failed in database`);
             } catch (err) {
                 logger.error(`[AsyncActions] Failed to mark tasks as failed:`, err);
@@ -72,10 +71,10 @@ export class AsyncActions<PAYLOAD, ID = any> {
     /**
      * Schedule new tasks - replicates the logic from task-handler's addTasks
      */
-    private async scheduleNewTasks(tasks: CronTask<any>[]): Promise<void> {
+    private async scheduleNewTasks(tasks: CronTask<PAYLOAD, ID>[]): Promise<void> {
         const now = new Date();
-        const immediate: { [key in QueueName]?: CronTask<any>[] } = {};
-        const future: CronTask<any>[] = [];
+        const immediate: { [key in QueueName]?: CronTask<PAYLOAD, ID>[] } = {};
+        const future: CronTask<PAYLOAD, ID>[] = [];
 
         // Split tasks by timing
         for (const task of tasks) {

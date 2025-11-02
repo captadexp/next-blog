@@ -9,7 +9,7 @@ class TaskStore<PAYLOAD, ID> {
     /**
      * Adds multiple tasks to the scheduled queue
      */
-    async addTasksToScheduled(tasks: CronTask<PAYLOAD, ID>[]): Promise<any> {
+    async addTasksToScheduled(tasks: CronTask<PAYLOAD, ID>[]): Promise<CronTask<PAYLOAD, ID>[]> {
         if (!tasks.length) return [];
 
         const transformedTasks: CronTask<PAYLOAD, ID>[] = tasks.map((task) => ({
@@ -47,56 +47,54 @@ class TaskStore<PAYLOAD, ID> {
     /**
      * Marks tasks as processing with current timestamp
      */
-    async markTasksAsProcessing(taskIds: ID[]): Promise<void> {
-        await this.databaseAdapter.markTasksAsProcessing(taskIds, new Date());
+    async markTasksAsProcessing(tasks: CronTask<PAYLOAD, ID>[]): Promise<void> {
+        await this.databaseAdapter.markTasksAsProcessing(tasks, new Date());
     }
 
     /**
      * Marks tasks as executed/completed
      */
-    async markTasksAsExecuted(taskIds: ID[]): Promise<void> {
-        await this.databaseAdapter.markTasksAsExecuted(taskIds);
+    async markTasksAsExecuted(tasks: CronTask<PAYLOAD, ID>[]): Promise<void> {
+        await this.databaseAdapter.markTasksAsExecuted(tasks);
     }
 
     /**
      * Marks tasks as failed and increments retry count
      */
-    async markTasksAsFailed(taskIds: ID[]): Promise<void> {
-        await this.databaseAdapter.markTasksAsFailed(taskIds);
+    async markTasksAsFailed(tasks: CronTask<PAYLOAD, ID>[]): Promise<void> {
+        await this.databaseAdapter.markTasksAsFailed(tasks);
     }
 
     /**
      * Marks tasks as successful/completed
      */
     async markTasksAsSuccess(tasks: CronTask<PAYLOAD, ID>[]): Promise<void> {
-        const taskIds = tasks.map(task => task._id as ID);
-        await this.databaseAdapter.markTasksAsExecuted(taskIds);
+        await this.databaseAdapter.markTasksAsExecuted(tasks);
     }
 
     /**
-     * Marks tasks as ignored (same as failed for now)
+     * Marks tasks as ignored with proper task context
      */
     async markTasksAsIgnored(tasks: CronTask<PAYLOAD, ID>[]): Promise<void> {
-        const taskIds = tasks.map(task => task._id as ID);
 
         //                             error: 'No executor found for task type',
         //                             ignored_reason: 'unknown_executor',
         //                             ignored_at: new Date()
-        // todo passing only ids is a problem because we cant update execution stats
-        await this.databaseAdapter.markTasksAsIgnored(taskIds);
+        // todo we cant update execution stats
+        await this.databaseAdapter.markTasksAsIgnored(tasks);
     }
 
     /**
      * Updates multiple tasks with specific updates
      */
-    async updateTasks(updates: Array<{ id: ID; updates: Partial<CronTask<any>> }>): Promise<void> {
+    async updateTasks(updates: Array<{ id: ID; updates: Partial<CronTask<PAYLOAD, ID>> }>): Promise<void> {
         await this.databaseAdapter.updateTasks(updates);
     }
 
     /**
      * Gets tasks by their IDs
      */
-    async getTasksByIds(taskIds: ID[]): Promise<CronTask<any>[]> {
+    async getTasksByIds(taskIds: ID[]): Promise<CronTask<PAYLOAD, ID>[]> {
         return await this.databaseAdapter.getTasksByIds(taskIds);
     }
 

@@ -18,24 +18,24 @@ export interface ITaskStorageAdapter<PAYLOAD = any, ID = any> {
     /**
      * Update task status to processing
      */
-    markTasksAsProcessing(taskIds: ID[], processingStartedAt: Date): Promise<void>;
+    markTasksAsProcessing(tasks: CronTask<PAYLOAD, ID>[], processingStartedAt: Date): Promise<void>;
 
     /**
      * Update task status to executed
      */
-    markTasksAsExecuted(taskIds: ID[]): Promise<void>;
+    markTasksAsExecuted(tasks: CronTask<PAYLOAD, ID>[]): Promise<void>;
 
     /**
      * Update task status to failed
      */
-    markTasksAsFailed(taskIds: ID[]): Promise<void>;
+    markTasksAsFailed(tasks: CronTask<PAYLOAD, ID>[]): Promise<void>;
 
-    markTasksAsIgnored(taskIds: ID[]): Promise<void>;
+    markTasksAsIgnored(tasks: CronTask<PAYLOAD, ID>[]): Promise<void>;
 
     /**
      * Get tasks by IDs
      */
-    getTasksByIds(taskIds: ID[]): Promise<CronTask<any>[]>;
+    getTasksByIds(taskIds: ID[]): Promise<CronTask<PAYLOAD, ID>[]>;
 
     /**
      * Update multiple tasks

@@ -42,10 +42,11 @@ export abstract class MongoDbAdapter<PAYLOAD = any> implements ITaskStorageAdapt
         try {
             await collection.insertMany(transformedTasks, {ordered: false});
             return transformedTasks;
-        } catch (error: any) {
-            if (error.writeErrors) {
+        } catch (error: unknown) {
+            if (error && typeof error === 'object' && 'writeErrors' in error) {
+                const mongoError = error as { writeErrors: Array<{ index: number }> };
                 const successfulTasks = transformedTasks.filter((_, index) =>
-                    !error.writeErrors.some((e: any) => e.index === index)
+                    !mongoError.writeErrors.some((e) => e.index === index)
                 );
                 return successfulTasks;
             }
@@ -96,8 +97,9 @@ export abstract class MongoDbAdapter<PAYLOAD = any> implements ITaskStorageAdapt
         return tasks;
     }
 
-    async markTasksAsProcessing(taskIds: ObjectId[], processingStartedAt: Date): Promise<void> {
+    async markTasksAsProcessing(tasks: CronTask<PAYLOAD, ObjectId>[], processingStartedAt: Date): Promise<void> {
         const collection = await this.collection;
+        const taskIds = tasks.map(t => t._id);
 
         await collection.updateMany(
             {_id: {$in: taskIds}},
@@ -111,8 +113,9 @@ export abstract class MongoDbAdapter<PAYLOAD = any> implements ITaskStorageAdapt
         );
     }
 
-    async markTasksAsExecuted(taskIds: ObjectId[]): Promise<void> {
+    async markTasksAsExecuted(tasks: CronTask<PAYLOAD, ObjectId>[]): Promise<void> {
         const collection = await this.collection;
+        const taskIds = tasks.map(t => t._id);
 
         await collection.updateMany(
             {_id: {$in: taskIds}},
@@ -125,8 +128,9 @@ export abstract class MongoDbAdapter<PAYLOAD = any> implements ITaskStorageAdapt
         );
     }
 
-    async markTasksAsFailed(taskIds: ObjectId[]): Promise<void> {
+    async markTasksAsFailed(tasks: CronTask<PAYLOAD, ObjectId>[]): Promise<void> {
         const collection = await this.collection;
+        const taskIds = tasks.map(t => t._id);
 
         await collection.updateMany(
             {_id: {$in: taskIds}},
@@ -211,8 +215,9 @@ export abstract class MongoDbAdapter<PAYLOAD = any> implements ITaskStorageAdapt
     async initialize() {
     }
 
-    async markTasksAsIgnored(taskIds: ObjectId[]): Promise<void> {
+    async markTasksAsIgnored(tasks: CronTask<PAYLOAD, ObjectId>[]): Promise<void> {
         const collection = await this.collection;
+        const taskIds = tasks.map(t => t._id);
 
         await collection.updateMany(
             {_id: {$in: taskIds}},

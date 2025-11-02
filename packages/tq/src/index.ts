@@ -21,6 +21,9 @@ export {AsyncTaskManager} from "./core/async/AsyncTaskManager.js";
 // Base interfaces
 export * from "./core/base/interfaces.js";
 
+// Notification interfaces
+export * from "./core/ITaskNotificationProvider.js";
+
 // Task processor types
 export * from "./core/task-processor-types.js";
 

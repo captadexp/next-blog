@@ -16,7 +16,7 @@ export interface IAsyncTaskManager<T = any, ID = any> {
     /**
      * Gracefully shutdown the async task manager
      */
-    shutdown(): Promise<void>;
+    shutdown(abortSignal?: AbortSignal): Promise<void>;
 
     isHandedOff(taskId: ID): boolean;
 

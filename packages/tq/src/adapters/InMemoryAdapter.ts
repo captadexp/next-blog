@@ -24,44 +24,44 @@ class InMemoryAdapter<PAYLOAD> implements ITaskStorageAdapter<PAYLOAD, string> {
         return matureTasks;
     }
 
-    async markTasksAsProcessing(taskIds: string[], processingStartedAt: Date): Promise<void> {
-        for (const id of taskIds) {
-            const task = this.scheduledTasks.get(id);
-            if (task) {
-                task.status = 'processing';
-                task.processing_started_at = processingStartedAt;
-                this.scheduledTasks.set(id, task);
+    async markTasksAsProcessing(tasks: CronTask<PAYLOAD, string>[], processingStartedAt: Date): Promise<void> {
+        for (const task of tasks) {
+            const existingTask = this.scheduledTasks.get(task._id);
+            if (existingTask) {
+                existingTask.status = 'processing';
+                existingTask.processing_started_at = processingStartedAt;
+                this.scheduledTasks.set(task._id, existingTask);
             }
         }
     }
 
-    async markTasksAsExecuted(taskIds: string[]): Promise<void> {
-        for (const id of taskIds) {
-            const task = this.scheduledTasks.get(id);
-            if (task) {
-                task.status = 'executed';
-                task.execute_at = new Date();
-                this.scheduledTasks.set(id, task);
+    async markTasksAsExecuted(tasks: CronTask<PAYLOAD, string>[]): Promise<void> {
+        for (const task of tasks) {
+            const existingTask = this.scheduledTasks.get(task._id);
+            if (existingTask) {
+                existingTask.status = 'executed';
+                existingTask.execute_at = new Date();
+                this.scheduledTasks.set(task._id, existingTask);
             }
         }
     }
 
-    async markTasksAsFailed(taskIds: string[]): Promise<void> {
-        for (const id of taskIds) {
-            const task = this.scheduledTasks.get(id);
-            if (task) {
-                task.status = 'failed';
-                task.execution_stats = {...task.execution_stats, failed_at: new Date()};
-                this.scheduledTasks.set(id, task);
+    async markTasksAsFailed(tasks: CronTask<PAYLOAD, string>[]): Promise<void> {
+        for (const task of tasks) {
+            const existingTask = this.scheduledTasks.get(task._id);
+            if (existingTask) {
+                existingTask.status = 'failed';
+                existingTask.execution_stats = {...existingTask.execution_stats, failed_at: new Date()};
+                this.scheduledTasks.set(task._id, existingTask);
             }
         }
     }
 
-    async getTasksByIds(taskIds: string[]): Promise<any[]> {
-        return taskIds.map(id => this.scheduledTasks.get(id)).filter(Boolean);
+    async getTasksByIds(taskIds: string[]): Promise<CronTask<PAYLOAD, string>[]> {
+        return taskIds.map(id => this.scheduledTasks.get(id)).filter(Boolean) as CronTask<PAYLOAD, string>[];
     }
 
-    async updateTasks(updates: Array<{ id: string; updates: Partial<any> }>): Promise<void> {
+    async updateTasks(updates: Array<{ id: string; updates: Partial<CronTask<PAYLOAD, string>> }>): Promise<void> {
         for (const {id, updates: taskUpdates} of updates) {
             const task = this.scheduledTasks.get(id);
             if (task) {
@@ -112,13 +112,13 @@ class InMemoryAdapter<PAYLOAD> implements ITaskStorageAdapter<PAYLOAD, string> {
         return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     }
 
-    async markTasksAsIgnored(taskIds: string[]) {
-        for (const id of taskIds) {
-            const task = this.scheduledTasks.get(id);
-            if (task) {
-                task.status = 'ignored';
-                task.execution_stats = {...task.execution_stats, ignore_reason: "unknown type"};
-                this.scheduledTasks.set(id, task);
+    async markTasksAsIgnored(tasks: CronTask<PAYLOAD, string>[]) {
+        for (const task of tasks) {
+            const existingTask = this.scheduledTasks.get(task._id);
+            if (existingTask) {
+                existingTask.status = 'ignored';
+                existingTask.execution_stats = {...existingTask.execution_stats, ignore_reason: "unknown type"};
+                this.scheduledTasks.set(task._id, existingTask);
             }
         }
     }

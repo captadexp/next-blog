@@ -10,6 +10,12 @@ import {CronTask, ITaskStorageAdapter} from "../adapters";
 import type {CacheProvider} from "memoose-js";
 import {TaskQueuesManager} from "./TaskQueuesManager";
 import {IAsyncTaskManager} from "./async/async-task-manager";
+import {
+    DiscardedTaskInfo,
+    ITaskNotificationProvider,
+    TaskErrorInfo,
+    TaskQueueStats
+} from "./ITaskNotificationProvider.js";
 
 const METRICS_KEY_PREFIX = 'task_metrics:';
 const DISCARDED_TASKS_KEY = `${METRICS_KEY_PREFIX}discarded_tasks`;
@@ -17,7 +23,6 @@ const STATS_THRESHOLD = parseInt(process.env.TQ_STATS_THRESHOLD || '1000');
 const FAILURE_THRESHOLD = parseInt(process.env.TQ_STATS_FAILURE_THRESHOLD || '100');
 const INSTANCE_ID = process.env.INSTANCE_ID || 'unknown';
 
-const slack = {sendSlackMessage: console.log}
 
 export class TaskHandler<PAYLOAD, ID> {
     private readonly logger: Logger;
@@ -37,7 +42,8 @@ export class TaskHandler<PAYLOAD, ID> {
         private taskQueuesManager: TaskQueuesManager<PAYLOAD, ID>,
         private databaseAdapter: ITaskStorageAdapter<PAYLOAD, ID>,
         private cacheAdapter: CacheProvider<any>,
-        private asyncTaskManager?: IAsyncTaskManager
+        private asyncTaskManager?: IAsyncTaskManager<PAYLOAD, ID>,
+        private notificationProvider?: ITaskNotificationProvider
     ) {
         this.logger = new Logger('TaskHandler', LogLevel.INFO);
 
@@ -45,7 +51,7 @@ export class TaskHandler<PAYLOAD, ID> {
         this.taskRunner = new TaskRunner<PAYLOAD, ID>(messageQueue, taskQueuesManager, this.taskStore, this.cacheAdapter, databaseAdapter.generateId.bind(databaseAdapter));
     }
 
-    async addTasks(tasks: CronTask<any>[]) {
+    async addTasks(tasks: CronTask<PAYLOAD, ID>[]) {
         const diffedItems = tasks.reduce(
             (acc, {force_store, ...task}) => {
                 const currentTime = new Date();
@@ -64,15 +70,15 @@ export class TaskHandler<PAYLOAD, ID> {
                 return acc;
             },
             {
-                future: {} as { [key in QueueName]: CronTask<any>[] },
-                immediate: {} as { [key in QueueName]: CronTask<any>[] },
+                future: {} as { [key in QueueName]: CronTask<PAYLOAD, ID>[] },
+                immediate: {} as { [key in QueueName]: CronTask<PAYLOAD, ID>[] },
             }
         );
 
         const iQueues = Object.keys(diffedItems.immediate) as unknown as QueueName[];
         for (let i = 0; i < iQueues.length; i++) {
             const queue = iQueues[i];
-            const tasks: CronTask<any>[] = diffedItems.immediate[queue]
+            const tasks: CronTask<PAYLOAD, ID>[] = diffedItems.immediate[queue]
                 .map((task) => {
                     const executor = this.taskQueuesManager.getExecutor(task.queue_id, task.type);
                     const shouldStoreOnFailure = executor?.store_on_failure ?? false;
@@ -86,7 +92,7 @@ export class TaskHandler<PAYLOAD, ID> {
         const fQueues = Object.keys(diffedItems.future) as unknown as QueueName[];
         for (let i = 0; i < fQueues.length; i++) {
             const queue = fQueues[i];
-            const tasks: CronTask<any>[] = diffedItems.future[queue]
+            const tasks: CronTask<PAYLOAD, ID>[] = diffedItems.future[queue]
                 .map((task) => {
                     const executor = this.taskQueuesManager.getExecutor(task.queue_id, task.type);
                     const shouldStoreOnFailure = executor?.store_on_failure ?? false;
@@ -101,9 +107,9 @@ export class TaskHandler<PAYLOAD, ID> {
                                failedTasks: failedTasksRaw,
                                newTasks,
                                successTasks
-                           }: ProcessedTaskResult) {
-        const tasksToRetry: CronTask<any>[] = [];
-        const finalFailedTasks: CronTask<any>[] = [];
+                           }: ProcessedTaskResult<PAYLOAD, ID>) {
+        const tasksToRetry: CronTask<PAYLOAD, ID>[] = [];
+        const finalFailedTasks: CronTask<PAYLOAD, ID>[] = [];
         let discardedTasksCount = 0;
 
         for (const task of failedTasksRaw) {
@@ -168,8 +174,7 @@ export class TaskHandler<PAYLOAD, ID> {
         }
 
         if (finalFailedTasks.length > 0) {
-            const taskIds = finalFailedTasks.map(task => task._id as ID);
-            await this.taskStore.markTasksAsFailed(taskIds);
+            await this.taskStore.markTasksAsFailed(finalFailedTasks);
         }
 
         if (successTasks.length > 0) {
@@ -177,8 +182,13 @@ export class TaskHandler<PAYLOAD, ID> {
         }
     }
 
-    startConsumingTasks(streamName: QueueName) {
+    startConsumingTasks(streamName: QueueName, abortSignal?: AbortSignal) {
         return this.messageQueue.consumeMessagesStream(streamName, async (id, tasks) => {
+            if (abortSignal?.aborted) {
+                this.logger.info(`AbortSignal detected, skipping processing of ${tasks.length} tasks for stream ${streamName}`);
+                return {failedTasks: [], newTasks: [], successTasks: [], asyncTasks: [], ignoredTasks: []};
+            }
+
             this.logger.debug(`Processing ${tasks.length} tasks for stream ${streamName}`);
             const {
                 failedTasks,
@@ -186,7 +196,7 @@ export class TaskHandler<PAYLOAD, ID> {
                 successTasks,
                 asyncTasks,
                 ignoredTasks
-            } = await this.taskRunner.run(id, tasks, this.asyncTaskManager)
+            } = await this.taskRunner.run(id, tasks, this.asyncTaskManager, abortSignal)
                 .catch(err => {
                     this.logger.error("Failed to execute tasks?", err);
                     return {failedTasks: [], newTasks: [], successTasks: [], asyncTasks: [], ignoredTasks: []}
@@ -240,14 +250,25 @@ export class TaskHandler<PAYLOAD, ID> {
 
             this.logger.debug(`Completed processing for stream ${streamName}: ${successTasks.length} succeeded, ${failedTasks.length} failed, ${newTasks.length} new tasks, ${ignoredTasks.length} ignored`);
             return {failedTasks, newTasks, successTasks, asyncTasks, ignoredTasks};
-        });
+        }, abortSignal);
     }
 
-    processMatureTasks() {
+    processMatureTasks(abortSignal?: AbortSignal) {
         const LOCK_ID = 'mature_task_lock_:task_processor';
 
         if (this.matureTaskTimer) clearInterval(this.matureTaskTimer);
+
+        if (abortSignal?.aborted) {
+            this.logger.info('AbortSignal already aborted, not starting mature task processing');
+            return;
+        }
+
         this.matureTaskTimer = setInterval(async () => {
+            if (abortSignal?.aborted) {
+                this.logger.info('AbortSignal detected, stopping mature task processing');
+                if (this.matureTaskTimer) clearInterval(this.matureTaskTimer);
+                return;
+            }
             const lockManager = new LockManager(this.cacheAdapter, {prefix: 'mature_task_lock_:'});
 
             if (await lockManager.isLocked('task_processor')) {
@@ -272,19 +293,32 @@ export class TaskHandler<PAYLOAD, ID> {
             }
 
         }, 5000);
+
+        // Clean up interval when aborted
+        abortSignal?.addEventListener('abort', () => {
+            this.logger.info('AbortSignal received, cleaning up mature task timer');
+            if (this.matureTaskTimer) {
+                clearInterval(this.matureTaskTimer);
+                this.matureTaskTimer = null;
+            }
+        });
     }
 
-    taskProcessServer() {
+    taskProcessServer(abortSignal?: AbortSignal) {
         const queues = getEnabledQueues();
         for (let i = 0; i < queues.length; i++) {
             this.logger.info(`Starting consumer for queue: ${queues[i]}`);
-            this.startConsumingTasks(queues[i]);
+            this.startConsumingTasks(queues[i], abortSignal);
         }
         this.logger.info('Starting mature tasks processor');
-        this.processMatureTasks();
+        this.processMatureTasks(abortSignal);
     }
 
-    processBatch(queueId: QueueName, processor: MessageConsumer<PAYLOAD, ID>, limit?: number): Promise<void> {
+    processBatch(queueId: QueueName, processor: MessageConsumer<PAYLOAD, ID>, limit?: number, abortSignal?: AbortSignal): Promise<void> {
+        if (abortSignal?.aborted) {
+            this.logger.info(`AbortSignal already aborted, skipping batch processing for queue ${queueId}`);
+            return Promise.resolve();
+        }
         return this.messageQueue.consumeMessagesBatch(queueId, processor, limit);
     }
 
@@ -313,15 +347,46 @@ export class TaskHandler<PAYLOAD, ID> {
                 } else {
                     this.logger.info(`Added ${count} discarded tasks to current hour metrics.`);
                 }
+
+                // Notify provider if available
+                if (this.notificationProvider?.onTasksDiscarded) {
+                    const discardedInfo: DiscardedTaskInfo = {count, last24HourTotal: total > 0 ? total : undefined};
+                    try {
+                        await this.notificationProvider.onTasksDiscarded(discardedInfo);
+                    } catch (err) {
+                        this.logger.error(`Notification provider error for discarded tasks: ${err}`);
+                    }
+                }
             } catch (error) {
                 this.logger.info(`Added ${count} discarded tasks to current hour metrics.`);
+
+                // Still notify provider about the count even if metrics failed
+                if (this.notificationProvider?.onTasksDiscarded) {
+                    const discardedInfo: DiscardedTaskInfo = {count};
+                    try {
+                        await this.notificationProvider.onTasksDiscarded(discardedInfo);
+                    } catch (err) {
+                        this.logger.error(`Notification provider error for discarded tasks: ${err}`);
+                    }
+                }
             }
         } catch (error) {
             this.logger.error(`Failed to track discarded tasks: ${error}`);
+
+            // Try to notify provider about the error
+            if (this.notificationProvider?.onTaskError) {
+                const errorInfo: TaskErrorInfo = {
+                    error: `Failed to track discarded tasks: ${error}`,
+                    context: 'trackDiscardedTasks'
+                };
+                this.notificationProvider.onTaskError(errorInfo).catch(() => {
+                    // Ignore notification errors to prevent infinite loops
+                });
+            }
         }
     }
 
-    private getRetryCount(task: CronTask<any>): number {
+    private getRetryCount(task: CronTask<PAYLOAD, ID>): number {
         if (typeof task.retries === 'number') return task.retries;
         const executor = this.taskQueuesManager.getExecutor(task.queue_id, task.type);
         return executor?.default_retries ?? 3;
@@ -343,6 +408,17 @@ export class TaskHandler<PAYLOAD, ID> {
             `🚫 Ignored: ${stats.ignored}`;
 
         try {
+            if (this.notificationProvider?.onQueueStats) {
+                const queueStats: TaskQueueStats = {
+                    queueName,
+                    success: stats.success,
+                    failed: stats.failed,
+                    async: stats.async,
+                    ignored: stats.ignored,
+                    instanceId: INSTANCE_ID
+                };
+                await this.notificationProvider.onQueueStats(queueStats);
+            }
             this.logger.info(`Sent stats for ${queueName}`);
         } catch (err) {
             this.logger.error(`Failed to send stats: ${err}`);
@@ -363,9 +439,10 @@ export class TaskHandler<PAYLOAD, ID> {
 
         if (this.queueStats.size === 0) {
             try {
-                const message = `[${INSTANCE_ID}] TQ Final Stats:\nNo tasks processed during this session`;
-                await slack.sendSlackMessage(undefined, message);
-                this.logger.info('Sent final TQ stats to Slack (no tasks)');
+                if (this.notificationProvider?.onFinalStats) {
+                    await this.notificationProvider.onFinalStats([]);
+                }
+                this.logger.info('Sent final TQ stats (no tasks)');
             } catch (err) {
                 this.logger.error(`Failed to send final stats: ${err}`);
             }
