@@ -8,8 +8,6 @@ import {CronTask, InMemoryAdapter} from "../adapters";
 import type {ISingleTaskNonParallel} from "../core/base/interfaces.js";
 import {MemoryCacheProvider} from "memoose-js";
 
-
-// Augment the QueueRegistry to add our test queue
 declare module "@supergrowthai/mq" {
     interface QueueRegistry {
         "test-tq-queue": "test-tq-queue";
@@ -23,15 +21,17 @@ describe("simple tq test", () => {
         const queueName: QueueName = "test-tq-queue";
 
         // Setup TQ components
-        const databaseAdapter = new InMemoryAdapter();
-        const taskStore = new TaskStore<string>(databaseAdapter);
+        const databaseAdapter = new InMemoryAdapter<{ message: string }>();
+        const taskStore = new TaskStore<{ message: string }, string>(databaseAdapter);
         const taskQueue = new TaskQueuesManager(messageQueue);
 
         // Use proper MemoryCacheProvider
         const cacheProvider = new MemoryCacheProvider();
 
         const generateId = () => databaseAdapter.generateId();
-        const taskHandler = new TaskHandler<string>(messageQueue, taskQueue, databaseAdapter, cacheProvider);
+        const taskHandler = new TaskHandler<{
+            message: string
+        }, string>(messageQueue, taskQueue, databaseAdapter, cacheProvider);
 
         // Track executed tasks
         const executedTasks: CronTask[] = [];
@@ -58,7 +58,7 @@ describe("simple tq test", () => {
         // Create test tasks
         const task1Id = generateId();
         const task2Id = generateId();
-        const testTasks: CronTask<{ message: string }>[] = [
+        const testTasks: CronTask<{ message: string }, string>[] = [
             {
                 _id: task1Id,
                 type: "test-task",
@@ -114,7 +114,7 @@ describe("simple tq test", () => {
         expect(registeredQueues).toContain(`${queueName}-test` as QueueName);
 
         // Verify task types for queue
-        const taskTypes = taskQueue.getTasksForQueue(queueName);
+        const taskTypes = taskQueue.getTaskTypesForQueue(queueName);
         expect(taskTypes).toContain("test-task");
 
         // Cleanup

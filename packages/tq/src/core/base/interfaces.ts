@@ -1,11 +1,4 @@
-import {CronTask} from "../../adapters/types.js";
-
-export type ExecutorActions<T> = {
-    addTasks(task: CronTask<any>[]): void;
-    fail(task: CronTask<T>): void;
-    success(task: CronTask<T>): void;
-}
-
+import {CronTask} from "../../adapters";
 
 interface IBaseExecutor<T> {
     multiple: boolean,
@@ -17,28 +10,37 @@ interface IBaseExecutor<T> {
     }
 }
 
-export interface IMultiTaskExecutor<T> extends IBaseExecutor<T> {
-    multiple: true;
-
-    onTasks(tasks: CronTask<T>[], action: ExecutorActions<T>): Promise<void>
+export type ExecutorActions<PAYLOAD = any, ID = any> = {
+    addTasks(task: CronTask<PAYLOAD, ID>[]): void;
+    fail(task: CronTask<PAYLOAD, ID>): void;
+    success(task: CronTask<PAYLOAD, ID>): void;
 }
 
-export interface ISingleTaskExecutor<T> extends IBaseExecutor<T> {
+export interface IMultiTaskExecutor<PAYLOAD, ID = any> extends IBaseExecutor<PAYLOAD> {
+    multiple: true;
+
+    onTasks(tasks: CronTask<PAYLOAD, ID>[], action: ExecutorActions<PAYLOAD, ID>): Promise<void>
+}
+
+export interface ISingleTaskExecutor<PAYLOAD, ID = any> extends IBaseExecutor<PAYLOAD> {
     parallel: boolean;
     multiple: false;
 
-    onTask(task: CronTask<T>, action: ExecutorActions<T>): Promise<void>;
+    onTask(task: CronTask<PAYLOAD, ID>, action: ExecutorActions<PAYLOAD, ID>): Promise<void>;
 }
 
-export interface ISingleTaskNonParallel<T> extends ISingleTaskExecutor<T> {
+export interface ISingleTaskNonParallel<PAYLOAD, ID = any> extends ISingleTaskExecutor<PAYLOAD, ID> {
     parallel: false;
     multiple: false;
 }
 
-export interface ISingleTaskParallel<T> extends ISingleTaskExecutor<T> {
+export interface ISingleTaskParallel<PAYLOAD, ID = any> extends ISingleTaskExecutor<PAYLOAD, ID> {
     chunkSize: number;
     parallel: true;
     multiple: false;
 }
 
-export type TaskExecutor<T> = IMultiTaskExecutor<T> | ISingleTaskNonParallel<T> | ISingleTaskParallel<T>
+export type TaskExecutor<PAYLOAD, ID = any> =
+    | IMultiTaskExecutor<PAYLOAD, ID>
+    | ISingleTaskNonParallel<PAYLOAD, ID>
+    | ISingleTaskParallel<PAYLOAD, ID>

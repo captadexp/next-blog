@@ -1,6 +1,6 @@
 export type {CronTask} from './types.js';
 
 // Database adapters
-export type {IDatabaseAdapter} from './IDatabaseAdapter.js';
+export type {ITaskStorageAdapter} from './ITaskStorageAdapter.js';
 export {MongoDbAdapter} from './MongoDbAdapter.js';
 export {InMemoryAdapter} from "./InMemoryAdapter"

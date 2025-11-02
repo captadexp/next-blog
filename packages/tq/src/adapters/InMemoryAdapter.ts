@@ -1,10 +1,10 @@
-import {IDatabaseAdapter} from "./IDatabaseAdapter";
+import {ITaskStorageAdapter} from "./ITaskStorageAdapter";
 import {CronTask} from "./types";
 
-class InMemoryAdapter implements IDatabaseAdapter<string> {
-    private scheduledTasks: Map<string, CronTask> = new Map();
+class InMemoryAdapter<PAYLOAD> implements ITaskStorageAdapter<PAYLOAD, string> {
+    private scheduledTasks: Map<string, CronTask<PAYLOAD, string>> = new Map();
 
-    async addTasksToScheduled(tasks: CronTask[]): Promise<CronTask[]> {
+    async addTasksToScheduled(tasks: CronTask<PAYLOAD, string>[]): Promise<CronTask<PAYLOAD, string>[]> {
         const addedTasks = tasks.map(task => {
             const id = task._id;
             const taskWithId = {...task};
@@ -14,7 +14,7 @@ class InMemoryAdapter implements IDatabaseAdapter<string> {
         return addedTasks;
     }
 
-    async getMatureTasks(timestamp: number): Promise<any[]> {
+    async getMatureTasks(timestamp: number): Promise<CronTask<PAYLOAD, string>[]> {
         const matureTasks: CronTask[] = [];
         for (const [id, task] of Array.from(this.scheduledTasks.entries())) {
             if (task.execute_at.getTime() <= timestamp && task.status !== 'processing' && task.status !== 'executed') {
@@ -110,6 +110,17 @@ class InMemoryAdapter implements IDatabaseAdapter<string> {
 
     generateId(): string {
         return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    }
+
+    async markTasksAsIgnored(taskIds: string[]) {
+        for (const id of taskIds) {
+            const task = this.scheduledTasks.get(id);
+            if (task) {
+                task.status = 'ignored';
+                task.execution_stats = {...task.execution_stats, ignore_reason: "unknown type"};
+                this.scheduledTasks.set(id, task);
+            }
+        }
     }
 }
 

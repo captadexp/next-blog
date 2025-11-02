@@ -1,10 +1,10 @@
 import {getEnvironmentQueueName, IMessageQueue, QueueName} from "@supergrowthai/mq";
 import {TaskExecutor} from "./base/interfaces";
 
-class TaskQueuesManager {
-    queueTaskExecutorMap: Map<QueueName, Map<string, TaskExecutor<any>>> = new Map();
+class TaskQueuesManager<PAYLOAD, ID> {
+    queueTaskExecutorMap: Map<QueueName, Map<string, TaskExecutor<PAYLOAD, ID>>> = new Map();
 
-    constructor(private messageQueue: IMessageQueue) {
+    constructor(private messageQueue: IMessageQueue<PAYLOAD, ID>) {
     }
 
     /**
@@ -16,7 +16,7 @@ class TaskQueuesManager {
     register(
         queueName: QueueName,
         taskType: string,
-        executor: TaskExecutor<any>
+        executor: TaskExecutor<PAYLOAD, ID>
     ): void {
         queueName = getEnvironmentQueueName(queueName)
         // Ensure the queue is registered with the message queue
@@ -40,7 +40,7 @@ class TaskQueuesManager {
      * @param taskType The type of task
      * @returns The executor for the task
      */
-    getExecutor(queueName: QueueName, taskType: string): TaskExecutor<any> | undefined {
+    getExecutor(queueName: QueueName, taskType: string): TaskExecutor<PAYLOAD, ID> | undefined {
         queueName = getEnvironmentQueueName(queueName)
         const queueMap = this.queueTaskExecutorMap.get(queueName);
         if (!queueMap) {
@@ -62,7 +62,7 @@ class TaskQueuesManager {
      * @param queueName The name of the queue
      * @returns Array of task types
      */
-    getTasksForQueue(queueName: QueueName): string[] {
+    getTaskTypesForQueue(queueName: QueueName): string[] {
         queueName = getEnvironmentQueueName(queueName)
         const queueMap = this.queueTaskExecutorMap.get(queueName);
         if (!queueMap) {

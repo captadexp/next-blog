@@ -6,7 +6,7 @@ import moment from "moment";
 import type {MessageConsumer} from "@supergrowthai/mq";
 import {IMessageQueue, QueueName} from "@supergrowthai/mq";
 import {ProcessedTaskResult} from "./task-processor-types.js";
-import {CronTask, IDatabaseAdapter} from "../adapters/index.js";
+import {CronTask, ITaskStorageAdapter} from "../adapters";
 import type {CacheProvider} from "memoose-js";
 import {TaskQueuesManager} from "./TaskQueuesManager";
 import {IAsyncTaskManager} from "./async/async-task-manager";
@@ -19,10 +19,10 @@ const INSTANCE_ID = process.env.INSTANCE_ID || 'unknown';
 
 const slack = {sendSlackMessage: console.log}
 
-export class TaskHandler<ID = any> {
+export class TaskHandler<PAYLOAD, ID> {
     private readonly logger: Logger;
-    private taskRunner: TaskRunner<ID>;
-    private readonly taskStore: TaskStore<ID>;
+    private taskRunner: TaskRunner<PAYLOAD, ID>;
+    private readonly taskStore: TaskStore<PAYLOAD, ID>;
     private matureTaskTimer: NodeJS.Timeout | null = null;
 
     private readonly queueStats = new Map<QueueName, {
@@ -33,16 +33,16 @@ export class TaskHandler<ID = any> {
     }>();
 
     constructor(
-        private messageQueue: IMessageQueue,
-        private taskQueuesManager: TaskQueuesManager,
-        private databaseAdapter: IDatabaseAdapter<ID>,
+        private messageQueue: IMessageQueue<PAYLOAD, ID>,
+        private taskQueuesManager: TaskQueuesManager<PAYLOAD, ID>,
+        private databaseAdapter: ITaskStorageAdapter<PAYLOAD, ID>,
         private cacheAdapter: CacheProvider<any>,
         private asyncTaskManager?: IAsyncTaskManager
     ) {
         this.logger = new Logger('TaskHandler', LogLevel.INFO);
 
-        this.taskStore = new TaskStore<ID>(databaseAdapter);
-        this.taskRunner = new TaskRunner<ID>(messageQueue, taskQueuesManager, this.taskStore, this.cacheAdapter, databaseAdapter.generateId.bind(databaseAdapter));
+        this.taskStore = new TaskStore<PAYLOAD, ID>(databaseAdapter);
+        this.taskRunner = new TaskRunner<PAYLOAD, ID>(messageQueue, taskQueuesManager, this.taskStore, this.cacheAdapter, databaseAdapter.generateId.bind(databaseAdapter));
     }
 
     async addTasks(tasks: CronTask<any>[]) {
@@ -284,7 +284,7 @@ export class TaskHandler<ID = any> {
         this.processMatureTasks();
     }
 
-    processBatch(queueId: QueueName, processor: MessageConsumer, limit?: number): Promise<void> {
+    processBatch(queueId: QueueName, processor: MessageConsumer<PAYLOAD, ID>, limit?: number): Promise<void> {
         return this.messageQueue.consumeMessagesBatch(queueId, processor, limit);
     }
 

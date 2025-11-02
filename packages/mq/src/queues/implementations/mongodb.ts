@@ -1,27 +1,28 @@
-import {IMessageQueue} from "../../core/interfaces/message-queue.js";
-import {BaseMessage, MessageConsumer} from "../../adapters/index.js";
-import {getEnvironmentQueueName} from "../../core/utils.js";
-import {QueueName} from "../../core/types.js";
+import type {BaseMessage, IMessageQueue, MessageConsumer} from "../../core";
+import {getEnvironmentQueueName, QueueName} from "../../core";
 import {CacheProvider} from "memoose-js";
 import {LockManager} from "@supergrowthai/utils";
 import {ObjectId} from "bson";
+import {Collection} from "mongodb";
 
 /**
  * MongoDB implementation of message queue that manages its own database operations
  */
-export class MongoDBQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, ObjectId> {
+export abstract class MongoDBQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, ObjectId> {
     private isRunning: boolean = false;
     private processingIntervals: Map<QueueName, NodeJS.Timeout> = new Map();
     private lockManager: LockManager;
     private registeredQueues: Set<QueueName> = new Set();
 
-    constructor(private cacheAdapter: CacheProvider<any>, private mongoCollection: any) {
+    protected constructor(private cacheAdapter: CacheProvider<any>) {
         this.lockManager = new LockManager(cacheAdapter, {
             prefix: 'mq-lock:',
             defaultTimeout: 300 // 5 minutes lock by default
         });
         this.setupShutdownHandlers();
     }
+
+    abstract get collection(): Promise<Collection<BaseMessage<PAYLOAD, ObjectId>>>;
 
     register(queueId: QueueName): void {
         const normalizedQueueId = getEnvironmentQueueName(queueId);
@@ -34,7 +35,10 @@ export class MongoDBQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, Objec
     }
 
     async addMessages(queueId: QueueName, messages: BaseMessage<PAYLOAD, ObjectId>[]): Promise<void> {
+        const collection = await this.collection
+
         queueId = getEnvironmentQueueName(queueId);
+
         if (!messages.length) return;
 
         try {
@@ -42,11 +46,10 @@ export class MongoDBQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, Objec
                 ...message,
                 queue_id: queueId,
                 _id: message._id || new ObjectId(),
-                status: message.status || "scheduled",
                 created_at: message.created_at || new Date()
             }));
 
-            await this.mongoCollection.insertMany(messagesToInsert);
+            await collection.insertMany(messagesToInsert);
             console.log(`Added ${messages.length} messages to MongoDB queue ${queueId}`);
         } catch (error) {
             console.error(`Error adding messages to MongoDB queue ${queueId}:`, error);
@@ -79,6 +82,8 @@ export class MongoDBQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, Objec
         processor: MessageConsumer<PAYLOAD, ObjectId, T>,
         limit: number = 10
     ): Promise<T> {
+        const collection = await this.collection
+
         queueId = getEnvironmentQueueName(queueId);
         if (!this.isRunning) return undefined as T;
 
@@ -87,10 +92,9 @@ export class MongoDBQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, Objec
         if (!lockAcquired) return undefined as T;
 
         try {
-            const messages = await this.mongoCollection.find({
+            const messages = await collection.find({
                 queue_id: queueId,
                 status: 'scheduled',
-                execute_at: {$lte: new Date()}
             }).limit(limit).toArray();
 
             if (messages.length === 0) {
@@ -98,7 +102,7 @@ export class MongoDBQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, Objec
             }
 
             const messageIds = messages.map((message: BaseMessage<PAYLOAD, ObjectId>) => message._id);
-            await this.mongoCollection.updateMany(
+            await collection.updateMany(
                 {_id: {$in: messageIds}},
                 {$set: {status: 'processing', processing_started_at: new Date(), updated_at: new Date()}}
             );
@@ -106,7 +110,7 @@ export class MongoDBQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, Objec
             try {
                 const result = await processor(`mongodb:${queueId}`, messages);
 
-                await this.mongoCollection.updateMany(
+                await collection.updateMany(
                     {_id: {$in: messageIds}},
                     {$set: {status: 'executed', updated_at: new Date()}}
                 );
@@ -116,7 +120,7 @@ export class MongoDBQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, Objec
             } catch (error) {
                 console.error(`Error processing messages from MongoDB queue ${queueId}:`, error);
 
-                await this.mongoCollection.updateMany(
+                await collection.updateMany(
                     {_id: {$in: messageIds}},
                     {
                         $set: {status: 'failed', updated_at: new Date()},

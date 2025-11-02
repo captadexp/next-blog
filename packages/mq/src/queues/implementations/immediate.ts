@@ -1,15 +1,12 @@
-import {IMessageQueue} from "../../core/interfaces/message-queue.js";
-import {BaseMessage, MessageConsumer} from "../../adapters/index.js";
-import {getEnvironmentQueueName} from "../../core/utils.js";
-import {QueueName} from "../../core/types.js";
+import {BaseMessage, getEnvironmentQueueName, IMessageQueue, MessageConsumer, QueueName} from "../../core";
 
 /**
  * Immediate implementation of a message queue that processes messages synchronously
  * when they are added without waiting for polling intervals
  */
-export class ImmediateQueue implements IMessageQueue {
+export class ImmediateQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
     private isRunning: boolean = false;
-    private processors: Map<QueueName, MessageConsumer> = new Map();
+    private processors: Map<QueueName, MessageConsumer<PAYLOAD, ID, any>> = new Map();
     private registeredQueues: Set<QueueName> = new Set();
 
     constructor() {
@@ -26,7 +23,7 @@ export class ImmediateQueue implements IMessageQueue {
      * @param queueId - The identifier for the queue
      * @param messages - Array of messages to add and process immediately
      */
-    async addMessages<T>(queueId: QueueName, messages: BaseMessage<T>[]): Promise<void> {
+    async addMessages(queueId: QueueName, messages: BaseMessage<PAYLOAD, ID>[]): Promise<void> {
         queueId = getEnvironmentQueueName(queueId);
         if (!messages.length) return;
 
@@ -51,7 +48,7 @@ export class ImmediateQueue implements IMessageQueue {
      * @param queueId - The identifier for the queue
      * @param processor - Function to process the messages
      */
-    async consumeMessagesStream<T = void>(queueId: QueueName, processor: MessageConsumer<any, any, T>): Promise<T> {
+    async consumeMessagesStream<T = void>(queueId: QueueName, processor: MessageConsumer<PAYLOAD, ID, T>): Promise<T> {
         queueId = getEnvironmentQueueName(queueId);
 
         if (!this.isRunning) {
@@ -64,7 +61,7 @@ export class ImmediateQueue implements IMessageQueue {
         }
 
         // Store the processor for this queue
-        this.processors.set(queueId, processor as MessageConsumer);
+        this.processors.set(queueId, processor);
         console.log(`Registered processor for immediate queue ${queueId}`);
         return undefined as T;
     }
@@ -78,9 +75,9 @@ export class ImmediateQueue implements IMessageQueue {
      */
     async consumeMessagesBatch<T = void>(
         queueId: QueueName,
-        processor: MessageConsumer<any, any, T>,
+        processor: MessageConsumer<PAYLOAD, ID, T>,
         limit: number = 10,
-        messagesOverride?: BaseMessage<any>[]
+        messagesOverride?: BaseMessage<PAYLOAD, ID>[]
     ): Promise<T> {
         queueId = getEnvironmentQueueName(queueId);
         if (!this.isRunning) return undefined as T;

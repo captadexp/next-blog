@@ -11,7 +11,6 @@ export default defineConfig({
                 'core/index': resolve(__dirname, 'src/core/index.ts'),
                 'core/types': resolve(__dirname, 'src/core/types.ts'),
                 'core/utils': resolve(__dirname, 'src/core/utils.ts'),
-                'adapters/index': resolve(__dirname, 'src/adapters/index.ts'),
                 'queues/index': resolve(__dirname, 'src/queues/index.ts'),
                 'shard/index': resolve(__dirname, 'src/shard/index.ts'),
             },

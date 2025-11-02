@@ -4,16 +4,16 @@ import {CronTask} from "./types.js";
  * Database adapter interface for task storage operations
  * @template ID - The type of the ID used for tasks (e.g., ObjectId, string, number)
  */
-export interface IDatabaseAdapter<ID = any> {
+export interface ITaskStorageAdapter<PAYLOAD = any, ID = any> {
     /**
      * Add tasks to the scheduled collection
      */
-    addTasksToScheduled(tasks: CronTask<any>[]): Promise<CronTask<any>[]>;
+    addTasksToScheduled(tasks: CronTask<PAYLOAD>[]): Promise<CronTask<PAYLOAD>[]>;
 
     /**
      * Get mature tasks ready for processing
      */
-    getMatureTasks(timestamp: number): Promise<CronTask<any>[]>;
+    getMatureTasks(timestamp: number): Promise<CronTask<PAYLOAD>[]>;
 
     /**
      * Update task status to processing
@@ -30,6 +30,8 @@ export interface IDatabaseAdapter<ID = any> {
      */
     markTasksAsFailed(taskIds: ID[]): Promise<void>;
 
+    markTasksAsIgnored(taskIds: ID[]): Promise<void>;
+
     /**
      * Get tasks by IDs
      */
@@ -38,7 +40,7 @@ export interface IDatabaseAdapter<ID = any> {
     /**
      * Update multiple tasks
      */
-    updateTasks(updates: Array<{ id: ID; updates: Partial<CronTask<any>> }>): Promise<void>;
+    updateTasks(updates: Array<{ id: ID; updates: Partial<CronTask<PAYLOAD>> }>): Promise<void>;
 
     /**
      * Get stats for cleanup

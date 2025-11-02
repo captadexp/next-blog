@@ -1,9 +1,6 @@
 // Core types, utilities and interfaces
 export * from "./core/index.js";
 
-// Task adapters
-export * from "./adapters/index.js";
-
 // Queue implementations
 export * from "./queues/index.js";
 

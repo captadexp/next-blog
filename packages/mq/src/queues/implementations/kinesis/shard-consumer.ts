@@ -5,11 +5,10 @@ import {
     KinesisClient,
     ShardIteratorType
 } from '@aws-sdk/client-kinesis';
-import {ShardLeaser} from '../../../shard/leaser/index.js';
-import {QueueName} from '../../../core/types.js';
+import {ShardLeaser} from '../../../shard';
+import {BaseMessage, MessageConsumer, QueueName} from '../../../core';
 import {Logger, LogLevel} from "@supergrowthai/utils";
 import {EJSON} from "bson";
-import {BaseMessage, MessageConsumer} from "../../../adapters/index.js";
 import {
     BATCH_RECORD_LIMIT,
     LOCK_RENEWAL_INTERVAL,

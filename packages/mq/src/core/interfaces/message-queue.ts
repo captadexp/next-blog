@@ -1,7 +1,7 @@
-import {QueueName} from "../types.js";
-import {BaseMessage, MessageConsumer} from "../../adapters/index.js";
+import type {QueueName} from "../types.js";
+import type {BaseMessage, MessageConsumer} from "./base.js";
 
-export interface IMessageQueue<PAYLOAD = any, ID = any> {
+export interface IMessageQueue<PAYLOAD, ID> {
     /**
      * Returns the name of the queue implementation
      */

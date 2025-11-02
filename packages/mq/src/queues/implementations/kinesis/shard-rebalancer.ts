@@ -1,10 +1,9 @@
-import {ShardLeaser} from '../../../shard/leaser/index.js';
+import {ShardLeaser} from '../../../shard';
 import {ShardManager} from './shard-manager.js';
 import {ShardConsumer} from './shard-consumer.js';
 import {KinesisClient} from '@aws-sdk/client-kinesis';
 import {Logger, LogLevel} from "@supergrowthai/utils";
-import {QueueName} from '../../../core/types.js';
-import {MessageConsumer} from "../../../adapters/index.js";
+import {MessageConsumer, QueueName} from '../../../core';
 import {REBALANCE_INTERVAL} from "./constants.js";
 import * as NodeUtils from 'node:util';
 

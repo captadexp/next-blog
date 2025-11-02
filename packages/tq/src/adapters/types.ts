@@ -5,6 +5,7 @@ import {BaseMessage} from "@supergrowthai/mq";
  */
 export interface CronTask<T = any, ID = any> extends BaseMessage<T, ID> {
     _id: ID;
+
     task_group?: string
     task_hash?: string
 }

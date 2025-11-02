@@ -8,15 +8,19 @@ import {
 import * as NodeUtils from 'node:util';
 import type {IShardLockProvider} from "../../../shard";
 import {ShardLeaser} from '../../../shard';
-import {getEnvironmentQueueName, IMessageQueue, QueueName} from '../../../core';
-import {MessageConsumer as Processor} from "../../../adapters/index.js";
+import {
+    BaseMessage,
+    getEnvironmentQueueName,
+    IMessageQueue,
+    MessageConsumer as Processor,
+    QueueName
+} from '../../../core';
 import {EJSON} from "bson";
 import {Logger, LogLevel} from "@supergrowthai/utils";
 import {ShardManager} from './shard-manager.ts';
 import {KinesisMessageProcessor} from './task-processor.ts';
 import {ShardRebalancer} from './shard-rebalancer.ts';
 import {LOCK_TTL_MS, MAX_SHARDS_PER_BATCH} from './constants.ts';
-import {BaseMessage} from "../../../adapters";
 
 const logger = new Logger('KinesisQueue', LogLevel.INFO)
 
@@ -28,7 +32,7 @@ interface KinesisConfig {
 /**
  * Kinesis implementation of the message queue
  */
-export class KinesisQueue implements IMessageQueue {
+export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
     private readonly kinesis: KinesisClient;
     private textEncoder: NodeUtils.TextEncoder;
     private readonly textDecoder: NodeUtils.TextDecoder;
@@ -40,7 +44,7 @@ export class KinesisQueue implements IMessageQueue {
 
     // Utility instances
     private shardManager: ShardManager;
-    private taskProcessor: KinesisMessageProcessor;
+    private taskProcessor: KinesisMessageProcessor<PAYLOAD, ID>;
     private shardRebalancer: ShardRebalancer;
     private readonly shardLockProvider: IShardLockProvider;
 
@@ -61,7 +65,7 @@ export class KinesisQueue implements IMessageQueue {
 
         // Initialize utilities
         this.shardManager = new ShardManager(this.kinesis, this.instanceId);
-        this.taskProcessor = new KinesisMessageProcessor({textDecoder: this.textDecoder, instanceId: this.instanceId});
+        this.taskProcessor = new KinesisMessageProcessor<PAYLOAD, ID>({textDecoder: this.textDecoder, instanceId: this.instanceId});
         this.shardRebalancer = new ShardRebalancer({
             instanceId: this.instanceId,
             kinesis: this.kinesis,
@@ -94,7 +98,7 @@ export class KinesisQueue implements IMessageQueue {
      * @param streamId - The Kinesis stream name
      * @param messages - Array of messages to add to the stream
      */
-    async addMessages<T>(streamId: QueueName, messages: BaseMessage<T>[]): Promise<void> {
+    async addMessages(streamId: QueueName, messages: BaseMessage<PAYLOAD, ID>[]): Promise<void> {
         if (!streamId) {
             throw new Error('streamId is required');
         }
@@ -146,7 +150,7 @@ export class KinesisQueue implements IMessageQueue {
      * @param streamId - The Kinesis stream name (base name)
      * @param processor - Function to process the messages
      */
-    async consumeMessagesStream<T = void>(streamId: QueueName, processor: Processor<any, any, T>): Promise<T> {
+    async consumeMessagesStream<T = void>(streamId: QueueName, processor: Processor<PAYLOAD, ID, T>): Promise<T> {
         const envStreamId = getEnvironmentQueueName(streamId); // Use prefixed name
         logger.info(`[${this.instanceId}] Starting task consumption for stream: ${envStreamId}`);
 
@@ -182,7 +186,7 @@ export class KinesisQueue implements IMessageQueue {
      * @param limit Maximum number of messages to process
      * @returns void
      */
-    async consumeMessagesBatch<T = void>(streamId: QueueName, processor: Processor<any, any, T>, limit: number = 10): Promise<T> {
+    async consumeMessagesBatch<T = void>(streamId: QueueName, processor: Processor<PAYLOAD, ID, T>, limit: number = 10): Promise<T> {
         streamId = getEnvironmentQueueName(streamId);
         try {
             // List all shards using the utility
@@ -379,7 +383,7 @@ export class KinesisQueue implements IMessageQueue {
         logger.debug(`[${this.instanceId}] Shutdown handlers registered`);
     }
 
-    private generatePartitionKey<T>(message: BaseMessage<T>): string {
+    private generatePartitionKey<PAYLOAD, ID>(message: BaseMessage<PAYLOAD, ID>): string {
         return message.type;
     }
 

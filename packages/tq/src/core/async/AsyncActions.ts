@@ -8,14 +8,14 @@ import {TaskQueuesManager} from "../TaskQueuesManager.js";
 
 const logger = new Logger('AsyncActions', LogLevel.INFO);
 
-export class AsyncActions<ID = any> {
+export class AsyncActions<PAYLOAD, ID = any> {
     private readonly actions: Actions;
     private readonly taskId: string;
 
     constructor(
-        private messageQueue: IMessageQueue,
-        private taskStore: TaskStore<ID>,
-        private taskQueue: TaskQueuesManager,
+        private messageQueue: IMessageQueue<PAYLOAD, ID>,
+        private taskStore: TaskStore<PAYLOAD, ID>,
+        private taskQueue: TaskQueuesManager<PAYLOAD, ID>,
         actions: Actions,
         task: CronTask<any>,
         private generateId: () => ID

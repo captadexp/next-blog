@@ -1,9 +1,7 @@
 import {describe, expect, it} from "bun:test";
-import type {BaseMessage} from "../adapters/messages/base.js";
-import type {QueueName} from "../core/types.js";
+import type {BaseMessage, QueueName} from "../core";
 import {InMemoryQueue} from "../queues";
 
-// Augment the QueueRegistry to add our test queue
 declare module "../core/types.js" {
     interface QueueRegistry {
         "test-queue": "test-queue";
@@ -41,8 +39,7 @@ describe("simple mq test", () => {
                 retries: 0,
                 created_at: new Date(),
                 updated_at: new Date(),
-                queue_id: queueName,
-                processing_started_at: new Date()
+                queue_id: queueName
             },
             {
                 _id: "message2",
@@ -53,8 +50,7 @@ describe("simple mq test", () => {
                 retries: 0,
                 created_at: new Date(),
                 updated_at: new Date(),
-                queue_id: queueName,
-                processing_started_at: new Date()
+                queue_id: queueName
             }
         ];
 

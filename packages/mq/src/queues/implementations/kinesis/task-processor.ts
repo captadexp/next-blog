@@ -4,7 +4,7 @@ import {GetRecordsCommandOutput} from "@aws-sdk/client-kinesis";
 import {PROCESSOR_TIMEOUT_MS} from "./constants.js";
 import {transformTask} from "./task-transformer.js";
 import * as NodeUtils from 'node:util';
-import {BaseMessage, MessageConsumer} from "../../../adapters/index.js";
+import {BaseMessage, MessageConsumer} from "../../../core";
 
 const logger = new Logger('KinesisMessageProcessor', LogLevel.INFO);
 
@@ -19,7 +19,7 @@ interface ProcessorConfig {
  * Handles task processing from Kinesis records
  * Simple processor - async handling is done at tq layer
  */
-export class KinesisMessageProcessor {
+export class KinesisMessageProcessor<PAYLOAD, ID> {
     private readonly timeoutMs: number;
     private readonly textDecoder: NodeUtils.TextDecoder;
 
@@ -40,8 +40,8 @@ export class KinesisMessageProcessor {
      */
     async processMessages(
         queueId: string,
-        messages: BaseMessage<any>[],
-        processor: MessageConsumer<any, any, any>
+        messages: BaseMessage<PAYLOAD, ID>[],
+        processor: MessageConsumer<PAYLOAD, ID, any>
     ): Promise<void> {
         if (!queueId) {
             throw new Error('queueId is required');
@@ -66,7 +66,7 @@ export class KinesisMessageProcessor {
     /**
      * Parse raw Kinesis records into messages - fail fast on parse errors
      */
-    parseMessages(records: any[]): BaseMessage<any>[] {
+    parseMessages(records: any[]): BaseMessage<PAYLOAD, ID>[] {
         if (!records || !Array.isArray(records)) {
             throw new Error('Invalid records array provided to parseMessages');
         }
@@ -95,7 +95,7 @@ export class KinesisMessageProcessor {
      */
     async processBatch(
         records: Required<GetRecordsCommandOutput>["Records"][],
-        processor: MessageConsumer<any, any, any>,
+        processor: MessageConsumer<PAYLOAD, ID, any>,
         queueId: string
     ): Promise<void> {
         if (!records || !Array.isArray(records)) {

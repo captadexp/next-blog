@@ -4,7 +4,7 @@ import {tId} from "../utils/task-id-gen.js";
 import {TasksType} from "../task-registry.js";
 import {ActionResults, Actions} from "./Actions.js";
 import {AsyncActions} from "./async/AsyncActions.js";
-import {CronTask} from "../adapters/index.js";
+import {CronTask} from "../adapters";
 import {IMessageQueue} from "@supergrowthai/mq";
 import {CacheProvider} from "memoose-js";
 import {LockManager} from "@supergrowthai/utils";
@@ -12,21 +12,21 @@ import {TaskQueuesManager} from "./TaskQueuesManager";
 import {TaskStore} from "./TaskStore";
 import {IAsyncTaskManager} from "./async/async-task-manager";
 
-export interface AsyncTask {
-    task: CronTask<any>;
+export interface AsyncTask<PAYLOAD, ID> {
+    task: CronTask<PAYLOAD, ID>;
     promise: Promise<void>;
     startTime: number;
-    actions: AsyncActions;
+    actions: AsyncActions<PAYLOAD, ID>;
 }
 
-export class TaskRunner<ID = any> {
+export class TaskRunner<PAYLOAD, ID> {
     private readonly logger: Logger;
     private lockManager: LockManager;
 
     constructor(
-        private messageQueue: IMessageQueue,
-        private taskQueue: TaskQueuesManager,
-        private taskStore: TaskStore<ID>,
+        private messageQueue: IMessageQueue<PAYLOAD, ID>,
+        private taskQueue: TaskQueuesManager<PAYLOAD, ID>,
+        private taskStore: TaskStore<PAYLOAD, ID>,
         cacheProvider: CacheProvider<any>,
         private generateId: () => ID
     ) {
@@ -41,7 +41,7 @@ export class TaskRunner<ID = any> {
         taskRunnerId: string,
         tasksRaw: Array<CronTask<any>>,
         asyncTaskManager?: IAsyncTaskManager
-    ): Promise<ActionResults & { asyncTasks: AsyncTask[] }> {
+    ): Promise<ActionResults & { asyncTasks: AsyncTask<PAYLOAD, ID>[] }> {
         this.logger.info(`[${taskRunnerId}] Starting task runner`);
         this.logger.info(`[${taskRunnerId}] Processing ${tasksRaw.length} provided tasks`);
 
@@ -68,7 +68,7 @@ export class TaskRunner<ID = any> {
         this.logger.info(`[${taskRunnerId}] Task groups: ${groupedTasksArray.map(g => `${g.type}: ${g.tasks.length}`).join(', ')}`);
 
         const actions = new Actions(taskRunnerId);
-        const asyncTasks: AsyncTask[] = [];
+        const asyncTasks: AsyncTask<PAYLOAD, ID>[] = [];
 
         for (let i = 0; i < groupedTasksArray.length; i++) {
             const taskGroup = groupedTasksArray[i];
@@ -156,7 +156,7 @@ export class TaskRunner<ID = any> {
                                 if (!task._id) {
                                     this.logger.error(`[${taskRunnerId}] Cannot hand off task without _id (type: ${task.type}). Task will continue but won't be tracked.`);
                                 } else {
-                                    const asyncActions = new AsyncActions<ID>(this.messageQueue, this.taskStore, this.taskQueue, actions, task, this.generateId);
+                                    const asyncActions = new AsyncActions<PAYLOAD, ID>(this.messageQueue, this.taskStore, this.taskQueue, actions, task, this.generateId);
 
                                     const asyncPromise = taskPromise
                                         .finally(async () => {

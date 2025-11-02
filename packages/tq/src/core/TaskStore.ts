@@ -1,18 +1,18 @@
+import type {CronTask, ITaskStorageAdapter} from "../adapters";
 import {getEnvironmentQueueName} from "@supergrowthai/mq";
-import {CronTask, IDatabaseAdapter} from "../adapters/index.js";
 
-class TaskStore<ID = any> {
+class TaskStore<PAYLOAD, ID> {
 
-    constructor(private databaseAdapter: IDatabaseAdapter<ID>) {
+    constructor(private databaseAdapter: ITaskStorageAdapter<PAYLOAD, ID>) {
     }
 
     /**
      * Adds multiple tasks to the scheduled queue
      */
-    async addTasksToScheduled(tasks: CronTask<any>[]): Promise<any> {
+    async addTasksToScheduled(tasks: CronTask<PAYLOAD, ID>[]): Promise<any> {
         if (!tasks.length) return [];
 
-        const transformedTasks: CronTask<any>[] = tasks.map((task) => ({
+        const transformedTasks: CronTask<PAYLOAD, ID>[] = tasks.map((task) => ({
             _id: task._id,
             type: task.type,
             queue_id: getEnvironmentQueueName(task.queue_id),
@@ -40,7 +40,7 @@ class TaskStore<ID = any> {
      * 1. Reset stale processing tasks
      * 2. Fetch and mark new mature tasks
      */
-    async getMatureTasks(timestamp: number): Promise<CronTask<any>[]> {
+    async getMatureTasks(timestamp: number): Promise<CronTask<PAYLOAD, ID>[]> {
         return await this.databaseAdapter.getMatureTasks(timestamp);
     }
 
@@ -63,6 +63,27 @@ class TaskStore<ID = any> {
      */
     async markTasksAsFailed(taskIds: ID[]): Promise<void> {
         await this.databaseAdapter.markTasksAsFailed(taskIds);
+    }
+
+    /**
+     * Marks tasks as successful/completed
+     */
+    async markTasksAsSuccess(tasks: CronTask<PAYLOAD, ID>[]): Promise<void> {
+        const taskIds = tasks.map(task => task._id as ID);
+        await this.databaseAdapter.markTasksAsExecuted(taskIds);
+    }
+
+    /**
+     * Marks tasks as ignored (same as failed for now)
+     */
+    async markTasksAsIgnored(tasks: CronTask<PAYLOAD, ID>[]): Promise<void> {
+        const taskIds = tasks.map(task => task._id as ID);
+
+        //                             error: 'No executor found for task type',
+        //                             ignored_reason: 'unknown_executor',
+        //                             ignored_at: new Date()
+        // todo passing only ids is a problem because we cant update execution stats
+        await this.databaseAdapter.markTasksAsIgnored(taskIds);
     }
 
     /**
@@ -99,7 +120,7 @@ class TaskStore<ID = any> {
     /**
      * Updates tasks for retry with new execution time and retry count
      */
-    async updateTasksForRetry(tasks: CronTask<any>[]): Promise<void> {
+    async updateTasksForRetry(tasks: CronTask<PAYLOAD, ID>[]): Promise<void> {
         const updates = tasks.map(task => ({
             id: task._id as ID,
             updates: {
@@ -113,21 +134,6 @@ class TaskStore<ID = any> {
         await this.databaseAdapter.updateTasks(updates);
     }
 
-    /**
-     * Marks tasks as successful/completed
-     */
-    async markTasksAsSuccess(tasks: CronTask<any>[]): Promise<void> {
-        const taskIds = tasks.map(task => task._id as ID);
-        await this.databaseAdapter.markTasksAsExecuted(taskIds);
-    }
-
-    /**
-     * Marks tasks as ignored (same as failed for now)
-     */
-    async markTasksAsIgnored(tasks: CronTask<any>[]): Promise<void> {
-        const taskIds = tasks.map(task => task._id as ID);
-        await this.databaseAdapter.markTasksAsFailed(taskIds);
-    }
 }
 
 export {TaskStore};

@@ -1,5 +1,5 @@
 import moment from "moment";
-import {BaseMessage} from "../../../adapters/index.js";
+import {BaseMessage} from "../../../core";
 
 /**
  * Transform JSON task to CronTask (preserving original logic from KinesisQueue)

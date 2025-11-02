@@ -1,5 +1,5 @@
-import {Collection, Db, MongoClient, ObjectId} from "mongodb";
-import {IDatabaseAdapter} from "./IDatabaseAdapter.js";
+import {Collection, ObjectId} from "mongodb";
+import {ITaskStorageAdapter} from "./ITaskStorageAdapter.js";
 import {CronTask} from "./types.js";
 import {Logger, LogLevel} from "@supergrowthai/utils";
 
@@ -10,46 +10,17 @@ const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
 /**
  * MongoDB implementation of IDatabaseAdapter
  */
-export class MongoDbAdapter implements IDatabaseAdapter<ObjectId> {
-    private client: MongoClient | null = null;
-    private db: Db | null = null;
-    private tasksCollection: Collection<any> | null = null;
-    private readonly uri: string;
-    private readonly dbName: string;
-    private readonly collectionName: string;
+export abstract class MongoDbAdapter<PAYLOAD = any> implements ITaskStorageAdapter<PAYLOAD, ObjectId> {
 
-    constructor(
-        uri: string = process.env.MONGODB_URI || 'mongodb://localhost:27017',
-        dbName: string = process.env.DB_NAME || 'taskqueue',
-        collectionName: string = 'scheduled'
-    ) {
-        this.uri = uri;
-        this.dbName = dbName;
-        this.collectionName = collectionName;
+    protected constructor() {
     }
 
-    async initialize(): Promise<void> {
-        if (this.db) return;
-
-        this.client = new MongoClient(this.uri);
-        await this.client.connect();
-        this.db = this.client.db(this.dbName);
-        this.tasksCollection = this.db.collection<CronTask<any>>(this.collectionName);
-
-        // Create indexes
-        await this.tasksCollection.createIndex({execute_at: 1, status: 1});
-        await this.tasksCollection.createIndex({status: 1, processing_started_at: 1});
-        await this.tasksCollection.createIndex({expires_at: 1}, {sparse: true});
-
-        logger.info(`Connected to MongoDB at ${this.uri}/${this.dbName}`);
-    }
-
-    async addTasksToScheduled(tasks: CronTask<any>[]): Promise<CronTask<any>[]> {
+    async addTasksToScheduled(tasks: CronTask<PAYLOAD, ObjectId>[]): Promise<CronTask<PAYLOAD, ObjectId>[]> {
         if (!tasks.length) return [];
 
-        const collection = await this.ensureConnection();
+        const collection = await this.collection;
 
-        const transformedTasks: CronTask<any>[] = tasks.map((task) => ({
+        const transformedTasks: CronTask<PAYLOAD>[] = tasks.map((task) => ({
             _id: task._id,
             type: task.type,
             payload: task.payload,
@@ -82,8 +53,8 @@ export class MongoDbAdapter implements IDatabaseAdapter<ObjectId> {
         }
     }
 
-    async getMatureTasks(timestamp: number): Promise<CronTask<any>[]> {
-        const collection = await this.ensureConnection();
+    async getMatureTasks(timestamp: number): Promise<CronTask<PAYLOAD, ObjectId>[]> {
+        const collection = await this.collection;
 
         // Phase 1: Reset stale processing tasks
         const staleTimestamp = Date.now() - TWO_DAYS_MS;
@@ -126,7 +97,7 @@ export class MongoDbAdapter implements IDatabaseAdapter<ObjectId> {
     }
 
     async markTasksAsProcessing(taskIds: ObjectId[], processingStartedAt: Date): Promise<void> {
-        const collection = await this.ensureConnection();
+        const collection = await this.collection;
 
         await collection.updateMany(
             {_id: {$in: taskIds}},
@@ -141,7 +112,7 @@ export class MongoDbAdapter implements IDatabaseAdapter<ObjectId> {
     }
 
     async markTasksAsExecuted(taskIds: ObjectId[]): Promise<void> {
-        const collection = await this.ensureConnection();
+        const collection = await this.collection;
 
         await collection.updateMany(
             {_id: {$in: taskIds}},
@@ -155,7 +126,7 @@ export class MongoDbAdapter implements IDatabaseAdapter<ObjectId> {
     }
 
     async markTasksAsFailed(taskIds: ObjectId[]): Promise<void> {
-        const collection = await this.ensureConnection();
+        const collection = await this.collection;
 
         await collection.updateMany(
             {_id: {$in: taskIds}},
@@ -169,16 +140,16 @@ export class MongoDbAdapter implements IDatabaseAdapter<ObjectId> {
         );
     }
 
-    async getTasksByIds(taskIds: ObjectId[]): Promise<CronTask<any>[]> {
-        const collection = await this.ensureConnection();
+    async getTasksByIds(taskIds: ObjectId[]): Promise<CronTask<PAYLOAD, ObjectId>[]> {
+        const collection = await this.collection;
 
         return collection
             .find({_id: {$in: taskIds}})
             .toArray();
     }
 
-    async updateTasks(updates: Array<{ id: ObjectId; updates: Partial<CronTask<any>> }>): Promise<void> {
-        const collection = await this.ensureConnection();
+    async updateTasks(updates: Array<{ id: ObjectId; updates: Partial<CronTask<PAYLOAD, ObjectId>> }>): Promise<void> {
+        const collection = await this.collection;
 
         const bulkOps = updates.map(({id, updates}) => ({
             updateOne: {
@@ -198,7 +169,7 @@ export class MongoDbAdapter implements IDatabaseAdapter<ObjectId> {
     }
 
     async getCleanupStats(): Promise<{ orphanedTasks: number; expiredTasks: number }> {
-        const collection = await this.ensureConnection();
+        const collection = await this.collection;
 
         const orphanedBefore = new Date(Date.now() - TWO_DAYS_MS);
         const orphanedTasks = await collection.countDocuments({
@@ -214,7 +185,7 @@ export class MongoDbAdapter implements IDatabaseAdapter<ObjectId> {
     }
 
     async cleanupTasks(orphanedBefore: Date, expiredBefore: Date): Promise<void> {
-        const collection = await this.ensureConnection();
+        const collection = await this.collection;
 
         // Clean up orphaned tasks
         await collection.deleteMany({
@@ -228,24 +199,31 @@ export class MongoDbAdapter implements IDatabaseAdapter<ObjectId> {
         });
     }
 
-    async close(): Promise<void> {
-        if (this.client) {
-            await this.client.close();
-            this.client = null;
-            this.db = null;
-            this.tasksCollection = null;
-            logger.info('Disconnected from MongoDB');
-        }
-    }
-
-    private async ensureConnection(): Promise<Collection<any>> {
-        if (!this.tasksCollection) {
-            await this.initialize();
-        }
-        return this.tasksCollection!;
-    }
+    abstract get collection(): Promise<Collection<CronTask<PAYLOAD, ObjectId>>>;
 
     generateId() {
         return new ObjectId();
+    }
+
+    async close() {
+    }
+
+    async initialize() {
+    }
+
+    async markTasksAsIgnored(taskIds: ObjectId[]): Promise<void> {
+        const collection = await this.collection;
+
+        await collection.updateMany(
+            {_id: {$in: taskIds}},
+            {
+                $set: {
+                    status: 'ignored',
+                    //update execution_stats
+                    updated_at: new Date()
+                },
+            },
+            {upsert: true} // Always upsert ignored tasks to ensure they're recorded
+        );
     }
 }

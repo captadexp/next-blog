@@ -1,14 +1,12 @@
-import {IMessageQueue} from "../../core/interfaces/message-queue.js";
-import {getEnvironmentQueueName} from "../../core/utils.js";
-import {QueueName} from "../../core/types.js";
-import {BaseMessage, MessageConsumer} from "../../adapters/index.js";
+import type {BaseMessage, IMessageQueue, MessageConsumer, QueueName} from "../../core";
+import {getEnvironmentQueueName} from "../../core";
 
 /**
  * In-memory implementation of the message queue.
  * This is primarily for development, testing, and environments where external message queues are not available.
  */
-export class InMemoryQueue implements IMessageQueue {
-    private queues: Map<QueueName, BaseMessage<any>[]> = new Map();
+export class InMemoryQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, string> {
+    private queues: Map<QueueName, BaseMessage<PAYLOAD, string>[]> = new Map();
     private isRunning: boolean = false;
     private processingIntervals: Map<QueueName, NodeJS.Timeout> = new Map();
     private registeredQueues: Set<QueueName> = new Set();
@@ -29,7 +27,7 @@ export class InMemoryQueue implements IMessageQueue {
      * @param queueId - The identifier for the queue
      * @param messages - Array of messages to add to the queue
      */
-    async addMessages<T>(queueId: QueueName, messages: BaseMessage<T>[]): Promise<void> {
+    async addMessages(queueId: QueueName, messages: BaseMessage<PAYLOAD, string>[]): Promise<void> {
         queueId = getEnvironmentQueueName(queueId);
         if (!messages.length) {
             return;
@@ -56,7 +54,7 @@ export class InMemoryQueue implements IMessageQueue {
      */
     async consumeMessagesStream<T = void>(
         queueId: QueueName,
-        processor: MessageConsumer<any, any, T>
+        processor: MessageConsumer<PAYLOAD, string, T>
     ): Promise<T> {
         queueId = getEnvironmentQueueName(queueId);
         this.isRunning = true;
@@ -93,7 +91,7 @@ export class InMemoryQueue implements IMessageQueue {
      */
     async consumeMessagesBatch<T = void>(
         queueId: QueueName,
-        processor: MessageConsumer<any, any, T>,
+        processor: MessageConsumer<PAYLOAD, string, T>,
         limit: number = 10
     ): Promise<T> {
         queueId = getEnvironmentQueueName(queueId);
@@ -135,7 +133,6 @@ export class InMemoryQueue implements IMessageQueue {
     async shutdown(): Promise<void> {
         this.isRunning = false;
 
-        // Clear all processing intervals
         for (const [queueId, interval] of this.processingIntervals.entries()) {
             clearInterval(interval);
             this.processingIntervals.delete(queueId);
