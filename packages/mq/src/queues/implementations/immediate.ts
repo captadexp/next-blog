@@ -1,4 +1,7 @@
 import {BaseMessage, getEnvironmentQueueName, IMessageQueue, MessageConsumer, QueueName} from "../../core";
+import {Logger, LogLevel} from "@supergrowthai/utils";
+
+const logger = new Logger('ImmediateQueue', LogLevel.INFO);
 
 /**
  * Immediate implementation of a message queue that processes messages synchronously
@@ -6,12 +9,11 @@ import {BaseMessage, getEnvironmentQueueName, IMessageQueue, MessageConsumer, Qu
  */
 export class ImmediateQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
     private isRunning: boolean = false;
-    private processors: Map<QueueName, MessageConsumer<PAYLOAD, ID, any>> = new Map();
+    private processors: Map<QueueName, MessageConsumer<PAYLOAD, ID, unknown>> = new Map();
     private registeredQueues: Set<QueueName> = new Set();
 
     constructor() {
         this.isRunning = true;
-        this.setupShutdownHandlers();
     }
 
     name(): string {
@@ -33,13 +35,13 @@ export class ImmediateQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
 
         const messagesToProcess = messages.map(message => message);
 
-        console.log(`Added ${messages.length} messages to immediate queue ${queueId}`);
+        logger.info(`Added ${messages.length} messages to immediate queue ${queueId}`);
 
         if (this.processors.has(queueId)) {
             const processor = this.processors.get(queueId)!;
             await this.consumeMessagesBatch(queueId, processor, messagesToProcess.length, messagesToProcess);
         } else {
-            console.warn(`No processor registered for queue ${queueId}, messages discarded in immediate mode`);
+            logger.warn(`No processor registered for queue ${queueId}, messages discarded in immediate mode`);
         }
     }
 
@@ -47,12 +49,13 @@ export class ImmediateQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
      * Registers a processor for the queue
      * @param queueId - The identifier for the queue
      * @param processor - Function to process the messages
+     * @param signal - Optional AbortSignal to stop consumption
      */
-    async consumeMessagesStream<T = void>(queueId: QueueName, processor: MessageConsumer<PAYLOAD, ID, T>): Promise<T> {
+    async consumeMessagesStream<T = void>(queueId: QueueName, processor: MessageConsumer<PAYLOAD, ID, T>, signal?: AbortSignal): Promise<T> {
         queueId = getEnvironmentQueueName(queueId);
 
-        if (!this.isRunning) {
-            console.warn(`Cannot register processor for queue ${queueId}: queue is shutting down`);
+        if (!this.isRunning || signal?.aborted) {
+            logger.warn(`Cannot register processor for queue ${queueId}: queue is shutting down or aborted`);
             return undefined as T;
         }
 
@@ -62,7 +65,15 @@ export class ImmediateQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
 
         // Store the processor for this queue
         this.processors.set(queueId, processor);
-        console.log(`Registered processor for immediate queue ${queueId}`);
+        logger.info(`Registered processor for immediate queue ${queueId}`);
+
+        // Clean up on abort
+        if (signal) {
+            signal.addEventListener('abort', () => {
+                this.processors.delete(queueId);
+            });
+        }
+
         return undefined as T;
     }
 
@@ -92,10 +103,10 @@ export class ImmediateQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
 
             const result = await processor(`immediate:${queueId}`, messages);
 
-            console.log(`Processed ${messages.length} messages from immediate queue ${queueId}`);
+            logger.info(`Processed ${messages.length} messages from immediate queue ${queueId}`);
             return result;
         } catch (error) {
-            console.error(`Error processing messages from immediate queue ${queueId}:`, error);
+            logger.error(`Error processing messages from immediate queue ${queueId}:`, error);
             throw error;
         }
     }
@@ -106,7 +117,7 @@ export class ImmediateQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
     async shutdown(): Promise<void> {
         this.isRunning = false;
         this.processors.clear();
-        console.log('Immediate queue shut down');
+        logger.info('Immediate queue shut down');
     }
 
     /**
@@ -116,16 +127,7 @@ export class ImmediateQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
     register(queueId: QueueName): void {
         const normalizedQueueId = getEnvironmentQueueName(queueId);
         this.registeredQueues.add(normalizedQueueId);
-        console.log(`Registered queue ${normalizedQueueId}`);
-    }
-
-    /**
-     * Handles graceful shutdown by registering signal handlers
-     */
-    private setupShutdownHandlers() {
-        process.on('SIGINT', async () => await this.shutdown());
-        process.on('SIGTERM', async () => await this.shutdown());
-        process.on('SIGQUIT', async () => await this.shutdown());
+        logger.info(`Registered queue ${normalizedQueueId}`);
     }
 }
 

@@ -14,24 +14,26 @@ declare module "@supergrowthai/mq" {
     }
 }
 
+type P = {
+    message: string
+};
+
 describe("simple tq test", () => {
     it("should register, add, and consume tasks", async () => {
         // Setup message queue
-        const messageQueue = new InMemoryQueue();
+        const messageQueue = new InMemoryQueue<P>();
         const queueName: QueueName = "test-tq-queue";
 
         // Setup TQ components
-        const databaseAdapter = new InMemoryAdapter<{ message: string }>();
-        const taskStore = new TaskStore<{ message: string }, string>(databaseAdapter);
-        const taskQueue = new TaskQueuesManager(messageQueue);
+        const databaseAdapter = new InMemoryAdapter<P>();
+        const taskStore = new TaskStore<P, string>(databaseAdapter);
+        const taskQueue = new TaskQueuesManager<P, string>(messageQueue);
 
         // Use proper MemoryCacheProvider
         const cacheProvider = new MemoryCacheProvider();
 
         const generateId = () => databaseAdapter.generateId();
-        const taskHandler = new TaskHandler<{
-            message: string
-        }, string>(messageQueue, taskQueue, databaseAdapter, cacheProvider);
+        const taskHandler = new TaskHandler<P, string>(messageQueue, taskQueue, databaseAdapter, cacheProvider);
 
         // Track executed tasks
         const executedTasks: CronTask[] = [];

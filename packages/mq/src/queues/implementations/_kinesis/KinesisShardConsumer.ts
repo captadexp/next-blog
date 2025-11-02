@@ -6,7 +6,7 @@ import {
     ShardIteratorType
 } from '@aws-sdk/client-kinesis';
 import {ShardLeaser} from '../../../shard';
-import {BaseMessage, MessageConsumer, QueueName} from '../../../core';
+import {MessageConsumer, QueueName} from '../../../core';
 import {Logger, LogLevel} from "@supergrowthai/utils";
 import {EJSON} from "bson";
 import {
@@ -27,7 +27,7 @@ interface ConsumerConfig {
     shardId: string;
     kinesis: KinesisClient;
     shardLeaser: ShardLeaser;
-    processor: MessageConsumer<any, any, any>;
+    processor: MessageConsumer<unknown, unknown, unknown>;
     textDecoder: NodeUtils.TextDecoder;
     onShardLost?: () => void;
     isRunningCheck: () => boolean;
@@ -334,7 +334,7 @@ export class KinesisShardConsumer {
                     return null;
                 }
             })
-            .filter((task): task is BaseMessage<any> => task !== null);
+            .filter((task): task is NonNullable<typeof task> => task !== null);
 
         if (messages.length > 0) {
             logger.info(`${logPrefix} Processing ${messages.length} messages`);

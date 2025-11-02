@@ -8,7 +8,7 @@ export abstract class MongoRedisShardLockProvider implements IShardLockProvider 
         this.redisClient = redisClient;
     }
 
-    async acquireLock(shardId: string, instanceId: any, lockTTLMs: number) {
+    async acquireLock(shardId: string, instanceId: string, lockTTLMs: number) {
         const result = await this.redisClient.set(
             `kinesis:lock:${shardId}`,
             instanceId,

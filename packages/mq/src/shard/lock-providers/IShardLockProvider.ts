@@ -1,7 +1,7 @@
 import {QueueName} from "../../core/types.js";
 
 export interface IShardLockProvider {
-    acquireLock(key: string, value: any, lock: number): Promise<boolean>;
+    acquireLock(key: string, value: string, lock: number): Promise<boolean>;
 
     setCheckpoint(shardId: string, sequenceNumber: string): Promise<void>;
 

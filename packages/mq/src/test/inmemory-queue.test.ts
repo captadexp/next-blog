@@ -18,7 +18,7 @@ describe("simple mq test", () => {
         queue.register(queueName);
 
         // Track consumed messages
-        const consumedMessages: BaseMessage[] = [];
+        const consumedMessages: BaseMessage<unknown, string>[] = [];
         let processorCalled = false;
 
         // Start consuming messages
@@ -29,7 +29,7 @@ describe("simple mq test", () => {
         });
 
         // Create test messages
-        const testMessages: BaseMessage[] = [
+        const testMessages: BaseMessage<unknown, string>[] = [
             {
                 _id: "message1",
                 type: "test-message",

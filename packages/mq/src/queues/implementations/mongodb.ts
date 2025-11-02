@@ -1,25 +1,26 @@
 import type {BaseMessage, IMessageQueue, MessageConsumer} from "../../core";
 import {getEnvironmentQueueName, QueueName} from "../../core";
 import {CacheProvider} from "memoose-js";
-import {LockManager} from "@supergrowthai/utils";
+import {LockManager, Logger, LogLevel} from "@supergrowthai/utils";
 import {ObjectId} from "bson";
 import {Collection} from "mongodb";
+
+const logger = new Logger('MongoDBQueue', LogLevel.INFO);
 
 /**
  * MongoDB implementation of message queue that manages its own database operations
  */
-export abstract class MongoDBQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, ObjectId> {
+export abstract class MongoDBQueue<PAYLOAD = unknown> implements IMessageQueue<PAYLOAD, ObjectId> {
     private isRunning: boolean = false;
     private processingIntervals: Map<QueueName, NodeJS.Timeout> = new Map();
     private lockManager: LockManager;
     private registeredQueues: Set<QueueName> = new Set();
 
-    protected constructor(private cacheAdapter: CacheProvider<any>) {
+    protected constructor(private cacheAdapter: CacheProvider<string>) {
         this.lockManager = new LockManager(cacheAdapter, {
             prefix: 'mq-lock:',
             defaultTimeout: 300 // 5 minutes lock by default
         });
-        this.setupShutdownHandlers();
     }
 
     abstract get collection(): Promise<Collection<BaseMessage<PAYLOAD, ObjectId>>>;
@@ -27,7 +28,7 @@ export abstract class MongoDBQueue<PAYLOAD = any> implements IMessageQueue<PAYLO
     register(queueId: QueueName): void {
         const normalizedQueueId = getEnvironmentQueueName(queueId);
         this.registeredQueues.add(normalizedQueueId);
-        console.log(`Registered queue ${normalizedQueueId}`);
+        logger.info(`Registered queue ${normalizedQueueId}`);
     }
 
     name(): string {
@@ -50,28 +51,36 @@ export abstract class MongoDBQueue<PAYLOAD = any> implements IMessageQueue<PAYLO
             }));
 
             await collection.insertMany(messagesToInsert);
-            console.log(`Added ${messages.length} messages to MongoDB queue ${queueId}`);
+            logger.info(`Added ${messages.length} messages to MongoDB queue ${queueId}`);
         } catch (error) {
-            console.error(`Error adding messages to MongoDB queue ${queueId}:`, error);
+            logger.error(`Error adding messages to MongoDB queue ${queueId}:`, error);
             throw error;
         }
     }
 
-    async consumeMessagesStream<T = void>(queueId: QueueName, processor: MessageConsumer<PAYLOAD, ObjectId, T>): Promise<T> {
+    async consumeMessagesStream<T = void>(queueId: QueueName, processor: MessageConsumer<PAYLOAD, ObjectId, T>, signal?: AbortSignal): Promise<T> {
         queueId = getEnvironmentQueueName(queueId);
         this.isRunning = true;
 
         if (!this.processingIntervals.has(queueId)) {
             const interval = setInterval(async () => {
-                if (this.isRunning) {
+                if (this.isRunning && (!signal || !signal.aborted)) {
                     await this.consumeMessagesBatch(queueId, processor);
                 }
             }, 5000);
 
             this.processingIntervals.set(queueId, interval);
+
+            // Clean up on abort
+            if (signal) {
+                signal.addEventListener('abort', () => {
+                    clearInterval(interval);
+                    this.processingIntervals.delete(queueId);
+                });
+            }
         }
 
-        console.log(`Started consuming from MongoDB queue ${queueId}`);
+        logger.info(`Started consuming from MongoDB queue ${queueId}`);
         await this.consumeMessagesBatch(queueId, processor);
 
         return undefined as T
@@ -115,10 +124,10 @@ export abstract class MongoDBQueue<PAYLOAD = any> implements IMessageQueue<PAYLO
                     {$set: {status: 'executed', updated_at: new Date()}}
                 );
 
-                console.log(`Processed ${messages.length} messages from MongoDB queue ${queueId}`);
+                logger.info(`Processed ${messages.length} messages from MongoDB queue ${queueId}`);
                 return result;
             } catch (error) {
-                console.error(`Error processing messages from MongoDB queue ${queueId}:`, error);
+                logger.error(`Error processing messages from MongoDB queue ${queueId}:`, error);
 
                 await collection.updateMany(
                     {_id: {$in: messageIds}},
@@ -130,7 +139,7 @@ export abstract class MongoDBQueue<PAYLOAD = any> implements IMessageQueue<PAYLO
                 throw error;
             }
         } catch (error) {
-            console.error(`Error in batch processing for MongoDB queue ${queueId}:`, error);
+            logger.error(`Error in batch processing for MongoDB queue ${queueId}:`, error);
             throw error;
         } finally {
             await this.lockManager.release(lockKey);
@@ -145,14 +154,7 @@ export abstract class MongoDBQueue<PAYLOAD = any> implements IMessageQueue<PAYLO
             this.processingIntervals.delete(queueId);
         }
 
-        console.log('MongoDB queue shut down');
-    }
-
-    private setupShutdownHandlers() {
-        // Standard process handlers for graceful shutdown
-        process.on('SIGINT', async () => await this.shutdown());
-        process.on('SIGTERM', async () => await this.shutdown());
-        process.on('SIGQUIT', async () => await this.shutdown());
+        logger.info('MongoDB queue shut down');
     }
 }
 

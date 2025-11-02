@@ -1,5 +1,8 @@
 import {IShardLockProvider} from "../lock-providers/IShardLockProvider.js";
 import {QueueName} from "../../core/types.js";
+import {Logger, LogLevel} from "@supergrowthai/utils";
+
+const logger = new Logger('ShardLeaser', LogLevel.INFO);
 
 export class ShardLeaser {
     private readonly client: IShardLockProvider;
@@ -68,7 +71,7 @@ export class ShardLeaser {
         try {
             await this.client.sendHeartbeat(this.streamId, this.instanceId, this.lockTTLMs);
         } catch (error) {
-            console.error('Failed to send heartbeat:', error);
+            logger.error('Failed to send heartbeat:', error);
         }
     }
 }

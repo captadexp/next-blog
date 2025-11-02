@@ -1,9 +1,10 @@
 import {QueueName} from "../types.js";
+import {ObjectId} from "bson";
 
 /**
  * Base message structure required by the message queue system
  */
-export interface BaseMessage<PAYLOAD = any, ID = any> {
+export interface BaseMessage<PAYLOAD = unknown, ID = string | ObjectId> {
     _id: ID;
     type: string;
     payload: PAYLOAD;

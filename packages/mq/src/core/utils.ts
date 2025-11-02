@@ -13,12 +13,12 @@ function getCurrentEnvironment(): string {
  */
 export function getEnvironmentQueueName(baseName: QueueName): QueueName {
     const env = getCurrentEnvironment();
-    const allParts = (baseName as unknown as string).split('-');
-    const isFinal = allParts.at(-1) == env
+    const nameStr = String(baseName);
 
-    if (isFinal) {
-        return baseName as unknown as QueueName;
+    // Check if already has environment suffix
+    if (nameStr.endsWith(`-${env}`)) {
+        return baseName;
     }
 
-    return `${baseName}-${env}` as unknown as QueueName;
+    return `${nameStr}-${env}` as QueueName;
 }

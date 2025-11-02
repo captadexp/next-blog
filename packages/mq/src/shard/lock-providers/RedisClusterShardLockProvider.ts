@@ -5,7 +5,7 @@ export class RedisClusterShardLockProvider implements IShardLockProvider {
     constructor(private readonly client: Cluster | Redis) {
     }
 
-    async acquireLock(shardId: string, instanceId: any, lockTTLMs: number) {
+    async acquireLock(shardId: string, instanceId: string, lockTTLMs: number) {
         const result = await this.client.set(
             `kinesis:lock:${shardId}`,
             instanceId,

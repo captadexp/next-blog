@@ -1,18 +1,20 @@
 import type {BaseMessage, IMessageQueue, MessageConsumer, QueueName} from "../../core";
 import {getEnvironmentQueueName} from "../../core";
+import {Logger, LogLevel} from "@supergrowthai/utils";
+
+const logger = new Logger('InMemoryQueue', LogLevel.INFO);
 
 /**
  * In-memory implementation of the message queue.
  * This is primarily for development, testing, and environments where external message queues are not available.
  */
-export class InMemoryQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, string> {
+export class InMemoryQueue<PAYLOAD = unknown> implements IMessageQueue<PAYLOAD, string> {
     private queues: Map<QueueName, BaseMessage<PAYLOAD, string>[]> = new Map();
     private isRunning: boolean = false;
     private processingIntervals: Map<QueueName, NodeJS.Timeout> = new Map();
     private registeredQueues: Set<QueueName> = new Set();
 
     constructor() {
-        this.setupShutdownHandlers();
     }
 
     /**
@@ -44,17 +46,19 @@ export class InMemoryQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, stri
         const queue = this.queues.get(queueId)!;
         queue.push(...messages);
 
-        console.log(`Added ${messages.length} messages to in-memory queue ${queueId}`);
+        logger.info(`Added ${messages.length} messages to in-memory queue ${queueId}`);
     }
 
     /**
      * Consumes messages from the in-memory queue
      * @param queueId - The identifier for the queue
      * @param processor - Function to process the messages
+     * @param signal - Optional AbortSignal to stop consumption
      */
     async consumeMessagesStream<T = void>(
         queueId: QueueName,
-        processor: MessageConsumer<PAYLOAD, string, T>
+        processor: MessageConsumer<PAYLOAD, string, T>,
+        signal?: AbortSignal
     ): Promise<T> {
         queueId = getEnvironmentQueueName(queueId);
         this.isRunning = true;
@@ -71,14 +75,22 @@ export class InMemoryQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, stri
         // Set up a polling interval for this queue if not already set
         if (!this.processingIntervals.has(queueId)) {
             const interval = setInterval(async () => {
-                if (this.isRunning) {
+                if (this.isRunning && (!signal || !signal.aborted)) {
                     await this.consumeMessagesBatch(queueId, processor);
                 }
             }, 1000);
             this.processingIntervals.set(queueId, interval);
+
+            // Clean up on abort
+            if (signal) {
+                signal.addEventListener('abort', () => {
+                    clearInterval(interval);
+                    this.processingIntervals.delete(queueId);
+                });
+            }
         }
 
-        console.log(`Started consuming from in-memory queue ${queueId}`);
+        logger.info(`Started consuming from in-memory queue ${queueId}`);
         return undefined as T;
     }
 
@@ -115,10 +127,10 @@ export class InMemoryQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, stri
             try {
                 // Process the batch and return result
                 const result = await processor(`memory:${queueId}`, batch);
-                console.log(`Processed ${batch.length} messages from in-memory queue ${queueId}`);
+                logger.info(`Processed ${batch.length} messages from in-memory queue ${queueId}`);
                 return result;
             } catch (error) {
-                console.error(`Error processing messages from in-memory queue ${queueId}:`, error);
+                logger.error(`Error processing messages from in-memory queue ${queueId}:`, error);
                 // Put the failed messages back in the queue
                 queue.unshift(...batch);
                 throw error;
@@ -138,7 +150,7 @@ export class InMemoryQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, stri
             this.processingIntervals.delete(queueId);
         }
 
-        console.log('In-memory queue shut down');
+        logger.info('In-memory queue shut down');
     }
 
     /**
@@ -148,16 +160,7 @@ export class InMemoryQueue<PAYLOAD = any> implements IMessageQueue<PAYLOAD, stri
     register(queueId: QueueName): void {
         const normalizedQueueId = getEnvironmentQueueName(queueId);
         this.registeredQueues.add(normalizedQueueId);
-        console.log(`Registered queue ${normalizedQueueId}`);
-    }
-
-    /**
-     * Handles graceful shutdown by registering signal handlers
-     */
-    private setupShutdownHandlers() {
-        process.on('SIGINT', async () => await this.shutdown());
-        process.on('SIGTERM', async () => await this.shutdown());
-        process.on('SIGQUIT', async () => await this.shutdown());
+        logger.info(`Registered queue ${normalizedQueueId}`);
     }
 }
 

@@ -20,7 +20,7 @@ export class FileShardLockProvider implements IShardLockProvider {
         this.initializeDirs().catch(console.error.bind(null, "FileShardLockProvider:"));
     }
 
-    async acquireLock(shardId: string, instanceId: any, lockTTLMs: number): Promise<boolean> {
+    async acquireLock(shardId: string, instanceId: string, lockTTLMs: number): Promise<boolean> {
         const lockPath = this.getLockPath(shardId);
         try {
             // Try to create the lock file

@@ -8,7 +8,14 @@ import {
 import * as NodeUtils from 'node:util';
 import type {IShardLockProvider} from "../../shard";
 import {ShardLeaser} from '../../shard';
-import {BaseMessage, getEnvironmentQueueName, IMessageQueue, MessageConsumer as Processor, QueueName} from '../../core';
+import {
+    BaseMessage,
+    getEnvironmentQueueName,
+    IMessageQueue,
+    MessageConsumer as Processor,
+    QueueName,
+    QueueNotifier
+} from '../../core';
 import {EJSON} from "bson";
 import {Logger, LogLevel} from "@supergrowthai/utils";
 import {KinesisShardManager} from './_kinesis/KinesisShardManager.ts';
@@ -21,6 +28,8 @@ const logger = new Logger('KinesisQueue', LogLevel.INFO)
 interface KinesisConfig {
     instanceId?: string;
     shardLockProvider: IShardLockProvider;
+    notifier?: QueueNotifier;
+    signal?: AbortSignal;
 }
 
 /**
@@ -47,9 +56,13 @@ export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
         processed: number;
         produced: number;
     }>();
+    private readonly notifier?: QueueNotifier;
+    private readonly signal?: AbortSignal;
 
     constructor(config: KinesisConfig) {
         this.shardLockProvider = config.shardLockProvider;
+        this.notifier = config.notifier;
+        this.signal = config.signal;
         this.kinesis = new KinesisClient({
             region: process.env.AWS_REGION
         });
@@ -59,7 +72,10 @@ export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
 
         // Initialize utilities
         this.shardManager = new KinesisShardManager(this.kinesis, this.instanceId);
-        this.taskProcessor = new KinesisMessageProcessor<PAYLOAD, ID>({textDecoder: this.textDecoder, instanceId: this.instanceId});
+        this.taskProcessor = new KinesisMessageProcessor<PAYLOAD, ID>({
+            textDecoder: this.textDecoder,
+            instanceId: this.instanceId
+        });
         this.shardRebalancer = new KinesisShardRebalancer({
             instanceId: this.instanceId,
             kinesis: this.kinesis,
@@ -69,14 +85,23 @@ export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
             onShardLost: (streamId, shardId) => this.handleShardLost(streamId, shardId)
         });
 
-        this.setupShutdownHandlers();
+        // Listen for abort signal
+        if (this.signal) {
+            this.signal.addEventListener('abort', () => {
+                this.shutdown()
+                    .catch(err => {
+                        logger.error(`Error during abort-triggered shutdown: ${err}`);
+                    });
+            });
+        }
+
         logger.info(`[${this.instanceId}] KinesisQueue initialized.`);
     }
 
     register(queueId: QueueName): void {
         const normalizedQueueId = getEnvironmentQueueName(queueId);
         this.registeredQueues.add(normalizedQueueId);
-        console.log(`Registered queue ${normalizedQueueId}`);
+        logger.info(`Registered queue ${normalizedQueueId}`);
     }
 
     /**
@@ -144,7 +169,7 @@ export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
      * @param streamId - The Kinesis stream name (base name)
      * @param processor - Function to process the messages
      */
-    async consumeMessagesStream<T = void>(streamId: QueueName, processor: Processor<PAYLOAD, ID, T>): Promise<T> {
+    async consumeMessagesStream<T = void>(streamId: QueueName, processor: Processor<PAYLOAD, ID, T>, signal?: AbortSignal): Promise<T> {
         const envStreamId = getEnvironmentQueueName(streamId); // Use prefixed name
         logger.info(`[${this.instanceId}] Starting task consumption for stream: ${envStreamId}`);
 
@@ -163,6 +188,14 @@ export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
         }
 
         const shardLeaser = this.shardLeasers.get(envStreamId)!;
+        // Use provided signal or the constructor signal
+        const abortSignal = signal || this.signal;
+
+        if (abortSignal?.aborted) {
+            logger.warn(`[${this.instanceId}] [${envStreamId}] Cannot start consumption - already aborted`);
+            return undefined as T;
+        }
+
         this.isRunning = true;
 
         // Start the rebalancing process using the new utility
@@ -226,7 +259,7 @@ export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
 
                 // Process batch using utility
                 await this.taskProcessor.processBatch(
-                    recordsResponse.Records as any,//fixme typed hacked here
+                    recordsResponse.Records,
                     processor,
                     `kinesis:${streamId}:${shardId}`
                 );
@@ -276,12 +309,22 @@ export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
             statsMessage += `No messages processed during this session\n`;
         }
 
-        try {
-            // fixme add support for slack via a callback
-            // await slack.sendSlackMessage(undefined, statsMessage);
-            logger.info('Sent Kinesis shutdown stats to Slack');
-        } catch (err) {
-            logger.error(`Failed to send shutdown stats to Slack: ${err}`);
+        // Notify via callback if provided
+        if (this.notifier?.onShutdown) {
+            try {
+                const allStats = Array.from(this.queueStats.entries()).map(([queue, stats]) => ({
+                    queueName: queue,
+                    messagesProduced: stats.produced,
+                    messagesProcessed: stats.processed
+                }));
+
+                // Send individual stats for each queue
+                await Promise.all(allStats.map(stat =>
+                    this.notifier!.onShutdown!(this.instanceId, stat)
+                ));
+            } catch (err) {
+                logger.error(`Failed to send shutdown notification: ${err}`);
+            }
         }
 
         // Stop all active consumers in the rebalancer
@@ -351,31 +394,6 @@ export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
         }
     }
 
-    private setupShutdownHandlers() {
-
-        const sigintHandler = async () => {
-            logger.info(`[${this.instanceId}] SIGINT received.`);
-            await this.shutdown();
-        };
-
-        const sigtermHandler = async () => {
-            logger.info(`[${this.instanceId}] SIGTERM received.`);
-            await this.shutdown();
-        };
-
-        const sigquitHandler = async () => {
-            logger.info(`[${this.instanceId}] sigquit received.`);
-            await this.shutdown();
-        };
-
-        // Register the handlers
-        logger.warn("Shutdown handlers not implemented");
-        // shutdownManager.sigint.register(sigintHandler);
-        // shutdownManager.sigterm.register(sigtermHandler);
-        // shutdownManager.sigquit.register(sigquitHandler);
-
-        logger.debug(`[${this.instanceId}] Shutdown handlers registered`);
-    }
 
     private generatePartitionKey<PAYLOAD, ID>(message: BaseMessage<PAYLOAD, ID>): string {
         return message.type;

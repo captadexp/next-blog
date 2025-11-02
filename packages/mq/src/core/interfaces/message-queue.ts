@@ -18,8 +18,9 @@ export interface IMessageQueue<PAYLOAD, ID> {
      * Consumes messages from the queue and processes them with the provided function
      * @param queueId - The identifier for the queue
      * @param processor - Function to process the messages
+     * @param signal - Optional AbortSignal to stop consumption
      */
-    consumeMessagesStream<T = void>(queueId: QueueName, processor: MessageConsumer<PAYLOAD, ID, T>): Promise<T>;
+    consumeMessagesStream<T = void>(queueId: QueueName, processor: MessageConsumer<PAYLOAD, ID, T>, signal?: AbortSignal): Promise<T>;
 
     /**
      * Stops consuming messages and cleans up resources
