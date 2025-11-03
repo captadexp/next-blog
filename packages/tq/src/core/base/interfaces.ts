@@ -11,7 +11,7 @@ interface IBaseExecutor<T> {
 }
 
 export type ExecutorActions<PAYLOAD = any, ID = any> = {
-    addTasks(task: CronTask<PAYLOAD, ID>[]): void;
+    addTasks<T>(task: CronTask<T, ID>[]): void;
     fail(task: CronTask<PAYLOAD, ID>): void;
     success(task: CronTask<PAYLOAD, ID>): void;
 }

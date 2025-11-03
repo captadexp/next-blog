@@ -296,11 +296,15 @@ export class TaskHandler<PAYLOAD, ID> {
 
         // Clean up interval when aborted
         abortSignal?.addEventListener('abort', () => {
-            this.logger.info('AbortSignal received, cleaning up mature task timer');
+            this.logger.info('AbortSignal received, cleaning up mature task timer and sending final stats');
             if (this.matureTaskTimer) {
                 clearInterval(this.matureTaskTimer);
                 this.matureTaskTimer = null;
             }
+            this.sendFinalStats()
+                .catch(err => {
+                    this.logger.error(`Failed to send final stats during shutdown: ${err}`);
+                });
         });
     }
 
@@ -389,7 +393,7 @@ export class TaskHandler<PAYLOAD, ID> {
     private getRetryCount(task: CronTask<PAYLOAD, ID>): number {
         if (typeof task.retries === 'number') return task.retries;
         const executor = this.taskQueuesManager.getExecutor(task.queue_id, task.type);
-        return executor?.default_retries ?? 3;
+        return executor?.default_retries ?? 0;
     }
 
     private async reportQueueStats(queueName: QueueName, forceSend: boolean = false): Promise<void> {
@@ -400,12 +404,6 @@ export class TaskHandler<PAYLOAD, ID> {
         if (total === 0) return;
 
         if (!forceSend && total < STATS_THRESHOLD && stats.failed < FAILURE_THRESHOLD) return;
-
-        const message = `[${INSTANCE_ID}] TQ Stats for ${queueName}:\n` +
-            `✅ Success: ${stats.success}\n` +
-            `❌ Failed: ${stats.failed}\n` +
-            `⏳ Async: ${stats.async}\n` +
-            `🚫 Ignored: ${stats.ignored}`;
 
         try {
             if (this.notificationProvider?.onQueueStats) {

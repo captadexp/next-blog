@@ -14,7 +14,7 @@ export interface BaseMessage<PAYLOAD = unknown, ID = string | ObjectId> {
     updated_at: Date;
     queue_id: QueueName;
 
-    retries: number;
+    retries?: number;
     retry_after?: number;
     expires_at?: Date;
 
