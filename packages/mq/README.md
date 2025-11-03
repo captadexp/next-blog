@@ -7,7 +7,7 @@ processing.
 
 - **Clean Architecture**: Constructor-based dependency injection with no global state
 - **Multiple Queue Providers**: Kinesis, MongoDB, In-Memory, and Immediate queues
-- **Pluggable Adapters**: Tasks adapters for different storage backends
+- **Pluggable Lock Providers**: Multiple shard lock providers for distributed coordination
 - **TypeScript Support**: Full type definitions included
 - **Named Exports**: Tree-shakable, explicit imports
 - **Fail-Fast Design**: Required dependencies enforce proper configuration
@@ -21,38 +21,16 @@ npm install @supergrowthai/mq
 ## Quick Start
 
 ```typescript
-import {InMemoryQueue, ITasksAdapter, BaseTask} from '@supergrowthai/mq';
+import {InMemoryQueue, BaseMessage} from '@supergrowthai/mq';
 
-// 1. Create a tasks adapter
-const tasksAdapter: ITasksAdapter = {
-    findScheduledTasks(queueId: string, limit: number): Promise<BaseTask[]> {
-        return Promise.resolve([]);
-    },
-    generateTaskId(): string {
-        return `task-${Date.now()}`;
-    },
-    insertTasks(tasks: BaseTask[]): Promise<void> {
-        return Promise.resolve();
-    },
-    markTasksAsExecuted(taskIds: string[]): Promise<void> {
-        return Promise.resolve();
-    },
-    markTasksAsFailed(taskIds: string[]): Promise<void> {
-        return Promise.resolve();
-    },
-    markTasksAsProcessing(taskIds: string[]): Promise<void> {
-        return Promise.resolve();
-    }
-};
+// 1. Create message queue instance
+const messageQueue = new InMemoryQueue();
 
-// 2. Create message queue instance
-const messageQueue = new InMemoryQueue(tasksAdapter);
-
-// 3. Register queues
+// 2. Register queues
 messageQueue.register('email-queue');
 
-// 4. Add tasks
-await messageQueue.addTasks('email-queue', [
+// 3. Add messages
+await messageQueue.addMessages('email-queue', [
     {
         _id: 'task-1',
         type: 'send-email',
@@ -67,29 +45,25 @@ await messageQueue.addTasks('email-queue', [
     }
 ]);
 
-// 5. Process tasks
-await messageQueue.consumeTasks('email-queue', async (queueId, tasks) => {
-    console.log(`Processing ${tasks.length} tasks from ${queueId}`);
+// 4. Process messages
+await messageQueue.consumeMessagesStream('email-queue', async (queueId, messages) => {
+    console.log(`Processing ${messages.length} messages from ${queueId}`);
 
-    // Process your tasks here
-    const processedTasks = await Promise.all(
-        tasks.map(async task => {
-            try {
-                // Your task processing logic
-                console.log(`Processing task: ${task.type}`);
-                return task;
-            } catch (error) {
-                throw error; // Will be handled as failed task
-            }
-        })
-    );
-
-    return {
-        successTasks: processedTasks,
-        failedTasks: [],
-        newTasks: []
-    };
+    // Process your messages here
+    for (const message of messages) {
+        try {
+            // Your message processing logic
+            console.log(`Processing message: ${message.type}`);
+            // Do something with message.payload
+        } catch (error) {
+            console.error('Message processing failed:', error);
+        }
+    }
 });
+
+// Optional: Process with AbortSignal for graceful shutdown
+const abortController = new AbortController();
+await messageQueue.consumeMessagesStream('email-queue', processor, abortController.signal);
 ```
 
 ## Queue Implementations
@@ -99,9 +73,9 @@ await messageQueue.consumeTasks('email-queue', async (queueId, tasks) => {
 Fast in-memory queue for development and testing:
 
 ```typescript
-import {InMemoryQueue, ITasksAdapter} from '@supergrowthai/mq';
+import {InMemoryQueue} from '@supergrowthai/mq';
 
-const messageQueue = new InMemoryQueue(tasksAdapter);
+const messageQueue = new InMemoryQueue();
 ```
 
 ### ImmediateQueue
@@ -109,9 +83,9 @@ const messageQueue = new InMemoryQueue(tasksAdapter);
 Executes tasks immediately without queueing:
 
 ```typescript
-import {ImmediateQueue, ITasksAdapter} from '@supergrowthai/mq';
+import {ImmediateQueue} from '@supergrowthai/mq';
 
-const messageQueue = new ImmediateQueue(tasksAdapter);
+const messageQueue = new ImmediateQueue();
 ```
 
 ### MongoDBQueue
@@ -119,13 +93,24 @@ const messageQueue = new ImmediateQueue(tasksAdapter);
 Persistent queue using MongoDB with distributed locking:
 
 ```typescript
-import {MongoDBQueue, ITasksAdapter} from '@supergrowthai/mq';
-import {BaseCacheProvider} from 'memoose-js';
+import {MongoDBQueue} from '@supergrowthai/mq';
+import {CacheProvider} from 'memoose-js';
+import {Collection} from 'mongodb';
 
-// You need to provide a cache adapter for locking
-const cacheAdapter: BaseCacheProvider<any> = /* your cache implementation */;
+// Extend MongoDBQueue to provide your own collection
+class MyMongoDBQueue extends MongoDBQueue {
+    constructor(cacheAdapter: CacheProvider<string>) {
+        super(cacheAdapter);
+    }
 
-const messageQueue = new MongoDBQueue(cacheAdapter, tasksAdapter);
+    get collection() {
+        // Return your MongoDB collection
+        return Promise.resolve(/* your collection */);
+    }
+}
+
+const cacheAdapter: CacheProvider<string> = /* your cache implementation */;
+const messageQueue = new MyMongoDBQueue(cacheAdapter);
 ```
 
 ### KinesisQueue
@@ -157,6 +142,31 @@ File-based locking for single-machine deployments:
 import {FileShardLockProvider} from '@supergrowthai/mq';
 
 const shardLockProvider = new FileShardLockProvider('/tmp/kinesis-locks');
+```
+
+### MongoRedisShardLockProvider
+
+Combined MongoDB and Redis-based locking for distributed deployments:
+
+```typescript
+import {MongoRedisShardLockProvider} from '@supergrowthai/mq';
+
+const shardLockProvider = new MongoRedisShardLockProvider(
+    mongoCollection,  // MongoDB collection for checkpoints
+    redisClient      // Redis client for distributed locks
+);
+```
+
+### RedisClusterShardLockProvider
+
+Redis cluster-based locking for high-availability deployments:
+
+```typescript
+import {RedisClusterShardLockProvider} from '@supergrowthai/mq';
+
+const shardLockProvider = new RedisClusterShardLockProvider(
+    redisClusterClient  // Redis cluster client
+);
 ```
 
 ### Custom Shard Lock Provider
@@ -200,83 +210,42 @@ class CustomShardLockProvider implements IShardLockProvider {
 }
 ```
 
-## Tasks Adapter
+## Message Processing
 
-The `ITasksAdapter` interface defines how tasks are stored and retrieved:
+### Message Consumer Function
 
-```typescript
-import {ITasksAdapter, BaseTask} from '@supergrowthai/mq';
-
-class DatabaseTasksAdapter implements ITasksAdapter {
-    async findScheduledTasks(queueId: string, limit: number): Promise<BaseTask[]> {
-        // Query your database for scheduled tasks
-        return [];
-    }
-
-    generateTaskId(): string {
-        // Generate unique task IDs
-        return `task-${Date.now()}-${Math.random()}`;
-    }
-
-    async insertTasks(tasks: BaseTask[]): Promise<void> {
-        // Insert tasks into your database
-    }
-
-    async markTasksAsExecuted(taskIds: string[]): Promise<void> {
-        // Mark tasks as completed in your database
-    }
-
-    async markTasksAsFailed(taskIds: string[]): Promise<void> {
-        // Mark tasks as failed in your database
-    }
-
-    async markTasksAsProcessing(taskIds: string[]): Promise<void> {
-        // Mark tasks as currently being processed
-    }
-}
-```
-
-## Task Processing
-
-### Processor Function
-
-The processor function receives tasks and returns results:
+The message consumer function receives messages and processes them:
 
 ```typescript
-import {Processor, ProcessedTaskResult} from '@supergrowthai/mq';
+import {MessageConsumer} from '@supergrowthai/mq';
 
-const processor: Processor = async (queueId: string, tasks) => {
-    const result: ProcessedTaskResult = {
-        successTasks: [],
-        failedTasks: [],
-        newTasks: []
-    };
-
-    for (const task of tasks) {
+const processor: MessageConsumer<any, any> = async (queueId: string, messages) => {
+    for (const message of messages) {
         try {
-            // Process your task
-            await processTask(task);
-            result.successTasks.push(task);
+            // Process your message
+            await processMessage(message);
+            console.log(`Processed message: ${message.type}`);
         } catch (error) {
-            console.error('Task processing failed:', error);
-            result.failedTasks.push(task);
+            console.error('Message processing failed:', error);
         }
     }
-
-    return result;
 };
 
 // Use the processor
-await messageQueue.consumeTasks('my-queue', processor);
+await messageQueue.consumeMessagesStream('my-queue', processor);
+
+// With AbortSignal for cancellation
+const abortController = new AbortController();
+await messageQueue.consumeMessagesStream('my-queue', processor, abortController.signal);
 ```
 
 ### Batch Processing
 
-Process a specific number of tasks:
+Process a specific number of messages:
 
 ```typescript
-const result = await messageQueue.processBatch('my-queue', processor, 10);
-console.log(`Processed ${result.successTasks.length} tasks successfully`);
+await messageQueue.consumeMessagesBatch('my-queue', processor, 10);
+console.log('Processed batch of messages successfully');
 ```
 
 ## Architecture Benefits
@@ -302,16 +271,26 @@ console.log(`Processed ${result.successTasks.length} tasks successfully`);
 ## Example: Production Setup
 
 ```typescript
-import {
-    MongoDBQueue,
-    ITasksAdapter,
-    BaseTask
-} from '@supergrowthai/mq';
+import {MongoDBQueue, BaseMessage} from '@supergrowthai/mq';
 import {RedisCacheProvider} from 'memoose-js';
+import {Collection, MongoClient} from 'mongodb';
 
-// Your database tasks adapter
-class MongoTasksAdapter implements ITasksAdapter {
-    // Implementation for your MongoDB collections
+// Extend MongoDBQueue for production use
+class ProductionMongoDBQueue extends MongoDBQueue {
+    private mongoClient: MongoClient;
+    private dbName: string;
+
+    constructor(cacheProvider: RedisCacheProvider, mongoClient: MongoClient, dbName: string) {
+        super(cacheProvider);
+        this.mongoClient = mongoClient;
+        this.dbName = dbName;
+    }
+
+    get collection(): Promise<Collection<BaseMessage>> {
+        return Promise.resolve(
+            this.mongoClient.db(this.dbName).collection<BaseMessage>('messages')
+        );
+    }
 }
 
 // Cache provider for distributed locking
@@ -320,10 +299,15 @@ const cacheProvider = new RedisCacheProvider('redis', {
     port: parseInt(process.env.REDIS_PORT || '6379')
 });
 
+// MongoDB client
+const mongoClient = new MongoClient(process.env.MONGODB_URI!);
+await mongoClient.connect();
+
 // Create queue with all dependencies
-const messageQueue = new MongoDBQueue(
+const messageQueue = new ProductionMongoDBQueue(
     cacheProvider,
-    new MongoTasksAdapter()
+    mongoClient,
+    'myapp'
 );
 
 // Register your queues
@@ -331,8 +315,35 @@ messageQueue.register('email-queue');
 messageQueue.register('image-processing-queue');
 
 // Start processing
-await messageQueue.consumeTasks('email-queue', emailProcessor);
-await messageQueue.consumeTasks('image-processing-queue', imageProcessor);
+await messageQueue.consumeMessagesStream('email-queue', emailProcessor);
+await messageQueue.consumeMessagesStream('image-processing-queue', imageProcessor);
+```
+
+## Queue Notifications
+
+Implement queue event notifications for monitoring and logging:
+
+```typescript
+import {QueueNotifier, QueueStats, ErrorContext} from '@supergrowthai/mq';
+
+const notifier: QueueNotifier = {
+    async onShutdown(instanceId: string, stats: QueueStats) {
+        console.log(`Queue ${stats.queueName} shutting down`);
+        console.log(`Processed: ${stats.messagesProcessed}, Produced: ${stats.messagesProduced}`);
+    },
+
+    async onError(error: Error, context: ErrorContext) {
+        console.error(`Error in ${context.operation}:`, error);
+        // Send to monitoring service
+    }
+};
+
+// Pass notifier when creating queue instances
+const messageQueue = new KinesisQueue({
+    shardLockProvider,
+    instanceId: 'worker-1',
+    notifier
+});
 ```
 
 ## TypeScript Support
@@ -342,10 +353,11 @@ Full TypeScript definitions are included:
 ```typescript
 import {
     IMessageQueue,
-    ITasksAdapter,
-    BaseTask,
-    ProcessedTaskResult,
-    Processor
+    BaseMessage,
+    MessageConsumer,
+    IShardLockProvider,
+    QueueName,
+    QueueNotifier
 } from '@supergrowthai/mq';
 
 // All interfaces are fully typed for excellent IDE support

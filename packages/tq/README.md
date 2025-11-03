@@ -22,26 +22,17 @@ npm install @supergrowthai/tq @supergrowthai/mq
 ## Quick Start
 
 ```typescript
-import {TaskQueue, TaskHandler} from '@supergrowthai/tq';
-import {InMemoryQueue, ITasksAdapter} from '@supergrowthai/mq';
+import {TaskQueuesManager, TaskHandler} from '@supergrowthai/tq';
+import {InMemoryQueue} from '@supergrowthai/mq';
 
-// 1. Set up your adapters (see @supergrowthai/mq docs for details)
-const tasksAdapter: ITasksAdapter = {
-    // Your implementation
-    findScheduledTasks: () => Promise.resolve([]),
-    generateTaskId: () => `task-${Date.now()}`,
-    insertTasks: () => Promise.resolve(),
-    markTasksAsExecuted: () => Promise.resolve(),
-    markTasksAsFailed: () => Promise.resolve(),
-    markTasksAsProcessing: () => Promise.resolve()
-};
+// 1. Set up your message queue (see @supergrowthai/mq docs for details)
 
-const databaseAdapter = /* your database adapter */;
-const cacheAdapter = /* your cache adapter */;
+const databaseAdapter = /* your ITaskStorageAdapter implementation */;
+const cacheAdapter = /* your CacheProvider implementation */;
 
 // 2. Create instances with dependency injection
-const messageQueue = new InMemoryQueue(tasksAdapter);
-const taskQueue = new TaskQueue(messageQueue);
+const messageQueue = new InMemoryQueue();
+const taskQueue = new TaskQueuesManager(messageQueue);
 const taskHandler = new TaskHandler(
     messageQueue,
     taskQueue,
@@ -74,15 +65,15 @@ taskHandler.taskProcessServer();
 
 ## Core Components
 
-### TaskQueue
+### TaskQueuesManager
 
 Manages task executor registration and retrieval:
 
 ```typescript
-import {TaskQueue} from '@supergrowthai/tq';
+import {TaskQueuesManager} from '@supergrowthai/tq';
 import {IMessageQueue} from '@supergrowthai/mq';
 
-const taskQueue = new TaskQueue(messageQueue);
+const taskQueue = new TaskQueuesManager(messageQueue);
 
 // Register executors
 taskQueue.register('queue-name', 'task-type', executor);
@@ -92,7 +83,7 @@ const executor = taskQueue.getExecutor('queue-name', 'task-type');
 
 // Get queue information
 const queues = taskQueue.getQueues();
-const taskTypes = taskQueue.getTasksForQueue('queue-name');
+const taskTypes = taskQueue.getTaskTypesForQueue('queue-name');
 ```
 
 ### TaskHandler
@@ -104,9 +95,9 @@ import {TaskHandler} from '@supergrowthai/tq';
 
 const taskHandler = new TaskHandler(
     messageQueue,      // IMessageQueue
-    taskQueue,         // TaskQueue
-    databaseAdapter,   // IDatabaseAdapter
-    cacheAdapter,      // BaseCacheProvider<any>
+    taskQueue,         // TaskQueuesManager
+    databaseAdapter,   // ITaskStorageAdapter
+    cacheAdapter,      // CacheProvider<any>
     asyncTaskManager   // IAsyncTaskManager (optional)
 );
 
@@ -115,6 +106,10 @@ taskHandler.taskProcessServer();
 
 // Or process specific queues
 taskHandler.startConsumingTasks('email-queue');
+
+// With AbortSignal for graceful shutdown
+const abortController = new AbortController();
+taskHandler.startConsumingTasks('email-queue', abortController.signal);
 
 // Process mature tasks (scheduled for future execution)
 taskHandler.processMatureTasks();
@@ -252,11 +247,11 @@ For long-running tasks that might exceed normal timeouts:
 import {AsyncTaskManager} from '@supergrowthai/tq';
 
 // Set up async task manager
-const asyncTaskManager = new AsyncTaskManager(maxConcurrent
-:
-5
-)
-;
+const asyncTaskManager = new AsyncTaskManager(5);  // maxTasks parameter
+
+// Graceful shutdown with AbortSignal
+const abortController = new AbortController();
+await asyncTaskManager.shutdown(abortController.signal);
 
 const heavyProcessingExecutor: ISingleTaskNonParallel<ProcessingData> = {
     multiple: false,
@@ -333,11 +328,11 @@ const resilientExecutor: ISingleTaskNonParallel<ApiCallData> = {
 
 ```typescript
 import {MongoDBQueue, KinesisQueue, FileShardLockProvider} from '@supergrowthai/mq';
-import {TaskQueue, TaskHandler} from '@supergrowthai/tq';
+import {TaskQueuesManager, TaskHandler} from '@supergrowthai/tq';
 
 // MongoDB Queue Setup
 const mongoQueue = new MongoDBQueue(cacheAdapter, tasksAdapter);
-const mongoTaskQueue = new TaskQueue(mongoQueue);
+const mongoTaskQueue = new TaskQueuesManager(mongoQueue);
 const mongoTaskHandler = new TaskHandler(
     mongoQueue,
     mongoTaskQueue,
@@ -351,7 +346,7 @@ const kinesisQueue = new KinesisQueue({
     shardLockProvider,
     instanceId: 'worker-1'
 });
-const kinesisTaskQueue = new TaskQueue(kinesisQueue);
+const kinesisTaskQueue = new TaskQueuesManager(kinesisQueue);
 const kinesisTaskHandler = new TaskHandler(
     kinesisQueue,
     kinesisTaskQueue,
@@ -389,7 +384,7 @@ kinesisTaskQueue.register('real-time', 'notification', notificationExecutor);
 Full TypeScript definitions with generic task types:
 
 ```typescript
-import {TaskExecutor, ExecutorActions, CronTask} from '@supergrowthai/tq';
+import type {TaskExecutor, ExecutorActions, CronTask} from '@supergrowthai/tq';
 
 // Define your task data type
 interface EmailTaskData {
@@ -427,17 +422,31 @@ const typedExecutor: ISingleTaskNonParallel<EmailTaskData> = {
 
 ```typescript
 import {
-    TaskQueue,
+    TaskQueuesManager,
     TaskHandler,
     TaskStore,
-    AsyncTaskManager
+    AsyncTaskManager,
+    MongoDbAdapter,
+    type TaskExecutor
 } from '@supergrowthai/tq';
-import {MongoDBQueue, ITasksAdapter} from '@supergrowthai/mq';
+import {MongoDBQueue, BaseMessage} from '@supergrowthai/mq';
 import {RedisCacheProvider} from 'memoose-js';
+import {Collection, MongoClient} from 'mongodb';
 
 // Production setup with all components
-class ProductionTasksAdapter implements ITasksAdapter {
-    // Your database implementation
+class ProductionMongoDBQueue extends MongoDBQueue {
+    private mongoClient: MongoClient;
+
+    constructor(cacheProvider: RedisCacheProvider, mongoClient: MongoClient) {
+        super(cacheProvider);
+        this.mongoClient = mongoClient;
+    }
+
+    get collection(): Promise<Collection<BaseMessage>> {
+        return Promise.resolve(
+            this.mongoClient.db('myapp').collection<BaseMessage>('messages')
+        );
+    }
 }
 
 const cacheProvider = new RedisCacheProvider('redis', {
@@ -445,15 +454,17 @@ const cacheProvider = new RedisCacheProvider('redis', {
     port: parseInt(process.env.REDIS_PORT || '6379')
 });
 
-const messageQueue = new MongoDBQueue(cacheProvider, new ProductionTasksAdapter());
-const taskQueue = new TaskQueue(messageQueue);
-const asyncTaskManager = new AsyncTaskManager(10); // 10 concurrent async tasks
+const mongoClient = new MongoClient(process.env.MONGODB_URI!);
+await mongoClient.connect();
+
+const messageQueue = new ProductionMongoDBQueue(cacheProvider, mongoClient);
+const taskQueue = new TaskQueuesManager(messageQueue);
+const asyncTaskManager = new AsyncTaskManager(10); // maxTasks: 10 concurrent async tasks
 
 const taskHandler = new TaskHandler(
     messageQueue,
     taskQueue,
-    new MongoDbAdapter(), // Your database adapter
-    cacheProvider,
+    new MongoDbAdapter(mongoCollection), // ITaskStorageAdapter implementation
     cacheProvider,
     asyncTaskManager
 );
@@ -525,6 +536,43 @@ const apiExecutor: ISingleTaskParallel<ApiTaskData> = {
         }
     }
 };
+```
+
+## Database Adapters
+
+### Built-in Adapters
+
+The library provides two built-in storage adapters:
+
+```typescript
+import {MongoDbAdapter, InMemoryAdapter} from '@supergrowthai/tq';
+import type {ITaskStorageAdapter} from '@supergrowthai/tq';
+
+// MongoDB adapter for production use
+const mongoAdapter = new MongoDbAdapter(mongoCollection);
+
+// In-memory adapter for testing
+const memoryAdapter = new InMemoryAdapter();
+```
+
+### Custom Storage Adapter
+
+Implement the `ITaskStorageAdapter` interface for custom storage backends:
+
+```typescript
+import type {ITaskStorageAdapter, CronTask} from '@supergrowthai/tq';
+
+class CustomStorageAdapter implements ITaskStorageAdapter {
+    async addTasksToScheduled(tasks: CronTask[]): Promise<CronTask[]> {
+        // Your implementation
+    }
+
+    async getMatureTasks(timestamp: number): Promise<CronTask[]> {
+        // Your implementation
+    }
+
+    // ... other required methods
+}
 ```
 
 ## Integration with @supergrowthai/mq
