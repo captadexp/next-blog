@@ -18,7 +18,7 @@ export {AsyncActions} from "./core/async/AsyncActions.js";
 // Async task management
 export {AsyncTaskManager} from "./core/async/AsyncTaskManager.js";
 
-// Base interfaces
+// Base interfaces (includes typed executor support)
 export * from "./core/base/interfaces.js";
 
 // Notification interfaces

@@ -1,4 +1,10 @@
 import {CronTask} from "../../adapters";
+import {MessageType, TypedMessage} from "@supergrowthai/mq";
+
+/**
+ * Type helper to extract the correct CronTask type based on message type
+ */
+export type TypedCronTask<ID, T extends MessageType> = CronTask<ID> & TypedMessage<T>;
 
 interface IBaseExecutor {
     multiple: boolean,
@@ -16,31 +22,31 @@ export type ExecutorActions<ID = any> = {
     success(task: CronTask<ID>): void;
 }
 
-export interface IMultiTaskExecutor<ID = any> extends IBaseExecutor {
+export interface IMultiTaskExecutor<ID = any, T extends MessageType = MessageType> extends IBaseExecutor {
     multiple: true;
 
-    onTasks(tasks: CronTask<ID>[], action: ExecutorActions<ID>): Promise<void>
+    onTasks(tasks: T extends MessageType ? TypedCronTask<ID, T>[] : CronTask<ID>[], action: ExecutorActions<ID>): Promise<void>
 }
 
-export interface ISingleTaskExecutor<ID = any> extends IBaseExecutor {
+export interface ISingleTaskExecutor<ID = any, T extends MessageType = MessageType> extends IBaseExecutor {
     parallel: boolean;
     multiple: false;
 
-    onTask(task: CronTask<ID>, action: ExecutorActions<ID>): Promise<void>;
+    onTask(task: T extends MessageType ? TypedCronTask<ID, T> : CronTask<ID>, action: ExecutorActions<ID>): Promise<void>;
 }
 
-export interface ISingleTaskNonParallel<ID = any> extends ISingleTaskExecutor<ID> {
+export interface ISingleTaskNonParallel<ID = any, T extends MessageType = MessageType> extends ISingleTaskExecutor<ID, T> {
     parallel: false;
     multiple: false;
 }
 
-export interface ISingleTaskParallel<ID = any> extends ISingleTaskExecutor<ID> {
+export interface ISingleTaskParallel<ID = any, T extends MessageType = MessageType> extends ISingleTaskExecutor<ID, T> {
     chunkSize: number;
     parallel: true;
     multiple: false;
 }
 
-export type TaskExecutor<ID = any> =
-    | IMultiTaskExecutor<ID>
-    | ISingleTaskNonParallel<ID>
-    | ISingleTaskParallel<ID>
+export type TaskExecutor<ID = any, T extends MessageType = MessageType> =
+    | IMultiTaskExecutor<ID, T>
+    | ISingleTaskNonParallel<ID, T>
+    | ISingleTaskParallel<ID, T>
