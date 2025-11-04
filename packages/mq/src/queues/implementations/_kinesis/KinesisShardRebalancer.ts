@@ -35,7 +35,7 @@ export class KinesisShardRebalancer {
     async startRebalancing(
         streamId: QueueName,
         shardLeaser: ShardLeaser,
-        processor: MessageConsumer<any, any, any>,
+        processor: MessageConsumer<any, any>,
         heldShardsByStream: Map<QueueName, Set<string>>
     ): Promise<void> {
         const {instanceId, isRunningCheck} = this.config;
@@ -93,7 +93,7 @@ export class KinesisShardRebalancer {
     private async performRebalanceCycle(
         streamId: QueueName,
         shardLeaser: ShardLeaser,
-        processor: MessageConsumer<any, any, any>,
+        processor: MessageConsumer<any, any>,
         currentShardIdsInLoop: Set<string>,
         heldShardsByStream: Map<QueueName, Set<string>>
     ): Promise<void> {
@@ -163,7 +163,7 @@ export class KinesisShardRebalancer {
     private async acquireShards(
         streamId: QueueName,
         shardLeaser: ShardLeaser,
-        processor: MessageConsumer<any, any, any>,
+        processor: MessageConsumer<any, any>,
         targetShards: Set<string>,
         currentShardIdsInLoop: Set<string>,
         heldShardsByStream: Map<QueueName, Set<string>>
@@ -216,7 +216,7 @@ export class KinesisShardRebalancer {
         streamId: QueueName,
         shardId: string,
         shardLeaser: ShardLeaser,
-        processor: MessageConsumer<any, any, any>,
+        processor: MessageConsumer<any, any>,
         currentShardIdsInLoop: Set<string>,
         heldShardsByStream: Map<QueueName, Set<string>>
     ): void {

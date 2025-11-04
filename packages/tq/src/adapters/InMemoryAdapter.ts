@@ -1,10 +1,10 @@
 import {ITaskStorageAdapter} from "./ITaskStorageAdapter";
 import {CronTask} from "./types";
 
-class InMemoryAdapter<PAYLOAD> implements ITaskStorageAdapter<PAYLOAD, string> {
-    private scheduledTasks: Map<string, CronTask<PAYLOAD, string>> = new Map();
+class InMemoryAdapter implements ITaskStorageAdapter<string> {
+    private scheduledTasks: Map<string, CronTask<string>> = new Map();
 
-    async addTasksToScheduled(tasks: CronTask<PAYLOAD, string>[]): Promise<CronTask<PAYLOAD, string>[]> {
+    async addTasksToScheduled(tasks: CronTask<string>[]): Promise<CronTask<string>[]> {
         const addedTasks = tasks.map(task => {
             const id = task._id;
             const taskWithId = {...task};
@@ -14,8 +14,8 @@ class InMemoryAdapter<PAYLOAD> implements ITaskStorageAdapter<PAYLOAD, string> {
         return addedTasks;
     }
 
-    async getMatureTasks(timestamp: number): Promise<CronTask<PAYLOAD, string>[]> {
-        const matureTasks: CronTask[] = [];
+    async getMatureTasks(timestamp: number): Promise<CronTask<string>[]> {
+        const matureTasks: CronTask<string>[] = [];
         for (const [id, task] of Array.from(this.scheduledTasks.entries())) {
             if (task.execute_at.getTime() <= timestamp && task.status !== 'processing' && task.status !== 'executed') {
                 matureTasks.push(task);
@@ -24,7 +24,7 @@ class InMemoryAdapter<PAYLOAD> implements ITaskStorageAdapter<PAYLOAD, string> {
         return matureTasks;
     }
 
-    async markTasksAsProcessing(tasks: CronTask<PAYLOAD, string>[], processingStartedAt: Date): Promise<void> {
+    async markTasksAsProcessing(tasks: CronTask<string>[], processingStartedAt: Date): Promise<void> {
         for (const task of tasks) {
             const existingTask = this.scheduledTasks.get(task._id);
             if (existingTask) {
@@ -35,7 +35,7 @@ class InMemoryAdapter<PAYLOAD> implements ITaskStorageAdapter<PAYLOAD, string> {
         }
     }
 
-    async markTasksAsExecuted(tasks: CronTask<PAYLOAD, string>[]): Promise<void> {
+    async markTasksAsExecuted(tasks: CronTask<string>[]): Promise<void> {
         for (const task of tasks) {
             const existingTask = this.scheduledTasks.get(task._id);
             if (existingTask) {
@@ -46,7 +46,7 @@ class InMemoryAdapter<PAYLOAD> implements ITaskStorageAdapter<PAYLOAD, string> {
         }
     }
 
-    async markTasksAsFailed(tasks: CronTask<PAYLOAD, string>[]): Promise<void> {
+    async markTasksAsFailed(tasks: CronTask<string>[]): Promise<void> {
         for (const task of tasks) {
             const existingTask = this.scheduledTasks.get(task._id);
             if (existingTask) {
@@ -57,11 +57,11 @@ class InMemoryAdapter<PAYLOAD> implements ITaskStorageAdapter<PAYLOAD, string> {
         }
     }
 
-    async getTasksByIds(taskIds: string[]): Promise<CronTask<PAYLOAD, string>[]> {
-        return taskIds.map(id => this.scheduledTasks.get(id)).filter(Boolean) as CronTask<PAYLOAD, string>[];
+    async getTasksByIds(taskIds: string[]): Promise<CronTask<string>[]> {
+        return taskIds.map(id => this.scheduledTasks.get(id)).filter(Boolean) as CronTask<string>[];
     }
 
-    async updateTasks(updates: Array<{ id: string; updates: Partial<CronTask<PAYLOAD, string>> }>): Promise<void> {
+    async updateTasks(updates: Array<{ id: string; updates: Partial<CronTask<string>> }>): Promise<void> {
         for (const {id, updates: taskUpdates} of updates) {
             const task = this.scheduledTasks.get(id);
             if (task) {
@@ -112,7 +112,7 @@ class InMemoryAdapter<PAYLOAD> implements ITaskStorageAdapter<PAYLOAD, string> {
         return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     }
 
-    async markTasksAsIgnored(tasks: CronTask<PAYLOAD, string>[]) {
+    async markTasksAsIgnored(tasks: CronTask<string>[]) {
         for (const task of tasks) {
             const existingTask = this.scheduledTasks.get(task._id);
             if (existingTask) {

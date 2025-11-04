@@ -13,35 +13,35 @@ declare module "@supergrowthai/mq" {
     interface QueueRegistry {
         "test-tq-queue": "test-tq-queue";
     }
-}
 
-type P = {
-    message: string
-};
+    interface MessagePayloadRegistry {
+        "test-task": { message: string };
+    }
+}
 
 describe("simple tq test", () => {
     it("should register, add, and consume tasks", async () => {
         // Setup message queue
-        const messageQueue = new InMemoryQueue<P>();
+        const messageQueue = new InMemoryQueue();
         const queueName: QueueName = "test-tq-queue";
 
         // Setup TQ components
-        const databaseAdapter = new InMemoryAdapter<P>();
-        const taskStore = new TaskStore<P, string>(databaseAdapter);
-        const taskQueue = new TaskQueuesManager<P, string>(messageQueue);
+        const databaseAdapter = new InMemoryAdapter();
+        const taskStore = new TaskStore<string>(databaseAdapter);
+        const taskQueue = new TaskQueuesManager<string>(messageQueue);
 
         // Use proper MemoryCacheProvider
         const cacheProvider = new MemoryCacheProvider();
 
         const generateId = () => databaseAdapter.generateId();
-        const taskHandler = new TaskHandler<P, string>(messageQueue, taskQueue, databaseAdapter, cacheProvider);
+        const taskHandler = new TaskHandler<string>(messageQueue, taskQueue, databaseAdapter, cacheProvider);
 
         // Track executed tasks
-        const executedTasks: CronTask[] = [];
+        const executedTasks: CronTask<string>[] = [];
         let taskExecutorCalled = false;
 
         // Define a simple task executor
-        const testTaskExecutor: ISingleTaskNonParallel<{ message: string }> = {
+        const testTaskExecutor: ISingleTaskNonParallel<string> = {
             multiple: false,
             parallel: false,
             store_on_failure: true,
@@ -61,7 +61,7 @@ describe("simple tq test", () => {
         // Create test tasks
         const task1Id = generateId();
         const task2Id = generateId();
-        const testTasks: CronTask<{ message: string }, string>[] = [
+        const testTasks: CronTask<string>[] = [
             {
                 _id: task1Id,
                 type: "test-task",
@@ -128,13 +128,13 @@ describe("simple tq test", () => {
 
     it("should handle AbortSignal for graceful shutdown", async () => {
         // Setup
-        const messageQueue = new InMemoryQueue<P>();
+        const messageQueue = new InMemoryQueue();
         const queueName: QueueName = "test-tq-queue";
-        const databaseAdapter = new InMemoryAdapter<P>();
+        const databaseAdapter = new InMemoryAdapter();
         const cacheProvider = new MemoryCacheProvider();
-        const taskQueue = new TaskQueuesManager<P, string>(messageQueue);
-        const asyncTaskManager = new AsyncTaskManager<P, string>(10);
-        const taskHandler = new TaskHandler<P, string>(messageQueue, taskQueue, databaseAdapter, cacheProvider, asyncTaskManager);
+        const taskQueue = new TaskQueuesManager<string>(messageQueue);
+        const asyncTaskManager = new AsyncTaskManager<string>(10);
+        const taskHandler = new TaskHandler<string>(messageQueue, taskQueue, databaseAdapter, cacheProvider, asyncTaskManager);
 
         // Create AbortController for testing
         const abortController = new AbortController();
@@ -157,7 +157,7 @@ describe("simple tq test", () => {
         abortController2.abort(); // Already aborted
 
         // Register queue and executor for this test
-        const testExecutor: ISingleTaskNonParallel<{ message: string }> = {
+        const testExecutor: ISingleTaskNonParallel<string> = {
             multiple: false,
             parallel: false,
             store_on_failure: true,

@@ -4,43 +4,43 @@ import {CronTask} from "./types.js";
  * Database adapter interface for task storage operations
  * @template ID - The type of the ID used for tasks (e.g., ObjectId, string, number)
  */
-export interface ITaskStorageAdapter<PAYLOAD = any, ID = any> {
+export interface ITaskStorageAdapter<ID = any> {
     /**
      * Add tasks to the scheduled collection
      */
-    addTasksToScheduled(tasks: CronTask<PAYLOAD>[]): Promise<CronTask<PAYLOAD>[]>;
+    addTasksToScheduled(tasks: CronTask<ID>[]): Promise<CronTask<ID>[]>;
 
     /**
      * Get mature tasks ready for processing
      */
-    getMatureTasks(timestamp: number): Promise<CronTask<PAYLOAD>[]>;
+    getMatureTasks(timestamp: number): Promise<CronTask<ID>[]>;
 
     /**
      * Update task status to processing
      */
-    markTasksAsProcessing(tasks: CronTask<PAYLOAD, ID>[], processingStartedAt: Date): Promise<void>;
+    markTasksAsProcessing(tasks: CronTask<ID>[], processingStartedAt: Date): Promise<void>;
 
     /**
      * Update task status to executed
      */
-    markTasksAsExecuted(tasks: CronTask<PAYLOAD, ID>[]): Promise<void>;
+    markTasksAsExecuted(tasks: CronTask<ID>[]): Promise<void>;
 
     /**
      * Update task status to failed
      */
-    markTasksAsFailed(tasks: CronTask<PAYLOAD, ID>[]): Promise<void>;
+    markTasksAsFailed(tasks: CronTask<ID>[]): Promise<void>;
 
-    markTasksAsIgnored(tasks: CronTask<PAYLOAD, ID>[]): Promise<void>;
+    markTasksAsIgnored(tasks: CronTask<ID>[]): Promise<void>;
 
     /**
      * Get tasks by IDs
      */
-    getTasksByIds(taskIds: ID[]): Promise<CronTask<PAYLOAD, ID>[]>;
+    getTasksByIds(taskIds: ID[]): Promise<CronTask<ID>[]>;
 
     /**
      * Update multiple tasks
      */
-    updateTasks(updates: Array<{ id: ID; updates: Partial<CronTask<PAYLOAD>> }>): Promise<void>;
+    updateTasks(updates: Array<{ id: ID; updates: Partial<CronTask<ID>> }>): Promise<void>;
 
     /**
      * Get stats for cleanup

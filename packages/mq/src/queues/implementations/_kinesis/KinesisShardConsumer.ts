@@ -27,7 +27,7 @@ interface ConsumerConfig {
     shardId: string;
     kinesis: KinesisClient;
     shardLeaser: ShardLeaser;
-    processor: MessageConsumer<unknown, unknown, unknown>;
+    processor: MessageConsumer<unknown, unknown>;
     textDecoder: NodeUtils.TextDecoder;
     onShardLost?: () => void;
     isRunningCheck: () => boolean;
@@ -124,7 +124,8 @@ export class KinesisShardConsumer {
         }
 
         this.renewalTimer = setInterval(async () => {
-            // CRITICAL FIX: Check shutdown state and prevent overlapping renewals
+            // FIXME: Optimize race condition handling - isRenewing flag is not atomic
+            // TODO: Consider using proper mutex/semaphore for lock renewal synchronization
             if (this.isShuttingDown || !isRunningCheck() || !isShardHeldCheck(streamId, shardId) || this.isRenewing) {
                 if (this.isShuttingDown) {
                     logger.debug(`${logPrefix} Consumer shutting down, skipping renewal`);
@@ -451,7 +452,8 @@ export class KinesisShardConsumer {
 
         logger.info(`${logPrefix} Entering cleanup`);
 
-        // CRITICAL FIX: Set shutdown flag to prevent new operations
+        // FIXME: Optimize shutdown sequence to prevent race conditions
+        // TODO: Consider implementing a proper state machine for consumer lifecycle
         this.isShuttingDown = true;
 
         // Wait for any ongoing renewal to complete

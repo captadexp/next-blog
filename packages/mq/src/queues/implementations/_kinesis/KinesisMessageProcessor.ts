@@ -19,7 +19,7 @@ interface ProcessorConfig {
  * Handles task processing from Kinesis records
  * Simple processor - async handling is done at tq layer
  */
-export class KinesisMessageProcessor<PAYLOAD, ID> {
+export class KinesisMessageProcessor<ID> {
     private readonly timeoutMs: number;
     private readonly textDecoder: NodeUtils.TextDecoder;
 
@@ -33,8 +33,8 @@ export class KinesisMessageProcessor<PAYLOAD, ID> {
      */
     async processMessages(
         queueId: string,
-        messages: BaseMessage<PAYLOAD, ID>[],
-        processor: MessageConsumer<PAYLOAD, ID, unknown>
+        messages: BaseMessage<ID>[],
+        processor: MessageConsumer<ID, unknown>
     ): Promise<void> {
         logger.debug(`Processing ${messages.length} messages from ${queueId}`);
         await processor(queueId, messages);
@@ -44,10 +44,10 @@ export class KinesisMessageProcessor<PAYLOAD, ID> {
     /**
      * Parse raw Kinesis records into messages - fail fast on parse errors
      */
-    parseMessages(records: unknown[]): BaseMessage<PAYLOAD, ID>[] {
+    parseMessages(records: unknown[]): BaseMessage<ID>[] {
 
         return records.map((record) => {
-            const rec = record as {Data: Uint8Array};
+            const rec = record as { Data: Uint8Array };
             const data = this.textDecoder.decode(rec.Data);
             const parsed = EJSON.parse(data);
             return transformTask(parsed);
@@ -59,7 +59,7 @@ export class KinesisMessageProcessor<PAYLOAD, ID> {
      */
     async processBatch(
         records: NonNullable<GetRecordsCommandOutput["Records"]>,
-        processor: MessageConsumer<PAYLOAD, ID, unknown>,
+        processor: MessageConsumer<ID, unknown>,
         queueId: string
     ): Promise<void> {
         if (!records.length) {

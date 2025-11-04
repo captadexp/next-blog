@@ -24,10 +24,10 @@ const FAILURE_THRESHOLD = parseInt(process.env.TQ_STATS_FAILURE_THRESHOLD || '10
 const INSTANCE_ID = process.env.INSTANCE_ID || 'unknown';
 
 
-export class TaskHandler<PAYLOAD, ID> {
+export class TaskHandler<ID> {
     private readonly logger: Logger;
-    private taskRunner: TaskRunner<PAYLOAD, ID>;
-    private readonly taskStore: TaskStore<PAYLOAD, ID>;
+    private taskRunner: TaskRunner<ID>;
+    private readonly taskStore: TaskStore<ID>;
     private matureTaskTimer: NodeJS.Timeout | null = null;
 
     private readonly queueStats = new Map<QueueName, {
@@ -38,20 +38,20 @@ export class TaskHandler<PAYLOAD, ID> {
     }>();
 
     constructor(
-        private messageQueue: IMessageQueue<PAYLOAD, ID>,
-        private taskQueuesManager: TaskQueuesManager<PAYLOAD, ID>,
-        private databaseAdapter: ITaskStorageAdapter<PAYLOAD, ID>,
+        private messageQueue: IMessageQueue<ID>,
+        private taskQueuesManager: TaskQueuesManager<ID>,
+        private databaseAdapter: ITaskStorageAdapter<ID>,
         private cacheAdapter: CacheProvider<any>,
-        private asyncTaskManager?: IAsyncTaskManager<PAYLOAD, ID>,
+        private asyncTaskManager?: IAsyncTaskManager<ID>,
         private notificationProvider?: ITaskNotificationProvider
     ) {
         this.logger = new Logger('TaskHandler', LogLevel.INFO);
 
-        this.taskStore = new TaskStore<PAYLOAD, ID>(databaseAdapter);
-        this.taskRunner = new TaskRunner<PAYLOAD, ID>(messageQueue, taskQueuesManager, this.taskStore, this.cacheAdapter, databaseAdapter.generateId.bind(databaseAdapter));
+        this.taskStore = new TaskStore<ID>(databaseAdapter);
+        this.taskRunner = new TaskRunner<ID>(messageQueue, taskQueuesManager, this.taskStore, this.cacheAdapter, databaseAdapter.generateId.bind(databaseAdapter));
     }
 
-    async addTasks(tasks: CronTask<PAYLOAD, ID>[]) {
+    async addTasks(tasks: CronTask<ID>[]) {
         const diffedItems = tasks.reduce(
             (acc, {force_store, ...task}) => {
                 const currentTime = new Date();
@@ -70,15 +70,15 @@ export class TaskHandler<PAYLOAD, ID> {
                 return acc;
             },
             {
-                future: {} as { [key in QueueName]: CronTask<PAYLOAD, ID>[] },
-                immediate: {} as { [key in QueueName]: CronTask<PAYLOAD, ID>[] },
+                future: {} as { [key in QueueName]: CronTask<ID>[] },
+                immediate: {} as { [key in QueueName]: CronTask<ID>[] },
             }
         );
 
         const iQueues = Object.keys(diffedItems.immediate) as unknown as QueueName[];
         for (let i = 0; i < iQueues.length; i++) {
             const queue = iQueues[i];
-            const tasks: CronTask<PAYLOAD, ID>[] = diffedItems.immediate[queue]
+            const tasks: CronTask<ID>[] = diffedItems.immediate[queue]
                 .map((task) => {
                     const executor = this.taskQueuesManager.getExecutor(task.queue_id, task.type);
                     const shouldStoreOnFailure = executor?.store_on_failure ?? false;
@@ -86,13 +86,13 @@ export class TaskHandler<PAYLOAD, ID> {
                     return ({...id, ...task});
                 });
 
-            await this.messageQueue.addMessages(queue, tasks);
+            await this.messageQueue.addMessages(queue, tasks as unknown as CronTask<ID>[]);
         }
 
         const fQueues = Object.keys(diffedItems.future) as unknown as QueueName[];
         for (let i = 0; i < fQueues.length; i++) {
             const queue = fQueues[i];
-            const tasks: CronTask<PAYLOAD, ID>[] = diffedItems.future[queue]
+            const tasks: CronTask<ID>[] = diffedItems.future[queue]
                 .map((task) => {
                     const executor = this.taskQueuesManager.getExecutor(task.queue_id, task.type);
                     const shouldStoreOnFailure = executor?.store_on_failure ?? false;
@@ -107,9 +107,9 @@ export class TaskHandler<PAYLOAD, ID> {
                                failedTasks: failedTasksRaw,
                                newTasks,
                                successTasks
-                           }: ProcessedTaskResult<PAYLOAD, ID>) {
-        const tasksToRetry: CronTask<PAYLOAD, ID>[] = [];
-        const finalFailedTasks: CronTask<PAYLOAD, ID>[] = [];
+                           }: ProcessedTaskResult<ID>) {
+        const tasksToRetry: CronTask<ID>[] = [];
+        const finalFailedTasks: CronTask<ID>[] = [];
         let discardedTasksCount = 0;
 
         for (const task of failedTasksRaw) {
@@ -318,7 +318,7 @@ export class TaskHandler<PAYLOAD, ID> {
         this.processMatureTasks(abortSignal);
     }
 
-    processBatch(queueId: QueueName, processor: MessageConsumer<PAYLOAD, ID>, limit?: number, abortSignal?: AbortSignal): Promise<void> {
+    processBatch(queueId: QueueName, processor: MessageConsumer<ID>, limit?: number, abortSignal?: AbortSignal): Promise<void> {
         if (abortSignal?.aborted) {
             this.logger.info(`AbortSignal already aborted, skipping batch processing for queue ${queueId}`);
             return Promise.resolve();
@@ -390,7 +390,7 @@ export class TaskHandler<PAYLOAD, ID> {
         }
     }
 
-    private getRetryCount(task: CronTask<PAYLOAD, ID>): number {
+    private getRetryCount(task: CronTask<ID>): number {
         if (typeof task.retries === 'number') return task.retries;
         const executor = this.taskQueuesManager.getExecutor(task.queue_id, task.type);
         return executor?.default_retries ?? 0;

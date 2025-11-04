@@ -1,13 +1,10 @@
-import {QueueName} from "../types.js";
-import {ObjectId} from "bson";
+import {QueueName, TypedMessage} from "../types.js";
 
 /**
  * Base message structure required by the message queue system
  */
-export interface BaseMessage<PAYLOAD = unknown, ID = string | ObjectId> {
+export type BaseMessage<ID = any> = TypedMessage & {
     _id: ID;
-    type: string;
-    payload: PAYLOAD;
     execute_at: Date;
     status: 'scheduled' | 'processing' | 'executed' | 'failed' | 'expired' | 'ignored';
     created_at: Date;
@@ -18,14 +15,13 @@ export interface BaseMessage<PAYLOAD = unknown, ID = string | ObjectId> {
     retry_after?: number;
     expires_at?: Date;
 
-
     processing_started_at?: Date;
     force_store?: boolean;
     execution_stats?: Record<string, unknown>;
-}
+};
 
 /**
  * Message processor function type - can optionally return a value
  */
-export type MessageConsumer<PAYLOAD, ID, R = void> = (queueId: string, messages: BaseMessage<PAYLOAD, ID>[]) => Promise<R>;
+export type MessageConsumer<ID, R = void> = (queueId: string, messages: BaseMessage<ID>[]) => Promise<R>;
 

@@ -4,14 +4,14 @@ import {IAsyncTaskManager} from "./async-task-manager";
 
 const logger = new Logger('AsyncTaskManager', LogLevel.INFO);
 
-interface AsyncTaskEntry<PAYLOAD = any, ID = any> {
-    task: CronTask<PAYLOAD, ID>;
+interface AsyncTaskEntry<ID = any> {
+    task: CronTask<ID>;
     promise: Promise<void>;
     startTime: number;
 }
 
-export class AsyncTaskManager<PAYLOAD = any, ID = any> implements IAsyncTaskManager<PAYLOAD, ID> {
-    private asyncTasks: Map<string, AsyncTaskEntry<PAYLOAD, ID>> = new Map();
+export class AsyncTaskManager<ID = any> implements IAsyncTaskManager<ID> {
+    private asyncTasks: Map<string, AsyncTaskEntry<ID>> = new Map();
     private handedOffTaskIds: Set<string> = new Set();
     private readonly maxTasks: number;
     private totalHandedOff: number = 0;
@@ -21,7 +21,7 @@ export class AsyncTaskManager<PAYLOAD = any, ID = any> implements IAsyncTaskMana
         logger.info(`AsyncTaskManager initialized with max ${maxTasks} concurrent tasks`);
     }
 
-    handoffTask(task: CronTask<PAYLOAD, ID>, runningPromise: Promise<void>): boolean {
+    handoffTask(task: CronTask<ID>, runningPromise: Promise<void>): boolean {
         // Require _id for async tasks - we need to track completion in DB
         if (!task._id) {
             logger.error(`Cannot hand off task without _id (type: ${task.type})`);
@@ -37,7 +37,7 @@ export class AsyncTaskManager<PAYLOAD = any, ID = any> implements IAsyncTaskMana
         }
 
         // Add to tracking
-        const entry: AsyncTaskEntry<PAYLOAD, ID> = {
+        const entry: AsyncTaskEntry<ID> = {
             task: task,
             promise: runningPromise,
             startTime: Date.now()

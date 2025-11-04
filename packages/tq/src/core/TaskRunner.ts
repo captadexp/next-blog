@@ -1,7 +1,7 @@
 import chunk from "lodash/chunk";
 import {Logger, LogLevel} from "@supergrowthai/utils/server";
 import {tId} from "../utils/task-id-gen.js";
-import {TasksType} from "../task-registry.js";
+import {TaskType} from "../types.js";
 import {ActionResults, Actions} from "./Actions.js";
 import {AsyncActions} from "./async/AsyncActions.js";
 import {CronTask} from "../adapters";
@@ -12,21 +12,21 @@ import {TaskQueuesManager} from "./TaskQueuesManager";
 import {TaskStore} from "./TaskStore";
 import {IAsyncTaskManager} from "./async/async-task-manager";
 
-export interface AsyncTask<PAYLOAD, ID> {
-    task: CronTask<PAYLOAD, ID>;
+export interface AsyncTask<ID> {
+    task: CronTask<ID>;
     promise: Promise<void>;
     startTime: number;
-    actions: AsyncActions<PAYLOAD, ID>;
+    actions: AsyncActions<ID>;
 }
 
-export class TaskRunner<PAYLOAD, ID> {
+export class TaskRunner<ID> {
     private readonly logger: Logger;
     private lockManager: LockManager;
 
     constructor(
-        private messageQueue: IMessageQueue<PAYLOAD, ID>,
-        private taskQueue: TaskQueuesManager<PAYLOAD, ID>,
-        private taskStore: TaskStore<PAYLOAD, ID>,
+        private messageQueue: IMessageQueue<ID>,
+        private taskQueue: TaskQueuesManager<ID>,
+        private taskStore: TaskStore<ID>,
         cacheProvider: CacheProvider<any>,
         private generateId: () => ID
     ) {
@@ -39,10 +39,10 @@ export class TaskRunner<PAYLOAD, ID> {
 
     async run(
         taskRunnerId: string,
-        tasksRaw: Array<CronTask<PAYLOAD, ID>>,
+        tasksRaw: Array<CronTask<ID>>,
         asyncTaskManager?: IAsyncTaskManager,
         abortSignal?: AbortSignal
-    ): Promise<ActionResults<PAYLOAD, ID> & { asyncTasks: AsyncTask<PAYLOAD, ID>[] }> {
+    ): Promise<ActionResults<ID> & { asyncTasks: AsyncTask<ID>[] }> {
         this.logger.info(`[${taskRunnerId}] Starting task runner`);
         this.logger.info(`[${taskRunnerId}] Processing ${tasksRaw.length} provided tasks`);
 
@@ -57,24 +57,24 @@ export class TaskRunner<PAYLOAD, ID> {
         await Promise.all(tasks.map((t) => this.lockManager!.acquire(tId(t))));
 
         const groupedTasksObject = tasks
-            .reduce((acc: Record<TasksType, CronTask<PAYLOAD, ID>[]>, task) => {
+            .reduce((acc: Record<TaskType, CronTask<ID>[]>, task) => {
                 acc[task.type] = acc[task.type] || [];
                 acc[task.type].push(task);
                 return acc;
-            }, {} as Record<TasksType, CronTask<PAYLOAD, ID>[]>);
+            }, {} as Record<TaskType, CronTask<ID>[]>);
 
-        const groupedTasksArray = (Object.keys(groupedTasksObject) as unknown as TasksType[]).reduce((acc: {
-            type: TasksType,
-            tasks: CronTask<PAYLOAD, ID>[]
-        }[], type: TasksType) => {
+        const groupedTasksArray = (Object.keys(groupedTasksObject) as unknown as TaskType[]).reduce((acc: {
+            type: TaskType,
+            tasks: CronTask<ID>[]
+        }[], type: TaskType) => {
             acc.push({type, tasks: groupedTasksObject[type]})
             return acc;
-        }, [] as { type: TasksType, tasks: CronTask<PAYLOAD, ID>[] }[]);
+        }, [] as { type: TaskType, tasks: CronTask<ID>[] }[]);
 
         this.logger.info(`[${taskRunnerId}] Task groups: ${groupedTasksArray.map(g => `${g.type}: ${g.tasks.length}`).join(', ')}`);
 
-        const actions = new Actions<PAYLOAD, ID>(taskRunnerId);
-        const asyncTasks: AsyncTask<PAYLOAD, ID>[] = [];
+        const actions = new Actions<ID>(taskRunnerId);
+        const asyncTasks: AsyncTask<ID>[] = [];
         const processedTaskIds = new Set<string>();
 
         for (let i = 0; i < groupedTasksArray.length; i++) {
@@ -93,7 +93,7 @@ export class TaskRunner<PAYLOAD, ID> {
             if (!executor) {
                 this.logger.warn(`[${taskRunnerId}] No executor found for type: ${taskGroup.type} in queue ${firstTask.queue_id}`);
                 for (const task of taskGroup.tasks) {
-                    const taskWithId: CronTask<PAYLOAD, ID> = task._id
+                    const taskWithId: CronTask<ID> = task._id
                         ? task
                         : {...task, _id: this.generateId()};
                     actions.addIgnoredTask(taskWithId);
@@ -123,7 +123,7 @@ export class TaskRunner<PAYLOAD, ID> {
                 await executor.onTasks(taskGroup.tasks, actions).catch(err => this.logger.error(`[${taskRunnerId}] executor.onTasks failed: ${err}`))
             } else {
                 if (executor.parallel) {
-                    const chunks = chunk(taskGroup.tasks, executor.chunkSize);
+                    const chunks = chunk(taskGroup.tasks, executor.chunkSize) as CronTask<ID>[][];
                     this.logger.info(`[${taskRunnerId}] Processing in parallel chunks of ${executor.chunkSize}`);
                     for (const chunk of chunks) {
                         const chunkTasks: Promise<void>[] = []
@@ -152,8 +152,9 @@ export class TaskRunner<PAYLOAD, ID> {
                                 this.logger.error(`[${taskRunnerId}] executor.onTask failed: ${err}`);
                             });
 
+                            let timeoutId: NodeJS.Timeout | undefined;
                             const timeoutPromise = new Promise<'~~~timeout'>(resolve => {
-                                const timeoutId = setTimeout(() => {
+                                timeoutId = setTimeout(() => {
                                     isTimedOut = true;
                                     resolve('~~~timeout');
                                 }, timeoutMs);
@@ -165,6 +166,11 @@ export class TaskRunner<PAYLOAD, ID> {
 
                             const result = await Promise.race([taskPromise, timeoutPromise]);
 
+                            // Clear the timeout to prevent memory leak
+                            if (timeoutId) {
+                                clearTimeout(timeoutId);
+                            }
+
                             if (result === '~~~timeout') {
                                 this.logger.info(`[${taskRunnerId}] Task ${tId(task)} (${task.type}) exceeded ${timeoutMs}ms, marking for async handoff`);
 
@@ -175,7 +181,7 @@ export class TaskRunner<PAYLOAD, ID> {
                                 if (!task._id) {
                                     this.logger.error(`[${taskRunnerId}] Cannot hand off task without _id (type: ${task.type}). Task will continue but won't be tracked.`);
                                 } else {
-                                    const asyncActions = new AsyncActions<PAYLOAD, ID>(this.messageQueue, this.taskStore, this.taskQueue, actions, task, this.generateId);
+                                    const asyncActions = new AsyncActions<ID>(this.messageQueue, this.taskStore, this.taskQueue, actions, task, this.generateId);
 
                                     const asyncPromise = taskPromise
                                         .finally(async () => {
@@ -205,6 +211,11 @@ export class TaskRunner<PAYLOAD, ID> {
 
         this.logger.info(`[${taskRunnerId}] Completing run - Success: ${results.successTasks.length}, Failed: ${results.failedTasks.length}, New: ${results.newTasks.length}, Async: ${asyncTasks.length}, Ignored: ${results.ignoredTasks.length}`);
 
+        // FIXME: Critical race condition - locks are acquired for ALL tasks at line 57
+        // but only released for processedTaskIds. If execution fails before adding to
+        // processedTaskIds (e.g., executor not found, async queue full), those locks
+        // remain held forever causing deadlocks. Need to track all acquired locks
+        // separately and ensure they're always released in a finally block.
         await Promise.all(tasks.filter(t => processedTaskIds.has(tId(t))).map((t) => this.lockManager!.release(tId(t))));
 
         return {...results, asyncTasks};

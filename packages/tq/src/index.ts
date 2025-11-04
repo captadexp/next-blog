@@ -27,8 +27,5 @@ export * from "./core/ITaskNotificationProvider.js";
 // Task processor types
 export * from "./core/task-processor-types.js";
 
-// Task registry
-export * from "./task-registry.js";
-
 // Utilities
 export {setKeyGenerator} from "./utils/task-id-gen.js";

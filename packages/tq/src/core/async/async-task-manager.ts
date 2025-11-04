@@ -11,7 +11,7 @@ export interface IAsyncTaskManager<T = any, ID = any> {
      * @param runningPromise The promise of the still-running task
      * @returns true if accepted, false if queue is full
      */
-    handoffTask(message: CronTask<T, ID>, runningPromise: Promise<void>): boolean;
+    handoffTask(message: CronTask<ID>, runningPromise: Promise<void>): boolean;
 
     /**
      * Gracefully shutdown the async task manager

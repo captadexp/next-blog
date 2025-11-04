@@ -35,7 +35,7 @@ interface KinesisConfig {
 /**
  * Kinesis implementation of the message queue
  */
-export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
+export class KinesisQueue<ID> implements IMessageQueue<ID> {
     private readonly kinesis: KinesisClient;
     private textEncoder: NodeUtils.TextEncoder;
     private readonly textDecoder: NodeUtils.TextDecoder;
@@ -47,7 +47,7 @@ export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
 
     // Utility instances
     private shardManager: KinesisShardManager;
-    private taskProcessor: KinesisMessageProcessor<PAYLOAD, ID>;
+    private taskProcessor: KinesisMessageProcessor<ID>;
     private shardRebalancer: KinesisShardRebalancer;
     private readonly shardLockProvider: IShardLockProvider;
 
@@ -72,7 +72,7 @@ export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
 
         // Initialize utilities
         this.shardManager = new KinesisShardManager(this.kinesis, this.instanceId);
-        this.taskProcessor = new KinesisMessageProcessor<PAYLOAD, ID>({
+        this.taskProcessor = new KinesisMessageProcessor<ID>({
             textDecoder: this.textDecoder,
             instanceId: this.instanceId
         });
@@ -117,7 +117,7 @@ export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
      * @param streamId - The Kinesis stream name
      * @param messages - Array of messages to add to the stream
      */
-    async addMessages(streamId: QueueName, messages: BaseMessage<PAYLOAD, ID>[]): Promise<void> {
+    async addMessages(streamId: QueueName, messages: BaseMessage<ID>[]): Promise<void> {
         if (!streamId) {
             throw new Error('streamId is required');
         }
@@ -169,7 +169,7 @@ export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
      * @param streamId - The Kinesis stream name (base name)
      * @param processor - Function to process the messages
      */
-    async consumeMessagesStream<T = void>(streamId: QueueName, processor: Processor<PAYLOAD, ID, T>, signal?: AbortSignal): Promise<T> {
+    async consumeMessagesStream<T = void>(streamId: QueueName, processor: Processor<ID, T>, signal?: AbortSignal): Promise<T> {
         const envStreamId = getEnvironmentQueueName(streamId); // Use prefixed name
         logger.info(`[${this.instanceId}] Starting task consumption for stream: ${envStreamId}`);
 
@@ -213,7 +213,7 @@ export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
      * @param limit Maximum number of messages to process
      * @returns void
      */
-    async consumeMessagesBatch<T = void>(streamId: QueueName, processor: Processor<PAYLOAD, ID, T>, limit: number = 10): Promise<T> {
+    async consumeMessagesBatch<T = void>(streamId: QueueName, processor: Processor<ID, T>, limit: number = 10): Promise<T> {
         streamId = getEnvironmentQueueName(streamId);
         try {
             // List all shards using the utility
@@ -395,7 +395,7 @@ export class KinesisQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
     }
 
 
-    private generatePartitionKey<PAYLOAD, ID>(message: BaseMessage<PAYLOAD, ID>): string {
+    private generatePartitionKey<ID>(message: BaseMessage<ID>): string {
         return message.type;
     }
 

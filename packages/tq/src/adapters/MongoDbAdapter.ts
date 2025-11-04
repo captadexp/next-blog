@@ -10,17 +10,19 @@ const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
 /**
  * MongoDB implementation of IDatabaseAdapter
  */
-export abstract class MongoDbAdapter<PAYLOAD = any> implements ITaskStorageAdapter<PAYLOAD, ObjectId> {
+export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
 
     protected constructor() {
     }
 
-    async addTasksToScheduled(tasks: CronTask<PAYLOAD, ObjectId>[]): Promise<CronTask<PAYLOAD, ObjectId>[]> {
+    abstract get collection(): Promise<Collection<CronTask<ObjectId>>>;
+
+    async addTasksToScheduled(tasks: CronTask<ObjectId>[]): Promise<CronTask<ObjectId>[]> {
         if (!tasks.length) return [];
 
         const collection = await this.collection;
 
-        const transformedTasks: CronTask<PAYLOAD>[] = tasks.map((task) => ({
+        const transformedTasks: CronTask[] = tasks.map((task) => ({
             _id: task._id,
             type: task.type,
             payload: task.payload,
@@ -54,7 +56,7 @@ export abstract class MongoDbAdapter<PAYLOAD = any> implements ITaskStorageAdapt
         }
     }
 
-    async getMatureTasks(timestamp: number): Promise<CronTask<PAYLOAD, ObjectId>[]> {
+    async getMatureTasks(timestamp: number): Promise<CronTask<ObjectId>[]> {
         const collection = await this.collection;
 
         // Phase 1: Reset stale processing tasks
@@ -97,7 +99,7 @@ export abstract class MongoDbAdapter<PAYLOAD = any> implements ITaskStorageAdapt
         return tasks;
     }
 
-    async markTasksAsProcessing(tasks: CronTask<PAYLOAD, ObjectId>[], processingStartedAt: Date): Promise<void> {
+    async markTasksAsProcessing(tasks: CronTask<ObjectId>[], processingStartedAt: Date): Promise<void> {
         const collection = await this.collection;
         const taskIds = tasks.map(t => t._id);
 
@@ -113,7 +115,7 @@ export abstract class MongoDbAdapter<PAYLOAD = any> implements ITaskStorageAdapt
         );
     }
 
-    async markTasksAsExecuted(tasks: CronTask<PAYLOAD, ObjectId>[]): Promise<void> {
+    async markTasksAsExecuted(tasks: CronTask<ObjectId>[]): Promise<void> {
         const collection = await this.collection;
         const taskIds = tasks.map(t => t._id);
 
@@ -128,7 +130,7 @@ export abstract class MongoDbAdapter<PAYLOAD = any> implements ITaskStorageAdapt
         );
     }
 
-    async markTasksAsFailed(tasks: CronTask<PAYLOAD, ObjectId>[]): Promise<void> {
+    async markTasksAsFailed(tasks: CronTask<ObjectId>[]): Promise<void> {
         const collection = await this.collection;
         const taskIds = tasks.map(t => t._id);
 
@@ -144,32 +146,12 @@ export abstract class MongoDbAdapter<PAYLOAD = any> implements ITaskStorageAdapt
         );
     }
 
-    async getTasksByIds(taskIds: ObjectId[]): Promise<CronTask<PAYLOAD, ObjectId>[]> {
+    async getTasksByIds(taskIds: ObjectId[]): Promise<CronTask<ObjectId>[]> {
         const collection = await this.collection;
 
         return collection
             .find({_id: {$in: taskIds}})
             .toArray();
-    }
-
-    async updateTasks(updates: Array<{ id: ObjectId; updates: Partial<CronTask<PAYLOAD, ObjectId>> }>): Promise<void> {
-        const collection = await this.collection;
-
-        const bulkOps = updates.map(({id, updates}) => ({
-            updateOne: {
-                filter: {_id: id},
-                update: {
-                    $set: {
-                        ...updates,
-                        updated_at: new Date()
-                    }
-                }
-            }
-        }));
-
-        if (bulkOps.length > 0) {
-            await collection.bulkWrite(bulkOps);
-        }
     }
 
     async getCleanupStats(): Promise<{ orphanedTasks: number; expiredTasks: number }> {
@@ -203,7 +185,25 @@ export abstract class MongoDbAdapter<PAYLOAD = any> implements ITaskStorageAdapt
         });
     }
 
-    abstract get collection(): Promise<Collection<CronTask<PAYLOAD, ObjectId>>>;
+    async updateTasks(updates: Array<{ id: ObjectId; updates: Partial<CronTask<ObjectId>> }>): Promise<void> {
+        const collection = await this.collection;
+
+        const bulkOps = updates.map(({id, updates}) => ({
+            updateOne: {
+                filter: {_id: id},
+                update: {
+                    $set: {
+                        ...updates,
+                        updated_at: new Date()
+                    }
+                }
+            }
+        }));
+
+        if (bulkOps.length > 0) {
+            await collection.bulkWrite(bulkOps);
+        }
+    }
 
     generateId() {
         return new ObjectId();
@@ -215,7 +215,7 @@ export abstract class MongoDbAdapter<PAYLOAD = any> implements ITaskStorageAdapt
     async initialize() {
     }
 
-    async markTasksAsIgnored(tasks: CronTask<PAYLOAD, ObjectId>[]): Promise<void> {
+    async markTasksAsIgnored(tasks: CronTask<ObjectId>[]): Promise<void> {
         const collection = await this.collection;
         const taskIds = tasks.map(t => t._id);
 

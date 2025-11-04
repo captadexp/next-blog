@@ -8,8 +8,8 @@ const logger = new Logger('InMemoryQueue', LogLevel.INFO);
  * In-memory implementation of the message queue.
  * This is primarily for development, testing, and environments where external message queues are not available.
  */
-export class InMemoryQueue<PAYLOAD = unknown> implements IMessageQueue<PAYLOAD, string> {
-    private queues: Map<QueueName, BaseMessage<PAYLOAD, string>[]> = new Map();
+export class InMemoryQueue implements IMessageQueue<string> {
+    private queues: Map<QueueName, BaseMessage<string>[]> = new Map();
     private isRunning: boolean = false;
     private processingIntervals: Map<QueueName, NodeJS.Timeout> = new Map();
     private registeredQueues: Set<QueueName> = new Set();
@@ -29,7 +29,7 @@ export class InMemoryQueue<PAYLOAD = unknown> implements IMessageQueue<PAYLOAD, 
      * @param queueId - The identifier for the queue
      * @param messages - Array of messages to add to the queue
      */
-    async addMessages(queueId: QueueName, messages: BaseMessage<PAYLOAD, string>[]): Promise<void> {
+    async addMessages(queueId: QueueName, messages: BaseMessage<string>[]): Promise<void> {
         queueId = getEnvironmentQueueName(queueId);
         if (!messages.length) {
             return;
@@ -57,7 +57,7 @@ export class InMemoryQueue<PAYLOAD = unknown> implements IMessageQueue<PAYLOAD, 
      */
     async consumeMessagesStream<T = void>(
         queueId: QueueName,
-        processor: MessageConsumer<PAYLOAD, string, T>,
+        processor: MessageConsumer<string, T>,
         signal?: AbortSignal
     ): Promise<T> {
         queueId = getEnvironmentQueueName(queueId);
@@ -73,7 +73,9 @@ export class InMemoryQueue<PAYLOAD = unknown> implements IMessageQueue<PAYLOAD, 
         }
 
         // Set up a polling interval for this queue if not already set
-        if (!this.processingIntervals.has(queueId)) {
+        if (this.processingIntervals.has(queueId)) {
+            logger.warn(`Queue ${queueId} already has a consumer registered. Multiple consumers for the same queue may cause unexpected behavior.`);
+        } else {
             const interval = setInterval(async () => {
                 if (this.isRunning && (!signal || !signal.aborted)) {
                     await this.consumeMessagesBatch(queueId, processor);
@@ -103,7 +105,7 @@ export class InMemoryQueue<PAYLOAD = unknown> implements IMessageQueue<PAYLOAD, 
      */
     async consumeMessagesBatch<T = void>(
         queueId: QueueName,
-        processor: MessageConsumer<PAYLOAD, string, T>,
+        processor: MessageConsumer<string, T>,
         limit: number = 10
     ): Promise<T> {
         queueId = getEnvironmentQueueName(queueId);

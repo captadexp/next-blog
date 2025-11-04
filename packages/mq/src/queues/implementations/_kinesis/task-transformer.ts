@@ -7,13 +7,14 @@ interface RawMessage {
     execute_at: string | Date;
     updated_at: string | Date;
     processing_started_at?: string | Date;
+
     [key: string]: unknown;
 }
 
 /**
  * Transform raw JSON message to typed BaseMessage
  */
-export function transformTask<PAYLOAD, ID = string>(rawMessage: RawMessage): BaseMessage<PAYLOAD, ID> {
+export function transformTask<ID>(rawMessage: RawMessage): BaseMessage<ID> {
     if (!rawMessage._id) {
         throw new Error("Message missing required _id field");
     }
@@ -36,5 +37,5 @@ export function transformTask<PAYLOAD, ID = string>(rawMessage: RawMessage): Bas
         processing_started_at: rawMessage.processing_started_at
             ? moment(rawMessage.processing_started_at).toDate()
             : undefined
-    } as BaseMessage<PAYLOAD, ID>;
+    } as BaseMessage<ID>;
 }

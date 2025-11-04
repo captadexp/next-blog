@@ -1,18 +1,18 @@
 import type {CronTask, ITaskStorageAdapter} from "../adapters";
 import {getEnvironmentQueueName} from "@supergrowthai/mq";
 
-class TaskStore<PAYLOAD, ID> {
+class TaskStore<ID> {
 
-    constructor(private databaseAdapter: ITaskStorageAdapter<PAYLOAD, ID>) {
+    constructor(private databaseAdapter: ITaskStorageAdapter<ID>) {
     }
 
     /**
      * Adds multiple tasks to the scheduled queue
      */
-    async addTasksToScheduled(tasks: CronTask<PAYLOAD, ID>[]): Promise<CronTask<PAYLOAD, ID>[]> {
+    async addTasksToScheduled(tasks: CronTask<ID>[]): Promise<CronTask<ID>[]> {
         if (!tasks.length) return [];
 
-        const transformedTasks: CronTask<PAYLOAD, ID>[] = tasks.map((task) => ({
+        const transformedTasks = tasks.map((task) => ({
             _id: task._id,
             type: task.type,
             queue_id: getEnvironmentQueueName(task.queue_id),
@@ -29,7 +29,7 @@ class TaskStore<PAYLOAD, ID> {
             updated_at: task.updated_at || new Date(),
             processing_started_at: task.processing_started_at || new Date(),
             force_store: task.force_store
-        }));
+        })) as CronTask<ID>[];
 
         return await this.databaseAdapter.addTasksToScheduled(transformedTasks);
     }
@@ -40,42 +40,42 @@ class TaskStore<PAYLOAD, ID> {
      * 1. Reset stale processing tasks
      * 2. Fetch and mark new mature tasks
      */
-    async getMatureTasks(timestamp: number): Promise<CronTask<PAYLOAD, ID>[]> {
+    async getMatureTasks(timestamp: number): Promise<CronTask<ID>[]> {
         return await this.databaseAdapter.getMatureTasks(timestamp);
     }
 
     /**
      * Marks tasks as processing with current timestamp
      */
-    async markTasksAsProcessing(tasks: CronTask<PAYLOAD, ID>[]): Promise<void> {
+    async markTasksAsProcessing(tasks: CronTask<ID>[]): Promise<void> {
         await this.databaseAdapter.markTasksAsProcessing(tasks, new Date());
     }
 
     /**
      * Marks tasks as executed/completed
      */
-    async markTasksAsExecuted(tasks: CronTask<PAYLOAD, ID>[]): Promise<void> {
+    async markTasksAsExecuted(tasks: CronTask<ID>[]): Promise<void> {
         await this.databaseAdapter.markTasksAsExecuted(tasks);
     }
 
     /**
      * Marks tasks as failed and increments retry count
      */
-    async markTasksAsFailed(tasks: CronTask<PAYLOAD, ID>[]): Promise<void> {
+    async markTasksAsFailed(tasks: CronTask<ID>[]): Promise<void> {
         await this.databaseAdapter.markTasksAsFailed(tasks);
     }
 
     /**
      * Marks tasks as successful/completed
      */
-    async markTasksAsSuccess(tasks: CronTask<PAYLOAD, ID>[]): Promise<void> {
+    async markTasksAsSuccess(tasks: CronTask<ID>[]): Promise<void> {
         await this.databaseAdapter.markTasksAsExecuted(tasks);
     }
 
     /**
      * Marks tasks as ignored with proper task context
      */
-    async markTasksAsIgnored(tasks: CronTask<PAYLOAD, ID>[]): Promise<void> {
+    async markTasksAsIgnored(tasks: CronTask<ID>[]): Promise<void> {
 
         //                             error: 'No executor found for task type',
         //                             ignored_reason: 'unknown_executor',
@@ -87,14 +87,14 @@ class TaskStore<PAYLOAD, ID> {
     /**
      * Updates multiple tasks with specific updates
      */
-    async updateTasks(updates: Array<{ id: ID; updates: Partial<CronTask<PAYLOAD, ID>> }>): Promise<void> {
+    async updateTasks(updates: Array<{ id: ID; updates: Partial<CronTask<ID>> }>): Promise<void> {
         await this.databaseAdapter.updateTasks(updates);
     }
 
     /**
      * Gets tasks by their IDs
      */
-    async getTasksByIds(taskIds: ID[]): Promise<CronTask<PAYLOAD, ID>[]> {
+    async getTasksByIds(taskIds: ID[]): Promise<CronTask<ID>[]> {
         return await this.databaseAdapter.getTasksByIds(taskIds);
     }
 
@@ -118,7 +118,7 @@ class TaskStore<PAYLOAD, ID> {
     /**
      * Updates tasks for retry with new execution time and retry count
      */
-    async updateTasksForRetry(tasks: CronTask<PAYLOAD, ID>[]): Promise<void> {
+    async updateTasksForRetry(tasks: CronTask<ID>[]): Promise<void> {
         const updates = tasks.map(task => ({
             id: task._id as ID,
             updates: {

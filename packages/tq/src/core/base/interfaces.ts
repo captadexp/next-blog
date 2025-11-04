@@ -1,6 +1,6 @@
 import {CronTask} from "../../adapters";
 
-interface IBaseExecutor<T> {
+interface IBaseExecutor {
     multiple: boolean,
     default_retries?: number
     store_on_failure: boolean
@@ -10,37 +10,37 @@ interface IBaseExecutor<T> {
     }
 }
 
-export type ExecutorActions<PAYLOAD = any, ID = any> = {
-    addTasks<T>(task: CronTask<T, ID>[]): void;
-    fail(task: CronTask<PAYLOAD, ID>): void;
-    success(task: CronTask<PAYLOAD, ID>): void;
+export type ExecutorActions<ID = any> = {
+    addTasks(task: CronTask<ID>[]): void;
+    fail(task: CronTask<ID>): void;
+    success(task: CronTask<ID>): void;
 }
 
-export interface IMultiTaskExecutor<PAYLOAD, ID = any> extends IBaseExecutor<PAYLOAD> {
+export interface IMultiTaskExecutor<ID = any> extends IBaseExecutor {
     multiple: true;
 
-    onTasks(tasks: CronTask<PAYLOAD, ID>[], action: ExecutorActions<PAYLOAD, ID>): Promise<void>
+    onTasks(tasks: CronTask<ID>[], action: ExecutorActions<ID>): Promise<void>
 }
 
-export interface ISingleTaskExecutor<PAYLOAD, ID = any> extends IBaseExecutor<PAYLOAD> {
+export interface ISingleTaskExecutor<ID = any> extends IBaseExecutor {
     parallel: boolean;
     multiple: false;
 
-    onTask(task: CronTask<PAYLOAD, ID>, action: ExecutorActions<PAYLOAD, ID>): Promise<void>;
+    onTask(task: CronTask<ID>, action: ExecutorActions<ID>): Promise<void>;
 }
 
-export interface ISingleTaskNonParallel<PAYLOAD, ID = any> extends ISingleTaskExecutor<PAYLOAD, ID> {
+export interface ISingleTaskNonParallel<ID = any> extends ISingleTaskExecutor<ID> {
     parallel: false;
     multiple: false;
 }
 
-export interface ISingleTaskParallel<PAYLOAD, ID = any> extends ISingleTaskExecutor<PAYLOAD, ID> {
+export interface ISingleTaskParallel<ID = any> extends ISingleTaskExecutor<ID> {
     chunkSize: number;
     parallel: true;
     multiple: false;
 }
 
-export type TaskExecutor<PAYLOAD, ID = any> =
-    | IMultiTaskExecutor<PAYLOAD, ID>
-    | ISingleTaskNonParallel<PAYLOAD, ID>
-    | ISingleTaskParallel<PAYLOAD, ID>
+export type TaskExecutor<ID = any> =
+    | IMultiTaskExecutor<ID>
+    | ISingleTaskNonParallel<ID>
+    | ISingleTaskParallel<ID>

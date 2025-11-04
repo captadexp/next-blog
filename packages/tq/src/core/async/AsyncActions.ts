@@ -8,16 +8,16 @@ import {TaskQueuesManager} from "../TaskQueuesManager.js";
 
 const logger = new Logger('AsyncActions', LogLevel.INFO);
 
-export class AsyncActions<PAYLOAD, ID = any> {
-    private readonly actions: Actions<PAYLOAD, ID>;
+export class AsyncActions<ID = any> {
+    private readonly actions: Actions<ID>;
     private readonly taskId: string;
 
     constructor(
-        private messageQueue: IMessageQueue<PAYLOAD, ID>,
-        private taskStore: TaskStore<PAYLOAD, ID>,
-        private taskQueue: TaskQueuesManager<PAYLOAD, ID>,
-        actions: Actions<PAYLOAD, ID>,
-        task: CronTask<PAYLOAD, ID>,
+        private messageQueue: IMessageQueue<ID>,
+        private taskStore: TaskStore<ID>,
+        private taskQueue: TaskQueuesManager<ID>,
+        actions: Actions<ID>,
+        task: CronTask<ID>,
         private generateId: () => ID
     ) {
         this.actions = actions;
@@ -71,10 +71,10 @@ export class AsyncActions<PAYLOAD, ID = any> {
     /**
      * Schedule new tasks - replicates the logic from task-handler's addTasks
      */
-    private async scheduleNewTasks(tasks: CronTask<PAYLOAD, ID>[]): Promise<void> {
+    private async scheduleNewTasks(tasks: CronTask<ID>[]): Promise<void> {
         const now = new Date();
-        const immediate: { [key in QueueName]?: CronTask<PAYLOAD, ID>[] } = {};
-        const future: CronTask<PAYLOAD, ID>[] = [];
+        const immediate: { [key in QueueName]?: CronTask<ID>[] } = {};
+        const future: CronTask<ID>[] = [];
 
         // Split tasks by timing
         for (const task of tasks) {
@@ -104,7 +104,7 @@ export class AsyncActions<PAYLOAD, ID = any> {
             });
 
             try {
-                await this.messageQueue.addMessages(queue, queueTasks);
+                await this.messageQueue.addMessages(queue, queueTasks as CronTask<ID>[]);
                 logger.info(`[AsyncActions] Added ${queueTasks.length} immediate tasks to queue ${queue}`);
             } catch (err) {
                 logger.error(`[AsyncActions] Failed to add tasks to queue ${queue}:`, err);

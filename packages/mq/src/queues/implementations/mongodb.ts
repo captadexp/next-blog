@@ -10,7 +10,7 @@ const logger = new Logger('MongoDBQueue', LogLevel.INFO);
 /**
  * MongoDB implementation of message queue that manages its own database operations
  */
-export abstract class MongoDBQueue<PAYLOAD = unknown> implements IMessageQueue<PAYLOAD, ObjectId> {
+export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
     private isRunning: boolean = false;
     private processingIntervals: Map<QueueName, NodeJS.Timeout> = new Map();
     private lockManager: LockManager;
@@ -23,7 +23,7 @@ export abstract class MongoDBQueue<PAYLOAD = unknown> implements IMessageQueue<P
         });
     }
 
-    abstract get collection(): Promise<Collection<BaseMessage<PAYLOAD, ObjectId>>>;
+    abstract get collection(): Promise<Collection<BaseMessage<ObjectId>>>;
 
     register(queueId: QueueName): void {
         const normalizedQueueId = getEnvironmentQueueName(queueId);
@@ -35,12 +35,16 @@ export abstract class MongoDBQueue<PAYLOAD = unknown> implements IMessageQueue<P
         return "mongodb";
     }
 
-    async addMessages(queueId: QueueName, messages: BaseMessage<PAYLOAD, ObjectId>[]): Promise<void> {
-        const collection = await this.collection
-
+    async addMessages(queueId: QueueName, messages: BaseMessage<ObjectId>[]): Promise<void> {
         queueId = getEnvironmentQueueName(queueId);
 
         if (!messages.length) return;
+
+        if (!this.registeredQueues.has(queueId)) {
+            throw new Error(`Queue ${queueId} is not registered`);
+        }
+
+        const collection = await this.collection;
 
         try {
             const messagesToInsert = messages.map(message => ({
@@ -58,8 +62,17 @@ export abstract class MongoDBQueue<PAYLOAD = unknown> implements IMessageQueue<P
         }
     }
 
-    async consumeMessagesStream<T = void>(queueId: QueueName, processor: MessageConsumer<PAYLOAD, ObjectId, T>, signal?: AbortSignal): Promise<T> {
+    async consumeMessagesStream<T = void>(queueId: QueueName, processor: MessageConsumer<ObjectId, T>, signal?: AbortSignal): Promise<T> {
         queueId = getEnvironmentQueueName(queueId);
+
+        if (signal?.aborted) {
+            return undefined as T;
+        }
+
+        if (!this.registeredQueues.has(queueId)) {
+            throw new Error(`Queue ${queueId} is not registered`);
+        }
+
         this.isRunning = true;
 
         if (!this.processingIntervals.has(queueId)) {
@@ -88,13 +101,18 @@ export abstract class MongoDBQueue<PAYLOAD = unknown> implements IMessageQueue<P
 
     async consumeMessagesBatch<T = void>(
         queueId: QueueName,
-        processor: MessageConsumer<PAYLOAD, ObjectId, T>,
+        processor: MessageConsumer<ObjectId, T>,
         limit: number = 10
     ): Promise<T> {
-        const collection = await this.collection
-
         queueId = getEnvironmentQueueName(queueId);
+
         if (!this.isRunning) return undefined as T;
+
+        if (!this.registeredQueues.has(queueId)) {
+            throw new Error(`Queue ${queueId} is not registered`);
+        }
+
+        const collection = await this.collection;
 
         const lockKey = `queue:${queueId}:${process.env.INSTANCE_ID || 'default'}`;
         const lockAcquired = await this.lockManager.acquire(lockKey, 60);
@@ -110,7 +128,7 @@ export abstract class MongoDBQueue<PAYLOAD = unknown> implements IMessageQueue<P
                 return undefined as T;
             }
 
-            const messageIds = messages.map((message: BaseMessage<PAYLOAD, ObjectId>) => message._id);
+            const messageIds = messages.map((message: BaseMessage<ObjectId>) => message._id);
             await collection.updateMany(
                 {_id: {$in: messageIds}},
                 {$set: {status: 'processing', processing_started_at: new Date(), updated_at: new Date()}}

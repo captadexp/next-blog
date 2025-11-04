@@ -7,9 +7,9 @@ const logger = new Logger('ImmediateQueue', LogLevel.INFO);
  * Immediate implementation of a message queue that processes messages synchronously
  * when they are added without waiting for polling intervals
  */
-export class ImmediateQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
+export class ImmediateQueue<ID> implements IMessageQueue<ID> {
     private isRunning: boolean = false;
-    private processors: Map<QueueName, MessageConsumer<PAYLOAD, ID, unknown>> = new Map();
+    private processors: Map<QueueName, MessageConsumer<ID, unknown>> = new Map();
     private registeredQueues: Set<QueueName> = new Set();
 
     constructor() {
@@ -25,7 +25,7 @@ export class ImmediateQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
      * @param queueId - The identifier for the queue
      * @param messages - Array of messages to add and process immediately
      */
-    async addMessages(queueId: QueueName, messages: BaseMessage<PAYLOAD, ID>[]): Promise<void> {
+    async addMessages(queueId: QueueName, messages: BaseMessage<ID>[]): Promise<void> {
         queueId = getEnvironmentQueueName(queueId);
         if (!messages.length) return;
 
@@ -33,13 +33,11 @@ export class ImmediateQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
             throw new Error(`Queue ${queueId} is not registered`);
         }
 
-        const messagesToProcess = messages.map(message => message);
-
         logger.info(`Added ${messages.length} messages to immediate queue ${queueId}`);
 
         if (this.processors.has(queueId)) {
             const processor = this.processors.get(queueId)!;
-            await this.consumeMessagesBatch(queueId, processor, messagesToProcess.length, messagesToProcess);
+            await this.consumeMessagesBatch(queueId, processor, messages.length, messages);
         } else {
             logger.warn(`No processor registered for queue ${queueId}, messages discarded in immediate mode`);
         }
@@ -51,7 +49,7 @@ export class ImmediateQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
      * @param processor - Function to process the messages
      * @param signal - Optional AbortSignal to stop consumption
      */
-    async consumeMessagesStream<T = void>(queueId: QueueName, processor: MessageConsumer<PAYLOAD, ID, T>, signal?: AbortSignal): Promise<T> {
+    async consumeMessagesStream<T = void>(queueId: QueueName, processor: MessageConsumer<ID, T>, signal?: AbortSignal): Promise<T> {
         queueId = getEnvironmentQueueName(queueId);
 
         if (!this.isRunning || signal?.aborted) {
@@ -86,9 +84,9 @@ export class ImmediateQueue<PAYLOAD, ID> implements IMessageQueue<PAYLOAD, ID> {
      */
     async consumeMessagesBatch<T = void>(
         queueId: QueueName,
-        processor: MessageConsumer<PAYLOAD, ID, T>,
+        processor: MessageConsumer<ID, T>,
         limit: number = 10,
-        messagesOverride?: BaseMessage<PAYLOAD, ID>[]
+        messagesOverride?: BaseMessage<ID>[]
     ): Promise<T> {
         queueId = getEnvironmentQueueName(queueId);
         if (!this.isRunning) return undefined as T;
