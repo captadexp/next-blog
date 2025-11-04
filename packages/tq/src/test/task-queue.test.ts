@@ -40,8 +40,8 @@ describe("simple tq test", () => {
         const executedTasks: CronTask<string>[] = [];
         let taskExecutorCalled = false;
 
-        // Define a simple task executor
-        const testTaskExecutor: ISingleTaskNonParallel<string> = {
+        // Define a typed task executor for "test-task"
+        const testTaskExecutor: ISingleTaskNonParallel<string, "test-task"> = {
             multiple: false,
             parallel: false,
             store_on_failure: true,
@@ -50,6 +50,7 @@ describe("simple tq test", () => {
                 executedTasks.push(task);
 
                 // Simulate successful task execution
+                // task.payload is now typed as { message: string }
                 console.log(`Executing task: ${task.payload.message}`);
                 actions.success(task);
             }
@@ -105,8 +106,9 @@ describe("simple tq test", () => {
 
         // Verify tasks were executed
         expect(executedTasks.length).toBe(2);
-        expect(executedTasks[0].payload.message).toBe("Hello from Task 1");
-        expect(executedTasks[1].payload.message).toBe("Hello from Task 2");
+        // Cast payload to the expected type for verification
+        expect((executedTasks[0].payload as { message: string }).message).toBe("Hello from Task 1");
+        expect((executedTasks[1].payload as { message: string }).message).toBe("Hello from Task 2");
 
         // Verify task executor is registered
         const registeredExecutor = taskQueue.getExecutor(queueName, "test-task");
@@ -157,7 +159,7 @@ describe("simple tq test", () => {
         abortController2.abort(); // Already aborted
 
         // Register queue and executor for this test
-        const testExecutor: ISingleTaskNonParallel<string> = {
+        const testExecutor: ISingleTaskNonParallel<string, "test-task"> = {
             multiple: false,
             parallel: false,
             store_on_failure: true,

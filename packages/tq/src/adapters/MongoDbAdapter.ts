@@ -22,7 +22,7 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
 
         const collection = await this.collection;
 
-        const transformedTasks: CronTask[] = tasks.map((task) => ({
+        const transformedTasks = tasks.map((task) => ({
             _id: task._id,
             type: task.type,
             payload: task.payload,
