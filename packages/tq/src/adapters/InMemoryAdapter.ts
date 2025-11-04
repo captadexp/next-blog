@@ -6,7 +6,7 @@ class InMemoryAdapter implements ITaskStorageAdapter<string> {
 
     async addTasksToScheduled(tasks: CronTask<string>[]): Promise<CronTask<string>[]> {
         const addedTasks = tasks.map(task => {
-            const id = task._id;
+            const id = task._id || this.generateId();
             const taskWithId = {...task};
             this.scheduledTasks.set(id, taskWithId);
             return taskWithId;
@@ -26,33 +26,33 @@ class InMemoryAdapter implements ITaskStorageAdapter<string> {
 
     async markTasksAsProcessing(tasks: CronTask<string>[], processingStartedAt: Date): Promise<void> {
         for (const task of tasks) {
-            const existingTask = this.scheduledTasks.get(task._id);
+            const existingTask = this.scheduledTasks.get(task._id!);
             if (existingTask) {
                 existingTask.status = 'processing';
                 existingTask.processing_started_at = processingStartedAt;
-                this.scheduledTasks.set(task._id, existingTask);
+                this.scheduledTasks.set(task._id!, existingTask);
             }
         }
     }
 
     async markTasksAsExecuted(tasks: CronTask<string>[]): Promise<void> {
         for (const task of tasks) {
-            const existingTask = this.scheduledTasks.get(task._id);
+            const existingTask = this.scheduledTasks.get(task._id!);
             if (existingTask) {
                 existingTask.status = 'executed';
                 existingTask.execute_at = new Date();
-                this.scheduledTasks.set(task._id, existingTask);
+                this.scheduledTasks.set(task._id!, existingTask);
             }
         }
     }
 
     async markTasksAsFailed(tasks: CronTask<string>[]): Promise<void> {
         for (const task of tasks) {
-            const existingTask = this.scheduledTasks.get(task._id);
+            const existingTask = this.scheduledTasks.get(task._id!);
             if (existingTask) {
                 existingTask.status = 'failed';
                 existingTask.execution_stats = {...existingTask.execution_stats, failed_at: new Date()};
-                this.scheduledTasks.set(task._id, existingTask);
+                this.scheduledTasks.set(task._id!, existingTask);
             }
         }
     }
@@ -114,11 +114,11 @@ class InMemoryAdapter implements ITaskStorageAdapter<string> {
 
     async markTasksAsIgnored(tasks: CronTask<string>[]) {
         for (const task of tasks) {
-            const existingTask = this.scheduledTasks.get(task._id);
+            const existingTask = this.scheduledTasks.get(task._id!);
             if (existingTask) {
                 existingTask.status = 'ignored';
                 existingTask.execution_stats = {...existingTask.execution_stats, ignore_reason: "unknown type"};
-                this.scheduledTasks.set(task._id, existingTask);
+                this.scheduledTasks.set(task._id!, existingTask);
             }
         }
     }

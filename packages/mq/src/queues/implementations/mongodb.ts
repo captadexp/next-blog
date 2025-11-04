@@ -128,7 +128,7 @@ export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
                 return undefined as T;
             }
 
-            const messageIds = messages.map((message: BaseMessage<ObjectId>) => message._id);
+            const messageIds = messages.map((message) => message._id);
             await collection.updateMany(
                 {_id: {$in: messageIds}},
                 {$set: {status: 'processing', processing_started_at: new Date(), updated_at: new Date()}}
