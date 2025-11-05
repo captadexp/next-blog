@@ -1,6 +1,8 @@
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
 import type {HydratedBlog, ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
 
+type ContentType = 'posts' | 'tags' | 'categories' | 'users';
+
 // Type definitions
 interface OrganizationConfig {
     name: string;
@@ -139,28 +141,105 @@ export default defineServer({
             return {code: 0, message: 'saved', payload: config};
         },
 
-        'json-ld-structured-data:blog:get': async (sdk: ServerSDK, {blogId}: { blogId: string }) => {
-            const blog = await sdk.db.generated.getHydratedBlog({_id: blogId});
-            const overrides = blog?.metadata?.[METADATA_KEY] || {};
+        'json-ld-structured-data:get': async (sdk: ServerSDK, payload: { type: ContentType; _id: string }) => {
+            let metadata: any = null;
+
+            switch (payload.type) {
+                case 'posts': {
+                    const blog = await sdk.db.blogs.findOne({_id: payload._id});
+                    if (!blog) return {code: 404, message: 'Blog not found'};
+                    metadata = blog.metadata;
+                    break;
+                }
+                case 'tags': {
+                    const tag = await sdk.db.tags.findOne({_id: payload._id});
+                    if (!tag) return {code: 404, message: 'Tag not found'};
+                    metadata = tag.metadata;
+                    break;
+                }
+                case 'categories': {
+                    const category = await sdk.db.categories.findOne({_id: payload._id});
+                    if (!category) return {code: 404, message: 'Category not found'};
+                    metadata = category.metadata;
+                    break;
+                }
+                case 'users': {
+                    const user = await sdk.db.users.findOne({_id: payload._id});
+                    if (!user) return {code: 404, message: 'User not found'};
+                    metadata = user.metadata;
+                    break;
+                }
+                default:
+                    return {code: -1, message: 'failed, unknown type'};
+            }
+
+            const overrides = metadata?.[METADATA_KEY] || {};
             return {code: 0, message: 'ok', payload: overrides};
         },
 
-        'json-ld-structured-data:blog:set': async (sdk: ServerSDK, {blogId, overrides}: {
-            blogId: string;
+        'json-ld-structured-data:set': async (sdk: ServerSDK, payload: {
+            type: ContentType;
+            _id: string;
             overrides: JsonLdOverrides
         }) => {
-            const blog = await sdk.db.blogs.findOne({_id: blogId});
-            if (!blog) return {code: 404, message: 'Blog not found'};
+            switch (payload.type) {
+                case 'posts': {
+                    const blog = await sdk.db.blogs.findOne({_id: payload._id});
+                    if (!blog) return {code: 404, message: 'Blog not found'};
 
-            await sdk.db.blogs.updateOne(
-                {_id: blogId},
-                {
-                    metadata: {[METADATA_KEY]: overrides},
-                    updatedAt: Date.now()
+                    await sdk.db.blogs.updateOne(
+                        {_id: payload._id},
+                        {
+                            metadata: {[METADATA_KEY]: payload.overrides},
+                            updatedAt: Date.now()
+                        }
+                    );
+                    break;
                 }
-            );
+                case 'tags': {
+                    const tag = await sdk.db.tags.findOne({_id: payload._id});
+                    if (!tag) return {code: 404, message: 'Tag not found'};
 
-            return {code: 0, message: 'saved', payload: overrides};
+                    await sdk.db.tags.updateOne(
+                        {_id: payload._id},
+                        {
+                            metadata: {[METADATA_KEY]: payload.overrides},
+                            updatedAt: Date.now()
+                        }
+                    );
+                    break;
+                }
+                case 'categories': {
+                    const category = await sdk.db.categories.findOne({_id: payload._id});
+                    if (!category) return {code: 404, message: 'Category not found'};
+
+                    await sdk.db.categories.updateOne(
+                        {_id: payload._id},
+                        {
+                            metadata: {[METADATA_KEY]: payload.overrides},
+                            updatedAt: Date.now()
+                        }
+                    );
+                    break;
+                }
+                case 'users': {
+                    const user = await sdk.db.users.findOne({_id: payload._id});
+                    if (!user) return {code: 404, message: 'User not found'};
+
+                    await sdk.db.users.updateOne(
+                        {_id: payload._id},
+                        {
+                            metadata: {[METADATA_KEY]: payload.overrides},
+                            updatedAt: Date.now()
+                        }
+                    );
+                    break;
+                }
+                default:
+                    return {code: -1, message: 'failed, unknown type'};
+            }
+
+            return {code: 0, message: 'saved', payload: payload.overrides};
         },
 
         'json-ld-structured-data:generate': async (sdk: ServerSDK, {blogId}: { blogId: string }) => {
@@ -175,6 +254,18 @@ export default defineServer({
             const jsonLd = generateJsonLd(blog, config as JsonLdConfig, overrides);
 
             return {code: 0, message: 'ok', payload: jsonLd};
+        },
+
+        // Legacy blog-specific methods for backward compatibility
+        'json-ld-structured-data:blog:get': async (sdk: ServerSDK, {blogId}: { blogId: string }) => {
+            return sdk.callRPC('json-ld-structured-data:get', {type: 'posts', _id: blogId});
+        },
+
+        'json-ld-structured-data:blog:set': async (sdk: ServerSDK, {blogId, overrides}: {
+            blogId: string;
+            overrides: JsonLdOverrides
+        }) => {
+            return sdk.callRPC('json-ld-structured-data:set', {type: 'posts', _id: blogId, overrides});
         }
     }
 });
