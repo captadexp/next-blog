@@ -13,7 +13,7 @@ import "./styles.css"
 
 export default defineClient({
     hooks: {
-        'blog-update-sidebar-widget': (sdk, _prev, context) => <BlogSidebarWidget sdk={sdk} context={context}/>,
+        'blog-update-sidebar-widget': (sdk, _prev, context) => <BlogSidebarWidget sdk={sdk} context={context} type="posts" _id={context.blogId}/>,
         'tag-update-sidebar-widget': (sdk, _prev, context) => <GenericSidebarWidget sdk={sdk} context={context} type="tags" _id={context.tagId}/>,
         'category-update-sidebar-widget': (sdk, _prev, context) => <GenericSidebarWidget sdk={sdk} context={context} type="categories" _id={context.categoryId}/>,
         'user-update-sidebar-widget': (sdk, _prev, context) => <GenericSidebarWidget sdk={sdk} context={context} type="users" _id={context.userId}/>,

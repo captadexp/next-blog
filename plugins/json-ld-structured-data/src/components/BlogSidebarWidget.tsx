@@ -6,8 +6,12 @@ import {TypeSpecificFields} from './TypeSpecificFields.js';
 import {AdvancedFields} from './AdvancedFields.js';
 import {JsonPreview} from './JsonPreview.js';
 
-export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: BlogEditorContext }) {
-    const blogId = context?.blogId as string | undefined;
+export function BlogSidebarWidget({sdk, context, type, _id}: {
+    sdk: ClientSDK;
+    context: BlogEditorContext;
+    type: 'posts';
+    _id: string;
+}) {
     const [overrides, setOverrides] = useState<any>({});
     const [config, setConfig] = useState<any>({});
     const [saving, setSaving] = useState(false);
@@ -18,26 +22,26 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
     const saveTimeoutRef = useRef<number | null>(null);
 
     useEffect(() => {
-        if (!blogId) return;
+        if (!_id) return;
         Promise.all([
-            sdk.callRPC('json-ld-structured-data:blog:get', {blogId}),
+            sdk.callRPC('json-ld-structured-data:get', {type, _id}),
             sdk.callRPC('json-ld-structured-data:config:get', {})
-        ]).then(([blogResp, configResp]) => {
-            setOverrides(blogResp?.payload?.payload || {});
+        ]).then(([dataResp, configResp]) => {
+            setOverrides(dataResp?.payload?.payload || {});
             setConfig(configResp?.payload?.payload || {});
         });
-    }, [blogId, sdk]);
+    }, [_id, type, sdk]);
 
     const saveOverrides = useCallback(async (newOverrides: any) => {
-        if (!blogId) return;
+        if (!_id) return;
         setSaving(true);
         try {
-            await sdk.callRPC('json-ld-structured-data:blog:set', {blogId, overrides: newOverrides});
+            await sdk.callRPC('json-ld-structured-data:set', {type, _id, overrides: newOverrides});
             setOverrides(newOverrides);
         } finally {
             setSaving(false);
         }
-    }, [blogId, sdk]);
+    }, [_id, type, sdk]);
 
     // Debounced save function
     const debouncedSaveOverrides = useCallback((newOverrides: any) => {
@@ -54,32 +58,28 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
     }, [saveOverrides]);
 
     const generatePreview = useCallback(async () => {
-        if (!blogId) return;
-        const resp = await sdk.callRPC('json-ld-structured-data:generate', {blogId});
+        if (!_id) return;
+        const resp = await sdk.callRPC('json-ld-structured-data:generate', {blogId: _id});
         setPreview(resp?.payload?.payload);
         setShowPreview(true);
 
-        // Improved validation that considers context data
         const errors: string[] = [];
         const jsonLd = resp?.payload?.payload;
         const blogTitle = context?.form?.data?.title || context?.data?.title;
         const blogExcerpt = context?.form?.data?.excerpt || context?.data?.excerpt;
 
-        // Only show error if no headline at all (neither override nor blog title)
         if (!jsonLd?.headline && !blogTitle) {
             errors.push('Missing headline (no title in blog)');
         }
-        // Only show error if no description at all
         if (!jsonLd?.description && !blogExcerpt) {
             errors.push('Missing description (no excerpt in blog)');
         }
-        // Only show error if author is completely missing
         if (!jsonLd?.author?.name && !overrides.hideAuthor) {
             errors.push('Missing author name');
         }
 
         setValidationErrors(errors);
-    }, [blogId, sdk, context, overrides.hideAuthor]);
+    }, [_id, sdk, context, overrides.hideAuthor]);
 
     const updateField = useCallback((field: string, value: any) => {
         const newOverrides = {...overrides, [field]: value};

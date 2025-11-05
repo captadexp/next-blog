@@ -254,18 +254,6 @@ export default defineServer({
             const jsonLd = generateJsonLd(blog, config as JsonLdConfig, overrides);
 
             return {code: 0, message: 'ok', payload: jsonLd};
-        },
-
-        // Legacy blog-specific methods for backward compatibility
-        'json-ld-structured-data:blog:get': async (sdk: ServerSDK, {blogId}: { blogId: string }) => {
-            return sdk.callRPC('json-ld-structured-data:get', {type: 'posts', _id: blogId});
-        },
-
-        'json-ld-structured-data:blog:set': async (sdk: ServerSDK, {blogId, overrides}: {
-            blogId: string;
-            overrides: JsonLdOverrides
-        }) => {
-            return sdk.callRPC('json-ld-structured-data:set', {type: 'posts', _id: blogId, overrides});
         }
     }
 });
