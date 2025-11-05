@@ -8,7 +8,7 @@ const DEFAULT_FORMATS = {
     posts: ['{category_slug}/{post_slug}'],
     tags: ['tag/{tag_slug}'],
     categories: ['{category_slug}'],
-    users: ['author/{user_username}']
+    users: ['author/{user_slug}']
 } as const;
 
 function normalizeSettings(s: Settings = {}): NormalizedSettings {

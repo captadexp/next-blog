@@ -107,7 +107,4 @@ export interface DatabaseAdapter {
         getBlogsByTag(tagSlug: string, options?: HydratedBlogQueryOptions): Promise<HydratedBlog[]>;
         getBlogsByCategory(categorySlug: string, options?: HydratedBlogQueryOptions): Promise<HydratedBlog[]>;
     };
-
-    // Optional transaction support
-    transaction?<T>(fn: (adapter: DatabaseAdapter) => Promise<T>): Promise<T>;
 }

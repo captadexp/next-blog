@@ -25,7 +25,7 @@ const FORMAT_PLACEHOLDERS: Record<ContentType, string> = {
     posts: '{category}/{slug}, {year}/{month}/{slug}',
     tags: 'tag/{slug}, tags/{slug}',
     categories: '{slug}, category/{slug}',
-    users: 'author/{username}, user/{username}'
+    users: 'author/{slug}, user/{slug}'
 };
 
 function normalizePath(s: string) {
@@ -83,7 +83,8 @@ function computeTokens(type: ContentType, formData: any): Tokens {
         case 'users':
             return {
                 ...standardTokens,
-                slug: username,
+                slug,
+                user_slug: slug,
                 user_username: username,
             };
 
