@@ -75,22 +75,34 @@ export const RecentBlogs: React.FC<RecentBlogsProps> = ({
                                 borderBottom: index === recentBlogs.length - 1 ? 'none' : listItemStyles.borderBottom
                             }}
                         >
-                            <a
-                                href={blog.metadata?.['permalink-manager:permalink']?.permalink || `/${blog.slug}`}
-                                style={{
-                                    fontSize: '24px',
-                                    fontWeight: 'bold',
-                                    color: '#1f2937',
-                                    textDecoration: 'none',
-                                    display: 'block',
-                                    marginBottom: '8px',
-                                    transition: 'color 0.2s'
-                                }}
-
-
-                            >
-                                {blog.title}
-                            </a>
+                            {blog.metadata?.['permalink-manager:permalink']?.permalink ? (
+                                <a
+                                    href={blog.metadata['permalink-manager:permalink'].permalink}
+                                    style={{
+                                        fontSize: '24px',
+                                        fontWeight: 'bold',
+                                        color: '#1f2937',
+                                        textDecoration: 'none',
+                                        display: 'block',
+                                        marginBottom: '8px',
+                                        transition: 'color 0.2s'
+                                    }}
+                                >
+                                    {blog.title}
+                                </a>
+                            ) : (
+                                <span
+                                    style={{
+                                        fontSize: '24px',
+                                        fontWeight: 'bold',
+                                        color: '#1f2937',
+                                        display: 'block',
+                                        marginBottom: '8px'
+                                    }}
+                                >
+                                    {blog.title}
+                                </span>
+                            )}
                             {showExcerpt && blog.excerpt && (
                                 <p style={{
                                     fontSize: '16px',

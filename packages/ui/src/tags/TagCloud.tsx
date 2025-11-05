@@ -59,14 +59,24 @@ export const TagCloud: React.FC<TagCloudProps> = ({
     return (
         <div style={containerStyles} className={className} {...rest}>
             {tags.map(tag => (
-                <a
-                    key={tag._id}
-                    href={`/tag/${tag.slug}`}
-                    style={getTagStyles(tag)}
-                    title={`${tag.count} posts`}
-                >
-                    {tag.name}
-                </a>
+                tag.metadata?.['permalink-manager:permalink']?.permalink ? (
+                    <a
+                        key={tag._id}
+                        href={tag.metadata['permalink-manager:permalink'].permalink}
+                        style={getTagStyles(tag)}
+                        title={`${tag.count} posts`}
+                    >
+                        {tag.name}
+                    </a>
+                ) : (
+                    <span
+                        key={tag._id}
+                        style={getTagStyles(tag)}
+                        title={`${tag.count} posts`}
+                    >
+                        {tag.name}
+                    </span>
+                )
             ))}
         </div>
     );

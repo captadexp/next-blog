@@ -41,7 +41,7 @@ export const JsonLd: React.FC<JsonLdProps> = ({
             '@type': jsonLdOverrides.type || 'BlogPosting',
             headline: jsonLdOverrides.headline || blog.title,
             description: jsonLdOverrides.description || blog.excerpt || '',
-            url: `${baseUrl}${permalink || `/${blog.slug}`}`,
+            url: permalink ? `${baseUrl}${permalink}` : baseUrl,
             datePublished: new Date(blog.createdAt).toISOString(),
             dateModified: new Date(blog.updatedAt).toISOString(),
             inLanguage: jsonLdOverrides.language || 'en-US'
@@ -53,10 +53,13 @@ export const JsonLd: React.FC<JsonLdProps> = ({
             const authorName = jsonLdOverrides.authorName || blog.user?.name;
 
             if (authorName) {
+                const authorPermalink = blog.user?.metadata?.['permalink-manager:permalink']?.permalink;
+                const authorUrl = jsonLdOverrides.authorUrl || (authorPermalink ? `${baseUrl}${authorPermalink}` : baseUrl);
+
                 jsonLd.author = {
                     '@type': authorType,
                     name: authorName,
-                    url: jsonLdOverrides.authorUrl || `${baseUrl}/author/${blog.user?.slug}`
+                    url: authorUrl
                 };
             }
         }

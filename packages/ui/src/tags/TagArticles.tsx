@@ -98,9 +98,15 @@ export const TagArticles: React.FC<TagArticlesProps> = ({
                             borderBottom: index === blogs.length - 1 ? 'none' : defaultArticleStyles.borderBottom
                         }}
                     >
-                        <a href={`/${blog.slug}`} style={defaultTitleStyles}>
-                            {blog.title}
-                        </a>
+                        {blog.metadata?.['permalink-manager:permalink']?.permalink ? (
+                            <a href={blog.metadata['permalink-manager:permalink'].permalink} style={defaultTitleStyles}>
+                                {blog.title}
+                            </a>
+                        ) : (
+                            <span style={defaultTitleStyles}>
+                                {blog.title}
+                            </span>
+                        )}
                         <p style={defaultExcerptStyles}>
                             {getExcerpt(blog)}
                         </p>

@@ -154,14 +154,18 @@ export const AuthorArticles: React.FC<AuthorArticlesProps> = ({
                             ...(layout === 'list' && index === blogs.length - 1 ? {borderBottom: 'none'} : {})
                         }}
                     >
-                        <a
-                            href={`/${blog.slug}`}
-                            style={defaultTitleStyles}
-
-
-                        >
-                            {blog.title}
-                        </a>
+                        {blog.metadata?.['permalink-manager:permalink']?.permalink ? (
+                            <a
+                                href={blog.metadata['permalink-manager:permalink'].permalink}
+                                style={defaultTitleStyles}
+                            >
+                                {blog.title}
+                            </a>
+                        ) : (
+                            <span style={defaultTitleStyles}>
+                                {blog.title}
+                            </span>
+                        )}
 
                         <p style={defaultExcerptStyles}>
                             {getExcerpt(blog)}
@@ -172,12 +176,16 @@ export const AuthorArticles: React.FC<AuthorArticlesProps> = ({
                             {blog.category && (
                                 <>
                                     <span> • </span>
-                                    <a
-                                        href={`/category/${blog.category.slug}`}
-                                        style={{color: 'inherit', textDecoration: 'none'}}
-                                    >
-                                        {blog.category.name}
-                                    </a>
+                                    {blog.category.metadata?.['permalink-manager:permalink']?.permalink ? (
+                                        <a
+                                            href={blog.category.metadata['permalink-manager:permalink'].permalink}
+                                            style={{color: 'inherit', textDecoration: 'none'}}
+                                        >
+                                            {blog.category.name}
+                                        </a>
+                                    ) : (
+                                        <span>{blog.category.name}</span>
+                                    )}
                                 </>
                             )}
                         </div>

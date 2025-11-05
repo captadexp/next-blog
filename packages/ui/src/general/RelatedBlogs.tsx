@@ -61,19 +61,29 @@ export const RelatedBlogs: React.FC<RelatedBlogsProps> = ({
                 <div style={blogsContainerStyle}>
                     {relatedBlogs.map(blog => (
                         <div key={blog._id} style={{marginBottom: '16px'}}>
-                            <a
-                                href={blog.metadata?.['permalink-manager:permalink']?.permalink || `/${blog.slug}`}
-                                style={{
-                                    fontSize: '16px',
-                                    color: '#2563eb',
-                                    textDecoration: 'none',
-                                    fontWeight: '500'
-                                }}
-
-
-                            >
-                                {blog.title}
-                            </a>
+                            {blog.metadata?.['permalink-manager:permalink']?.permalink ? (
+                                <a
+                                    href={blog.metadata['permalink-manager:permalink'].permalink}
+                                    style={{
+                                        fontSize: '16px',
+                                        color: '#2563eb',
+                                        textDecoration: 'none',
+                                        fontWeight: '500'
+                                    }}
+                                >
+                                    {blog.title}
+                                </a>
+                            ) : (
+                                <span
+                                    style={{
+                                        fontSize: '16px',
+                                        color: '#6b7280',
+                                        fontWeight: '500'
+                                    }}
+                                >
+                                    {blog.title}
+                                </span>
+                            )}
                         </div>
                     ))}
                 </div>

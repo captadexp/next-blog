@@ -61,11 +61,16 @@ export const BlogAuthor: React.FC<BlogAuthorProps> = ({
     };
 
     const authorInitial = blog.user.name ? blog.user.name[0].toUpperCase() : 'A';
-    const authorUrl = `/author/${blog.user.slug}`;
 
     const AuthorName = () => {
         const nameEl = <span style={defaultNameStyles}>{blog.user.name}</span>;
-        return linkToAuthor ? <a href={authorUrl} style={defaultNameStyles}>{blog.user.name}</a> : nameEl;
+        if (!linkToAuthor) return nameEl;
+
+        return blog.user.metadata?.['permalink-manager:permalink']?.permalink ? (
+            <a href={blog.user.metadata['permalink-manager:permalink'].permalink} style={defaultNameStyles}>
+                {blog.user.name}
+            </a>
+        ) : nameEl;
     };
 
     return (

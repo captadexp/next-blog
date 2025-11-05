@@ -98,12 +98,16 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({
             )}
 
             <h2 style={defaultNameStyles}>
-                <a
-                    href={`/author/${author.slug}`}
-                    style={{color: 'inherit', textDecoration: 'none'}}
-                >
-                    {author.name}
-                </a>
+                {author.metadata?.['permalink-manager:permalink']?.permalink ? (
+                    <a
+                        href={author.metadata['permalink-manager:permalink'].permalink}
+                        style={{color: 'inherit', textDecoration: 'none'}}
+                    >
+                        {author.name}
+                    </a>
+                ) : (
+                    <span>{author.name}</span>
+                )}
             </h2>
 
             {showBio && author.bio && (

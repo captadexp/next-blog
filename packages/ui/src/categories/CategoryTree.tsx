@@ -104,18 +104,30 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
               {isExpanded ? '▼' : '▶'}
             </span>
                     )}
-                    <a
-                        href={`/category/${category.slug}`}
-                        style={{
-                            color: '#374151',
-                            textDecoration: 'none',
-                            fontWeight: depth === 0 ? '600' : '400',
-                            fontSize: depth === 0 ? '16px' : '14px'
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {category.name}
-                    </a>
+                    {category.metadata?.['permalink-manager:permalink']?.permalink ? (
+                        <a
+                            href={category.metadata['permalink-manager:permalink'].permalink}
+                            style={{
+                                color: '#374151',
+                                textDecoration: 'none',
+                                fontWeight: depth === 0 ? '600' : '400',
+                                fontSize: depth === 0 ? '16px' : '14px'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {category.name}
+                        </a>
+                    ) : (
+                        <span
+                            style={{
+                                color: '#374151',
+                                fontWeight: depth === 0 ? '600' : '400',
+                                fontSize: depth === 0 ? '16px' : '14px'
+                            }}
+                        >
+                            {category.name}
+                        </span>
+                    )}
                     {category.description && (
                         <span style={{marginLeft: '12px', fontSize: '12px', color: '#9ca3af'}}>
               {category.description.length > 50

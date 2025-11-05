@@ -159,12 +159,18 @@ export const BlogCard: React.FC<BlogCardProps> = ({
             )}
 
             <div style={defaultContentStyles}>
-                <a
-                    href={blog.metadata?.['permalink-manager:permalink']?.permalink || `/${blog.slug}`}
-                    style={defaultTitleStyles}
-                >
-                    {blog.title}
-                </a>
+                {blog.metadata?.['permalink-manager:permalink']?.permalink ? (
+                    <a
+                        href={blog.metadata['permalink-manager:permalink'].permalink}
+                        style={defaultTitleStyles}
+                    >
+                        {blog.title}
+                    </a>
+                ) : (
+                    <span style={defaultTitleStyles}>
+                        {blog.title}
+                    </span>
+                )}
 
                 {showExcerpt && (
                     <p style={defaultExcerptStyles}>
@@ -188,12 +194,10 @@ export const BlogCard: React.FC<BlogCardProps> = ({
                     )}
                 </div>
 
-                {showReadMore && (
+                {showReadMore && blog.metadata?.['permalink-manager:permalink']?.permalink && (
                     <a
-                        href={blog.metadata?.['permalink-manager:permalink']?.permalink || `/${blog.slug}`}
+                        href={blog.metadata['permalink-manager:permalink'].permalink}
                         style={defaultReadMoreStyles}
-
-
                     >
                         Read More →
                     </a>

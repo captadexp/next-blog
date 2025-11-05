@@ -60,7 +60,7 @@ export const MetaTags: React.FC<MetaTagsProps> = (props) => {
 
                 const title = jsonLdOverrides?.headline || blog.title;
                 const description = jsonLdOverrides?.description || blog.excerpt || '';
-                const url = `${baseUrl}${permalink || `/${blog.slug}`}`;
+                const url = permalink ? `${baseUrl}${permalink}` : baseUrl;
                 const image = jsonLdOverrides?.featuredImageMedia?.url || blog.featuredMedia?.url;
                 const author = jsonLdOverrides?.authorName || blog.user.name;
                 const keywords = [
@@ -87,7 +87,8 @@ export const MetaTags: React.FC<MetaTagsProps> = (props) => {
                 const {author, postCount} = props;
                 const title = `${author.name} | Author`;
                 const description = author.bio || `Articles by ${author.name}. ${postCount ? `${postCount} posts published.` : ''}`;
-                const url = `${baseUrl}/author/${author.slug}`;
+                const permalink = author.metadata?.['permalink-manager:permalink']?.permalink;
+                const url = permalink ? `${baseUrl}${permalink}` : baseUrl;
 
                 return {
                     title: `${title} | ${siteName}`,
@@ -102,7 +103,8 @@ export const MetaTags: React.FC<MetaTagsProps> = (props) => {
                 const {category, postCount} = props;
                 const title = category.name;
                 const description = category.description || `Browse ${postCount || 'all'} articles in ${category.name} category.`;
-                const url = `${baseUrl}/category/${category.slug}`;
+                const permalink = category.metadata?.['permalink-manager:permalink']?.permalink;
+                const url = permalink ? `${baseUrl}${permalink}` : baseUrl;
 
                 return {
                     title: `${title} | ${siteName}`,
@@ -116,7 +118,8 @@ export const MetaTags: React.FC<MetaTagsProps> = (props) => {
                 const {tag, postCount} = props;
                 const title = `Tag: ${tag.name}`;
                 const description = `Browse ${postCount || 'all'} articles tagged with "${tag.name}".`;
-                const url = `${baseUrl}/tag/${tag.slug}`;
+                const permalink = tag.metadata?.['permalink-manager:permalink']?.permalink;
+                const url = permalink ? `${baseUrl}${permalink}` : baseUrl;
 
                 return {
                     title: `${title} | ${siteName}`,
