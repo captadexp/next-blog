@@ -49,7 +49,158 @@ interface DbEntityTransformer<T extends U, U, DB = any> {
     toDb(entity: Partial<T> | U): DB;
 }
 
-class BlogTransformer implements DbEntityTransformer<Blog, BlogData> {
+abstract class BaseMongoTransformer<T extends U, U> implements DbEntityTransformer<T, U> {
+    // Schema: only declare fields that need ObjectId conversion
+    // Minimal declarations - only what absolutely needs conversion
+    protected schema: Record<string, any> = {};
+
+    // Convert filter for MongoDB queries (separate from data conversion)
+    toDbFilter(filter: any): any {
+        if (!filter) return filter;
+
+        // Fast path for single _id (80% of queries)
+        if (filter._id && Object.keys(filter).length === 1) {
+            return this.fastConvertId(filter);
+        }
+
+        // Handle general case
+        return this.toDbFilterGeneral(filter);
+    }
+
+    // Abstract methods that each transformer implements
+    abstract fromDb(dbEntity: any): T;
+
+    abstract toDb(entity: Partial<T> | U): any;
+
+    private fastConvertId(filter: any): any {
+        const {_id} = filter;
+
+        // Only convert if _id is declared in schema
+        if (!this.schema._id) {
+            return filter;
+        }
+
+        if (typeof _id === 'string') {
+            return {_id: oid(_id)};
+        }
+        if (_id?.$in) {
+            return {
+                _id: {
+                    ...filter._id,
+                    $in: _id.$in.map((id: any) => typeof id === 'string' ? oid(id) : id)
+                }
+            };
+        }
+        if (_id?.$ne) {
+            return {
+                _id: {
+                    ...filter._id,
+                    $ne: typeof _id.$ne === 'string' ? oid(_id.$ne) : _id.$ne
+                }
+            };
+        }
+        return filter;
+    }
+
+    private toDbFilterGeneral(filter: any): any {
+        const result: any = {};
+
+        for (const [key, value] of Object.entries(filter)) {
+            if (this.schema[key]) {
+                // Only convert fields declared in schema (minimal set)
+                result[key] = this.convertToObjectId(key, value);
+            } else if (key.startsWith('$')) {
+                // MongoDB root operators ($or, $and, etc.)
+                result[key] = this.convertOperator(key, value);
+            } else {
+                // Pass through all other fields as-is
+                result[key] = value;
+            }
+        }
+
+        return result;
+    }
+
+    private convertToObjectId(fieldName: string, value: any): any {
+        // Handle string ID
+        if (typeof value === 'string') {
+            return oid(value);
+        }
+
+        // Handle array of IDs (for fields like tagIds)
+        if (Array.isArray(value)) {
+            return value.map(v => typeof v === 'string' ? oid(v) : v);
+        }
+
+        // Handle operators on ID fields
+        if (value && typeof value === 'object') {
+            const result: any = {};
+            for (const [op, val] of Object.entries(value)) {
+                switch (op) {
+                    case '$in':
+                    case '$nin':
+                    case '$all':
+                        result[op] = Array.isArray(val)
+                            ? val.map((v: any) => typeof v === 'string' ? oid(v) : v)
+                            : val;
+                        break;
+                    case '$ne':
+                    case '$eq':
+                    case '$gt':
+                    case '$gte':
+                    case '$lt':
+                    case '$lte':
+                        result[op] = typeof val === 'string' ? oid(val) : val;
+                        break;
+                    case '$exists':
+                    case '$type':
+                    case '$size':
+                        result[op] = val;
+                        break;
+                    default:
+                        console.warn(`MongoDBAdapter: Unknown operator '${op}' for field '${fieldName}', passing through as-is`);
+                        result[op] = val;
+                }
+            }
+            return result;
+        }
+
+        return value;
+    }
+
+    private convertOperator(operator: string, value: any): any {
+        switch (operator) {
+            case '$or':
+            case '$and':
+            case '$nor':
+                // Recursively convert array of conditions
+                if (Array.isArray(value)) {
+                    return value.map(condition => this.toDbFilterGeneral(condition));
+                }
+                console.warn(`MongoDBAdapter: Operator '${operator}' expects array, got ${typeof value}`);
+                return value;
+
+            case '$not':
+                // Recursively convert nested condition
+                return this.toDbFilterGeneral(value);
+
+            default:
+                // Unknown root operator, pass through
+                return value;
+        }
+    }
+}
+
+class BlogTransformer extends BaseMongoTransformer<Blog, BlogData> {
+    protected schema = {
+        _id: true,
+        userId: true,
+        categoryId: true,
+        tagIds: true,
+        featuredMediaId: true,
+        parentId: true
+    };
+
     fromDb(dbEntity: any): Blog {
         if (!dbEntity) return dbEntity;
 
@@ -123,7 +274,12 @@ class BlogTransformer implements DbEntityTransformer<Blog, BlogData> {
     }
 }
 
-class CategoryTransformer implements DbEntityTransformer<Category, CategoryData> {
+class CategoryTransformer extends BaseMongoTransformer<Category, CategoryData> {
+    protected schema = {
+        _id: true,
+        parentId: true
+    };
+
     fromDb(dbEntity: any): Category {
         if (!dbEntity) return dbEntity;
 
@@ -159,7 +315,11 @@ class CategoryTransformer implements DbEntityTransformer<Category, CategoryData>
     }
 }
 
-class TagTransformer implements DbEntityTransformer<Tag, TagData> {
+class TagTransformer extends BaseMongoTransformer<Tag, TagData> {
+    protected schema = {
+        _id: true
+    };
+
     fromDb(dbEntity: any): Tag {
         if (!dbEntity) return dbEntity;
 
@@ -186,7 +346,11 @@ class TagTransformer implements DbEntityTransformer<Tag, TagData> {
     }
 }
 
-class UserTransformer implements DbEntityTransformer<User, UserData> {
+class UserTransformer extends BaseMongoTransformer<User, UserData> {
+    protected schema = {
+        _id: true
+    };
+
     fromDb(dbEntity: any): User {
         if (!dbEntity) return dbEntity;
 
@@ -213,7 +377,12 @@ class UserTransformer implements DbEntityTransformer<User, UserData> {
     }
 }
 
-class SettingsTransformer implements DbEntityTransformer<SettingsEntry, SettingsEntryData> {
+class SettingsTransformer extends BaseMongoTransformer<SettingsEntry, SettingsEntryData> {
+    protected schema = {
+        _id: true,
+        ownerId: true
+    };
+
     fromDb(dbEntity: any): SettingsEntry {
         if (!dbEntity) return dbEntity;
 
@@ -249,7 +418,11 @@ class SettingsTransformer implements DbEntityTransformer<SettingsEntry, Settings
     }
 }
 
-class PluginTransformer implements DbEntityTransformer<Plugin, PluginData> {
+class PluginTransformer extends BaseMongoTransformer<Plugin, PluginData> {
+    protected schema = {
+        _id: true
+    };
+
     fromDb(dbEntity: any): Plugin {
         if (!dbEntity) return dbEntity;
 
@@ -276,7 +449,12 @@ class PluginTransformer implements DbEntityTransformer<Plugin, PluginData> {
     }
 }
 
-class PluginHookMappingTransformer implements DbEntityTransformer<PluginHookMapping, PluginHookMappingData> {
+class PluginHookMappingTransformer extends BaseMongoTransformer<PluginHookMapping, PluginHookMappingData> {
+    protected schema = {
+        _id: true,
+        pluginId: true
+    };
+
     fromDb(dbEntity: any): PluginHookMapping {
         if (!dbEntity) return dbEntity;
 
@@ -312,7 +490,14 @@ class PluginHookMappingTransformer implements DbEntityTransformer<PluginHookMapp
     }
 }
 
-class CommentTransformer implements DbEntityTransformer<Comment, CommentData> {
+class CommentTransformer extends BaseMongoTransformer<Comment, CommentData> {
+    protected schema = {
+        _id: true,
+        blogId: true,
+        userId: true,
+        parentCommentId: true
+    };
+
     fromDb(dbEntity: any): Comment {
         if (!dbEntity) return dbEntity;
         const result = {...dbEntity};
@@ -350,7 +535,13 @@ class CommentTransformer implements DbEntityTransformer<Comment, CommentData> {
     }
 }
 
-class RevisionTransformer implements DbEntityTransformer<Revision, RevisionData> {
+class RevisionTransformer extends BaseMongoTransformer<Revision, RevisionData> {
+    protected schema = {
+        _id: true,
+        blogId: true,
+        userId: true
+    };
+
     fromDb(dbEntity: any): Revision {
         if (!dbEntity) return dbEntity;
         const result = {...dbEntity};
@@ -382,7 +573,12 @@ class RevisionTransformer implements DbEntityTransformer<Revision, RevisionData>
     }
 }
 
-class MediaTransformer implements DbEntityTransformer<Media, MediaData> {
+class MediaTransformer extends BaseMongoTransformer<Media, MediaData> {
+    protected schema = {
+        _id: true,
+        userId: true
+    };
+
     fromDb(dbEntity: any): Media {
         if (!dbEntity) return dbEntity;
         const result = {...dbEntity};
@@ -453,13 +649,13 @@ export class MongoDBAdapter implements DatabaseAdapter {
 
         return {
             findOne: async (filter: Filter<User>) => {
-                const dbFilter = transformer.toDb(filter);
+                const dbFilter = transformer.toDbFilter(filter);
                 const result = await collection.findOne(dbFilter);
                 return result ? transformer.fromDb(result) : null;
             },
 
             find: async (filter: Filter<User>, options) => {
-                const dbFilter = transformer.toDb(filter);
+                const dbFilter = transformer.toDbFilter(filter);
                 let query = collection.find(dbFilter);
 
                 if (options?.skip)
@@ -472,7 +668,7 @@ export class MongoDBAdapter implements DatabaseAdapter {
             },
 
             count: async (filter: Filter<User>) => {
-                const dbFilter = transformer.toDb(filter);
+                const dbFilter = transformer.toDbFilter(filter);
                 return await collection.countDocuments(dbFilter);
             },
 
@@ -502,7 +698,7 @@ export class MongoDBAdapter implements DatabaseAdapter {
             },
 
             updateOne: async (filter: Filter<User>, update: Omit<Filter<User>, "_id">) => {
-                const dbFilter = transformer.toDb(filter);
+                const dbFilter = transformer.toDbFilter(filter);
                 const updatedData = {
                     ...update,
                     updatedAt: Date.now()
@@ -516,12 +712,12 @@ export class MongoDBAdapter implements DatabaseAdapter {
             },
 
             deleteOne: async (filter: Filter<User>) => {
-                const dbFilter = transformer.toDb(filter);
+                const dbFilter = transformer.toDbFilter(filter);
                 const result = await collection.findOneAndDelete(dbFilter);
                 return result ? transformer.fromDb(result) : null;
             },
             delete: async (filter: Filter<User>): Promise<number> => {
-                const dbFilter = transformer.toDb(filter);
+                const dbFilter = transformer.toDbFilter(filter);
                 const result = await collection.deleteMany(dbFilter);
                 return result.deletedCount || 0;
             },
@@ -716,7 +912,7 @@ export class MongoDBAdapter implements DatabaseAdapter {
                 filter: Filter<Blog>,
                 options?: HydratedBlogQueryOptions
             ): Promise<HydratedBlog[]> => {
-                const dbFilter = this.blogTransformer.toDb(filter);
+                const dbFilter = this.blogTransformer.toDbFilter(filter);
                 let cursor = blogsCol().find(dbFilter);
 
                 // Extract blog-level projections (exclude relationship projections)
@@ -850,19 +1046,19 @@ export class MongoDBAdapter implements DatabaseAdapter {
 
     private getCollectionOperations<T extends U, U>(
         collectionName: string,
-        transformer: DbEntityTransformer<T, U>
+        transformer: BaseMongoTransformer<T, U>
     ): CollectionOperations<T, U> {
         const collection: Collection<any> = this.db.collection(collectionName);
 
         return {
             findOne: async (filter: Filter<T>) => {
-                const dbFilter = transformer.toDb(filter);
+                const dbFilter = transformer.toDbFilter(filter);
                 const result = await collection.findOne(dbFilter);
                 return result ? transformer.fromDb(result) : null;
             },
 
             find: async (filter: Filter<T>, options) => {
-                const dbFilter = transformer.toDb(filter);
+                const dbFilter = transformer.toDbFilter(filter);
                 let query = collection.find(dbFilter);
 
                 if (options?.skip)
@@ -875,7 +1071,7 @@ export class MongoDBAdapter implements DatabaseAdapter {
             },
 
             count: async (filter: Filter<T>) => {
-                const dbFilter = transformer.toDb(filter);
+                const dbFilter = transformer.toDbFilter(filter);
                 return await collection.countDocuments(dbFilter);
             },
 
@@ -900,7 +1096,7 @@ export class MongoDBAdapter implements DatabaseAdapter {
             },
 
             updateOne: async (filter: Filter<T>, update: Omit<Filter<T>, "_id">) => {
-                const dbFilter = transformer.toDb(filter);
+                const dbFilter = transformer.toDbFilter(filter);
                 const updatedData = {
                     ...update,
                     updatedAt: Date.now()
@@ -916,13 +1112,13 @@ export class MongoDBAdapter implements DatabaseAdapter {
             },
 
             deleteOne: async (filter: Filter<T>) => {
-                const dbFilter = transformer.toDb(filter);
+                const dbFilter = transformer.toDbFilter(filter);
                 const result = await collection.findOneAndDelete(dbFilter);
                 return result ? transformer.fromDb(result) : null;
             },
 
             delete: async (filter: Filter<T>): Promise<number> => {
-                const dbFilter = transformer.toDb(filter);
+                const dbFilter = transformer.toDbFilter(filter);
                 const result = await collection.deleteMany(dbFilter);
                 return result.deletedCount || 0;
             },
