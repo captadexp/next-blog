@@ -104,9 +104,15 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                     key={category._id}
                     style={getItemStyles()}
                 >
-                    <a href={`/category/${category.slug}`} style={defaultNameStyles}>
-                        {category.name}
-                    </a>
+                    {category.metadata?.['permalink-manager:permalink']?.permalink ? (
+                        <a href={category.metadata['permalink-manager:permalink'].permalink} style={defaultNameStyles}>
+                            {category.name}
+                        </a>
+                    ) : (
+                        <span style={defaultNameStyles}>
+                            {category.name}
+                        </span>
+                    )}
                     <p style={defaultDescriptionStyles}>
                         {category.description}
                     </p>

@@ -153,12 +153,18 @@ export const AuthorList: React.FC<AuthorListProps> = ({
                     </div>
 
                     <div style={{flex: layout === 'list' ? 1 : 'none'}}>
-                        <a
-                            href={`/author/${author.slug}`}
-                            style={defaultNameStyles}
-                        >
-                            {author.name}
-                        </a>
+                        {author.metadata?.['permalink-manager:permalink']?.permalink ? (
+                            <a
+                                href={author.metadata['permalink-manager:permalink'].permalink}
+                                style={defaultNameStyles}
+                            >
+                                {author.name}
+                            </a>
+                        ) : (
+                            <span style={defaultNameStyles}>
+                                {author.name}
+                            </span>
+                        )}
 
                         {showBio && author.bio && (
                             <p style={defaultBioStyles}>

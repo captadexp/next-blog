@@ -92,13 +92,19 @@ export const BlogMeta: React.FC<BlogMetaProps> = ({
 
     if (showCategory && blog.category) {
         metaItems.push(
-            <a
-                key="category"
-                href={`/category/${blog.category.slug}`}
-                style={{...defaultItemStyles, color: '#2563eb', textDecoration: 'none'}}
-            >
-                {blog.category.name}
-            </a>
+            blog.category.metadata?.['permalink-manager:permalink']?.permalink ? (
+                <a
+                    key="category"
+                    href={blog.category.metadata['permalink-manager:permalink'].permalink}
+                    style={{...defaultItemStyles, color: '#2563eb', textDecoration: 'none'}}
+                >
+                    {blog.category.name}
+                </a>
+            ) : (
+                <span key="category" style={defaultItemStyles}>
+                    {blog.category.name}
+                </span>
+            )
         );
     }
 
@@ -107,12 +113,16 @@ export const BlogMeta: React.FC<BlogMetaProps> = ({
             <div key="tags" style={defaultItemStyles}>
                 {blog.tags.map((tag, index) => (
                     <React.Fragment key={tag._id}>
-                        <a
-                            href={`/tag/${tag.slug}`}
-                            style={{color: '#2563eb', textDecoration: 'none'}}
-                        >
-                            #{tag.name}
-                        </a>
+                        {tag.metadata?.['permalink-manager:permalink']?.permalink ? (
+                            <a
+                                href={tag.metadata['permalink-manager:permalink'].permalink}
+                                style={{color: '#2563eb', textDecoration: 'none'}}
+                            >
+                                #{tag.name}
+                            </a>
+                        ) : (
+                            <span>#{tag.name}</span>
+                        )}
                         {index < blog.tags.length - 1 && ', '}
                     </React.Fragment>
                 ))}

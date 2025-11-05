@@ -119,14 +119,18 @@ export const CategoryArticles: React.FC<CategoryArticlesProps> = ({
             <div>
                 {blogs.map(blog => (
                     <article key={blog._id} style={defaultArticleStyles}>
-                        <a
-                            href={`/${blog.slug}`}
-                            style={defaultTitleStyles}
-
-
-                        >
-                            {blog.title}
-                        </a>
+                        {blog.metadata?.['permalink-manager:permalink']?.permalink ? (
+                            <a
+                                href={blog.metadata['permalink-manager:permalink'].permalink}
+                                style={defaultTitleStyles}
+                            >
+                                {blog.title}
+                            </a>
+                        ) : (
+                            <span style={defaultTitleStyles}>
+                                {blog.title}
+                            </span>
+                        )}
 
                         <p style={defaultExcerptStyles}>
                             {getExcerpt(blog)}
@@ -142,12 +146,16 @@ export const CategoryArticles: React.FC<CategoryArticlesProps> = ({
                                     <span>
                     {blog.tags.map((tag, idx) => (
                         <React.Fragment key={tag._id}>
-                            <a
-                                href={`/tag/${tag.slug}`}
-                                style={{color: '#2563eb', textDecoration: 'none'}}
-                            >
-                                #{tag.name}
-                            </a>
+                            {tag.metadata?.['permalink-manager:permalink']?.permalink ? (
+                                <a
+                                    href={tag.metadata['permalink-manager:permalink'].permalink}
+                                    style={{color: '#2563eb', textDecoration: 'none'}}
+                                >
+                                    #{tag.name}
+                                </a>
+                            ) : (
+                                <span>#{tag.name}</span>
+                            )}
                             {idx < blog.tags.length - 1 && ', '}
                         </React.Fragment>
                     ))}

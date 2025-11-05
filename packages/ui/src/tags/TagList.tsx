@@ -73,9 +73,15 @@ export const TagList: React.FC<TagListProps> = ({
         <div style={getContainerStyles()} className={className} {...rest}>
             {tags.map(tag => (
                 <div key={tag._id} style={defaultItemStyles}>
-                    <a href={`/tag/${tag.slug}`} style={defaultLinkStyles}>
-                        #{tag.name}
-                    </a>
+                    {tag.metadata?.['permalink-manager:permalink']?.permalink ? (
+                        <a href={tag.metadata['permalink-manager:permalink'].permalink} style={defaultLinkStyles}>
+                            #{tag.name}
+                        </a>
+                    ) : (
+                        <span style={defaultLinkStyles}>
+                            #{tag.name}
+                        </span>
+                    )}
                 </div>
             ))}
         </div>
