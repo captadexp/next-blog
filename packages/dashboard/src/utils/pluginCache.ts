@@ -3,6 +3,7 @@ import {IDBPDatabase, openDB} from 'idb';
 const DB_NAME = 'PluginCacheDB';
 const STORE_NAME = 'plugins';
 const DB_VERSION = 1;
+const CACHE_EXPIRY_HOURS = 4; // Cache expires after 4 hours
 
 interface PluginCacheEntry {
     url: string;
@@ -10,7 +11,6 @@ interface PluginCacheEntry {
     timestamp: number;
 }
 
-//todo add expiry in some way to not bloat db with removed plugins
 class PluginCache {
     private readonly dbPromise: Promise<IDBPDatabase<PluginCacheEntry>>;
 
@@ -27,7 +27,20 @@ class PluginCache {
     async get(url: string): Promise<string | undefined> {
         const db = await this.dbPromise;
         const entry = await db.get(STORE_NAME, url);
-        return entry?.code;
+
+        if (!entry) return undefined;
+
+        // Check if entry has expired
+        const now = Date.now();
+        const expiryTime = entry.timestamp + (CACHE_EXPIRY_HOURS * 60 * 60 * 1000);
+
+        if (now > expiryTime) {
+            // Entry has expired, remove it
+            await db.delete(STORE_NAME, url);
+            return undefined;
+        }
+
+        return entry.code;
     }
 
     async set(url: string, code: string): Promise<void> {
@@ -38,6 +51,30 @@ class PluginCache {
     async clear(): Promise<void> {
         const db = await this.dbPromise;
         await db.clear(STORE_NAME);
+    }
+
+    async cleanupExpired(): Promise<number> {
+        const db = await this.dbPromise;
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+
+        const now = Date.now();
+        const expiryThreshold = now - (CACHE_EXPIRY_HOURS * 60 * 60 * 1000);
+
+        let deletedCount = 0;
+        let cursor = await store.openCursor();
+
+        while (cursor) {
+            const entry = cursor.value as PluginCacheEntry;
+            if (entry.timestamp < expiryThreshold) {
+                await cursor.delete();
+                deletedCount++;
+            }
+            cursor = await cursor.continue();
+        }
+
+        await tx.done;
+        return deletedCount;
     }
 }
 

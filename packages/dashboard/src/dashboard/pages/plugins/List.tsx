@@ -154,14 +154,23 @@ const PluginsList = () => {
             <div className="p-4">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold">Plugins</h1>
-                    {hasPermission('plugins:create') && (
-                        <a
-                            href="/api/next-blog/dashboard/plugins/create"
-                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={() => hardReloadPlugins()}
+                            className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
+                            title="Clear cache and reload all plugins"
                         >
-                            Add New Plugin
-                        </a>
-                    )}
+                            Reload Plugins
+                        </button>
+                        {hasPermission('plugins:create') && (
+                            <a
+                                href="/api/next-blog/dashboard/plugins/create"
+                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                            >
+                                Add New Plugin
+                            </a>
+                        )}
+                    </div>
                 </div>
 
                 <ExtensionPoint name="plugins-list-toolbar" context={{plugins, loadedPlugins}}/>

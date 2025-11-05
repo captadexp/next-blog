@@ -180,6 +180,17 @@ export const PluginProvider: FunctionComponent = ({children}) => {
         await reloadPlugins();
     }, [reloadPlugins]);
 
+    const cleanupExpiredCache = useCallback(async (): Promise<number> => {
+        try {
+            const deletedCount = await pluginCache.cleanupExpired();
+            logger.info(`Cleaned up ${deletedCount} expired cache entries`);
+            return deletedCount;
+        } catch (error) {
+            logger.error('Failed to cleanup expired cache:', error);
+            throw error;
+        }
+    }, []);
+
     useEffect(() => {
         if (!user || status !== 'idle') return;
         doLoadAll()
@@ -188,6 +199,17 @@ export const PluginProvider: FunctionComponent = ({children}) => {
                 setStatus('error');
             });
     }, [doLoadAll]);
+
+    // Periodic cache cleanup every 30 minutes
+    useEffect(() => {
+        const interval = setInterval(() => {
+            cleanupExpiredCache().catch(err => {
+                logger.warn('Periodic cache cleanup failed:', err);
+            });
+        }, 30 * 60 * 1000); // 30 minutes
+
+        return () => clearInterval(interval);
+    }, [cleanupExpiredCache]);
 
     const getHookFunctions = useCallback((hookName: string): {
         plugin: Plugin,
