@@ -5,6 +5,10 @@ declare module '@supergrowthai/mq' {
         "test-app-mq": "test-queue-mq";
         "test-app-tq": "test-queue-tq";
     }
+
+    interface MessagePayloadRegistry {
+        "example-task": { message?: string, action?: string };
+    }
 }
 
 export const messageQueue = new InMemoryQueue();
