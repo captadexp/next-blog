@@ -1,5 +1,5 @@
 import type {CacheProvider,} from "memoose-js";
-import {CacheKeyGenerator, RedisCacheProvider} from "memoose-js";
+import {RedisCacheProvider} from "memoose-js";
 import DisabledCache from "./DisabledCache";
 import RedisClusterCacheProvider from "./RedisClusterCacheProvider";
 import type {ClusterOptions, RedisOptions} from "ioredis";
@@ -72,21 +72,5 @@ const getConfig = (): CacheConfig => {
 };
 
 const cacheProvider = CacheFactory.create(getConfig());
-
-class CacheKeyGeneratorProvider extends CacheKeyGenerator {
-    fnName: string
-
-    constructor(function_name: string, should_sort_args: boolean) {
-        super(function_name, should_sort_args);
-        this.fnName = function_name
-    }
-
-    override for(...args: any[]): string {
-        const key = super.for(...args);
-        return `{${this.fnName}}:${key}`
-    }
-}
-
-export const getCacheKeyGenerator = (fn: string, argsOrder: boolean = false) => new CacheKeyGeneratorProvider(fn, argsOrder)
 
 export default cacheProvider

@@ -150,8 +150,7 @@ export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
                 await collection.updateMany(
                     {_id: {$in: messageIds}},
                     {
-                        $set: {status: 'failed', updated_at: new Date()},
-                        $inc: {retries: 1}
+                        $set: {status: 'failed', updated_at: new Date()}
                     }
                 );
                 throw error;

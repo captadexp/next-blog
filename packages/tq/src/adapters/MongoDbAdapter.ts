@@ -67,8 +67,7 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
                 processing_started_at: {$lt: new Date(staleTimestamp)}
             },
             {
-                $set: {status: 'scheduled'},
-                $inc: {retries: 1}
+                $set: {status: 'scheduled'}
             }
         );
 
@@ -142,8 +141,7 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
                 $set: {
                     status: 'failed',
                     updated_at: new Date()
-                },
-                $inc: {retries: 1}
+                }
             }
         );
     }

@@ -28,4 +28,4 @@ export * from "./core/ITaskNotificationProvider.js";
 export * from "./core/task-processor-types.js";
 
 // Utilities
-export {setKeyGenerator} from "./utils/task-id-gen.js";
+export * from "./utils/task-id-gen.js";

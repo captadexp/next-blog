@@ -76,12 +76,17 @@ class TaskStore<ID> {
      * Marks tasks as ignored with proper task context
      */
     async markTasksAsIgnored(tasks: CronTask<ID>[]): Promise<void> {
+        const updatedTasks = tasks.map(task => ({
+            ...task,
+            execution_stats: {
+                ...(task.execution_stats || {}),
+                error: 'No executor found for task type',
+                ignored_reason: 'unknown_executor',
+                ignored_at: new Date()
+            }
+        }));
 
-        //                             error: 'No executor found for task type',
-        //                             ignored_reason: 'unknown_executor',
-        //                             ignored_at: new Date()
-        // todo we cant update execution stats
-        await this.databaseAdapter.markTasksAsIgnored(tasks);
+        await this.databaseAdapter.markTasksAsIgnored(updatedTasks);
     }
 
     /**

@@ -15,9 +15,6 @@ interface RawMessage {
  * Transform raw JSON message to typed BaseMessage
  */
 export function transformTask<ID>(rawMessage: RawMessage): BaseMessage<ID> {
-    if (!rawMessage._id) {
-        throw new Error("Message missing required _id field");
-    }
     if (!rawMessage.created_at) {
         throw new Error("Message missing required created_at field");
     }
@@ -30,7 +27,7 @@ export function transformTask<ID>(rawMessage: RawMessage): BaseMessage<ID> {
 
     return {
         ...rawMessage,
-        _id: rawMessage._id as ID,
+        _id: rawMessage._id as ID | undefined,
         created_at: moment(rawMessage.created_at).toDate(),
         execute_at: moment(rawMessage.execute_at).toDate(),
         updated_at: moment(rawMessage.updated_at).toDate(),
