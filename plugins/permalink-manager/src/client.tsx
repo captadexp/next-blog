@@ -41,6 +41,57 @@ function buildPermalink(pattern: string, tokens: Tokens) {
     );
 }
 
+function computeTokens(type: ContentType, formData: any): Tokens {
+    if (!formData) return {};
+
+    const slug = formData?.data?.slug || '';
+    const username = formData?.data?.username || '';
+    const categoryFromBlog = formData?.getCategory?.()?.slug || '';
+
+    const createdAt = new Date(formData?.data?.createdAt || 0);
+    const standardTokens: Tokens = formData?.data?.createdAt ? {
+        year: String(createdAt.getFullYear()),
+        month: String(createdAt.getMonth() + 1).padStart(2, '0'),
+        day: String(createdAt.getDate()).padStart(2, '0'),
+    } : {};
+
+    switch (type) {
+        case 'posts':
+            return {
+                ...standardTokens,
+                slug,
+                category: categoryFromBlog,
+                post_slug: slug,
+                category_slug: categoryFromBlog,
+            };
+
+        case 'categories':
+            return {
+                ...standardTokens,
+                slug,
+                category: slug,
+                category_slug: slug,
+            };
+
+        case 'tags':
+            return {
+                ...standardTokens,
+                slug,
+                tag_slug: slug,
+            };
+
+        case 'users':
+            return {
+                ...standardTokens,
+                slug: username,
+                user_username: username,
+            };
+
+        default:
+            return standardTokens;
+    }
+}
+
 function FormatSelect(props: {
     value: string;
     formats: string[];
@@ -71,34 +122,8 @@ function PermalinkWidget({sdk, context, type, _id}: {
     const [selectedFormat, setSelectedFormat] = useState('');
 
     const tokens = useMemo(() => {
-        const formData: any = context?.form
-        if (!formData) return {};
-
-        //old stuff
-        const slug = formData?.data?.slug;//incase of blog/category/tag
-        const username = formData?.data?.username;//incase of user
-        const category = formData?.getCategory?.()?.slug;
-
-        const createdAt = new Date(formData?.data?.createdAt || 0);
-        const standardTokens = formData?.data?.createdAt ? {
-            year: String(createdAt.getFullYear()),
-            month: String(createdAt.getMonth() + 1).padStart(2, '0'),
-            day: String(createdAt.getDate()).padStart(2, '0'),
-        } : ({} as {});
-
-        return {
-            ...standardTokens,
-
-            // Legacy simple tokens for backward compatibility
-            slug,
-            category,
-
-            post_slug: slug,
-            category_slug: slug,
-            tag_slug: slug,
-            user_username: username
-        };
-    }, [context?.form?.data, context?.form]);
+        return computeTokens(type, context?.form);
+    }, [type, context?.form]);
 
     useEffect(() => {
         if (!_id) return;
