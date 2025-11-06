@@ -149,6 +149,7 @@ export const createUser = secure(async (session: SessionData, request: MinimumRe
         slug: userData.slug || userData.username.toLowerCase().replace(/\s+/g, '-'),
         bio: userData.bio || '',
         password: hashedPassword,
+        isSystem: false,
         permissions: userData.permissions || [],
         createdAt: Date.now(),
         updatedAt: Date.now()
