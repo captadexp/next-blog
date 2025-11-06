@@ -127,6 +127,9 @@ abstract class BaseMongoTransformer<T extends U, U> implements DbEntityTransform
             return oid(value);
         }
 
+        if (value instanceof ObjectId)
+            return value;
+
         // Handle array of IDs (for fields like tagIds)
         if (Array.isArray(value)) {
             return value.map(v => typeof v === 'string' ? oid(v) : v);
