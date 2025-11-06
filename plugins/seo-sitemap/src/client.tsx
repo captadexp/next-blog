@@ -15,6 +15,7 @@ interface SitemapSettings {
     newsMaxAge: number;
     newsPublications: string[];
     newsTagSlug: string;
+    newsCategorySlug: string;
 }
 
 // Standard Sitemaps Section Component
@@ -123,6 +124,22 @@ function NewsSitemapSection({settings, onChange}: {
 
                     <div className="mb-3">
                         <label className="block text-xs text-gray-600 mb-1">
+                            News Category Slug
+                        </label>
+                        <input
+                            type="text"
+                            className="w-full border border-gray-200 rounded px-2 py-1 text-sm"
+                            value={settings.newsCategorySlug}
+                            onChange={e => onChange({newsCategorySlug: e.target.value})}
+                            placeholder="news"
+                        />
+                        <span className="text-xs text-gray-500">
+                            Only posts with this category will appear in news sitemap
+                        </span>
+                    </div>
+
+                    <div className="mb-3">
+                        <label className="block text-xs text-gray-600 mb-1">
                             Max Age (days)
                         </label>
                         <input
@@ -201,7 +218,8 @@ function SettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
                     enableNews: payload.enableNews ?? false,
                     newsMaxAge: payload.newsMaxAge ?? 2,
                     newsPublications: payload.newsPublications ?? [],
-                    newsTagSlug: payload.newsTagSlug ?? 'news'
+                    newsTagSlug: payload.newsTagSlug ?? 'news',
+                    newsCategorySlug: payload.newsCategorySlug ?? 'news'
                 };
                 setSettings(loadedSettings);
             }

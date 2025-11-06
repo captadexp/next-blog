@@ -1,5 +1,5 @@
-import {Blog, defineServer} from '@supergrowthai/plugin-dev-kit';
-import type {Filter, ServerSDK, SitemapData, SitemapIndexData, SitemapUrl} from '@supergrowthai/plugin-dev-kit/server';
+import {defineServer} from '@supergrowthai/plugin-dev-kit';
+import type {ServerSDK, SitemapData, SitemapIndexData, SitemapUrl} from '@supergrowthai/plugin-dev-kit/server';
 
 const SETTINGS_KEY = 'seo-sitemap:settings';
 
@@ -16,6 +16,7 @@ interface SitemapSettings {
     newsMaxAge: number; // Days to include in news sitemap (max 2 per Google)
     newsPublications: string[]; // Publication names for news sitemap
     newsTagSlug: string; // Tag slug to filter news articles (e.g., 'news')
+    newsCategorySlug: string; // Category slug to filter news articles (e.g., 'news')
 }
 
 const DEFAULT_SETTINGS: SitemapSettings = {
@@ -27,7 +28,8 @@ const DEFAULT_SETTINGS: SitemapSettings = {
     enableNews: false,
     newsMaxAge: 2,
     newsPublications: [],
-    newsTagSlug: 'news'
+    newsTagSlug: 'news',
+    newsCategorySlug: 'news'
 };
 
 /**
@@ -213,26 +215,67 @@ async function generateNewsSitemap(sdk: ServerSDK, siteUrl: string, settings: Si
     // Find the news tag if configured
     let newsTagId = null;
     if (settings.newsTagSlug) {
-        const newsTag = await sdk.db!.tags!.findOne!({slug: settings.newsTagSlug});
+        const newsTag = await sdk.db.tags.findOne({slug: settings.newsTagSlug});
         if (newsTag) {
             newsTagId = newsTag._id;
         }
     }
 
-    const query: Filter<Blog> = {
+    let newsCategoryId = null;
+    if (settings.newsCategorySlug) {
+        const newsCategory = await sdk.db.categories.findOne({slug: settings.newsCategorySlug});
+        if (newsCategory) {
+            newsCategoryId = newsCategory._id;
+        }
+    }
+
+    const baseQuery = {
         status: 'published',
         createdAt: {$gte: cutoffDate}
     };
 
-    // Filter by news tag if found
+    const blogMap = new Map();
+
     if (newsTagId) {
-        query.tagIds = newsTagId;
+        const tagBlogs = await sdk.db.blogs.find({...baseQuery, tagIds: newsTagId}, {
+            projection: {
+                _id: 1,
+                createdAt: 1,
+                title: 1,
+                metadata: 1
+            }, sort: {createdAt: -1},
+            limit: 1000
+        });
+        tagBlogs.forEach(blog => blogMap.set(blog._id.toString(), blog));
     }
 
-    const blogs = await sdk.db!.blogs!.find!(
-        query,
-        {sort: {createdAt: -1}, limit: 1000}
-    );
+    if (newsCategoryId) {
+        const categoryBlogs = await sdk.db.blogs.find({...baseQuery, categoryId: newsCategoryId}, {
+            projection: {
+                _id: 1,
+                createdAt: 1,
+                title: 1,
+                metadata: 1
+            }, sort: {createdAt: -1}, limit: 1000
+        });
+        categoryBlogs.forEach(blog => blogMap.set(blog._id.toString(), blog));
+    }
+
+    if (!newsTagId && !newsCategoryId) {
+        const allBlogs = await sdk.db.blogs.find(baseQuery, {
+            projection: {
+                _id: 1,
+                createdAt: 1,
+                title: 1,
+                metadata: 1
+            },
+            sort: {createdAt: -1},
+            limit: 1000
+        });
+        allBlogs.forEach(blog => blogMap.set(blog._id.toString(), blog));
+    }
+
+    const blogs = Array.from(blogMap.values()).sort((a, b) => b.createdAt - a.createdAt);
 
     // News sitemap has different format
     const urls = blogs
