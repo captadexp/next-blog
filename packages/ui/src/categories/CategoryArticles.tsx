@@ -139,7 +139,16 @@ export const CategoryArticles: React.FC<CategoryArticlesProps> = ({
                         <div style={defaultMetaStyles}>
                             <span>{formatDate(blog.createdAt)}</span>
                             <span>•</span>
-                            <span>By {blog.user.name}</span>
+                            {blog.user.metadata?.['permalink-manager:permalink']?.permalink ? (
+                                <a
+                                    href={blog.user.metadata['permalink-manager:permalink'].permalink}
+                                    style={{color: '#2563eb', textDecoration: 'none'}}
+                                >
+                                    By {blog.user.name}
+                                </a>
+                            ) : (
+                                <span>By {blog.user.name}</span>
+                            )}
                             {blog.tags && blog.tags.length > 0 && (
                                 <>
                                     <span>•</span>

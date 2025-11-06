@@ -181,7 +181,18 @@ export const BlogCard: React.FC<BlogCardProps> = ({
                 <div style={defaultMetaStyles}>
                     {showDate && <span>{formatDate(blog.createdAt)}</span>}
                     {showDate && showAuthor && <span>•</span>}
-                    {showAuthor && <span>By {blog.user.name}</span>}
+                    {showAuthor && (
+                        blog.user.metadata?.['permalink-manager:permalink']?.permalink ? (
+                            <a
+                                href={blog.user.metadata['permalink-manager:permalink'].permalink}
+                                style={{color: '#2563eb', textDecoration: 'none'}}
+                            >
+                                By {blog.user.name}
+                            </a>
+                        ) : (
+                            <span>By {blog.user.name}</span>
+                        )
+                    )}
                     {(showDate || showAuthor) && showCategory && <span>•</span>}
                     {showCategory && blog.category && <span>{blog.category.name}</span>}
                     {showTags && blog.tags && blog.tags.length > 0 && (

@@ -129,7 +129,18 @@ export const RecentBlogs: React.FC<RecentBlogsProps> = ({
                     })}
                   </span>
                                 )}
-                                {showAuthor && <span>By {blog.user.name}</span>}
+                                {showAuthor && (
+                                    blog.user.metadata?.['permalink-manager:permalink']?.permalink ? (
+                                        <a
+                                            href={blog.user.metadata['permalink-manager:permalink'].permalink}
+                                            style={{color: '#2563eb', textDecoration: 'none'}}
+                                        >
+                                            By {blog.user.name}
+                                        </a>
+                                    ) : (
+                                        <span>By {blog.user.name}</span>
+                                    )
+                                )}
                                 {showCategory && blog.category && <span>{blog.category.name}</span>}
                             </div>
                         </article>

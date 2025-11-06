@@ -117,7 +117,16 @@ export const TagArticles: React.FC<TagArticlesProps> = ({
                                 day: 'numeric'
                             })}
                             {' • '}
-                            {blog.user.name}
+                            {blog.user.metadata?.['permalink-manager:permalink']?.permalink ? (
+                                <a
+                                    href={blog.user.metadata['permalink-manager:permalink'].permalink}
+                                    style={{color: '#2563eb', textDecoration: 'none'}}
+                                >
+                                    {blog.user.name}
+                                </a>
+                            ) : (
+                                blog.user.name
+                            )}
                         </div>
                     </article>
                 ))}
