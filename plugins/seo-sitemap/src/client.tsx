@@ -118,7 +118,7 @@ function NewsSitemapSection({settings, onChange}: {
                             placeholder="news"
                         />
                         <span className="text-xs text-gray-500">
-                            Only posts with this tag will appear in news sitemap
+                            Tag slug(s) for news filtering. Use "*" for any tag, or comma-separated for multiple.
                         </span>
                     </div>
 
@@ -134,7 +134,7 @@ function NewsSitemapSection({settings, onChange}: {
                             placeholder="news"
                         />
                         <span className="text-xs text-gray-500">
-                            Only posts with this category will appear in news sitemap
+                            Category slug(s) for news filtering. Use "*" for any category, or comma-separated for multiple.
                         </span>
                     </div>
 

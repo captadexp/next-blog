@@ -211,64 +211,73 @@ async function generateSitemapIndex(sdk: ServerSDK, siteUrl: string, settings: S
 
 async function generateNewsSitemap(sdk: ServerSDK, siteUrl: string, settings: SitemapSettings) {
     const cutoffDate = Date.now() - (settings.newsMaxAge * 24 * 60 * 60 * 1000);
-
-    // Find the news tag if configured
-    let newsTagId = null;
-    if (settings.newsTagSlug) {
-        const newsTag = await sdk.db.tags.findOne({slug: settings.newsTagSlug});
-        if (newsTag) {
-            newsTagId = newsTag._id;
-        }
-    }
-
-    let newsCategoryId = null;
-    if (settings.newsCategorySlug) {
-        const newsCategory = await sdk.db.categories.findOne({slug: settings.newsCategorySlug});
-        if (newsCategory) {
-            newsCategoryId = newsCategory._id;
-        }
-    }
-
     const baseQuery = {
         status: 'published',
         createdAt: {$gte: cutoffDate}
     };
+    const projection = {
+        _id: 1 as const,
+        createdAt: 1 as const,
+        title: 1 as const,
+        metadata: 1 as const
+    };
 
     const blogMap = new Map();
 
-    if (newsTagId) {
-        const tagBlogs = await sdk.db.blogs.find({...baseQuery, tagIds: newsTagId}, {
-            projection: {
-                _id: 1,
-                createdAt: 1,
-                title: 1,
-                metadata: 1
-            }, sort: {createdAt: -1},
-            limit: 1000
-        });
-        tagBlogs.forEach(blog => blogMap.set(blog._id.toString(), blog));
+    // Handle tags
+    if (settings.newsTagSlug) {
+        if (settings.newsTagSlug === '*') {
+            const taggedBlogs = await sdk.db.blogs.find({...baseQuery, tagIds: {$exists: true, $ne: []}}, {
+                projection,
+                sort: {createdAt: -1},
+                limit: 1000
+            });
+            taggedBlogs.forEach(blog => blogMap.set(blog._id.toString(), blog));
+        } else {
+            const tagSlugs = settings.newsTagSlug.split(',').map(s => s.trim()).filter(Boolean);
+            for (const slug of tagSlugs) {
+                const tag = await sdk.db.tags.findOne({slug});
+                if (tag) {
+                    const tagBlogs = await sdk.db.blogs.find({...baseQuery, tagIds: tag._id}, {
+                        projection,
+                        sort: {createdAt: -1},
+                        limit: 1000
+                    });
+                    tagBlogs.forEach(blog => blogMap.set(blog._id.toString(), blog));
+                }
+            }
+        }
     }
 
-    if (newsCategoryId) {
-        const categoryBlogs = await sdk.db.blogs.find({...baseQuery, categoryId: newsCategoryId}, {
-            projection: {
-                _id: 1,
-                createdAt: 1,
-                title: 1,
-                metadata: 1
-            }, sort: {createdAt: -1}, limit: 1000
-        });
-        categoryBlogs.forEach(blog => blogMap.set(blog._id.toString(), blog));
+    // Handle categories
+    if (settings.newsCategorySlug) {
+        if (settings.newsCategorySlug === '*') {
+            const categorizedBlogs = await sdk.db.blogs.find({...baseQuery, categoryId: {$exists: true, $ne: null}}, {
+                projection,
+                sort: {createdAt: -1},
+                limit: 1000
+            });
+            categorizedBlogs.forEach(blog => blogMap.set(blog._id.toString(), blog));
+        } else {
+            const categorySlugs = settings.newsCategorySlug.split(',').map(s => s.trim()).filter(Boolean);
+            for (const slug of categorySlugs) {
+                const category = await sdk.db.categories.findOne({slug});
+                if (category) {
+                    const categoryBlogs = await sdk.db.blogs.find({...baseQuery, categoryId: category._id}, {
+                        projection,
+                        sort: {createdAt: -1},
+                        limit: 1000
+                    });
+                    categoryBlogs.forEach(blog => blogMap.set(blog._id.toString(), blog));
+                }
+            }
+        }
     }
 
-    if (!newsTagId && !newsCategoryId) {
+    // If no filters, get all blogs
+    if (!settings.newsTagSlug && !settings.newsCategorySlug) {
         const allBlogs = await sdk.db.blogs.find(baseQuery, {
-            projection: {
-                _id: 1,
-                createdAt: 1,
-                title: 1,
-                metadata: 1
-            },
+            projection,
             sort: {createdAt: -1},
             limit: 1000
         });
