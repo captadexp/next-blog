@@ -342,16 +342,17 @@ async function generateCategoriesSitemap(sdk: ServerSDK, siteUrl: string, page: 
 
     const categories = await sdk.db!.categories!.find!(
         {},
-        {skip, limit: perPage}
+        {skip, limit: perPage, projection: {_id: 1, updatedAt: 1, metadata: 1}}
     );
 
-    const urls: SitemapUrl[] = categories.map(category => ({
-        //todo should be using permalink here too
-        loc: `${siteUrl}/category/${category.slug}`,
-        lastmod: new Date(category.updatedAt || Date.now()).toISOString(),
-        changefreq: 'weekly' as const,
-        priority: 0.6
-    }));
+    const urls: SitemapUrl[] = categories
+        .filter(category => category.metadata?.['permalink-manager:permalink']?.permalink)
+        .map(category => ({
+            loc: `${siteUrl}${category.metadata!['permalink-manager:permalink'].permalink}`,
+            lastmod: new Date(category.updatedAt || Date.now()).toISOString(),
+            changefreq: 'weekly' as const,
+            priority: 0.6
+        }));
 
     return {
         data: {
@@ -369,16 +370,17 @@ async function generateTagsSitemap(sdk: ServerSDK, siteUrl: string, page: number
 
     const tags = await sdk.db!.tags!.find!(
         {},
-        {skip, limit: perPage}
+        {skip, limit: perPage, projection: {_id: 1, metadata: 1}}
     );
 
-    const urls: SitemapUrl[] = tags.map(tag => ({
-        //todo should be using permalink here too
-        loc: `${siteUrl}/tag/${tag.slug}`,
-        lastmod: new Date().toISOString(),
-        changefreq: 'monthly' as const,
-        priority: 0.5
-    }));
+    const urls: SitemapUrl[] = tags
+        .filter(tag => tag.metadata?.['permalink-manager:permalink']?.permalink)
+        .map(tag => ({
+            loc: `${siteUrl}${tag.metadata!['permalink-manager:permalink'].permalink}`,
+            lastmod: new Date().toISOString(),
+            changefreq: 'monthly' as const,
+            priority: 0.5
+        }));
 
     return {
         data: {
@@ -396,16 +398,17 @@ async function generateAuthorsSitemap(sdk: ServerSDK, siteUrl: string, page: num
 
     const authors = await sdk.db!.users!.find!(
         {isSystem: false},
-        {skip, limit: perPage}
+        {skip, limit: perPage, projection: {_id: 1, metadata: 1}}
     );
 
-    const urls: SitemapUrl[] = authors.map(author => ({
-        //todo should be using permalink here too
-        loc: `${siteUrl}/author/${author.username}`,
-        lastmod: new Date().toISOString(),
-        changefreq: 'monthly' as const,
-        priority: 0.5
-    }));
+    const urls: SitemapUrl[] = authors
+        .filter(author => author.metadata?.['permalink-manager:permalink']?.permalink)
+        .map(author => ({
+            loc: `${siteUrl}${author.metadata!['permalink-manager:permalink'].permalink}`,
+            lastmod: new Date().toISOString(),
+            changefreq: 'monthly' as const,
+            priority: 0.5
+        }));
 
     return {
         data: {
