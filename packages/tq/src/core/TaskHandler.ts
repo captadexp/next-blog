@@ -82,7 +82,7 @@ export class TaskHandler<ID> {
                 .map((task) => {
                     const executor = this.taskQueuesManager.getExecutor(task.queue_id, task.type);
                     const shouldStoreOnFailure = executor?.store_on_failure ?? false;
-                    const id = shouldStoreOnFailure ? {_id: this.databaseAdapter.generateId(),} : {}
+                    const id = shouldStoreOnFailure ? {id: this.databaseAdapter.generateId(),} : {}
                     return ({...id, ...task});
                 });
 
@@ -96,7 +96,7 @@ export class TaskHandler<ID> {
                 .map((task) => {
                     const executor = this.taskQueuesManager.getExecutor(task.queue_id, task.type);
                     const shouldStoreOnFailure = executor?.store_on_failure ?? false;
-                    const id = shouldStoreOnFailure ? {_id: this.databaseAdapter.generateId(),} : {}
+                    const id = shouldStoreOnFailure ? {id: this.databaseAdapter.generateId(),} : {}
                     return ({...id, ...task});
                 });
             await this.taskStore.addTasksToScheduled(tasks);
@@ -119,7 +119,7 @@ export class TaskHandler<ID> {
             const executeAt = Date.now() + retryAfter;
             const maxRetries = this.getRetryCount(task);
 
-            if (task._id && taskRetryCount < maxRetries) {
+            if (task.id && taskRetryCount < maxRetries) {
                 tasksToRetry.push({
                     ...task,
                     status: 'scheduled',
@@ -129,14 +129,14 @@ export class TaskHandler<ID> {
                         retry_count: taskRetryCount + 1
                     }
                 });
-            } else if (task._id) {
+            } else if (task.id) {
                 finalFailedTasks.push(task);
             } else if (taskRetryCount < maxRetries) {
                 const shouldStoreOnFailure = this.taskQueuesManager.getExecutor(task.queue_id, task.type)?.store_on_failure;
                 if (shouldStoreOnFailure) {
                     tasksToRetry.push({
                         ...task,
-                        _id: this.databaseAdapter.generateId(),
+                        id: this.databaseAdapter.generateId(),
                         status: 'scheduled',
                         execute_at: new Date(executeAt),
                         execution_stats: {
@@ -210,7 +210,7 @@ export class TaskHandler<ID> {
                 for (const asyncTask of asyncTasks) {
                     const accepted = this.asyncTaskManager!.handoffTask(asyncTask.task, asyncTask.promise);
                     if (!accepted) {
-                        this.logger.warn(`Async queue full, requeueing task ${asyncTask.task._id} with 30s delay`);
+                        this.logger.warn(`Async queue full, requeueing task ${asyncTask.task.id} with 30s delay`);
                         await this.addTasks([{
                             ...asyncTask.task,
                             execute_at: new Date(Date.now() + 30000)

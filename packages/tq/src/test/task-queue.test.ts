@@ -64,7 +64,7 @@ describe("simple tq test", () => {
         const task2Id = generateId();
         const testTasks: CronTask<string>[] = [
             {
-                _id: task1Id,
+                id: task1Id,
                 type: "test-task",
                 queue_id: queueName,
                 payload: {message: "Hello from Task 1"},
@@ -76,7 +76,7 @@ describe("simple tq test", () => {
                 processing_started_at: new Date()
             },
             {
-                _id: task2Id,
+                id: task2Id,
                 type: "test-task",
                 queue_id: queueName,
                 payload: {message: "Hello from Task 2"},

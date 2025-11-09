@@ -23,7 +23,7 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
         const collection = await this.collection;
 
         const transformedTasks = tasks.map((task) => ({
-            _id: task._id,
+            id: task.id,
             type: task.type,
             payload: task.payload,
             execute_at: task.execute_at,
@@ -83,9 +83,9 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
             .toArray();
 
         if (tasks.length > 0) {
-            const taskIds = tasks.map(t => t._id);
+            const taskIds = tasks.map(t => t.id);
             await collection.updateMany(
-                {_id: {$in: taskIds}},
+                {id: {$in: taskIds}},
                 {
                     $set: {
                         status: 'processing',
@@ -100,10 +100,10 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
 
     async markTasksAsProcessing(tasks: CronTask<ObjectId>[], processingStartedAt: Date): Promise<void> {
         const collection = await this.collection;
-        const taskIds = tasks.map(t => t._id).filter(Boolean) as ObjectId[];
+        const taskIds = tasks.map(t => t.id).filter(Boolean) as ObjectId[];
 
         await collection.updateMany(
-            {_id: {$in: taskIds}},
+            {id: {$in: taskIds}},
             {
                 $set: {
                     status: 'processing',
@@ -116,11 +116,11 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
 
     async markTasksAsExecuted(tasks: CronTask<ObjectId>[]): Promise<void> {
         const collection = await this.collection;
-        const taskIds = tasks.map(t => t._id).filter(Boolean) as ObjectId[];
+        const taskIds = tasks.map(t => t.id).filter(Boolean) as ObjectId[];
 
 
         await collection.updateMany(
-            {_id: {$in: taskIds}},
+            {id: {$in: taskIds}},
             {
                 $set: {
                     status: 'executed',
@@ -132,11 +132,11 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
 
     async markTasksAsFailed(tasks: CronTask<ObjectId>[]): Promise<void> {
         const collection = await this.collection;
-        const taskIds = tasks.map(t => t._id).filter(Boolean) as ObjectId[];
+        const taskIds = tasks.map(t => t.id).filter(Boolean) as ObjectId[];
 
 
         await collection.updateMany(
-            {_id: {$in: taskIds}},
+            {id: {$in: taskIds}},
             {
                 $set: {
                     status: 'failed',
@@ -150,7 +150,7 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
         const collection = await this.collection;
 
         return collection
-            .find({_id: {$in: taskIds}})
+            .find({id: {$in: taskIds}})
             .toArray();
     }
 
@@ -190,7 +190,7 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
 
         const bulkOps = updates.map(({id, updates}) => ({
             updateOne: {
-                filter: {_id: id},
+                filter: {id: id},
                 update: {
                     $set: {
                         ...updates,
@@ -217,11 +217,11 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
 
     async markTasksAsIgnored(tasks: CronTask<ObjectId>[]): Promise<void> {
         const collection = await this.collection;
-        const taskIds = tasks.map(t => t._id).filter(Boolean) as ObjectId[];
+        const taskIds = tasks.map(t => t.id).filter(Boolean) as ObjectId[];
 
 
         await collection.updateMany(
-            {_id: {$in: taskIds}},
+            {id: {$in: taskIds}},
             {
                 $set: {
                     status: 'ignored',

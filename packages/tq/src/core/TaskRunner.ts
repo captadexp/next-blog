@@ -93,9 +93,9 @@ export class TaskRunner<ID> {
             if (!executor) {
                 this.logger.warn(`[${taskRunnerId}] No executor found for type: ${taskGroup.type} in queue ${firstTask.queue_id}`);
                 for (const task of taskGroup.tasks) {
-                    const taskWithId: CronTask<ID> = task._id
+                    const taskWithId: CronTask<ID> = task.id
                         ? task
-                        : {...task, _id: this.generateId()};
+                        : {...task, id: this.generateId()};
                     actions.addIgnoredTask(taskWithId);
                 }
                 continue;
@@ -178,8 +178,8 @@ export class TaskRunner<ID> {
                                     throw new Error(`Task ${task.type} exceeded timeout but AsyncTaskManager not initialized!`);
                                 }
 
-                                if (!task._id) {
-                                    this.logger.error(`[${taskRunnerId}] Cannot hand off task without _id (type: ${task.type}). Task will continue but won't be tracked.`);
+                                if (!task.id) {
+                                    this.logger.error(`[${taskRunnerId}] Cannot hand off task without id (type: ${task.type}). Task will continue but won't be tracked.`);
                                 } else {
                                     const asyncActions = new AsyncActions<ID>(this.messageQueue, this.taskStore, this.taskQueue, actions, task, this.generateId);
 

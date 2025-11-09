@@ -99,7 +99,7 @@ export class AsyncActions<ID = any> {
             const queueTasks = immediate[queue]!.map((task) => {
                 const executor = this.taskQueue.getExecutor(task.queue_id, task.type);
                 const shouldStoreOnFailure = executor?.store_on_failure ?? false;
-                const id = shouldStoreOnFailure ? {_id: this.generateId()} : {};
+                const id = shouldStoreOnFailure ? {id: this.generateId()} : {};
                 return {...id, ...task};
             });
 
@@ -117,7 +117,7 @@ export class AsyncActions<ID = any> {
             const futureTasks = future.map((task) => {
                 const executor = this.taskQueue.getExecutor(task.queue_id, task.type);
                 const shouldStoreOnFailure = executor?.store_on_failure ?? false;
-                const id = shouldStoreOnFailure ? {_id: this.generateId()} : {};
+                const id = shouldStoreOnFailure ? {id: this.generateId()} : {};
                 return {...id, ...task};
             });
 

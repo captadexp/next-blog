@@ -23,7 +23,7 @@ export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
         });
     }
 
-    abstract get collection(): Promise<Collection<BaseMessage<ObjectId>>>;
+    abstract get collection(): Promise<Collection<Omit<BaseMessage<ObjectId>, 'id'> & { _id: ObjectId }>>;
 
     register(queueId: QueueName): void {
         const normalizedQueueId = getEnvironmentQueueName(queueId);
@@ -47,12 +47,16 @@ export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
         const collection = await this.collection;
 
         try {
-            const messagesToInsert = messages.map(message => ({
-                ...message,
-                queue_id: queueId,
-                _id: message._id || new ObjectId(),
-                created_at: message.created_at || new Date()
-            }));
+            const messagesToInsert = messages
+                .map(message => {
+                    const {id, ...messageData} = message;
+                    return {
+                        ...messageData,
+                        queue_id: queueId,
+                        _id: id || new ObjectId(),
+                        created_at: message.created_at || new Date()
+                    };
+                });
 
             await collection.insertMany(messagesToInsert);
             logger.info(`Added ${messages.length} messages to MongoDB queue ${queueId}`);
@@ -114,6 +118,7 @@ export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
 
         const collection = await this.collection;
 
+        //fixme if we have 2 runners and instance id is same, they might query exactly at the same time, causing double processing
         const lockKey = `queue:${queueId}:${process.env.INSTANCE_ID || 'default'}`;
         const lockAcquired = await this.lockManager.acquire(lockKey, 60);
         if (!lockAcquired) return undefined as T;
@@ -135,7 +140,16 @@ export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
             );
 
             try {
-                const result = await processor(`mongodb:${queueId}`, messages);
+                const messagesForProcessor = messages
+                    .map(message => {
+                        const {_id, ...messageData} = message;
+                        return {
+                            ...messageData,
+                            id: _id
+                        };
+                    });
+
+                const result = await processor(`mongodb:${queueId}`, messagesForProcessor);
 
                 await collection.updateMany(
                     {_id: {$in: messageIds}},
