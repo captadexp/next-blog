@@ -29,11 +29,6 @@
       "import": "./dist/core/utils.mjs",
       "require": "./dist/core/utils.js"
     },
-    "./adapters": {
-      "types": "./dist/adapters/index.d.ts",
-      "import": "./dist/adapters/index.mjs",
-      "require": "./dist/adapters/index.js"
-    },
     "./queues": {
       "types": "./dist/queues/index.d.ts",
       "import": "./dist/queues/index.mjs",
