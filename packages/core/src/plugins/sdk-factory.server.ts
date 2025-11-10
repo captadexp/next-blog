@@ -1,4 +1,4 @@
-import type {DatabaseAdapter, Logger, Plugin, ServerConfig, ServerSDK} from '@supergrowthai/next-blog-types/server';
+import type {DatabaseAdapter, Logger, Plugin, ServerSDK} from '@supergrowthai/next-blog-types/server';
 import {ServerCacheHelper} from './cache-helper.server.js';
 import {ServerEventsHelper} from './events-helper.server.js';
 import {StorageFactory} from '../storage/storage-factory.js';
@@ -23,7 +23,6 @@ import {ServerSettingsHelper} from "./settings-helper.server.js";
 export interface ServerSDKDependencies {
     db: DatabaseAdapter;
     log: Logger;
-    config: ServerConfig;
     pluginExecutor: PluginExecutor
 }
 
@@ -71,9 +70,6 @@ export class ServerSDKFactory {
 
             // Logging with automatic plugin context
             log: this.createScopedLogger(plugin.id),
-
-            // Configuration
-            config: this.deps.config,
 
             // System information available at runtime
             system: {

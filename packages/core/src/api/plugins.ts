@@ -83,7 +83,7 @@ export const createPlugin = secure(async (session: SessionData, request: Minimum
             extra.callbacks.on("createPlugin", creation);
         }
 
-        pluginExecutor.initalized = false;
+        pluginExecutor.initialized = false;
 
         return {
             code: 0,
@@ -176,7 +176,7 @@ export const reinstallPlugin = secure(async (session: SessionData, request: Mini
             extra.callbacks.on("createPlugin", creation);
         }
 
-        pluginExecutor.initalized = false;
+        pluginExecutor.initialized = false;
 
         return {
             code: 0,

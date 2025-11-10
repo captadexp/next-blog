@@ -37,7 +37,7 @@ function matchesHookPattern(hookName: string, pattern: string): boolean {
  * Handles loading and executing server-side plugins.
  */
 export class PluginExecutor {
-    public initalized = false;
+    public initialized = false;
     private plugins: Map<string, ServerPluginModule> = new Map();
     private hookMappings: Map<string, PluginHookMapping[]> = new Map();
     private rpcMappings: Map<string, PluginHookMapping[]> = new Map();
@@ -54,16 +54,15 @@ export class PluginExecutor {
         patterns: Map<string, PluginHookMapping[]>;
     } = {exact: new Map(), patterns: new Map()};
 
-    async initialize(db: DatabaseAdapter, config: any = {}) {
-        if (process.env.NODE_ENV === "production" && this.initalized) return;
-        this.initalized = true;
+    async initialize(db: DatabaseAdapter) {
+        if (process.env.NODE_ENV === "production" && this.initialized) return;
+        this.initialized = true;
         this.db = db;
 
         // Initialize SDK factory with dependencies
         this.sdkFactory = new ServerSDKFactory({
             db,
             log: this.logger,
-            config: config,
             pluginExecutor: this
         });
 
@@ -200,9 +199,7 @@ export class PluginExecutor {
         }
 
         let currentContext = context;
-        const mappings = matchingMappings;
-
-        for (const mapping of mappings) {
+        for (const mapping of matchingMappings) {
             await this.runMapping(mapping, rpcName, sdk, currentContext, 'rpcs', (newContext) => {
                 currentContext = newContext;
             });

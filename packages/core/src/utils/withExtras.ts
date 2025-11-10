@@ -26,7 +26,6 @@ export const createWithExtras = (configuration: Configuration) => {
             const sdk: ServerSDK = {
                 log: console,
                 db,
-                config: {},
                 system: {
                     version: VERSION_INFO.version,
                     buildTime: VERSION_INFO.buildTime,

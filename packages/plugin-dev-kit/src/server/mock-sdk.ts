@@ -193,24 +193,13 @@ class MockLogger implements Logger {
     }
 }
 
-export function createMockServerSDK(options: {
+export function createMockServerSDK(_options: {
     user?: User | null;
-    config?: Record<string, any>;
 } = {}): ServerSDK {
-
-    const mockConfig = options.config || {
-        environment: 'development',
-        debug: true,
-        features: {
-            caching: false,
-            logging: true
-        }
-    };
 
     return {
         log: new MockLogger(),
         db: new MockDatabase(),
-        config: mockConfig,
         system: {
             version: '2.0.0-mock',
             buildTime: new Date().toISOString(),
