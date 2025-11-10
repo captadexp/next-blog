@@ -5,6 +5,7 @@ import {
     BlogMeta,
     BlogTitle,
     Canonical,
+    FeaturedMedia,
     JsonLd,
     MetaTags,
     RelatedBlogs
@@ -67,17 +68,16 @@ export default async function BlogPageTestPage() {
                 </header>
 
                 {/* Featured Image */}
+
                 {blog.featuredMedia?.url && (
-                    <img
-                        src={blog.featuredMedia.url}
-                        alt={blog.title}
+                    <FeaturedMedia
+                        blog={blog}
                         style={{
                             width: '100%',
                             height: 'auto',
                             borderRadius: '8px',
                             marginBottom: '32px'
-                        }}
-                    />
+                        }}/>
                 )}
 
                 {/* Blog Content */}

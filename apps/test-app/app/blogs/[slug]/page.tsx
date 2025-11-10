@@ -6,6 +6,7 @@ import {
     BlogMeta,
     BlogTitle,
     Canonical,
+    FeaturedMedia,
     JsonLd,
     MetaTags,
     RelatedBlogs
@@ -72,9 +73,8 @@ export default async function (props: { params: Promise<{ slug: string }> }) {
 
                 {/* Featured Image */}
                 {blog.featuredMedia?.url && (
-                    <img
-                        src={blog.featuredMedia.url}
-                        alt={blog.title}
+                    <FeaturedMedia
+                        blog={blog}
                         style={{
                             width: '100%',
                             height: 'auto',
