@@ -13,7 +13,7 @@ class TaskStore<ID> {
         if (!tasks.length) return [];
 
         const transformedTasks = tasks.map((task) => ({
-            _id: task._id,
+            id: task.id,
             type: task.type,
             queue_id: getEnvironmentQueueName(task.queue_id),
             payload: task.payload,
@@ -125,7 +125,7 @@ class TaskStore<ID> {
      */
     async updateTasksForRetry(tasks: CronTask<ID>[]): Promise<void> {
         const updates = tasks.map(task => ({
-            id: task._id as ID,
+            id: task.id as ID,
             updates: {
                 execute_at: task.execute_at,
                 status: task.status,

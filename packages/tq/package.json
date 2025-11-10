@@ -72,6 +72,7 @@
     "mongodb": "^6.16.0"
   },
   "devDependencies": {
+    "@prisma/client": "^6.19.0",
     "@supergrowthai/utils": "workspace:*",
     "@types/bun": "^1.3.1",
     "@types/node": "^24.5.2",

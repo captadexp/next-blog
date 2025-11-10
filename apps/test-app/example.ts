@@ -7,7 +7,7 @@ async function runExample() {
     // Add a simple message to the queue
     await messageQueue.addMessages("test-queue-mq", [
         {
-            _id: "msg-1",
+            id: "msg-1",
             type: "example-task",
             payload: {message: "Hello from memory queue!"},
             execute_at: new Date(),
@@ -23,13 +23,13 @@ async function runExample() {
     await messageQueue.consumeMessagesBatch("test-queue-mq", async (queueName, messages) => {
         console.log(`📨 Processing ${messages.length} messages from ${queueName}:`);
         for (const msg of messages) {
-            console.log(`  - Message ID: ${msg._id}, Payload:`, msg.payload);
+            console.log(`  - Message ID: ${msg.id}, Payload:`, msg.payload);
         }
     });
 
     // Add a cron task using the cron adapter
     await taskHandler.addTasks([{
-        _id: "cron-1",
+        id: "cron-1",
         type: "example-task",
         payload: {action: "cleanup"},
         execute_at: new Date(Date.now() + 5_000),

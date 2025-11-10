@@ -2,7 +2,7 @@ import moment from "moment";
 import {BaseMessage} from "../../../core";
 
 interface RawMessage {
-    _id: string;
+    id: string;
     created_at: string | Date;
     execute_at: string | Date;
     updated_at: string | Date;
@@ -27,7 +27,7 @@ export function transformTask<ID>(rawMessage: RawMessage): BaseMessage<ID> {
 
     return {
         ...rawMessage,
-        _id: rawMessage._id as ID | undefined,
+        id: rawMessage.id,
         created_at: moment(rawMessage.created_at).toDate(),
         execute_at: moment(rawMessage.execute_at).toDate(),
         updated_at: moment(rawMessage.updated_at).toDate(),

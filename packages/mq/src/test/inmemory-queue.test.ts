@@ -31,7 +31,7 @@ describe("simple mq test", () => {
         // Create test messages
         const testMessages: BaseMessage<string>[] = [
             {
-                _id: "message1",
+                id: "message1",
                 type: "test-message",
                 payload: {message: "Hello World 1"},
                 execute_at: new Date(),
@@ -42,7 +42,7 @@ describe("simple mq test", () => {
                 queue_id: queueName
             },
             {
-                _id: "message2",
+                id: "message2",
                 type: "test-message",
                 payload: {message: "Hello World 2"},
                 execute_at: new Date(),

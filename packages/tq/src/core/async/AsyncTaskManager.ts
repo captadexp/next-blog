@@ -22,13 +22,13 @@ export class AsyncTaskManager<ID = any> implements IAsyncTaskManager<ID> {
     }
 
     handoffTask(task: CronTask<ID>, runningPromise: Promise<void>): boolean {
-        // Require _id for async tasks - we need to track completion in DB
-        if (!task._id) {
-            logger.error(`Cannot hand off task without _id (type: ${task.type})`);
+        // Require id for async tasks - we need to track completion in DB
+        if (!task.id) {
+            logger.error(`Cannot hand off task without id (type: ${task.type})`);
             return false;
         }
 
-        const taskId = task._id.toString();
+        const taskId = task.id.toString();
 
         // Check if queue is full
         if (this.asyncTasks.size >= this.maxTasks) {

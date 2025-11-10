@@ -4,7 +4,7 @@ import {QueueName, TypedMessage} from "../types.js";
  * Base message structure required by the message queue system
  */
 export type BaseMessage<ID = any> = TypedMessage & {
-    _id?: ID;
+    id?: ID;
     execute_at: Date;
     status: 'scheduled' | 'processing' | 'executed' | 'failed' | 'expired' | 'ignored';
     created_at: Date;
