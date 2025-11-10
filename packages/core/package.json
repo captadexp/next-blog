@@ -52,7 +52,9 @@
   "module": "./dist/index.js",
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "memoose-js": "2.0.0-canary.7fa17b2"
+  },
   "optionalDependencies": {
     "fast-xml-parser": "^5.3.0",
     "mongodb": "^6.17.0",

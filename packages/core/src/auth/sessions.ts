@@ -1,6 +1,5 @@
-import type {User} from "@supergrowthai/next-blog-types/server";
+import type {SimpleKVStore, User} from "@supergrowthai/next-blog-types/server";
 import {randomBytes, timingSafeEqual} from "crypto";
-import {InMemoryKV} from "./InMemoryKV.ts";
 
 export interface Session {
     id: string;
@@ -16,11 +15,8 @@ export interface Session {
 const TTL_MS = 1000 * 60 * 60 * 12; // 12h absolute
 const ID_LEN = 32;
 
-//this needs to be fixed its very temp right now
-const kv = new InMemoryKV()
-
-export class SessionStore {
-    constructor() {
+export class SessionManager {
+    constructor(private kvProvider: () => Promise<SimpleKVStore>) {
     }
 
     newId() {
@@ -44,12 +40,14 @@ export class SessionStore {
             uaHash: ua ? this.hashUA(ua) : undefined,
             expiresAt: now + TTL_MS
         };
-        await kv.set(this.sidKey(id), sess, {ttlMs: TTL_MS});
+        const kv = await this.kvProvider();
+        await kv.set(this.sidKey(id), sess, TTL_MS);
         return sess;
     }
 
     async get(id: string): Promise<Session | null> {
-        const s = await kv.get(this.sidKey(id));
+        const kv = await this.kvProvider();
+        const s: Session | null = await kv.get(this.sidKey(id));
         if (!s) return null;
         if (Date.now() > s.expiresAt) {
             await this.destroy(id);
@@ -59,13 +57,15 @@ export class SessionStore {
     }
 
     async touch(id: string): Promise<void> {
+        const kv = await this.kvProvider();
         const s = await this.get(id);
         if (!s) return;
         s.lastSeenAt = Date.now();
-        await kv.set(this.sidKey(id), s, {ttlMs: s.expiresAt - Date.now()});
+        await kv.set(this.sidKey(id), s, s.expiresAt - Date.now());
     }
 
     async rotate(oldId: string): Promise<Session | null> {
+        const kv = await this.kvProvider();
         const s = await this.get(oldId);
         if (!s) return null;
         await this.destroy(oldId);
@@ -73,12 +73,13 @@ export class SessionStore {
         const newId = this.newId();
         const newCsrf = this.newCsrf();
         const ns: Session = {...s, id: newId, csrf: newCsrf, lastSeenAt: now, createdAt: now, expiresAt: now + TTL_MS};
-        await kv.set(this.sidKey(newId), ns, {ttlMs: TTL_MS});
+        await kv.set(this.sidKey(newId), ns, TTL_MS);
         return ns;
     }
 
     async destroy(id: string): Promise<void> {
-        await kv.delete?.(this.sidKey(id));
+        const kv = await this.kvProvider();
+        await kv.del?.(this.sidKey(id));
     }
 
     hashUA(ua: string) {

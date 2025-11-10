@@ -1,15 +1,16 @@
-import type {MinimumRequest, OneApiFunction, SessionData} from "@supergrowthai/oneapi";
+import type {MinimumRequest, OneApiFunction} from "@supergrowthai/oneapi";
 import type {Permission} from "@supergrowthai/next-blog-types/server";
 import {hasAllPermissions, hasAnyPermission, hasPermission} from "./permissions.js";
 import {Session} from "../auth/sessions.ts";
 import type {ApiExtra} from "../types/api.ts";
+import {SessionAuthHandler} from "../auth/SessionAuthHandler.ts";
+import {BasicAuthHandler} from "../auth/basic-auth-handler.ts";
 
 type SecureOptions = {
     requirePermission?: Permission;
     requireAnyPermission?: Permission[];
     requireAllPermissions?: Permission[];
 };
-
 
 /**
  * Wrapper to secure an oneapi endpoint with permission checking
@@ -19,11 +20,11 @@ type SecureOptions = {
  * @param options Optional configuration for permission requirements
  * @returns A wrapped oneapi function that checks permissions before executing
  */
-export default function secure(
+export function secure(
     fn: OneApiFunction<ApiExtra>,
     options?: SecureOptions
 ): OneApiFunction {
-    const wrappedFn = async (session: SessionData, request: MinimumRequest, extra: any) => {
+    const wrappedFn: OneApiFunction = async (session, request, extra) => {
         // Check if user is authenticated
         if (!session.user) {
             return {
@@ -69,7 +70,6 @@ export default function secure(
 
     return wrappedFn;
 }
-
 
 const CSRF_HEADER = "x-csrf-token";
 const CSRF_COOKIE = "csrf";
@@ -141,3 +141,24 @@ export function securePlus(
     Object.assign(wrapped, fn);
     return wrapped;
 }
+
+export function smartSecure(
+    fn: OneApiFunction,
+    options?: SecureOptions
+): OneApiFunction {
+    const wrappedFn: OneApiFunction = async (session, request, extra) => {
+        if (session.authHandler instanceof SessionAuthHandler) {
+            return securePlus(fn, options)(session, request, extra);
+        } else if (session.authHandler instanceof BasicAuthHandler) {
+            return secure(fn, options)(session, request, extra);
+        } else
+            throw new Error("Unsupported auth handler");
+    };
+
+    Object.assign(wrappedFn, fn);
+
+    return wrappedFn;
+}
+
+
+export default smartSecure

@@ -73,6 +73,7 @@ export default defineConfig(({mode}) => {
                     "@aws-sdk/client-s3",
                     "@aws-sdk/lib-storage",
                     "@xmldom/xmldom",
+                    "memoose-js",
 
                     // Node.js builtin modules
                     'fs',

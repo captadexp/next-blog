@@ -56,6 +56,9 @@
     "packages/core": {
       "name": "@supergrowthai/next-blog",
       "version": "3.0.1-beta.1",
+      "dependencies": {
+        "memoose-js": "2.0.0-canary.7fa17b2",
+      },
       "devDependencies": {
         "@supergrowthai/next-blog-dashboard": "workspace:*",
         "@supergrowthai/next-blog-types": "workspace:*",
@@ -243,6 +246,7 @@
       "version": "1.0.1-beta.1",
       "devDependencies": {
         "@types/node": "^24.5.2",
+        "memoose-js": "2.0.0-canary.7fa17b2",
         "publint": "^0.3.15",
         "typescript": "^5.9.2",
         "vite": "^7.1.5",

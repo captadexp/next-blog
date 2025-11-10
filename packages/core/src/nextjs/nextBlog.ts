@@ -1,23 +1,27 @@
 import {Configuration} from "@supergrowthai/next-blog-types/server";
-import {BasicAuthHandler} from "../auth/basic-auth-handler.ts";
 import {wrapPathObject} from "../utils/withExtras.ts";
 import cmsPaths from "../cmsPaths.ts";
-import {createNextJSRouter} from "@supergrowthai/oneapi/nextjs";
+import {createNextJSRouter, IAuthHandler} from "@supergrowthai/oneapi/nextjs";
 import pluginExecutor from "../plugins/plugin-executor.server.ts";
 import {initializeSystem} from "../utils/defaultSettings.ts";
+import {SessionAuthHandler} from "../auth/SessionAuthHandler.ts";
+import {DisabledCacheProvider} from "memoose-js";
+import {SessionManager} from "../auth/sessions.ts";
+import {BasicAuthHandler} from "../auth/basic-auth-handler.ts";
 
 /**
  * Main CMS function that creates the API route handlers
  */
 const nextBlog = function (configuration: Configuration) {
-    const {pathPrefix} = configuration;
+    const {pathPrefix, sessionStore} = configuration;
+
+    configuration.cacheProvider = configuration.cacheProvider || (async () => new DisabledCacheProvider())
 
     if (!!pathPrefix) {
         throw new Error("Custom path prefix not supported. Create an issue to request this feature on priority");
     }
 
-    // Create auth handler
-    const authHandler = new BasicAuthHandler(configuration.db);
+    const authHandler: IAuthHandler<any, any, any> = sessionStore ? new SessionAuthHandler(configuration.db, new SessionManager(sessionStore)) : new BasicAuthHandler(configuration.db);
 
     const wrappedPaths = wrapPathObject(configuration, cmsPaths);
 

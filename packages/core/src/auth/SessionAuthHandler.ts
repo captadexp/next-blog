@@ -1,8 +1,9 @@
 import type {AuthResult, IAuthHandler, OneApiRequest, OneApiResponse} from "@supergrowthai/oneapi";
 import type {DatabaseAdapter, User} from "@supergrowthai/next-blog-types/server";
 import crypto from "../utils/crypto.js";
-import {Session as SessionStoreSession, SessionStore} from "./sessions";
+import {Session as SessionStoreSession, SessionManager} from "./sessions";
 import {getCookie, setCookie} from "./cookie";
+import createDefaultAdminUser from "./create-default-admin-user.ts";
 
 const COOKIE_SECURE = process.env.NODE_ENV === "production";
 const COOKIE_DOMAIN = undefined;
@@ -12,7 +13,7 @@ const CSRF_COOKIE = "csrf";
 type Credentials = { username: string, password: string }
 
 export class SessionAuthHandler implements IAuthHandler<Credentials, User, SessionStoreSession | null> {
-    constructor(private dbp: () => Promise<DatabaseAdapter>) {
+    constructor(private dbp: () => Promise<DatabaseAdapter>, private sessionStore: SessionManager) {
     }
 
     async login(credentials: Credentials, req: OneApiRequest, res: OneApiResponse): Promise<AuthResult<User>> {
@@ -24,7 +25,7 @@ export class SessionAuthHandler implements IAuthHandler<Credentials, User, Sessi
         const ok = user ? crypto.comparePassword(password, user.password) : false;
         if (!ok || !user) return {success: false, error: "Invalid credentials"};
 
-        const store = new SessionStore();
+        const store = this.sessionStore;
         const sess = await store.create(user, (req as any).ip, (req as any).headers?.["user-agent"]);
 
         // Set cookies: sid (httpOnly), csrf (readable)
@@ -48,7 +49,7 @@ export class SessionAuthHandler implements IAuthHandler<Credentials, User, Sessi
     }
 
     async logout(req: OneApiRequest, res: OneApiResponse): Promise<void> {
-        const store = new SessionStore();
+        const store = this.sessionStore;
         const sid = getCookie(req, SID_COOKIE);
         if (sid) await store.destroy(sid);
         setCookie(res, SID_COOKIE, "", {
@@ -70,7 +71,23 @@ export class SessionAuthHandler implements IAuthHandler<Credentials, User, Sessi
     async getUser(req: OneApiRequest, _res?: OneApiResponse | null): Promise<User | null> {
         const db = await this.dbp();
         const sess = await this.getSession(req, _res);
-        if (!sess) return null;
+        if (!sess) {
+            const hasUser = await db.users.findOne({});
+
+            if (!hasUser || hasUser.email === "admin@nextblog.local") {
+                const adminUser = await createDefaultAdminUser(db, "password");
+
+                console.log("\n" + "=".repeat(80));
+                console.log("=".repeat(20) + " DEFAULT ADMIN USER CREATED " + "=".repeat(20));
+                console.log("=".repeat(80));
+                console.log(`Username: ${adminUser.username}`);
+                console.log(`Password: password`);
+                console.log(`Email: ${adminUser.email}`);
+                console.log("IMPORTANT: Please change these credentials immediately after first login!");
+                console.log("=".repeat(80) + "\n");
+            }
+            return null;
+        }
 
         const user = await db.users.findOne({_id: sess.userId});
         if (!user) return null;
@@ -86,7 +103,7 @@ export class SessionAuthHandler implements IAuthHandler<Credentials, User, Sessi
     }
 
     async getSession(req: OneApiRequest, res?: OneApiResponse | null): Promise<SessionStoreSession | null> {
-        const store = new SessionStore();
+        const store = this.sessionStore;
         const sid = getCookie(req, SID_COOKIE);
         if (!sid) return null;
         const sess = await store.get(sid);
