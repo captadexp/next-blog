@@ -183,6 +183,25 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
         }
     };
 
+    const handleUpdateBlog = async (data: any) => {
+        const blogData = {
+            title: data.title,
+            slug: data.slug,
+            excerpt: data.excerpt,
+            content: data.content,
+            status: data.status,
+            categoryId: data.categoryId,
+            tagIds: Array.isArray(data.tagIds) ? data.tagIds : [],
+            featuredMediaId: data.featuredMediaId || null,
+        };
+
+        const result = await apis.updateBlog(blog!._id, blogData);
+
+        location.route('/api/next-blog/dashboard/blogs');
+
+        return result;
+    };
+
     const getFormFields = useMemo((): DynamicFormFieldType[] => {
         if (!formData) return [];
         return [
@@ -252,7 +271,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
         <div className="max-w-7xl mx-auto p-2 md:p-6">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold">Update Blog</h2>
-                <button onClick={() => location.route('/api/next-blog/dashboard/blogs')}
+                <button onClick={() => window.history.back()}
                         className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100">
                     Back to List
                 </button>
@@ -267,8 +286,7 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
                                     <DynamicForm
                                         id="updateBlog"
                                         submitLabel="Update Blog"
-                                        postTo={`/api/next-blog/api/blog/${blog._id}/update`}
-                                        redirectTo={"/api/next-blog/dashboard/blogs"}
+                                        apiMethod={handleUpdateBlog}
                                         fields={getFormFields}
                                         onFieldChange={handleFieldChange}
                                     />

@@ -1,76 +1,51 @@
 import {h} from 'preact';
 import {useUser} from '../../../context/UserContext';
-import {PaginatedResponse, Plugin} from '@supergrowthai/next-blog-types';
+import {Plugin} from '@supergrowthai/next-blog-types';
 import {usePlugins} from "../../../context/PluginContext.tsx";
 import {useLocation} from "preact-iso";
-import {useEffect, useState} from "preact/hooks";
+import {useEffect} from "preact/hooks";
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
-import {usePagination} from '../../../hooks/usePagination';
 import {PaginationControls} from '../../../components/PaginationControls';
+import Loader from '../../../components/Loader';
+import {useEntityList} from '../../../hooks/useEntityList';
+import ListPage from '../../../components/ListPageLayout';
 
 const PluginsList = () => {
-    const {hasPermission, hasAllPermissions, apis: api, user} = useUser();
+    const {hasPermission, hasAllPermissions, apis: api} = useUser();
     const {loadedPlugins, hardReloadPlugins} = usePlugins();
     const location = useLocation();
-    const [plugins, setPlugins] = useState<Plugin[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [pagination, setPagination] = useState<PaginatedResponse<Plugin> | null>(null);
 
-    const {page, setPage, getParams} = usePagination();
-
-    const fetchPlugins = async () => {
-        try {
-            const params = getParams();
-            const response = await api.getPlugins(params);
-
-            if (response.code === 0 && response.payload) {
-                setPlugins(response.payload.data);
-                setPagination(response.payload);
-            } else {
-                throw new Error(response.message || 'Failed to fetch plugins');
+    const {
+        entities: plugins,
+        paginationLoading,
+        error,
+        pagination,
+        deletingIds,
+        actioningIds,
+        handlePageChange,
+        handleDelete,
+        actionHandlers,
+        page
+    } = useEntityList<Plugin>({
+        fetchFn: api.getPlugins.bind(api),
+        deleteFn: api.deletePlugin.bind(api),
+        entityName: 'plugin',
+        additionalActions: {
+            reinstall: {
+                fn: async (id: string) => {
+                    const response = await api.reinstallPlugin(id);
+                    if (response.code === 0) {
+                        hardReloadPlugins();
+                    }
+                    return response;
+                },
+                confirmMessage: 'Are you sure you want to reinstall this plugin? This will re-run its installation script.'
             }
-            setLoading(false);
-        } catch (err) {
-            console.error('Error fetching plugins:', err);
-            setError(err instanceof Error ? err.message : 'Unknown error');
-            setLoading(false);
         }
-    };
+    });
 
-    const handleReinstall = async (id: string) => {
-        if (!window.confirm('Are you sure you want to reinstall this plugin? This will re-run its installation script.')) {
-            return;
-        }
-        try {
-            const response = await api.reinstallPlugin(id);
-            if (response.code === 0) {
-                hardReloadPlugins();
-                fetchPlugins();
-            } else {
-                alert(`Error: ${response.message}`);
-            }
-        } catch (err: any) {
-            alert(`An error occurred: ${err.message}`);
-        }
-    };
-
-    const handleDelete = async (id: string) => {
-        if (!window.confirm('Are you sure you want to delete this plugin? This will also delete all hook mappings for this plugin.')) {
-            return;
-        }
-        try {
-            const response = await api.deletePlugin(id);
-            if (response.code === 0) {
-                hardReloadPlugins();
-                fetchPlugins();
-            } else {
-                alert(`Error: ${response.message}`);
-            }
-        } catch (err: any) {
-            alert(`An error occurred: ${err.message}`);
-        }
-    };
+    const reinstallingIds = actioningIds.reinstall || new Set();
+    const handleReinstall = actionHandlers.reinstall;
 
     const columns = [
         {
@@ -106,18 +81,20 @@ const PluginsList = () => {
                         )}
                         {hasAllPermissions(['plugins:create', 'plugins:delete']) && !plugin.isSystem && (
                             <button
-                                className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700"
+                                className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
                                 onClick={() => handleReinstall(plugin._id)}
+                                disabled={reinstallingIds.has(plugin._id)}
                             >
-                                Reinstall
+                                {reinstallingIds.has(plugin._id) ? <Loader size="sm" text=""/> : 'Reinstall'}
                             </button>
                         )}
                         {hasPermission('plugins:delete') && !plugin.isSystem && (
                             <button
-                                className="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700"
-                                onClick={() => handleDelete(plugin._id)}
+                                className="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                                onClick={() => handleDelete(plugin, 'Are you sure you want to delete this plugin? This will also delete all hook mappings for this plugin.')}
+                                disabled={deletingIds.has(plugin._id)}
                             >
-                                Delete
+                                {deletingIds.has(plugin._id) ? <Loader size="sm" text=""/> : 'Delete'}
                             </button>
                         )}
                     </div>
@@ -130,95 +107,84 @@ const PluginsList = () => {
         if (location.query.r === '1') {
             console.log("Detected a refresh request")
             hardReloadPlugins();
-            fetchPlugins();
             const {r, ...rest} = location.query;
             const qs = new URLSearchParams(rest as Record<string, string>).toString();
             location.route(location.path + (qs ? `?${qs}` : ''), /* replaceHistory */ true);
         }
     }, [location.query.r]);
 
-    useEffect(() => {
-        fetchPlugins();
-    }, [page]);
-
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-            </div>
-        );
-    }
-
     return (
         <ExtensionZone name="plugins-list" context={{data: plugins}}>
             <div className="p-4">
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold">Plugins</h1>
-                    <div className="flex space-x-2">
-                        <button
-                            onClick={() => hardReloadPlugins()}
-                            className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
-                            title="Clear cache and reload all plugins"
-                        >
-                            Reload Plugins
-                        </button>
-                        {hasPermission('plugins:create') && (
-                            <a
-                                href="/api/next-blog/dashboard/plugins/create"
-                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                <ListPage paginationLoading={paginationLoading}>
+                    <ListPage.Header>
+                        <h1 className="text-2xl font-bold">Plugins</h1>
+                        <div className="flex space-x-2">
+                            <button
+                                onClick={() => hardReloadPlugins()}
+                                className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
+                                title="Clear cache and reload all plugins"
                             >
-                                Add New Plugin
-                            </a>
-                        )}
-                    </div>
-                </div>
-
-                <ExtensionPoint name="plugins-list-toolbar" context={{plugins, loadedPlugins}}/>
-
-                {error ? (
-                    <div className="p-4 bg-red-100 text-red-800 rounded">
-                        Error: {error}
-                    </div>
-                ) : plugins.length === 0 ? (
-                    <div className="text-gray-500">No plugins found.</div>
-                ) : (
-                    <ExtensionZone name="plugins-table" context={{data: {plugins, loadedPlugins}}}>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full bg-white border border-gray-200">
-                                <thead>
-                                <tr className="bg-gray-100">
-                                    {columns.map((column) => (
-                                        <th key={column.header}
-                                            className="py-2 px-4 border-b text-left">{column.header}</th>
-                                    ))}
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {plugins.map((plugin: any) => (
-                                    <>
-                                        <ExtensionPoint name="plugin-item:before" context={{plugin}}/>
-                                        <tr key={plugin._id} className="hover:bg-gray-50">
-                                            {columns.map((column) => (
-                                                <td key={column.accessor} className="py-2 px-4 border-b">
-                                                    {column.cell ? column.cell(plugin) : plugin[column.accessor]}
-                                                </td>
-                                            ))}
-                                        </tr>
-                                        <ExtensionPoint name="plugin-item:after" context={{plugin}}/>
-                                    </>
-                                ))}
-                                </tbody>
-                            </table>
+                                Reload Plugins
+                            </button>
+                            {hasPermission('plugins:create') && (
+                                <a
+                                    href="/api/next-blog/dashboard/plugins/create"
+                                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                >
+                                    Add New Plugin
+                                </a>
+                            )}
                         </div>
-                    </ExtensionZone>
-                )}
+                    </ListPage.Header>
 
-                <PaginationControls
-                    pagination={pagination}
-                    currentPage={page}
-                    dataLength={plugins.length}
-                    onPageChange={setPage}
-                />
+                    <ExtensionPoint name="plugins-list-toolbar" context={{plugins, loadedPlugins}}/>
+
+                    <ListPage.Content
+                        loading={paginationLoading}
+                        error={error}
+                        empty={plugins.length === 0}
+                        emptyMessage="No plugins found."
+                    >
+                        <ExtensionZone name="plugins-table" context={{data: {plugins, loadedPlugins}}}>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full bg-white border border-gray-200">
+                                    <thead>
+                                    <tr className="bg-gray-100">
+                                        {columns.map((column) => (
+                                            <th key={column.header}
+                                                className="py-2 px-4 border-b text-left">{column.header}</th>
+                                        ))}
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {plugins.map((plugin: any) => (
+                                        <>
+                                            <ExtensionPoint name="plugin-item:before" context={{plugin}}/>
+                                            <tr key={plugin._id} className="hover:bg-gray-50">
+                                                {columns.map((column) => (
+                                                    <td key={column.accessor} className="py-2 px-4 border-b">
+                                                        {column.cell ? column.cell(plugin) : plugin[column.accessor]}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                            <ExtensionPoint name="plugin-item:after" context={{plugin}}/>
+                                        </>
+                                    ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </ExtensionZone>
+                    </ListPage.Content>
+
+                    <PaginationControls
+                        pagination={pagination}
+                        currentPage={page}
+                        dataLength={plugins.length}
+                        onPageChange={handlePageChange}
+                        loading={paginationLoading}
+                    />
+                </ListPage>
             </div>
         </ExtensionZone>
     );

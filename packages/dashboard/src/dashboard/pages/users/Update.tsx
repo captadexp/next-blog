@@ -131,6 +131,8 @@ const UpdateUser: FunctionComponent<UpdateUserProps> = ({id: propId}) => {
                 throw new Error(response.message || 'Failed to update user');
             }
 
+            location.route('/api/next-blog/dashboard/users');
+
             return response;
         } catch (err) {
             console.error('Error updating user:', err);
@@ -186,7 +188,7 @@ const UpdateUser: FunctionComponent<UpdateUserProps> = ({id: propId}) => {
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold">Update User</h2>
                 <button
-                    onClick={() => location.route('/api/next-blog/dashboard/users')}
+                    onClick={() => window.history.back()}
                     className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
                 >
                     Back to List
@@ -210,8 +212,6 @@ const UpdateUser: FunctionComponent<UpdateUserProps> = ({id: propId}) => {
                         <DynamicForm
                             id="updateUser"
                             submitLabel="Update User"
-                            postTo={`/api/next-blog/api/user/${userId}/update`}
-                            redirectTo={"api/next-blog/dashboard/users"}
                             fields={getFormFields()}
                             apiMethod={handleUpdateUser}
                             onFieldChange={handleFieldChange}

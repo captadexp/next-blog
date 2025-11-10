@@ -72,7 +72,12 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
             isSecure: data.isSecure
         };
 
-        return apis.createSetting(settingData);
+        const result = await apis.createSetting(settingData);
+
+        // Navigate to list page after successful creation
+        location.route('/api/next-blog/dashboard/settings');
+
+        return result;
     };
 
     if (userLoading) {
@@ -89,7 +94,7 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-semibold">Create New Setting</h2>
                     <button
-                        onClick={() => location.route('/api/next-blog/dashboard/settings')}
+                        onClick={() => window.history.back()}
                         className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
                     >
                         Back to List
@@ -102,16 +107,8 @@ const CreateSetting: FunctionComponent<CreateSettingProps> = () => {
                         <DynamicForm
                             id="createSetting"
                             submitLabel="Create Setting"
-                            postTo={"/api/next-blog/api/settings/create"}
                             apiMethod={handleCreateSetting}
-                            redirectTo={"/api/next-blog/dashboard/settings"}
                             fields={fields}
-                            onSubmitSuccess={(data) => {
-                                console.log('Setting created successfully:', data);
-                            }}
-                            onSubmitError={(error) => {
-                                console.error('Error creating setting:', error);
-                            }}
                         />
                     </div>
                 </ExtensionZone>

@@ -89,6 +89,12 @@ const UpdateTag: FunctionComponent<UpdateTagProps> = ({id}) => {
         return null;
     };
 
+    const handleUpdateTag = async (data: any) => {
+        const result = await apis.updateTag(tag!._id, data);
+        location.route('/api/next-blog/dashboard/tags');
+        return result;
+    };
+
     const context = useMemo<TagEditorContext | undefined>(() => {
         if (!tag) return undefined;
         return {
@@ -107,7 +113,7 @@ const UpdateTag: FunctionComponent<UpdateTagProps> = ({id}) => {
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold">Update Tag</h2>
                 <button
-                    onClick={() => location.route('/api/next-blog/dashboard/tags')}
+                    onClick={() => window.history.back()}
                     className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
                 >
                     Back to List
@@ -132,8 +138,7 @@ const UpdateTag: FunctionComponent<UpdateTagProps> = ({id}) => {
                         <DynamicForm
                             id="updateTag"
                             submitLabel="Update Tag"
-                            postTo={`/api/next-blog/api/tag/${tag._id}/update`}
-                            redirectTo={"/api/next-blog/dashboard/tags"}
+                            apiMethod={handleUpdateTag}
                             fields={getFormFields()}
                             onFieldChange={handleFieldChange}
                         />

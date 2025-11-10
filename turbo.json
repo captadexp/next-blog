@@ -67,6 +67,12 @@
       "outputs": [
         "dist/**"
       ]
+    },
+    "@supergrowthai/tq#typecheck": {
+      "dependsOn": [
+        "@supergrowthai/mq#build",
+        "^build"
+      ]
     }
   }
 }

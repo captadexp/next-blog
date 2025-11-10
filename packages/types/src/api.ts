@@ -51,10 +51,10 @@ export interface BlogAPI {
         slug: string;
         content: string;
         status: BlogStatus;
-        category: string;
-        tags: string[];
+        categoryId: string;
+        tagIds: string[];
         excerpt?: string;
-        featuredImage?: string;
+        featuredMediaId?: string;
         metadata?: Record<string, any>;
     }): Promise<APIResponse<Blog>>;
 
@@ -63,10 +63,10 @@ export interface BlogAPI {
         slug?: string;
         content?: string;
         excerpt?: string;
-        category?: string;
-        tags?: string[];
+        categoryId?: string;
+        tagIds?: string[];
         status?: BlogStatus;
-        featuredImage?: string;
+        featuredMediaId?: string;
     }): Promise<APIResponse<Blog>>;
 
     deleteBlog(id: string): Promise<APIResponse<null>>;

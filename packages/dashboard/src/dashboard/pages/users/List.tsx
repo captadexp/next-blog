@@ -1,65 +1,32 @@
 import {h} from 'preact';
-import {useEffect, useState} from 'preact/hooks';
-import {PaginatedResponse, Permission, User} from '@supergrowthai/next-blog-types';
+import {useLocation} from 'preact-iso';
+import {Permission, User} from '@supergrowthai/next-blog-types';
 import {useUser} from '../../../context/UserContext';
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
-import {usePagination} from '../../../hooks/usePagination';
 import {PaginationControls} from '../../../components/PaginationControls';
+import Loader from '../../../components/Loader';
+import {useEntityList} from '../../../hooks/useEntityList';
+import ListPage from '../../../components/ListPageLayout';
 
 const UserList = () => {
-    const [users, setUsers] = useState<User[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-    const [pagination, setPagination] = useState<PaginatedResponse<User> | null>(null);
+    const location = useLocation();
     const {hasPermission, apis} = useUser();
 
-    const {page, setPage, getParams} = usePagination();
+    const {
+        entities: users,
+        paginationLoading,
+        error,
+        pagination,
+        deletingIds,
+        handlePageChange,
+        handleDelete,
+        page
+    } = useEntityList<User>({
+        fetchFn: apis.getUsers.bind(apis),
+        deleteFn: apis.deleteUser.bind(apis),
+        entityName: 'user'
+    });
 
-    const fetchUsers = async () => {
-        setLoading(true);
-        setError(null);
-
-        try {
-            const params = getParams();
-            const response = await apis.getUsers(params);
-
-            if (response.code === 0 && response.payload) {
-                setUsers(response.payload.data);
-                setPagination(response.payload);
-            } else {
-                setError(response.message || 'Failed to fetch users');
-            }
-        } catch (err) {
-            setError('An error occurred while fetching users');
-            console.error('Error fetching users:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchUsers();
-    }, [page]);
-
-    const handleDeleteUser = async (id: string) => {
-        if (!window.confirm('Are you sure you want to delete this user?')) {
-            return;
-        }
-
-        try {
-            const response = await apis.deleteUser(id);
-
-            if (response.code === 0) {
-                // Remove user from state
-                setUsers(users.filter(user => user._id !== id));
-            } else {
-                alert(`Failed to delete user: ${response.message}`);
-            }
-        } catch (err) {
-            console.error('Error deleting user:', err);
-            alert('An error occurred while deleting the user');
-        }
-    };
 
     // Helper function to display a user's permissions in a readable format
     const formatPermissions = (permissions: Permission[]): string => {
@@ -75,92 +42,91 @@ const UserList = () => {
             displayedPermissions;
     };
 
-    if (loading) {
-        return <div className="p-4">Loading users...</div>;
-    }
-
-    if (error) {
-        return <div className="p-4 text-red-500">Error: {error}</div>;
-    }
-
     return (
         <ExtensionZone name="users-list" context={{data: users}}>
             <div className="p-4">
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold">Users</h1>
-                    {hasPermission('users:create') && (
-                        <a
-                            href="/api/next-blog/dashboard/users/create"
-                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                        >
-                            Add New User
-                        </a>
-                    )}
-                </div>
+                <ListPage paginationLoading={paginationLoading}>
+                    <ListPage.Header>
+                        <h1 className="text-2xl font-bold">Users</h1>
+                        {hasPermission('users:create') && (
+                            <a
+                                href="/api/next-blog/dashboard/users/create"
+                                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                            >
+                                Add New User
+                            </a>
+                        )}
+                    </ListPage.Header>
 
-                <ExtensionPoint name="users-list-toolbar" context={{users}}/>
+                    <ExtensionPoint name="users-list-toolbar" context={{users}}/>
 
+                    <ListPage.Content
+                        loading={paginationLoading}
+                        error={error}
+                        empty={users.length === 0}
+                        emptyMessage="No users found."
+                    >
+                        <ExtensionZone name="users-table" context={{data: users}}>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full bg-white border border-gray-200">
+                                    <thead>
+                                    <tr className="bg-gray-100">
+                                        <th className="py-2 px-4 border-b text-left">Name</th>
+                                        <th className="py-2 px-4 border-b text-left">Username</th>
+                                        <th className="py-2 px-4 border-b text-left">Email</th>
+                                        <th className="py-2 px-4 border-b text-left">Permissions</th>
+                                        <th className="py-2 px-4 border-b text-left">Actions</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {users.map(user => (
+                                        <>
+                                            <ExtensionPoint name="user-item:before" context={{user}}/>
+                                            <tr key={user._id} className="hover:bg-gray-50">
+                                                <td className="py-2 px-4 border-b">{user.name}</td>
+                                                <td className="py-2 px-4 border-b">{user.username}</td>
+                                                <td className="py-2 px-4 border-b">{user.email}</td>
+                                                <td className="py-2 px-4 border-b">{formatPermissions(user.permissions)}</td>
+                                                <td className="py-2 px-4 border-b">
+                                                    <div className="flex space-x-2">
+                                                        {hasPermission('users:update') && !user.isSystem && (
+                                                            <a
+                                                                href={`/api/next-blog/dashboard/users/${user._id}`}
+                                                                className="text-blue-500 hover:text-blue-700"
+                                                            >
+                                                                Edit
+                                                            </a>
+                                                        )}
+                                                        {hasPermission('users:delete') && !user.isSystem && (
+                                                            <button
+                                                                onClick={() => handleDelete(user, 'Are you sure you want to delete this user?')}
+                                                                disabled={deletingIds.has(user._id)}
+                                                                className="text-red-500 hover:text-red-700 disabled:opacity-50"
+                                                            >
+                                                                {deletingIds.has(user._id) ?
+                                                                    <Loader size="sm" text=""/> : 'Delete'}
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <ExtensionPoint name="user-item:after" context={{user}}/>
+                                        </>
+                                    ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </ExtensionZone>
+                    </ListPage.Content>
 
-                {users.length === 0 ? (
-                    <div className="text-gray-500">No users found.</div>
-                ) : (
-                    <ExtensionZone name="users-table" context={{data: users}}>
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full bg-white border border-gray-200">
-                                <thead>
-                                <tr className="bg-gray-100">
-                                    <th className="py-2 px-4 border-b text-left">Name</th>
-                                    <th className="py-2 px-4 border-b text-left">Username</th>
-                                    <th className="py-2 px-4 border-b text-left">Email</th>
-                                    <th className="py-2 px-4 border-b text-left">Permissions</th>
-                                    <th className="py-2 px-4 border-b text-left">Actions</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {users.map(user => (
-                                    <>
-                                        <ExtensionPoint name="user-item:before" context={{user}}/>
-                                        <tr key={user._id} className="hover:bg-gray-50">
-                                            <td className="py-2 px-4 border-b">{user.name}</td>
-                                            <td className="py-2 px-4 border-b">{user.username}</td>
-                                            <td className="py-2 px-4 border-b">{user.email}</td>
-                                            <td className="py-2 px-4 border-b">{formatPermissions(user.permissions)}</td>
-                                            <td className="py-2 px-4 border-b">
-                                                <div className="flex space-x-2">
-                                                    {hasPermission('users:update') && !user.isSystem && (
-                                                        <a
-                                                            href={`/api/next-blog/dashboard/users/${user._id}`}
-                                                            className="text-blue-500 hover:text-blue-700"
-                                                        >
-                                                            Edit
-                                                        </a>
-                                                    )}
-                                                    {hasPermission('users:delete') && !user.isSystem && (
-                                                        <button
-                                                            onClick={() => handleDeleteUser(user._id)}
-                                                            className="text-red-500 hover:text-red-700"
-                                                        >
-                                                            Delete
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        <ExtensionPoint name="user-item:after" context={{user}}/>
-                                    </>
-                                ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </ExtensionZone>
-                )}
-
-                <PaginationControls
-                    pagination={pagination}
-                    currentPage={page}
-                    dataLength={users.length}
-                    onPageChange={setPage}
-                />
+                    <PaginationControls
+                        pagination={pagination}
+                        currentPage={page}
+                        dataLength={users.length}
+                        onPageChange={handlePageChange}
+                        loading={paginationLoading}
+                    />
+                </ListPage>
             </div>
         </ExtensionZone>
     );

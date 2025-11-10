@@ -6,9 +6,10 @@ interface PaginationControlsProps {
     currentPage: number;
     dataLength: number;
     onPageChange: (page: number) => void;
+    loading?: boolean;
 }
 
-export const PaginationControls = ({pagination, currentPage, dataLength, onPageChange}: PaginationControlsProps) => {
+export const PaginationControls = ({pagination, currentPage, dataLength, onPageChange, loading}: PaginationControlsProps) => {
     if (!pagination) return null;
 
     const showPrevious = currentPage > 1;
@@ -25,7 +26,11 @@ export const PaginationControls = ({pagination, currentPage, dataLength, onPageC
                 {showPrevious && (
                     <button
                         onClick={() => onPageChange(currentPage - 1)}
-                        className="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                        disabled={loading}
+                        className={`px-3 py-2 rounded ${loading
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
                     >
                         Previous
                     </button>
@@ -36,7 +41,11 @@ export const PaginationControls = ({pagination, currentPage, dataLength, onPageC
                 {showNext && (
                     <button
                         onClick={() => onPageChange(currentPage + 1)}
-                        className="px-3 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                        disabled={loading}
+                        className={`px-3 py-2 rounded ${loading
+                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
                     >
                         Next
                     </button>

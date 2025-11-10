@@ -2,6 +2,7 @@ import {FunctionComponent, h} from 'preact';
 import {useLocation} from 'preact-iso';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
+import {useUser} from '../../../context/UserContext';
 
 interface CreateCategoryProps {
     path?: string;
@@ -9,6 +10,7 @@ interface CreateCategoryProps {
 
 const CreateCategory: FunctionComponent<CreateCategoryProps> = () => {
     const location = useLocation();
+    const {apis} = useUser();
 
     // Define form fields
     const fields: DynamicFormFieldType[] = [
@@ -17,13 +19,19 @@ const CreateCategory: FunctionComponent<CreateCategoryProps> = () => {
         {key: 'description', label: 'Description', type: 'textarea'},
     ];
 
+    const handleCreateCategory = async (data: any) => {
+        const result = await apis.createCategory(data);
+        location.route('/api/next-blog/dashboard/categories');
+        return result;
+    };
+
     return (
         <ExtensionZone name="category-create" context={{data: {fields}}}>
             <div className="max-w-4xl mx-auto p-2 md:p-6">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-semibold">Create New Category</h2>
                     <button
-                        onClick={() => location.route('/api/next-blog/dashboard/categories')}
+                        onClick={() => window.history.back()}
                         className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
                     >
                         Back to List
@@ -36,9 +44,8 @@ const CreateCategory: FunctionComponent<CreateCategoryProps> = () => {
                         <DynamicForm
                             id="createCategory"
                             submitLabel="Create Category"
-                            postTo={"/api/next-blog/api/categories/create"}
-                            redirectTo={"/api/next-blog/dashboard/categories"}
                             fields={fields}
+                            apiMethod={handleCreateCategory}
                         />
                     </div>
                 </ExtensionZone>

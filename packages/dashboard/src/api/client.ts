@@ -61,10 +61,10 @@ class ApiClientImpl implements APIClient {
         slug: string;
         content: string;
         status: 'draft' | 'published';
-        category: string;
-        tags: string[];
+        categoryId: string;
+        tagIds: string[];
         excerpt?: string;
-        featuredImage?: string;
+        featuredMediaId?: string;
         metadata?: Record<string, any>;
     }): Promise<APIResponse<Blog>> {
         return this.request<Blog>('/blogs/create', 'POST', data);
@@ -75,10 +75,10 @@ class ApiClientImpl implements APIClient {
         slug?: string;
         content?: string;
         excerpt?: string;
-        category?: string;
-        tags?: string[];
+        categoryId?: string;
+        tagIds?: string[];
         status?: 'draft' | 'pending' | 'private' | 'published' | 'trash';
-        featuredImage?: string;
+        featuredMediaId?: string;
     }): Promise<APIResponse<Blog>> {
         return this.request<Blog>(`/blog/${id}/update`, 'POST', data);
     }

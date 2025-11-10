@@ -2,6 +2,7 @@ import {FunctionComponent, h} from 'preact';
 import {useLocation} from 'preact-iso';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
+import {useUser} from '../../../context/UserContext';
 
 interface CreateTagProps {
     path?: string;
@@ -9,6 +10,7 @@ interface CreateTagProps {
 
 const CreateTag: FunctionComponent<CreateTagProps> = () => {
     const location = useLocation();
+    const {apis} = useUser();
 
     // Define form fields
     const fields: DynamicFormFieldType[] = [
@@ -17,13 +19,19 @@ const CreateTag: FunctionComponent<CreateTagProps> = () => {
         {key: 'description', label: 'Description', type: 'textarea'},
     ];
 
+    const handleCreateTag = async (data: any) => {
+        const result = await apis.createTag(data);
+        location.route('/api/next-blog/dashboard/tags');
+        return result;
+    };
+
     return (
         <ExtensionZone name="tag-create" context={{data: {fields}}}>
             <div className="max-w-4xl mx-auto p-2 md:p-6">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-semibold">Create New Tag</h2>
                     <button
-                        onClick={() => location.route('/api/next-blog/dashboard/tags')}
+                        onClick={() => window.history.back()}
                         className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
                     >
                         Back to List
@@ -36,9 +44,8 @@ const CreateTag: FunctionComponent<CreateTagProps> = () => {
                         <DynamicForm
                             id="createTag"
                             submitLabel="Create Tag"
-                            postTo={"/api/next-blog/api/tags/create"}
-                            redirectTo={"/api/next-blog/dashboard/tags"}
                             fields={fields}
+                            apiMethod={handleCreateTag}
                         />
                     </div>
                 </ExtensionZone>

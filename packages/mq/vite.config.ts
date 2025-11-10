@@ -61,10 +61,11 @@ export default defineConfig({
         dts({
             include: ['src/**/*.ts'],
             outDir: 'dist',
+            entryRoot: 'src',
             bundledPackages: ["@supergrowthai/utils"],
             rollupTypes: false,
             copyDtsFiles: true,
-            insertTypesEntry: true,
+            insertTypesEntry: false,
             declarationOnly: false,
             afterBuild: (result) => {
                 function processDirectory(dir) {

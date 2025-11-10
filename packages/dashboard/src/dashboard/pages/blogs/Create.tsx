@@ -122,7 +122,7 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
             value: 'draft'
         },
         {
-            key: 'category',
+            key: 'categoryId',
             label: 'Category',
             type: 'select',
             options: toOptions(categories),
@@ -131,7 +131,7 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
             onAdd: addNewCategory
         },
         {
-            key: 'tags',
+            key: 'tagIds',
             label: 'Tags',
             type: 'multiselect',
             options: toOptions(tags),
@@ -148,12 +148,17 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
             excerpt: data.excerpt,
             content: data.content,
             status: data.status,
-            category: data.category,
-            tags: Array.isArray(data.tags) ? data.tags : [],
+            categoryId: data.categoryId,
+            tagIds: Array.isArray(data.tagIds) ? data.tagIds : [],
             featuredMediaId: data.featuredMediaId || null,
         };
 
-        return apis.createBlog(blogData);
+        const result = await apis.createBlog(blogData);
+
+        // Navigate to list page after successful creation
+        location.route('/api/next-blog/dashboard/blogs');
+
+        return result;
     };
 
     if (userLoading) {
@@ -170,7 +175,7 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-semibold">Create New Blog</h2>
                     <button
-                        onClick={() => location.route('/api/next-blog/dashboard/blogs')}
+                        onClick={() => window.history.back()}
                         className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
                     >
                         Back to List
@@ -182,16 +187,8 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
                         <DynamicForm
                             id="createBlog"
                             submitLabel="Create Blog"
-                            postTo={"/api/next-blog/api/blogs/create"}
                             apiMethod={handleCreateBlog}
-                            redirectTo={"/api/next-blog/dashboard/blogs"}
                             fields={fields}
-                            onSubmitSuccess={(data) => {
-                                console.log('Blog created successfully:', data);
-                            }}
-                            onSubmitError={(error) => {
-                                console.error('Error creating blog:', error);
-                            }}
                         />
                     </div>
                 </ExtensionZone>

@@ -128,7 +128,11 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
             value: parsedValue
         };
 
-        return apis.updateSetting(id, settingData);
+        const result = await apis.updateSetting(id, settingData);
+
+        location.route('/api/next-blog/dashboard/settings');
+
+        return result;
     };
 
     // Event bus for form field changes
@@ -178,7 +182,7 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold">Update Setting</h2>
                 <button
-                    onClick={() => location.route('/api/next-blog/dashboard/settings')}
+                    onClick={() => window.history.back()}
                     className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
                 >
                     Back to List
@@ -202,17 +206,9 @@ const UpdateSetting: FunctionComponent<{ id: string }> = ({id}) => {
                         <DynamicForm
                             id="updateSetting"
                             submitLabel="Update Setting"
-                            postTo={`/api/next-blog/api/setting/${setting._id}/update`}
                             apiMethod={handleUpdateSetting}
-                            redirectTo={"/api/next-blog/dashboard/settings"}
                             fields={getFormFields()}
                             onFieldChange={handleFieldChange}
-                            onSubmitSuccess={(data) => {
-                                console.log('Setting updated successfully:', data);
-                            }}
-                            onSubmitError={(error) => {
-                                console.error('Error updating setting:', error);
-                            }}
                         />
                         <ExtensionPoint name="setting-update-after" context={context}/>
                     </div>

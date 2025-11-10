@@ -83,6 +83,9 @@ const CreateUser: FunctionComponent<CreateUserProps> = () => {
                 throw new Error(response.message || 'Failed to create user');
             }
 
+            // Navigate to list page after successful creation
+            location.route('/api/next-blog/dashboard/users');
+
             return response;
         } catch (err) {
             console.error('Error creating user:', err);
@@ -96,7 +99,7 @@ const CreateUser: FunctionComponent<CreateUserProps> = () => {
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-semibold">Create New User</h2>
                     <button
-                        onClick={() => location.route('/api/next-blog/dashboard/users')}
+                        onClick={() => window.history.back()}
                         className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
                     >
                         Back to List
@@ -109,8 +112,6 @@ const CreateUser: FunctionComponent<CreateUserProps> = () => {
                         <DynamicForm
                             id="createUser"
                             submitLabel="Create User"
-                            postTo={"/api/next-blog/api/users/create"}
-                            redirectTo={"/api/next-blog/dashboard/users"}
                             fields={fields}
                             apiMethod={handleCreateUser}
                             onFieldChange={handleFieldChange}

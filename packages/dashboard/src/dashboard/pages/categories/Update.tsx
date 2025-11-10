@@ -90,6 +90,12 @@ const UpdateCategory: FunctionComponent<UpdateCategoryProps> = ({id}) => {
         return null;
     };
 
+    const handleUpdateCategory = async (data: any) => {
+        const result = await apis.updateCategory(category!._id, data);
+        location.route('/api/next-blog/dashboard/categories');
+        return result;
+    };
+
     const context = useMemo<CategoryEditorContext | undefined>(() => {
         if (!category) return undefined;
         return {
@@ -108,7 +114,7 @@ const UpdateCategory: FunctionComponent<UpdateCategoryProps> = ({id}) => {
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-semibold">Update Category</h2>
                 <button
-                    onClick={() => location.route('/api/next-blog/dashboard/categories')}
+                    onClick={() => window.history.back()}
                     className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
                 >
                     Back to List
@@ -132,8 +138,7 @@ const UpdateCategory: FunctionComponent<UpdateCategoryProps> = ({id}) => {
                         <DynamicForm
                             id="updateCategory"
                             submitLabel="Update Category"
-                            postTo={`/api/next-blog/api/category/${category._id}/update`}
-                            redirectTo={"/api/next-blog/dashboard/categories"}
+                            apiMethod={handleUpdateCategory}
                             fields={getFormFields()}
                             onFieldChange={handleFieldChange}
                         />

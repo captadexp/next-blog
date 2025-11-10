@@ -3,6 +3,7 @@ import {useEffect, useState} from 'preact/hooks';
 import {useLocation} from "preact-iso";
 import {useUser} from '../../context/UserContext';
 import {ExtensionZone} from '../components/ExtensionZone';
+import Loader from '../../components/Loader';
 
 interface HomeProps {
     path?: string;
@@ -31,7 +32,7 @@ const Home: FunctionComponent<HomeProps> = () => {
         'Welcome to the Next-Blog dashboard. Use the navigation above to manage your content.';
 
     if (loading) {
-        return <div>Loading...</div>;
+        return <Loader text="Loading..." />;
     }
 
     if (!user) {
