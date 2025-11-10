@@ -3,5 +3,5 @@ import {dbProvider} from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
 
-const {GET} = generateSitemapIndex(dbProvider);
+const {GET} = generateSitemapIndex({db: dbProvider});
 export {GET};

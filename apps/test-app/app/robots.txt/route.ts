@@ -3,5 +3,5 @@ import {dbProvider} from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
 
-const {GET} = generateRobotsTxt(dbProvider);
+const {GET} = generateRobotsTxt({db: dbProvider});
 export {GET};
