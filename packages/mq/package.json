@@ -2,77 +2,132 @@
   "name": "@supergrowthai/mq",
   "version": "1.0.1",
   "description": "Message queue library with multiple provider backends (Kinesis, MongoDB, Memory, Immediate)",
-  "repository": "https://github.com/captadexp/next-blog",
+  "repository": "git+https://github.com/captadexp/next-blog.git",
   "homepage": "https://github.com/captadexp/next-blog/tree/main#readme",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./core": {
-      "types": "./dist/core/index.d.ts",
-      "import": "./dist/core/index.mjs",
-      "require": "./dist/core/index.js"
+      "import": {
+        "types": "./dist/core/index.d.ts",
+        "default": "./dist/core/index.mjs"
+      },
+      "require": {
+        "types": "./dist/core/index.d.cts",
+        "default": "./dist/core/index.cjs"
+      }
     },
     "./core/types": {
-      "types": "./dist/core/types.d.ts",
-      "import": "./dist/core/types.mjs",
-      "require": "./dist/core/types.js"
+      "import": {
+        "types": "./dist/core/types.d.ts",
+        "default": "./dist/core/types.mjs"
+      },
+      "require": {
+        "types": "./dist/core/types.d.cts",
+        "default": "./dist/core/types.cjs"
+      }
     },
     "./core/utils": {
-      "types": "./dist/core/utils.d.ts",
-      "import": "./dist/core/utils.mjs",
-      "require": "./dist/core/utils.js"
+      "import": {
+        "types": "./dist/core/utils.d.ts",
+        "default": "./dist/core/utils.mjs"
+      },
+      "require": {
+        "types": "./dist/core/utils.d.cts",
+        "default": "./dist/core/utils.cjs"
+      }
     },
     "./queues": {
-      "types": "./dist/queues/index.d.ts",
-      "import": "./dist/queues/index.mjs",
-      "require": "./dist/queues/index.js"
+      "import": {
+        "types": "./dist/queues/index.d.ts",
+        "default": "./dist/queues/index.mjs"
+      },
+      "require": {
+        "types": "./dist/queues/index.d.cts",
+        "default": "./dist/queues/index.cjs"
+      }
     },
     "./queues/memory": {
-      "types": "./dist/queues/implementations/memory.d.ts",
-      "import": "./dist/queues/implementations/memory.mjs",
-      "require": "./dist/queues/implementations/memory.js"
+      "import": {
+        "types": "./dist/queues/implementations/memory.d.ts",
+        "default": "./dist/queues/implementations/memory.mjs"
+      },
+      "require": {
+        "types": "./dist/queues/implementations/memory.d.cts",
+        "default": "./dist/queues/implementations/memory.cjs"
+      }
     },
     "./queues/immediate": {
-      "types": "./dist/queues/implementations/immediate.d.ts",
-      "import": "./dist/queues/implementations/immediate.mjs",
-      "require": "./dist/queues/implementations/immediate.js"
+      "import": {
+        "types": "./dist/queues/implementations/immediate.d.ts",
+        "default": "./dist/queues/implementations/immediate.mjs"
+      },
+      "require": {
+        "types": "./dist/queues/implementations/immediate.d.cts",
+        "default": "./dist/queues/implementations/immediate.cjs"
+      }
     },
     "./queues/mongodb": {
-      "types": "./dist/queues/implementations/mongodb.d.ts",
-      "import": "./dist/queues/implementations/mongodb.mjs",
-      "require": "./dist/queues/implementations/mongodb.js"
+      "import": {
+        "types": "./dist/queues/implementations/mongodb.d.ts",
+        "default": "./dist/queues/implementations/mongodb.mjs"
+      },
+      "require": {
+        "types": "./dist/queues/implementations/mongodb.d.cts",
+        "default": "./dist/queues/implementations/mongodb.cjs"
+      }
     },
     "./queues/kinesis": {
-      "types": "./dist/queues/implementations/kinesis.d.ts",
-      "import": "./dist/queues/implementations/kinesis.mjs",
-      "require": "./dist/queues/implementations/kinesis.js"
-    },
-    "./queues/kinesis/*": {
-      "types": "./dist/queues/implementations/kinesis/*.d.ts",
-      "import": "./dist/queues/implementations/kinesis/*.mjs",
-      "require": "./dist/queues/implementations/kinesis/*.js"
+      "import": {
+        "types": "./dist/queues/implementations/kinesis.d.ts",
+        "default": "./dist/queues/implementations/kinesis.mjs"
+      },
+      "require": {
+        "types": "./dist/queues/implementations/kinesis.d.cts",
+        "default": "./dist/queues/implementations/kinesis.cjs"
+      }
     },
     "./shard": {
-      "types": "./dist/shard/index.d.ts",
-      "import": "./dist/shard/index.mjs",
-      "require": "./dist/shard/index.js"
+      "import": {
+        "types": "./dist/shard/index.d.ts",
+        "default": "./dist/shard/index.mjs"
+      },
+      "require": {
+        "types": "./dist/shard/index.d.cts",
+        "default": "./dist/shard/index.cjs"
+      }
     },
     "./shard/lock-providers": {
-      "types": "./dist/shard/lock-providers/index.d.ts",
-      "import": "./dist/shard/lock-providers/index.mjs",
-      "require": "./dist/shard/lock-providers/index.js"
+      "import": {
+        "types": "./dist/shard/lock-providers/index.d.ts",
+        "default": "./dist/shard/lock-providers/index.mjs"
+      },
+      "require": {
+        "types": "./dist/shard/lock-providers/index.d.cts",
+        "default": "./dist/shard/lock-providers/index.cjs"
+      }
     },
     "./shard/leaser": {
-      "types": "./dist/shard/leaser/index.d.ts",
-      "import": "./dist/shard/leaser/index.mjs",
-      "require": "./dist/shard/leaser/index.js"
+      "import": {
+        "types": "./dist/shard/leaser/index.d.ts",
+        "default": "./dist/shard/leaser/index.mjs"
+      },
+      "require": {
+        "types": "./dist/shard/leaser/index.d.cts",
+        "default": "./dist/shard/leaser/index.cjs"
+      }
     }
   },
   "scripts": {
@@ -80,6 +135,7 @@
     "dev": "vite build --watch",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
+    "publint": "publint",
     "prepublishOnly": "npm run build"
   },
   "files": [
@@ -102,6 +158,7 @@
     "@supergrowthai/utils": "workspace:*",
     "@types/bun": "^1.3.1",
     "@types/node": "^24.5.2",
+    "publint": "^0.3.15",
     "typescript": "^5.9.2",
     "vite": "^7.1.5",
     "vite-plugin-dts": "^4.5.4"

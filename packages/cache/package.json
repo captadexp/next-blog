@@ -2,7 +2,7 @@
   "name": "@supergrowthai/cache",
   "version": "1.0.1",
   "description": "Caching support with multiple provider backends (Redis, Memory, Disabled)",
-  "repository": "https://github.com/captadexp/next-blog",
+  "repository": "git+https://github.com/captadexp/next-blog.git",
   "homepage": "https://github.com/captadexp/next-blog/tree/main#readme",
   "type": "module",
   "main": "./dist/index.js",

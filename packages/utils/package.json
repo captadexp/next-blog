@@ -2,7 +2,7 @@
   "name": "@supergrowthai/utils",
   "version": "1.0.1",
   "description": "Common utility classes and functions for SupergrowthAI projects",
-  "repository": "https://github.com/captadexp/next-blog",
+  "repository": "git+https://github.com/captadexp/next-blog.git",
   "homepage": "https://github.com/captadexp/next-blog/tree/main#readme",
   "type": "module",
   "main": "./dist/index.js",

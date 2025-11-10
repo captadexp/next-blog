@@ -30,6 +30,13 @@
       ],
       "cache": false
     },
+    "publint": {
+      "dependsOn": [
+        "build",
+        "typecheck"
+      ],
+      "cache": false
+    },
     "clean": {
       "cache": false
     },

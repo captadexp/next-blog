@@ -2,75 +2,127 @@
   "name": "@supergrowthai/next-blog-types",
   "version": "1.0.1-beta.1",
   "description": "Shared TypeScript types for SupergrowthAI Next Blog platform",
-  "repository": "https://github.com/captadexp/next-blog",
+  "repository": "git+https://github.com/captadexp/next-blog.git",
   "homepage": "https://github.com/captadexp/next-blog/tree/main#readme",
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./server": {
-      "types": "./dist/server.d.ts",
-      "import": "./dist/server.mjs",
-      "require": "./dist/server.js"
+      "import": {
+        "types": "./dist/server.d.ts",
+        "default": "./dist/server.mjs"
+      },
+      "require": {
+        "types": "./dist/server.d.cts",
+        "default": "./dist/server.cjs"
+      }
     },
     "./client": {
-      "types": "./dist/client.d.ts",
-      "import": "./dist/client.mjs",
-      "require": "./dist/client.js"
+      "import": {
+        "types": "./dist/client.d.ts",
+        "default": "./dist/client.mjs"
+      },
+      "require": {
+        "types": "./dist/client.d.cts",
+        "default": "./dist/client.cjs"
+      }
     },
     "./plugin/client": {
-      "types": "./dist/plugin/client.d.ts",
-      "import": "./dist/plugin/client.mjs",
-      "require": "./dist/plugin/client.js"
+      "import": {
+        "types": "./dist/plugin/client.d.ts",
+        "default": "./dist/plugin/client.mjs"
+      },
+      "require": {
+        "types": "./dist/plugin/client.d.cts",
+        "default": "./dist/plugin/client.cjs"
+      }
     },
     "./plugin/server": {
-      "types": "./dist/plugin/server.d.ts",
-      "import": "./dist/plugin/server.mjs",
-      "require": "./dist/plugin/server.js"
+      "import": {
+        "types": "./dist/plugin/server.d.ts",
+        "default": "./dist/plugin/server.mjs"
+      },
+      "require": {
+        "types": "./dist/plugin/server.d.cts",
+        "default": "./dist/plugin/server.cjs"
+      }
     },
     "./plugin/manifest": {
-      "types": "./dist/plugin/manifest.d.ts",
-      "import": "./dist/plugin/manifest.mjs",
-      "require": "./dist/plugin/manifest.js"
+      "import": {
+        "types": "./dist/plugin/manifest.d.ts",
+        "default": "./dist/plugin/manifest.mjs"
+      },
+      "require": {
+        "types": "./dist/plugin/manifest.d.cts",
+        "default": "./dist/plugin/manifest.cjs"
+      }
     },
     "./sdk/client": {
-      "types": "./dist/sdk/client.d.ts",
-      "import": "./dist/sdk/client.mjs",
-      "require": "./dist/sdk/client.js"
+      "import": {
+        "types": "./dist/sdk/client.d.ts",
+        "default": "./dist/sdk/client.mjs"
+      },
+      "require": {
+        "types": "./dist/sdk/client.d.cts",
+        "default": "./dist/sdk/client.cjs"
+      }
     },
     "./sdk/server": {
-      "types": "./dist/sdk/server.d.ts",
-      "import": "./dist/sdk/server.mjs",
-      "require": "./dist/sdk/server.js"
+      "import": {
+        "types": "./dist/sdk/server.d.ts",
+        "default": "./dist/sdk/server.mjs"
+      },
+      "require": {
+        "types": "./dist/sdk/server.d.cts",
+        "default": "./dist/sdk/server.cjs"
+      }
     },
     "./database/entities": {
-      "types": "./dist/database/entities.d.ts",
-      "import": "./dist/database/entities.mjs",
-      "require": "./dist/database/entities.js"
+      "import": {
+        "types": "./dist/database/entities.d.ts",
+        "default": "./dist/database/entities.mjs"
+      },
+      "require": {
+        "types": "./dist/database/entities.d.cts",
+        "default": "./dist/database/entities.cjs"
+      }
     },
     "./database/adapter": {
-      "types": "./dist/database/adapter.d.ts",
-      "import": "./dist/database/adapter.mjs",
-      "require": "./dist/database/adapter.js"
+      "import": {
+        "types": "./dist/database/adapter.d.ts",
+        "default": "./dist/database/adapter.mjs"
+      },
+      "require": {
+        "types": "./dist/database/adapter.d.cts",
+        "default": "./dist/database/adapter.cjs"
+      }
     }
   },
   "scripts": {
     "clean": "rm -rf dist",
     "dev": "vite build --watch",
     "build": "vite build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "publint": "publint"
   },
   "files": [
     "dist"
   ],
   "devDependencies": {
     "@types/node": "^24.5.2",
+    "publint": "^0.3.15",
     "typescript": "^5.9.2",
     "vite": "^7.1.5",
     "vite-plugin-dts": "^4.5.4"

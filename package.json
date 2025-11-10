@@ -15,6 +15,7 @@
     "dev:fast": "turbo dev --filter='./packages/*'",
     "clean": "turbo clean --filter='./packages/*'",
     "typecheck": "turbo typecheck --filter='./packages/*'",
+    "publint": "turbo publint --filter='./packages/*'",
     "app:dev": "turbo dev --filter='./apps/test-app'",
     "app:build": "turbo build --filter='./apps/test-app'"
   },

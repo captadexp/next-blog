@@ -2,7 +2,7 @@
   "name": "@supergrowthai/next-blog-ui",
   "version": "2.0.1-beta.1",
   "description": "UI components for next-blog",
-  "repository": "https://github.com/captadexp/next-blog",
+  "repository": "git+https://github.com/captadexp/next-blog.git",
   "homepage": "https://github.com/captadexp/next-blog/tree/main#readme",
   "type": "module",
   "main": "dist/index.js",
@@ -22,7 +22,8 @@
     "clean": "rimraf dist",
     "dev": "vite build --watch",
     "build": "vite build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "publint": "publint"
   },
   "keywords": [
     "nextjs",
@@ -44,12 +45,13 @@
     "@supergrowthai/next-blog-types": "workspace:*"
   },
   "devDependencies": {
-    "@supergrowthai/plugin-dev-kit": "workspace:*",
     "@supergrowthai/next-blog": "workspace:*",
+    "@supergrowthai/plugin-dev-kit": "workspace:*",
     "@types/node": "^24.5.2",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
+    "publint": "^0.3.15",
     "rimraf": "^6.0.1",
     "vite": "^7.1.5",
     "vite-plugin-dts": "^4.5.4",

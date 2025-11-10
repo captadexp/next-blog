@@ -1,6 +1,7 @@
 import {defineConfig} from 'vite';
-import {resolve} from 'path';
+import path, {resolve} from 'path';
 import dts from 'vite-plugin-dts';
+import fs from "fs";
 
 export default defineConfig({
     build: {
@@ -12,12 +13,18 @@ export default defineConfig({
                 'core/types': resolve(__dirname, 'src/core/types.ts'),
                 'core/utils': resolve(__dirname, 'src/core/utils.ts'),
                 'queues/index': resolve(__dirname, 'src/queues/index.ts'),
+                'queues/implementations/memory': resolve(__dirname, 'src/queues/implementations/memory.ts'),
+                'queues/implementations/immediate': resolve(__dirname, 'src/queues/implementations/immediate.ts'),
+                'queues/implementations/mongodb': resolve(__dirname, 'src/queues/implementations/mongodb.ts'),
+                'queues/implementations/kinesis': resolve(__dirname, 'src/queues/implementations/kinesis.ts'),
                 'shard/index': resolve(__dirname, 'src/shard/index.ts'),
+                'shard/lock-providers/index': resolve(__dirname, 'src/shard/lock-providers/index.ts'),
+                'shard/leaser/index': resolve(__dirname, 'src/shard/leaser/index.ts'),
             },
             name: 'SupergrowthAIMQ',
             formats: ['es', 'cjs'],
             fileName: (format, entryName) => {
-                const ext = format === 'es' ? 'mjs' : 'js';
+                const ext = format === 'es' ? 'mjs' : 'cjs';
                 return `${entryName}.${ext}`;
             }
         },
@@ -59,6 +66,23 @@ export default defineConfig({
             copyDtsFiles: true,
             insertTypesEntry: true,
             declarationOnly: false,
+            afterBuild: (result) => {
+                function processDirectory(dir) {
+                    const entries = fs.readdirSync(dir, {withFileTypes: true});
+                    for (const entry of entries) {
+                        const fullPath = path.join(dir, entry.name);
+                        if (entry.isDirectory()) {
+                            processDirectory(fullPath);
+                        } else if (entry.name.endsWith('.d.ts')) {
+                            const ctsPath = fullPath.replace('.d.ts', '.d.cts');
+                            const content = fs.readFileSync(fullPath, 'utf8');
+                            fs.writeFileSync(ctsPath, content);
+                        }
+                    }
+                }
+
+                processDirectory(path.resolve(__dirname, 'dist'));
+            }
         })
     ]
 });
