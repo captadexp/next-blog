@@ -1,6 +1,7 @@
 import React from 'react';
 import type {HydratedBlog} from '@supergrowthai/next-blog-types/server';
 import {BlogGrid} from './BlogGrid';
+import {PermalinkWrapper} from '../components/PermalinkWrapper';
 
 interface RelatedBlogsProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     blogs: HydratedBlog[];
@@ -60,31 +61,18 @@ export const RelatedBlogs: React.FC<RelatedBlogsProps> = ({
                 {title && <h3 style={defaultTitleStyles}>{title}</h3>}
                 <div style={blogsContainerStyle}>
                     {relatedBlogs.map(blog => (
-                        <div key={blog._id} style={{marginBottom: '16px'}}>
-                            {blog.metadata?.['permalink-manager:permalink']?.permalink ? (
-                                <a
-                                    href={blog.metadata['permalink-manager:permalink'].permalink}
-                                    style={{
-                                        fontSize: '16px',
-                                        color: '#2563eb',
-                                        textDecoration: 'none',
-                                        fontWeight: '500'
-                                    }}
-                                >
-                                    {blog.title}
-                                </a>
-                            ) : (
-                                <span
-                                    style={{
-                                        fontSize: '16px',
-                                        color: '#6b7280',
-                                        fontWeight: '500'
-                                    }}
-                                >
-                                    {blog.title}
-                                </span>
-                            )}
-                        </div>
+                        <PermalinkWrapper key={blog._id} entity={blog} fallbackElement="div"
+                                          style={{marginBottom: '16px'}}>
+                            <span
+                                style={{
+                                    fontSize: '16px',
+                                    color: '#6b7280',
+                                    fontWeight: '500'
+                                }}
+                            >
+                                {blog.title}
+                            </span>
+                        </PermalinkWrapper>
                     ))}
                 </div>
             </div>

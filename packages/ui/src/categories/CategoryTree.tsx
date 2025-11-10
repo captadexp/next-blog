@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type {Category} from '@supergrowthai/next-blog-types/server';
+import {PermalinkText} from '../components/PermalinkWrapper';
 
 interface CategoryWithChildren extends Category {
     children?: CategoryWithChildren[];
@@ -104,30 +105,20 @@ export const CategoryTree: React.FC<CategoryTreeProps> = ({
               {isExpanded ? '▼' : '▶'}
             </span>
                     )}
-                    {category.metadata?.['permalink-manager:permalink']?.permalink ? (
-                        <a
-                            href={category.metadata['permalink-manager:permalink'].permalink}
-                            style={{
-                                color: '#374151',
-                                textDecoration: 'none',
-                                fontWeight: depth === 0 ? '600' : '400',
-                                fontSize: depth === 0 ? '16px' : '14px'
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {category.name}
-                        </a>
-                    ) : (
-                        <span
-                            style={{
-                                color: '#374151',
-                                fontWeight: depth === 0 ? '600' : '400',
-                                fontSize: depth === 0 ? '16px' : '14px'
-                            }}
-                        >
-                            {category.name}
-                        </span>
-                    )}
+                    <PermalinkText
+                        entity={category}
+                        style={{
+                            color: '#374151',
+                            fontWeight: depth === 0 ? '600' : '400',
+                            fontSize: depth === 0 ? '16px' : '14px'
+                        }}
+                        linkStyle={{
+                            textDecoration: 'none'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {category.name}
+                    </PermalinkText>
                     {category.description && (
                         <span style={{marginLeft: '12px', fontSize: '12px', color: '#9ca3af'}}>
               {category.description.length > 50

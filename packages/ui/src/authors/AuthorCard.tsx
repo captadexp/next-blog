@@ -1,5 +1,6 @@
 import React from 'react';
 import type {User} from '@supergrowthai/next-blog-types/server';
+import {PermalinkWrapper} from '../components/PermalinkWrapper';
 
 interface AuthorCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     author: User;
@@ -90,7 +91,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({
     };
 
     return (
-        <div style={containerStyles} className={className} {...rest}>
+        <PermalinkWrapper entity={author} fallbackElement="div" style={containerStyles} className={className} {...rest}>
             {showAvatar && (
                 <div style={defaultAvatarStyles}>
                     {getInitials(author.name)}
@@ -98,16 +99,7 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({
             )}
 
             <h2 style={defaultNameStyles}>
-                {author.metadata?.['permalink-manager:permalink']?.permalink ? (
-                    <a
-                        href={author.metadata['permalink-manager:permalink'].permalink}
-                        style={{color: 'inherit', textDecoration: 'none'}}
-                    >
-                        {author.name}
-                    </a>
-                ) : (
-                    <span>{author.name}</span>
-                )}
+                {author.name}
             </h2>
 
             {showBio && author.bio && (
@@ -131,6 +123,6 @@ export const AuthorCard: React.FC<AuthorCardProps> = ({
           </span>
                 )}
             </div>
-        </div>
+        </PermalinkWrapper>
     );
 };

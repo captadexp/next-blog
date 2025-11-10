@@ -1,5 +1,6 @@
 import React from 'react';
 import type {Tag} from '@supergrowthai/next-blog-types/server';
+import {PermalinkWrapper} from '../components/PermalinkWrapper';
 
 interface TagWithCount extends Tag {
     count: number;
@@ -59,24 +60,15 @@ export const TagCloud: React.FC<TagCloudProps> = ({
     return (
         <div style={containerStyles} className={className} {...rest}>
             {tags.map(tag => (
-                tag.metadata?.['permalink-manager:permalink']?.permalink ? (
-                    <a
-                        key={tag._id}
-                        href={tag.metadata['permalink-manager:permalink'].permalink}
-                        style={getTagStyles(tag)}
-                        title={`${tag.count} posts`}
-                    >
-                        {tag.name}
-                    </a>
-                ) : (
-                    <span
-                        key={tag._id}
-                        style={getTagStyles(tag)}
-                        title={`${tag.count} posts`}
-                    >
-                        {tag.name}
-                    </span>
-                )
+                <PermalinkWrapper
+                    key={tag._id}
+                    entity={tag}
+                    fallbackElement="div"
+                    style={getTagStyles(tag)}
+                    title={`${tag.count} posts`}
+                >
+                    {tag.name}
+                </PermalinkWrapper>
             ))}
         </div>
     );

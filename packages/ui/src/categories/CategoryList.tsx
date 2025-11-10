@@ -1,5 +1,6 @@
 import React from 'react';
 import type {Category} from '@supergrowthai/next-blog-types/server';
+import {PermalinkWrapper} from '../components/PermalinkWrapper';
 
 interface CategoryListProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     categories: Category[];
@@ -66,7 +67,6 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                 borderRadius: '8px',
                 boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
                 transition: 'box-shadow 0.2s',
-                cursor: 'pointer',
                 ...baseStyles
             };
         } else if (layout === 'list') {
@@ -100,23 +100,19 @@ export const CategoryList: React.FC<CategoryListProps> = ({
     return (
         <div style={getContainerStyles()} className={className} {...rest}>
             {categories.map(category => (
-                <div
+                <PermalinkWrapper
                     key={category._id}
+                    entity={category}
+                    fallbackElement="div"
                     style={getItemStyles()}
                 >
-                    {category.metadata?.['permalink-manager:permalink']?.permalink ? (
-                        <a href={category.metadata['permalink-manager:permalink'].permalink} style={defaultNameStyles}>
-                            {category.name}
-                        </a>
-                    ) : (
-                        <span style={defaultNameStyles}>
-                            {category.name}
-                        </span>
-                    )}
+                    <h3 style={defaultNameStyles}>
+                        {category.name}
+                    </h3>
                     <p style={defaultDescriptionStyles}>
                         {category.description}
                     </p>
-                </div>
+                </PermalinkWrapper>
             ))}
         </div>
     );

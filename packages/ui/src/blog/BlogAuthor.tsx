@@ -1,5 +1,6 @@
 import React from 'react';
 import type {HydratedBlog} from '@supergrowthai/next-blog-types/server';
+import {PermalinkText} from '../components/PermalinkWrapper';
 
 interface BlogAuthorProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     blog: HydratedBlog;
@@ -63,14 +64,14 @@ export const BlogAuthor: React.FC<BlogAuthorProps> = ({
     const authorInitial = blog.user.name ? blog.user.name[0].toUpperCase() : 'A';
 
     const AuthorName = () => {
-        const nameEl = <span style={defaultNameStyles}>{blog.user.name}</span>;
-        if (!linkToAuthor) return nameEl;
-
-        return blog.user.metadata?.['permalink-manager:permalink']?.permalink ? (
-            <a href={blog.user.metadata['permalink-manager:permalink'].permalink} style={defaultNameStyles}>
+        if (!linkToAuthor) {
+            return <span style={defaultNameStyles}>{blog.user.name}</span>;
+        }
+        return (
+            <PermalinkText entity={blog.user} style={defaultNameStyles}>
                 {blog.user.name}
-            </a>
-        ) : nameEl;
+            </PermalinkText>
+        );
     };
 
     return (

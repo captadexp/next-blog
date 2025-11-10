@@ -1,5 +1,6 @@
 import React from 'react';
 import type {Category} from '@supergrowthai/next-blog-types/server';
+import {PermalinkWrapper} from '../components/PermalinkWrapper';
 
 interface CategoryCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     category: Category;
@@ -84,7 +85,9 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
     };
 
     return (
-        <div
+        <PermalinkWrapper
+            entity={category}
+            fallbackElement="div"
             style={containerStyles}
             className={className}
             {...rest}
@@ -108,6 +111,6 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
           {postCount} {postCount === 1 ? 'article' : 'articles'}
         </span>
             )}
-        </div>
+        </PermalinkWrapper>
     );
 };

@@ -1,5 +1,6 @@
 import React from 'react';
 import type {Tag} from '@supergrowthai/next-blog-types/server';
+import {PermalinkWrapper} from '../components/PermalinkWrapper';
 
 interface TagCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     tag: Tag;
@@ -58,7 +59,9 @@ export const TagCard: React.FC<TagCardProps> = ({
     const description = (tag as any).description || `Posts tagged with ${tag.name}`;
 
     return (
-        <div
+        <PermalinkWrapper
+            entity={tag}
+            fallbackElement="div"
             style={containerStyles}
             className={className}
             {...rest}
@@ -72,6 +75,6 @@ export const TagCard: React.FC<TagCardProps> = ({
           {postCount} {postCount === 1 ? 'post' : 'posts'}
         </span>
             )}
-        </div>
+        </PermalinkWrapper>
     );
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import type {HydratedBlog} from '@supergrowthai/next-blog-types/server';
 import {BlogGrid} from './BlogGrid';
+import {PermalinkText, PermalinkWrapper} from '../components/PermalinkWrapper';
 
 interface RecentBlogsProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     blogs: HydratedBlog[];
@@ -68,41 +69,26 @@ export const RecentBlogs: React.FC<RecentBlogsProps> = ({
                 {title && <h2 style={defaultTitleStyles}>{title}</h2>}
                 <div style={defaultBlogsContainerStyles}>
                     {recentBlogs.map((blog, index) => (
-                        <article
+                        <PermalinkWrapper
                             key={blog._id}
+                            entity={blog}
+                            fallbackElement="article"
                             style={{
                                 ...listItemStyles,
                                 borderBottom: index === recentBlogs.length - 1 ? 'none' : listItemStyles.borderBottom
                             }}
                         >
-                            {blog.metadata?.['permalink-manager:permalink']?.permalink ? (
-                                <a
-                                    href={blog.metadata['permalink-manager:permalink'].permalink}
-                                    style={{
-                                        fontSize: '24px',
-                                        fontWeight: 'bold',
-                                        color: '#1f2937',
-                                        textDecoration: 'none',
-                                        display: 'block',
-                                        marginBottom: '8px',
-                                        transition: 'color 0.2s'
-                                    }}
-                                >
-                                    {blog.title}
-                                </a>
-                            ) : (
-                                <span
-                                    style={{
-                                        fontSize: '24px',
-                                        fontWeight: 'bold',
-                                        color: '#1f2937',
-                                        display: 'block',
-                                        marginBottom: '8px'
-                                    }}
-                                >
-                                    {blog.title}
-                                </span>
-                            )}
+                            <h3
+                                style={{
+                                    fontSize: '24px',
+                                    fontWeight: 'bold',
+                                    color: '#1f2937',
+                                    display: 'block',
+                                    marginBottom: '8px'
+                                }}
+                            >
+                                {blog.title}
+                            </h3>
                             {showExcerpt && blog.excerpt && (
                                 <p style={{
                                     fontSize: '16px',
@@ -130,20 +116,14 @@ export const RecentBlogs: React.FC<RecentBlogsProps> = ({
                   </span>
                                 )}
                                 {showAuthor && (
-                                    blog.user.metadata?.['permalink-manager:permalink']?.permalink ? (
-                                        <a
-                                            href={blog.user.metadata['permalink-manager:permalink'].permalink}
-                                            style={{color: '#2563eb', textDecoration: 'none'}}
-                                        >
-                                            By {blog.user.name}
-                                        </a>
-                                    ) : (
-                                        <span>By {blog.user.name}</span>
-                                    )
+                                    <PermalinkText entity={blog.user}>
+                                        By {blog.user.name}
+                                    </PermalinkText>
                                 )}
-                                {showCategory && blog.category && <span>{blog.category.name}</span>}
+                                {showCategory && blog.category &&
+                                    <PermalinkText entity={blog.category}>{blog.category.name}</PermalinkText>}
                             </div>
-                        </article>
+                        </PermalinkWrapper>
                     ))}
                 </div>
             </div>

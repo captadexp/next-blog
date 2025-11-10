@@ -1,5 +1,6 @@
 import React from 'react';
 import type {HydratedBlog} from '@supergrowthai/next-blog-types/server';
+import {PermalinkText} from '../components/PermalinkWrapper';
 
 interface BlogMetaProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     blog: HydratedBlog;
@@ -92,19 +93,13 @@ export const BlogMeta: React.FC<BlogMetaProps> = ({
 
     if (showCategory && blog.category) {
         metaItems.push(
-            blog.category.metadata?.['permalink-manager:permalink']?.permalink ? (
-                <a
-                    key="category"
-                    href={blog.category.metadata['permalink-manager:permalink'].permalink}
-                    style={{...defaultItemStyles, color: '#2563eb', textDecoration: 'none'}}
-                >
-                    {blog.category.name}
-                </a>
-            ) : (
-                <span key="category" style={defaultItemStyles}>
-                    {blog.category.name}
-                </span>
-            )
+            <PermalinkText
+                key="category"
+                entity={blog.category}
+                style={defaultItemStyles}
+            >
+                {blog.category.name}
+            </PermalinkText>
         );
     }
 
@@ -113,16 +108,9 @@ export const BlogMeta: React.FC<BlogMetaProps> = ({
             <div key="tags" style={defaultItemStyles}>
                 {blog.tags.map((tag, index) => (
                     <React.Fragment key={tag._id}>
-                        {tag.metadata?.['permalink-manager:permalink']?.permalink ? (
-                            <a
-                                href={tag.metadata['permalink-manager:permalink'].permalink}
-                                style={{color: '#2563eb', textDecoration: 'none'}}
-                            >
-                                #{tag.name}
-                            </a>
-                        ) : (
-                            <span>#{tag.name}</span>
-                        )}
+                        <PermalinkText entity={tag}>
+                            #{tag.name}
+                        </PermalinkText>
                         {index < blog.tags.length - 1 && ', '}
                     </React.Fragment>
                 ))}

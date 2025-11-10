@@ -1,5 +1,6 @@
 import React from 'react';
 import type {User} from '@supergrowthai/next-blog-types/server';
+import {PermalinkWrapper} from '../components/PermalinkWrapper';
 
 interface AuthorWithCount extends User {
     postCount?: number;
@@ -69,7 +70,6 @@ export const AuthorList: React.FC<AuthorListProps> = ({
                 boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
                 textAlign: 'center',
                 transition: 'transform 0.2s, box-shadow 0.2s',
-                cursor: 'pointer',
                 ...baseStyles
             };
         }
@@ -83,7 +83,6 @@ export const AuthorList: React.FC<AuthorListProps> = ({
             borderRadius: '8px',
             border: '1px solid #e5e7eb',
             transition: 'background-color 0.2s',
-            cursor: 'pointer',
             ...baseStyles
         };
     };
@@ -144,8 +143,10 @@ export const AuthorList: React.FC<AuthorListProps> = ({
     return (
         <div style={getContainerStyles()} className={className} {...rest}>
             {authors.map(author => (
-                <div
+                <PermalinkWrapper
                     key={author._id}
+                    entity={author}
+                    fallbackElement="div"
                     style={getItemStyles()}
                 >
                     <div style={defaultAvatarStyles}>
@@ -153,18 +154,9 @@ export const AuthorList: React.FC<AuthorListProps> = ({
                     </div>
 
                     <div style={{flex: layout === 'list' ? 1 : 'none'}}>
-                        {author.metadata?.['permalink-manager:permalink']?.permalink ? (
-                            <a
-                                href={author.metadata['permalink-manager:permalink'].permalink}
-                                style={defaultNameStyles}
-                            >
-                                {author.name}
-                            </a>
-                        ) : (
-                            <span style={defaultNameStyles}>
-                                {author.name}
-                            </span>
-                        )}
+                        <h3 style={defaultNameStyles}>
+                            {author.name}
+                        </h3>
 
                         {showBio && author.bio && (
                             <p style={defaultBioStyles}>
@@ -178,7 +170,7 @@ export const AuthorList: React.FC<AuthorListProps> = ({
                             </p>
                         )}
                     </div>
-                </div>
+                </PermalinkWrapper>
             ))}
         </div>
     );

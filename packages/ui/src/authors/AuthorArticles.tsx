@@ -1,5 +1,6 @@
 import React from 'react';
 import type {HydratedBlog, User} from '@supergrowthai/next-blog-types/server';
+import {PermalinkText, PermalinkWrapper} from '../components/PermalinkWrapper';
 
 interface AuthorArticlesProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     author: User;
@@ -147,25 +148,18 @@ export const AuthorArticles: React.FC<AuthorArticlesProps> = ({
 
             <div style={getArticleContainerStyles()}>
                 {blogs.map((blog, index) => (
-                    <article
+                    <PermalinkWrapper
                         key={blog._id}
+                        entity={blog}
+                        fallbackElement="article"
                         style={{
                             ...getArticleStyles(),
                             ...(layout === 'list' && index === blogs.length - 1 ? {borderBottom: 'none'} : {})
                         }}
                     >
-                        {blog.metadata?.['permalink-manager:permalink']?.permalink ? (
-                            <a
-                                href={blog.metadata['permalink-manager:permalink'].permalink}
-                                style={defaultTitleStyles}
-                            >
-                                {blog.title}
-                            </a>
-                        ) : (
-                            <span style={defaultTitleStyles}>
-                                {blog.title}
-                            </span>
-                        )}
+                        <h3 style={defaultTitleStyles}>
+                            {blog.title}
+                        </h3>
 
                         <p style={defaultExcerptStyles}>
                             {getExcerpt(blog)}
@@ -176,20 +170,14 @@ export const AuthorArticles: React.FC<AuthorArticlesProps> = ({
                             {blog.category && (
                                 <>
                                     <span> • </span>
-                                    {blog.category.metadata?.['permalink-manager:permalink']?.permalink ? (
-                                        <a
-                                            href={blog.category.metadata['permalink-manager:permalink'].permalink}
-                                            style={{color: 'inherit', textDecoration: 'none'}}
-                                        >
-                                            {blog.category.name}
-                                        </a>
-                                    ) : (
-                                        <span>{blog.category.name}</span>
-                                    )}
+                                    <PermalinkText entity={blog.category}
+                                                   linkStyle={{color: 'inherit', textDecoration: 'none'}}>
+                                        {blog.category.name}
+                                    </PermalinkText>
                                 </>
                             )}
                         </div>
-                    </article>
+                    </PermalinkWrapper>
                 ))}
             </div>
         </div>

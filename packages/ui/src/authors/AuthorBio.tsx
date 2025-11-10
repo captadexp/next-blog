@@ -1,5 +1,6 @@
 import React from 'react';
 import type {User} from '@supergrowthai/next-blog-types/server';
+import {PermalinkText} from '../components/PermalinkWrapper';
 
 interface AuthorBioProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     author: User;
@@ -115,7 +116,9 @@ export const AuthorBio: React.FC<AuthorBioProps> = ({
             )}
 
             <div style={defaultContentStyles}>
-                <h3 style={defaultNameStyles}>{author.name}</h3>
+                <PermalinkText entity={author} style={defaultNameStyles}>
+                    {author.name}
+                </PermalinkText>
                 <p style={defaultBioStyles}>
                     {author.bio || `${author.name} is a contributor to this blog.`}
                 </p>

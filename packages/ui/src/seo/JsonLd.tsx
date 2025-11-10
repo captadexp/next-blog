@@ -1,5 +1,6 @@
 import React from 'react';
 import type {HydratedBlog} from '@supergrowthai/next-blog-types/server';
+import {getPermalink} from '../utils/permalink.js';
 
 interface JsonLdProps {
     blog?: HydratedBlog;
@@ -33,7 +34,7 @@ export const JsonLd: React.FC<JsonLdProps> = ({
         if (!blog) return null;
 
         const jsonLdOverrides = blog.metadata?.['json-ld-structured-data:overrides'] || {};
-        const permalink = blog.metadata?.['permalink-manager:permalink']?.permalink;
+        const permalink = getPermalink(blog);
         const baseUrl = website?.url || '';
 
         const jsonLd: any = {
@@ -53,7 +54,7 @@ export const JsonLd: React.FC<JsonLdProps> = ({
             const authorName = jsonLdOverrides.authorName || blog.user?.name;
 
             if (authorName) {
-                const authorPermalink = blog.user?.metadata?.['permalink-manager:permalink']?.permalink;
+                const authorPermalink = getPermalink(blog.user);
                 const authorUrl = jsonLdOverrides.authorUrl || (authorPermalink ? `${baseUrl}${authorPermalink}` : baseUrl);
 
                 jsonLd.author = {

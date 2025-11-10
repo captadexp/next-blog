@@ -1,6 +1,7 @@
 import React from 'react';
 import type {HydratedBlog} from '@supergrowthai/next-blog-types/server';
 import {FeaturedMedia} from '../blog/FeaturedMedia';
+import {PermalinkText, PermalinkWrapper} from '../components/PermalinkWrapper';
 
 interface BlogCardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     blog: HydratedBlog;
@@ -45,7 +46,6 @@ export const BlogCard: React.FC<BlogCardProps> = ({
         overflow: 'hidden',
         boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06)',
         transition: 'transform 0.2s, box-shadow 0.2s',
-        cursor: 'pointer',
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
@@ -139,7 +139,9 @@ export const BlogCard: React.FC<BlogCardProps> = ({
         blog.metadata?.['json-ld-structured-data:overrides']?.featuredImageMedia?.url;
 
     return (
-        <article
+        <PermalinkWrapper
+            entity={blog}
+            fallbackElement="article"
             style={containerStyles}
             className={className}
             {...rest}
@@ -159,18 +161,9 @@ export const BlogCard: React.FC<BlogCardProps> = ({
             )}
 
             <div style={defaultContentStyles}>
-                {blog.metadata?.['permalink-manager:permalink']?.permalink ? (
-                    <a
-                        href={blog.metadata['permalink-manager:permalink'].permalink}
-                        style={defaultTitleStyles}
-                    >
-                        {blog.title}
-                    </a>
-                ) : (
-                    <span style={defaultTitleStyles}>
-                        {blog.title}
-                    </span>
-                )}
+                <span style={defaultTitleStyles}>
+                    {blog.title}
+                </span>
 
                 {showExcerpt && (
                     <p style={defaultExcerptStyles}>
@@ -182,16 +175,12 @@ export const BlogCard: React.FC<BlogCardProps> = ({
                     {showDate && <span>{formatDate(blog.createdAt)}</span>}
                     {showDate && showAuthor && <span>•</span>}
                     {showAuthor && (
-                        blog.user.metadata?.['permalink-manager:permalink']?.permalink ? (
-                            <a
-                                href={blog.user.metadata['permalink-manager:permalink'].permalink}
-                                style={{color: '#2563eb', textDecoration: 'none'}}
-                            >
-                                By {blog.user.name}
-                            </a>
-                        ) : (
-                            <span>By {blog.user.name}</span>
-                        )
+                        <PermalinkText
+                            entity={blog.user}
+                            style={{fontSize: 'inherit', color: 'inherit'}}
+                        >
+                            By {blog.user.name}
+                        </PermalinkText>
                     )}
                     {(showDate || showAuthor) && showCategory && <span>•</span>}
                     {showCategory && blog.category && <span>{blog.category.name}</span>}
@@ -205,15 +194,12 @@ export const BlogCard: React.FC<BlogCardProps> = ({
                     )}
                 </div>
 
-                {showReadMore && blog.metadata?.['permalink-manager:permalink']?.permalink && (
-                    <a
-                        href={blog.metadata['permalink-manager:permalink'].permalink}
-                        style={defaultReadMoreStyles}
-                    >
+                {showReadMore && (
+                    <span style={defaultReadMoreStyles}>
                         Read More →
-                    </a>
+                    </span>
                 )}
             </div>
-        </article>
+        </PermalinkWrapper>
     );
 };

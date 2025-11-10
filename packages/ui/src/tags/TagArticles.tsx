@@ -1,5 +1,6 @@
 import React from 'react';
 import type {HydratedBlog, Tag} from '@supergrowthai/next-blog-types/server';
+import {PermalinkText, PermalinkWrapper} from '../components/PermalinkWrapper';
 
 interface TagArticlesProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     tag: Tag;
@@ -91,22 +92,18 @@ export const TagArticles: React.FC<TagArticlesProps> = ({
 
             <div>
                 {blogs.map((blog, index) => (
-                    <article
+                    <PermalinkWrapper
                         key={blog._id}
+                        entity={blog}
+                        fallbackElement="article"
                         style={{
                             ...defaultArticleStyles,
                             borderBottom: index === blogs.length - 1 ? 'none' : defaultArticleStyles.borderBottom
                         }}
                     >
-                        {blog.metadata?.['permalink-manager:permalink']?.permalink ? (
-                            <a href={blog.metadata['permalink-manager:permalink'].permalink} style={defaultTitleStyles}>
-                                {blog.title}
-                            </a>
-                        ) : (
-                            <span style={defaultTitleStyles}>
-                                {blog.title}
-                            </span>
-                        )}
+                        <h3 style={defaultTitleStyles}>
+                            {blog.title}
+                        </h3>
                         <p style={defaultExcerptStyles}>
                             {getExcerpt(blog)}
                         </p>
@@ -117,18 +114,11 @@ export const TagArticles: React.FC<TagArticlesProps> = ({
                                 day: 'numeric'
                             })}
                             {' • '}
-                            {blog.user.metadata?.['permalink-manager:permalink']?.permalink ? (
-                                <a
-                                    href={blog.user.metadata['permalink-manager:permalink'].permalink}
-                                    style={{color: '#2563eb', textDecoration: 'none'}}
-                                >
-                                    {blog.user.name}
-                                </a>
-                            ) : (
-                                blog.user.name
-                            )}
+                            <PermalinkText entity={blog.user}>
+                                {blog.user.name}
+                            </PermalinkText>
                         </div>
-                    </article>
+                    </PermalinkWrapper>
                 ))}
             </div>
         </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import type {Category, HydratedBlog} from '@supergrowthai/next-blog-types/server';
+import {PermalinkText, PermalinkWrapper} from '../components/PermalinkWrapper';
 
 interface CategoryArticlesProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     category: Category;
@@ -118,19 +119,11 @@ export const CategoryArticles: React.FC<CategoryArticlesProps> = ({
 
             <div>
                 {blogs.map(blog => (
-                    <article key={blog._id} style={defaultArticleStyles}>
-                        {blog.metadata?.['permalink-manager:permalink']?.permalink ? (
-                            <a
-                                href={blog.metadata['permalink-manager:permalink'].permalink}
-                                style={defaultTitleStyles}
-                            >
-                                {blog.title}
-                            </a>
-                        ) : (
-                            <span style={defaultTitleStyles}>
-                                {blog.title}
-                            </span>
-                        )}
+                    <PermalinkWrapper key={blog._id} entity={blog} fallbackElement="article"
+                                      style={defaultArticleStyles}>
+                        <h3 style={defaultTitleStyles}>
+                            {blog.title}
+                        </h3>
 
                         <p style={defaultExcerptStyles}>
                             {getExcerpt(blog)}
@@ -139,32 +132,18 @@ export const CategoryArticles: React.FC<CategoryArticlesProps> = ({
                         <div style={defaultMetaStyles}>
                             <span>{formatDate(blog.createdAt)}</span>
                             <span>•</span>
-                            {blog.user.metadata?.['permalink-manager:permalink']?.permalink ? (
-                                <a
-                                    href={blog.user.metadata['permalink-manager:permalink'].permalink}
-                                    style={{color: '#2563eb', textDecoration: 'none'}}
-                                >
-                                    By {blog.user.name}
-                                </a>
-                            ) : (
-                                <span>By {blog.user.name}</span>
-                            )}
+                            <PermalinkText entity={blog.user}>
+                                By {blog.user.name}
+                            </PermalinkText>
                             {blog.tags && blog.tags.length > 0 && (
                                 <>
                                     <span>•</span>
                                     <span>
                     {blog.tags.map((tag, idx) => (
                         <React.Fragment key={tag._id}>
-                            {tag.metadata?.['permalink-manager:permalink']?.permalink ? (
-                                <a
-                                    href={tag.metadata['permalink-manager:permalink'].permalink}
-                                    style={{color: '#2563eb', textDecoration: 'none'}}
-                                >
-                                    #{tag.name}
-                                </a>
-                            ) : (
-                                <span>#{tag.name}</span>
-                            )}
+                            <PermalinkText entity={tag}>
+                                #{tag.name}
+                            </PermalinkText>
                             {idx < blog.tags.length - 1 && ', '}
                         </React.Fragment>
                     ))}
@@ -172,7 +151,7 @@ export const CategoryArticles: React.FC<CategoryArticlesProps> = ({
                                 </>
                             )}
                         </div>
-                    </article>
+                    </PermalinkWrapper>
                 ))}
             </div>
         </div>

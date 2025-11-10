@@ -1,5 +1,6 @@
 import React from 'react';
 import type {Tag} from '@supergrowthai/next-blog-types/server';
+import {PermalinkWrapper} from '../components/PermalinkWrapper';
 
 interface TagListProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     tags: Tag[];
@@ -72,17 +73,11 @@ export const TagList: React.FC<TagListProps> = ({
     return (
         <div style={getContainerStyles()} className={className} {...rest}>
             {tags.map(tag => (
-                <div key={tag._id} style={defaultItemStyles}>
-                    {tag.metadata?.['permalink-manager:permalink']?.permalink ? (
-                        <a href={tag.metadata['permalink-manager:permalink'].permalink} style={defaultLinkStyles}>
-                            #{tag.name}
-                        </a>
-                    ) : (
-                        <span style={defaultLinkStyles}>
-                            #{tag.name}
-                        </span>
-                    )}
-                </div>
+                <PermalinkWrapper key={tag._id} entity={tag} fallbackElement="div" style={defaultItemStyles}>
+                    <span style={defaultLinkStyles}>
+                        #{tag.name}
+                    </span>
+                </PermalinkWrapper>
             ))}
         </div>
     );
