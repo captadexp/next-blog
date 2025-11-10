@@ -2,7 +2,6 @@ import {ITaskStorageAdapter} from "./ITaskStorageAdapter.js";
 import {CronTask} from "./types.js";
 import {Logger, LogLevel} from "@supergrowthai/utils";
 import {PrismaClient} from "@prisma/client/extension";
-import {BaseMessage} from "@supergrowthai/mq";
 
 const logger = new Logger('PrismaAdapter', LogLevel.INFO);
 const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
@@ -41,8 +40,7 @@ export class PrismaAdapter<
              *  - entity type of client[K] extends Msg (which extends BaseMessage<TId>)
              * Do not pass at runtime.
              */
-            _shapeCheck?: EnsureModelShape<PrismaClient[K], Msg> & (Msg extends BaseMessage<TId> & {
-                _id?: any,
+            _shapeCheck?: EnsureModelShape<PrismaClient[K], Msg> & (Msg extends CronTask<TId> & {
                 id: TId
             } ? unknown : never);
         }
