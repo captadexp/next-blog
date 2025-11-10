@@ -6,6 +6,7 @@ import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
 import {BasicAuthHandler} from "../auth/basic-auth-handler.ts";
+import {filterKeys, USER_CREATE_FIELDS, USER_UPDATE_FIELDS} from "../utils/validation.js";
 
 // Get the currently logged in user - requires authentication but no special permission
 export const getCurrentUser = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
@@ -110,7 +111,8 @@ export const getUser = secure(async (session: SessionData, request: MinimumReque
 
 // Create a new user
 export const createUser = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
-    const body = request.body as any;
+    const rawBody = request.body as any;
+    const body = filterKeys<UserData>(rawBody, USER_CREATE_FIELDS);
 
     if (!body.username || !body.email || !body.password || !body.name) {
         throw new ValidationError("Username, email, password, and name are required");
@@ -135,21 +137,20 @@ export const createUser = secure(async (session: SessionData, request: MinimumRe
         data: userData
     });
     if (beforeResult?.data) {
-        userData = beforeResult.data;
+        userData = filterKeys<UserData>(beforeResult.data, USER_CREATE_FIELDS);
     }
 
     // Hash the password
-    const hashedPassword = crypto.hashPassword(userData.password);
+    const hashedPassword = crypto.hashPassword(userData.password!);
 
     // Create the user data
     const finalUserData: UserData = {
-        username: userData.username,
-        email: userData.email,
-        name: userData.name,
-        slug: userData.slug || userData.username.toLowerCase().replace(/\s+/g, '-'),
+        username: userData.username!,
+        email: userData.email!,
+        name: userData.name!,
+        slug: userData.slug || userData.username!.toLowerCase().replace(/\s+/g, '-'),
         bio: userData.bio || '',
         password: hashedPassword,
-        isSystem: false,
         permissions: userData.permissions || [],
         createdAt: Date.now(),
         updatedAt: Date.now()
@@ -175,7 +176,8 @@ export const createUser = secure(async (session: SessionData, request: MinimumRe
 export const updateUser = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const userId = request._params?.id;
 
-    let updates = request.body as any;
+    const rawUpdates = request.body as any;
+    let updates = filterKeys<UserData>(rawUpdates, USER_UPDATE_FIELDS);
 
     const db = extra.sdk.db;
     const existingUser = await db.users.findById(userId!);
@@ -198,10 +200,10 @@ export const updateUser = secure(async (session: SessionData, request: MinimumRe
         previousData: existingUser
     });
     if (beforeResult?.data) {
-        updates = beforeResult.data;
+        updates = filterKeys<UserData>(beforeResult.data, USER_UPDATE_FIELDS);
     }
 
-    // Create update object
+    // Create update object with only non-undefined values
     const updateData: Partial<User> = {};
 
     if (updates.username) updateData.username = updates.username;

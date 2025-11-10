@@ -5,6 +5,7 @@ import {PaginatedResponse, PaginationParams,} from "@supergrowthai/next-blog-typ
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
+import {filterKeys, TAG_CREATE_FIELDS, TAG_UPDATE_FIELDS} from "../utils/validation.js";
 
 export const getTags = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     const db = extra.sdk.db;
@@ -90,7 +91,8 @@ export const createTag = secure(async (session: SessionData, request: MinimumReq
     const db = extra.sdk.db;
 
     try {
-        let data = request.body as Partial<TagData>;
+        const rawData = request.body as any;
+        let data = filterKeys<TagData>(rawData, TAG_CREATE_FIELDS);
 
         if (!data.name) {
             throw new ValidationError("Tag name is required");
@@ -103,7 +105,7 @@ export const createTag = secure(async (session: SessionData, request: MinimumReq
             data
         });
         if (beforeResult?.data) {
-            data = beforeResult.data;
+            data = filterKeys<TagData>(beforeResult.data, TAG_CREATE_FIELDS);
         }
 
         const creation = await db.tags.create({
@@ -136,7 +138,8 @@ export const updateTag = secure(async (session: SessionData, request: MinimumReq
     const tagId = request._params?.id;
 
     try {
-        let data = request.body as Partial<TagData>;
+        const rawData = request.body as any;
+        let data = filterKeys<TagData>(rawData, TAG_UPDATE_FIELDS);
 
         // Check if tag exists first
         const existingTag = await db.tags.findOne({_id: tagId});
@@ -153,7 +156,7 @@ export const updateTag = secure(async (session: SessionData, request: MinimumReq
             previousData: existingTag
         });
         if (beforeResult?.data) {
-            data = beforeResult.data;
+            data = filterKeys<TagData>(beforeResult.data, TAG_UPDATE_FIELDS);
         }
 
         const updation = await db.tags.updateOne(

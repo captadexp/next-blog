@@ -7,6 +7,7 @@ import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import {getSystemPluginId} from "../utils/defaultSettings.js";
 import {encrypt, isSecureKey, maskValue} from "../utils/crypto.js";
+import {filterKeys, SETTINGS_CREATE_FIELDS, SETTINGS_UPDATE_FIELDS} from "../utils/validation.js";
 
 // List all settings
 export const getSettings = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
@@ -133,11 +134,16 @@ export const createSetting = secure(async (session: SessionData, request: Minimu
     masked?: boolean
 }>, extra: ApiExtra): Promise<OneApiFunctionResponse> => {
     const db = extra.sdk.db;
-    let settingData = request.body as Partial<SettingsEntryData> & { scope?: 'global' | 'user', masked?: boolean };
+    const rawBody = request.body as any;
+    let settingData = filterKeys<SettingsEntryData>(rawBody, SETTINGS_CREATE_FIELDS);
+
+    // Handle scope and masked from raw body since they're not in the SettingsEntryData interface
+    const scope = rawBody.scope || 'global';
+    const masked = rawBody.masked;
 
     if (!settingData.key) throw new BadRequest("Setting key is required");
     if (settingData.value === undefined) throw new BadRequest("Setting value is required");
-    if (settingData.masked === true) throw new BadRequest("Masked placeholder not allowed for create");
+    if (masked === true) throw new BadRequest("Masked placeholder not allowed for create");
 
     // Force secure if key looks secure (prevents accidental plaintext) — tiny policy hardening
     // (If you must keep "explicit choice wins", remove the next line.)
@@ -145,7 +151,6 @@ export const createSetting = secure(async (session: SessionData, request: Minimu
 
     if (settingData.isSecure === undefined) settingData.isSecure = isSecureKey(settingData.key);
 
-    const scope = settingData.scope || 'global';
     if (scope === 'user') {
         settingData.ownerId = createId.user(session.user._id);
         settingData.ownerType = 'user';
@@ -160,15 +165,14 @@ export const createSetting = secure(async (session: SessionData, request: Minimu
         settingData.value = encrypt(settingData.value as any);
     }
 
-    delete (settingData as any).scope;
-    delete (settingData as any).masked; // never persist
-
     const beforeResult = await extra.sdk.callHook('setting:beforeCreate', {
         entity: 'setting',
         operation: 'create',
         data: settingData
     });
-    if (beforeResult?.data) settingData = beforeResult.data;
+    if (beforeResult?.data) {
+        settingData = filterKeys<SettingsEntryData>(beforeResult.data, SETTINGS_CREATE_FIELDS);
+    }
 
     settingData.createdAt = Date.now();
     settingData.updatedAt = Date.now();
@@ -204,22 +208,14 @@ export const updateSetting = secure(async (session: SessionData, request: Minimu
     const existingSetting = await db.settings.findOne({_id: settingId});
     if (!existingSetting) throw new NotFound(`Setting with id ${settingId} not found`);
 
-    // Allowlist fields only
+    // Filter to only allowed fields
     const reqBody = request.body as Partial<SettingsEntryData> & { masked?: boolean };
-    const updates: Partial<SettingsEntryData> = {};
-    if (typeof reqBody.key !== 'undefined') updates.key = reqBody.key;
-    if (typeof reqBody.value !== 'undefined') updates.value = reqBody.value;
+    const updates = filterKeys<SettingsEntryData>(reqBody, SETTINGS_UPDATE_FIELDS);
 
     // Ignore value if client signals it's masked (prevents double-encrypting mask text)
     if (reqBody.masked === true) {
         delete updates.value;
     }
-
-    // Caller cannot toggle these
-    delete (reqBody as any).isSecure;
-    delete (reqBody as any).ownerId;
-    delete (reqBody as any).ownerType;
-    delete (reqBody as any).createdAt;
 
     // Handle secure settings
     const keyBecomesSecure = !!updates.key && isSecureKey(updates.key);
@@ -245,7 +241,7 @@ export const updateSetting = secure(async (session: SessionData, request: Minimu
         data: updates,
         previousData: existingSetting
     });
-    if (beforeResult?.data) finalUpdates = beforeResult.data;
+    if (beforeResult?.data) finalUpdates = filterKeys<SettingsEntryData>(beforeResult.data, SETTINGS_UPDATE_FIELDS);
 
     finalUpdates.updatedAt = Date.now();
 

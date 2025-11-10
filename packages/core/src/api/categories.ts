@@ -4,6 +4,7 @@ import {PaginatedResponse, PaginationParams,} from "@supergrowthai/next-blog-typ
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
+import {filterKeys, CATEGORY_CREATE_FIELDS, CATEGORY_UPDATE_FIELDS} from "../utils/validation.js";
 
 // List all categories
 export const getCategories = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
@@ -92,7 +93,8 @@ export const createCategory = secure(async (session: SessionData, request: Minim
     const db = extra.sdk.db;
 
     try {
-        let data = request.body as Partial<CategoryData>;
+        const rawData = request.body as any;
+        let data = filterKeys<CategoryData>(rawData, CATEGORY_CREATE_FIELDS);
 
         if (!data.name) {
             throw new ValidationError("Category name is required");
@@ -105,7 +107,7 @@ export const createCategory = secure(async (session: SessionData, request: Minim
             data
         });
         if (beforeResult?.data) {
-            data = beforeResult.data;
+            data = filterKeys<CategoryData>(beforeResult.data, CATEGORY_CREATE_FIELDS);
         }
 
         const creation = await db.categories.create({
@@ -139,7 +141,8 @@ export const updateCategory = secure(async (session: SessionData, request: Minim
     const categoryId = request._params?.id;
 
     try {
-        let data = request.body as Partial<CategoryData>;
+        const rawData = request.body as any;
+        let data = filterKeys<CategoryData>(rawData, CATEGORY_UPDATE_FIELDS);
 
         // Check if category exists first
         const existingCategory = await db.categories.findOne({_id: categoryId});
@@ -156,7 +159,7 @@ export const updateCategory = secure(async (session: SessionData, request: Minim
             previousData: existingCategory
         });
         if (beforeResult?.data) {
-            data = beforeResult.data;
+            data = filterKeys<CategoryData>(beforeResult.data, CATEGORY_UPDATE_FIELDS);
         }
 
         const updation = await db.categories.updateOne(

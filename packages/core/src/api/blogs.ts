@@ -4,6 +4,7 @@ import {PaginatedResponse, PaginationParams,} from "@supergrowthai/next-blog-typ
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
+import {filterKeys, BLOG_CREATE_FIELDS, BLOG_UPDATE_FIELDS} from "../utils/validation.js";
 
 // List all blogs
 export const getBlogs = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
@@ -14,7 +15,12 @@ export const getBlogs = secure(async (session: SessionData, request: MinimumRequ
         const page = Number(params?.page) || 1;
         const limit = Number(params?.limit) || 10;
         const skip = (page - 1) * limit;
-        let blogs = await db.blogs.find({}, {skip, limit});
+        let blogs = await db.blogs.find({}, {
+            skip,
+            limit,
+            sort: {_id: -1},
+            projection: {_id: 1, title: 1, createdAt: 1, updatedAt: 1}
+        });
 
         // Execute hook for list operation if available
         if (extra?.sdk.callHook) {
@@ -69,9 +75,12 @@ export const getBlogById = secure(async (session: SessionData, request: MinimumR
 // Create a new blog
 export const createBlog = secure(async (session: SessionData, request: MinimumRequest<any, Partial<BlogData>>, extra: ApiExtra) => {
     const db = extra.sdk.db;
-    let body = request.body as Partial<BlogData>;
+    const rawBody = request.body as any;
 
     try {
+        // Filter to only allowed fields
+        const body = filterKeys<BlogData>(rawBody, BLOG_CREATE_FIELDS);
+
         // Validate required fields
         if (!body.title) {
             throw new ValidationError("Blog title is required");
@@ -88,7 +97,7 @@ export const createBlog = secure(async (session: SessionData, request: MinimumRe
             data: body
         });
         if (beforeResult) {
-            body = {...body, ...beforeResult};
+            Object.assign(body, beforeResult);
         }
 
         const extras = {
@@ -123,9 +132,12 @@ export const createBlog = secure(async (session: SessionData, request: MinimumRe
 export const updateBlog = secure(async (session: SessionData, request: MinimumRequest<any, Partial<Blog>>, extra: ApiExtra) => {
     const db = extra.sdk.db;
     const blogId = request._params?.id;
-    let body = request.body as Partial<Blog>;
+    const rawBody = request.body as any;
 
     try {
+        // Filter to only allowed fields
+        let body = filterKeys<BlogData>(rawBody, BLOG_UPDATE_FIELDS);
+
         const extras = {updatedAt: Date.now()};
 
         // Check if blog exists first
@@ -149,7 +161,7 @@ export const updateBlog = secure(async (session: SessionData, request: MinimumRe
             previousData: existingBlog
         });
         if (beforeResult?.updates) {
-            body = beforeResult.updates;
+            body = filterKeys<BlogData>(beforeResult.updates, BLOG_UPDATE_FIELDS);
         }
 
         const updation = await db.blogs.updateOne(
