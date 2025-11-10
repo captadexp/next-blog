@@ -1,5 +1,5 @@
 import {CacheProvider} from "memoose-js";
-import {BaseMessage, getEnvironmentQueueName, IMessageQueue, MessageConsumer, QueueName} from "@supergrowthai/mq";
+import {BaseMessage, getEnvironmentQueueName, IMessageQueue, MessageConsumer, QueueName} from "../../core/index.js";
 import {LockManager, Logger, LogLevel} from "@supergrowthai/utils";
 import {PrismaClient} from "@prisma/client/extension";
 
