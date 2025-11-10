@@ -4,7 +4,7 @@ import {PaginatedResponse, PaginationParams,} from "@supergrowthai/next-blog-typ
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
-import {filterKeys, BLOG_CREATE_FIELDS, BLOG_UPDATE_FIELDS} from "../utils/validation.js";
+import {BLOG_CREATE_FIELDS, BLOG_UPDATE_FIELDS, filterKeys} from "../utils/validation.js";
 
 // List all blogs
 export const getBlogs = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
@@ -78,26 +78,25 @@ export const createBlog = secure(async (session: SessionData, request: MinimumRe
     const rawBody = request.body as any;
 
     try {
-        // Filter to only allowed fields
-        const body = filterKeys<BlogData>(rawBody, BLOG_CREATE_FIELDS);
 
+        let data = filterKeys<BlogData>(rawBody, BLOG_CREATE_FIELDS);
         // Validate required fields
-        if (!body.title) {
+        if (!data.title) {
             throw new ValidationError("Blog title is required");
         }
 
-        if (!body.content) {
+        if (!data.content) {
             throw new ValidationError("Blog content is required");
         }
 
         // Execute before create hook
         const beforeResult = await extra.sdk.callHook('blog:beforeCreate', {
-            title: body.title,
-            content: body.content,
-            data: body
+            title: data.title,
+            content: data.content,
+            data: data
         });
-        if (beforeResult) {
-            Object.assign(body, beforeResult);
+        if (beforeResult?.data) {
+            data = filterKeys<BlogData>(beforeResult.data, BLOG_CREATE_FIELDS);
         }
 
         const extras = {
@@ -105,13 +104,14 @@ export const createBlog = secure(async (session: SessionData, request: MinimumRe
             updatedAt: Date.now()
         };
 
-        const creation = await db.blogs.create({
-            ...body,
+        const cleanedBody = filterKeys<BlogData>({
+            ...data,
             ...extras,
             userId: session.user._id
-        } as BlogData);
+        }, BLOG_CREATE_FIELDS);
 
-        // Execute after create hook
+        const creation = await db.blogs.create(cleanedBody as BlogData);
+
         await extra.sdk.callHook('blog:afterCreate', {
             blogId: creation._id,
             data: creation

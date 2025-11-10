@@ -4,7 +4,7 @@ import {PaginatedResponse, PaginationParams,} from "@supergrowthai/next-blog-typ
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
-import {filterKeys, CATEGORY_CREATE_FIELDS, CATEGORY_UPDATE_FIELDS} from "../utils/validation.js";
+import {CATEGORY_CREATE_FIELDS, CATEGORY_UPDATE_FIELDS, filterKeys} from "../utils/validation.js";
 
 // List all categories
 export const getCategories = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
