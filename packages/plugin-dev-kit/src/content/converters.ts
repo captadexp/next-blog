@@ -25,9 +25,22 @@ function inlineNodeToHtml(node: InlineNode): string {
 }
 
 /**
- * Escape HTML special characters
+ * Escape HTML special characters while preserving valid HTML entities
  */
 function escapeHtml(text: string): string {
+    // First, temporarily replace valid HTML entities with placeholders
+    const entityMap: Record<string, string> = {};
+    let entityCounter = 0;
+
+    // Common HTML entities to preserve
+    const validEntities = /&(?:nbsp|amp|lt|gt|quot|apos|#(?:\d+|x[0-9a-fA-F]+));/g;
+    const textWithPlaceholders = text.replace(validEntities, (entity) => {
+        const placeholder = `__ENTITY_${entityCounter++}__`;
+        entityMap[placeholder] = entity;
+        return placeholder;
+    });
+
+    // Now escape remaining special characters
     const map: Record<string, string> = {
         '&': '&amp;',
         '<': '&lt;',
@@ -35,7 +48,10 @@ function escapeHtml(text: string): string {
         '"': '&quot;',
         "'": '&#039;'
     };
-    return text.replace(/[&<>"']/g, m => map[m]);
+    const escapedText = textWithPlaceholders.replace(/[&<>"']/g, m => map[m]);
+
+    // Restore the preserved entities
+    return escapedText.replace(/__ENTITY_\d+__/g, placeholder => entityMap[placeholder] || placeholder);
 }
 
 /**

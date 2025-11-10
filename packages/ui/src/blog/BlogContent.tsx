@@ -1,6 +1,7 @@
 import React from 'react';
 import type {HydratedBlog} from '@supergrowthai/next-blog-types/server';
 import {contentObjectToHtml} from "@supergrowthai/plugin-dev-kit/content";
+import styles from './BlogContent.module.css';
 
 interface BlogContentProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     blog: HydratedBlog;
@@ -15,17 +16,10 @@ export const BlogContent: React.FC<BlogContentProps> = ({
                                                         }) => {
     const htmlContent = contentObjectToHtml(blog.content);
 
-    const defaultStyles: React.CSSProperties = {
-        fontSize: '1rem',
-        lineHeight: 1.7,
-        color: '#374151',
-        ...style
-    };
-
     return (
         <div
-            style={defaultStyles}
-            className={className}
+            style={style}
+            className={`${styles.blogContent} ${className || ''}`}
             dangerouslySetInnerHTML={{__html: htmlContent}}
             {...rest}
         />
