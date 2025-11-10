@@ -3,7 +3,7 @@ import {useUser} from '../../../context/UserContext';
 import {Plugin} from '@supergrowthai/next-blog-types';
 import {usePlugins} from "../../../context/PluginContext.tsx";
 import {useLocation} from "preact-iso";
-import {useEffect} from "preact/hooks";
+import {useEffect, useState} from "preact/hooks";
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
 import {PaginationControls} from '../../../components/PaginationControls';
 import Loader from '../../../components/Loader';
@@ -14,6 +14,7 @@ const PluginsList = () => {
     const {hasPermission, hasAllPermissions, apis: api} = useUser();
     const {loadedPlugins, hardReloadPlugins} = usePlugins();
     const location = useLocation();
+    const [isReloading, setIsReloading] = useState(false);
 
     const {
         entities: plugins,
@@ -46,6 +47,15 @@ const PluginsList = () => {
 
     const reinstallingIds = actioningIds.reinstall || new Set();
     const handleReinstall = actionHandlers.reinstall;
+
+    const handleReloadPlugins = async () => {
+        setIsReloading(true);
+        try {
+            await hardReloadPlugins();
+        } finally {
+            setIsReloading(false);
+        }
+    };
 
     const columns = [
         {
@@ -121,11 +131,12 @@ const PluginsList = () => {
                         <h1 className="text-2xl font-bold">Plugins</h1>
                         <div className="flex space-x-2">
                             <button
-                                onClick={() => hardReloadPlugins()}
-                                className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
+                                onClick={handleReloadPlugins}
+                                disabled={isReloading}
+                                className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50"
                                 title="Clear cache and reload all plugins"
                             >
-                                Reload Plugins
+                                {isReloading ? <Loader size="sm" text=""/> : 'Reload Plugins'}
                             </button>
                             {hasPermission('plugins:create') && (
                                 <a
