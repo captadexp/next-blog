@@ -1,5 +1,6 @@
 import type {BlogEditorContext, ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
 import {useCallback, useEffect, useMemo, useRef, useState} from '@supergrowthai/plugin-dev-kit/client';
+import {ClientError, handleRPCResponse, isValidationError} from '../errors.js';
 import {SchemaTypePicker} from './SchemaTypePicker.js';
 import {BasicFields} from './BasicFields.js';
 import {TypeSpecificFields} from './TypeSpecificFields.js';
@@ -43,26 +44,33 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
             sdk.callRPC('json-ld-structured-data:blog:get', {blogId}),
             sdk.callRPC('json-ld-structured-data:config:get', {})
         ]).then(([blogResp, configResp]) => {
-            const overridesData = blogResp?.payload?.payload || {};
+            if (blogResp.code !== 0) {
+                sdk.notify(blogResp.message, 'error');
+                return;
+            }
+            if (configResp.code !== 0) {
+                sdk.notify(configResp.message, 'error');
+                return;
+            }
+            const overridesData = blogResp.payload.payload || {};
             setOverrides(structuredClone(overridesData));
             setOriginalOverrides(structuredClone(overridesData));
-            setConfig(configResp?.payload?.payload || {});
+            setConfig(configResp.payload.payload || {});
         });
     }, [blogId, sdk]);
 
     const saveOverrides = useCallback(async (newOverrides: any) => {
         if (!blogId) return;
         setSaving(true);
-        try {
-            await sdk.callRPC('json-ld-structured-data:blog:set', {blogId, overrides: newOverrides});
+        const resp = await sdk.callRPC('json-ld-structured-data:blog:set', {blogId, overrides: newOverrides});
+        if (resp.code !== 0) {
+            sdk.notify(resp.message, 'error');
+        } else {
             setOverrides(newOverrides);
             setOriginalOverrides(structuredClone(newOverrides));
             sdk.notify('Settings saved successfully', 'success');
-        } catch (error) {
-            sdk.notify('Failed to save settings', 'error');
-        } finally {
-            setSaving(false);
         }
+        setSaving(false);
     }, [blogId, sdk]);
 
     // Debounced save function
@@ -89,34 +97,45 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
 
     const generatePreview = useCallback(async () => {
         if (!blogId) return;
-        const resp = await sdk.callRPC('json-ld-structured-data:generate', {blogId})
-        if (resp.code !== 0) {
-            sdk.notify(`${resp.message}\n${resp.payload.message}`.trim())
-        }
 
-        setPreview(resp?.payload?.payload);
-        setShowPreview(true);
+        try {
+            const resp = await sdk.callRPC('json-ld-structured-data:generate', {blogId});
+            const jsonLd = handleRPCResponse(resp);
 
-        // Improved validation that considers context data
-        const errors: string[] = [];
-        const jsonLd = resp?.payload?.payload;
-        const blogTitle = context?.form?.data?.title || context?.data?.title;
-        const blogExcerpt = context?.form?.data?.excerpt || context?.data?.excerpt;
+            setPreview(jsonLd);
+            setShowPreview(true);
+            setValidationErrors([]); // Clear any previous validation errors
 
-        // Only show error if no headline at all (neither override nor blog title)
-        if (!jsonLd?.headline && !blogTitle) {
-            errors.push('Missing headline (no title in blog)');
-        }
-        // Only show error if no description at all
-        if (!jsonLd?.description && !blogExcerpt) {
-            errors.push('Missing description (no excerpt in blog)');
-        }
-        // Only show error if author is completely missing
-        if (!jsonLd?.author?.name && !overrides.hideAuthor) {
-            errors.push('Missing author name');
-        }
+            // Context-aware validation warnings
+            const warnings: string[] = [];
+            const blogTitle = context?.form?.data?.title || context?.data?.title;
+            const blogExcerpt = context?.form?.data?.excerpt || context?.data?.excerpt;
 
-        setValidationErrors(errors);
+            if (!jsonLd?.headline && !blogTitle) {
+                warnings.push('Missing headline (no title in blog)');
+            }
+            if (!jsonLd?.description && !blogExcerpt) {
+                warnings.push('Missing description (no excerpt in blog)');
+            }
+            if (!jsonLd?.author?.name && !overrides.hideAuthor) {
+                warnings.push('Missing author name');
+            }
+
+            setValidationErrors(warnings);
+
+        } catch (error) {
+            if (isValidationError(error)) {
+                // Show validation error in the UI
+                setValidationErrors([error.message]);
+                setPreview(null);
+                setShowPreview(false);
+            } else {
+                // Other errors get notified
+                sdk.notify(error.message || 'Failed to generate preview', 'error');
+                setPreview(null);
+                setShowPreview(false);
+            }
+        }
     }, [blogId, sdk, context, overrides.hideAuthor]);
 
     const updateField = useCallback((field: string, value: any) => {
@@ -171,7 +190,8 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
                 }
             }
         } catch (error) {
-            sdk.notify('Failed to select image', 'error');
+            const clientError = new ClientError('Failed to select image', 'image-selection');
+            sdk.notify(clientError.message, 'error');
         }
     }, [sdk, overrides, updateField, updateNestedField]);
 
@@ -276,15 +296,34 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
                 </button>
 
                 {validationErrors.length > 0 && (
-                    <div className="p-2 bg-yellow-50 border border-yellow-200 rounded">
-                        <p className="text-xs font-medium text-yellow-800 mb-1">Validation Warnings:</p>
-                        <ul className="text-xs text-yellow-700 space-y-0.5">
+                    <div className={`p-2 border rounded ${
+                        validationErrors.some(error => error.includes('requires'))
+                            ? 'bg-red-50 border-red-200'
+                            : 'bg-yellow-50 border-yellow-200'
+                    }`}>
+                        <p className={`text-xs font-medium mb-1 ${
+                            validationErrors.some(error => error.includes('requires'))
+                                ? 'text-red-800'
+                                : 'text-yellow-800'
+                        }`}>
+                            {validationErrors.some(error => error.includes('requires'))
+                                ? 'Validation Errors:'
+                                : 'Validation Warnings:'}
+                        </p>
+                        <ul className={`text-xs space-y-0.5 ${
+                            validationErrors.some(error => error.includes('requires'))
+                                ? 'text-red-700'
+                                : 'text-yellow-700'
+                        }`}>
                             {validationErrors.map((error, i) => (
                                 <li key={`error-${i}`}>• {error}</li>
                             ))}
                         </ul>
                         <p className="text-xs text-gray-600 mt-1 italic">
-                            Note: Fields without overrides will use blog data automatically
+                            {validationErrors.some(error => error.includes('requires'))
+                                ? 'Please configure the required fields in the Type-Specific section.'
+                                : 'Note: Fields without overrides will use blog data automatically'
+                            }
                         </p>
                     </div>
                 )}

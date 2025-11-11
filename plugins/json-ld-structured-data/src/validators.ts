@@ -2,6 +2,7 @@
  * JSON-LD validation and sanitization
  */
 import {JsonLdSchema} from './types.js';
+import {ValidationError} from './errors.js';
 
 /**
  * Sanitize string to prevent XSS in JSON-LD
@@ -80,12 +81,13 @@ export function parseCustomJson(jsonStr: string): Record<string, any> | null {
     try {
         const parsed = JSON.parse(jsonStr);
         if (typeof parsed !== 'object' || parsed === null) {
-            throw new Error('Custom JSON must be an object');
+            throw new ValidationError('Custom JSON must be an object');
         }
 
         return sanitizeObjectValues(parsed);
     } catch (error) {
-        throw new Error(`Invalid custom JSON: ${error.message}`);
+        if (error instanceof ValidationError) throw error;
+        throw new ValidationError(`Invalid custom JSON: ${error.message}`);
     }
 }
 
@@ -158,6 +160,6 @@ export function validateRequiredFields(schema: JsonLdSchema, type: string): void
     }
 
     if (errors.length > 0) {
-        throw new Error(`Schema validation failed: ${errors.join(', ')}`);
+        throw new ValidationError(`Schema validation failed: ${errors.join(', ')}`);
     }
 }

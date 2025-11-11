@@ -1,6 +1,7 @@
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
 import type {ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
 import {generateJsonLd} from './jsonld-generator.js';
+import {handleRpc, ValidationError} from './errors.js';
 
 // Type definitions
 interface OrganizationConfig {
@@ -131,168 +132,183 @@ const DEFAULT_CONFIG: JsonLdConfig = {
 export default defineServer({
     rpcs: {
         'json-ld-structured-data:config:get': async (sdk: ServerSDK) => {
-            const config = await sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG;
-            return {code: 0, message: 'ok', payload: config};
+            return handleRpc(async () => {
+                return await sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG;
+            });
         },
 
         'json-ld-structured-data:config:set': async (sdk: ServerSDK, {config}: { config: JsonLdConfig }) => {
-            await sdk.settings.set(SETTINGS_KEY, config);
-            return {code: 0, message: 'saved', payload: config};
+            return handleRpc(async () => {
+                await sdk.settings.set(SETTINGS_KEY, config);
+                return config;
+            });
         },
 
         'json-ld-structured-data:blog:get': async (sdk: ServerSDK, {blogId}: { blogId: string }) => {
-            const blog = await sdk.db.generated.getHydratedBlog({_id: blogId});
-            const overrides = blog?.metadata?.[METADATA_KEY] || {};
-            return {code: 0, message: 'ok', payload: overrides};
+            return handleRpc(async () => {
+                const blog = await sdk.db.generated.getHydratedBlog({_id: blogId});
+                return blog?.metadata?.[METADATA_KEY] || {};
+            });
         },
 
         'json-ld-structured-data:blog:set': async (sdk: ServerSDK, {blogId, overrides}: {
             blogId: string;
             overrides: JsonLdOverrides
         }) => {
-            const blog = await sdk.db.blogs.findOne({_id: blogId});
-            if (!blog) return {code: 404, message: 'Blog not found'};
+            return handleRpc(async () => {
+                const blog = await sdk.db.blogs.findOne({_id: blogId});
+                if (!blog) throw new ValidationError('Blog not found', 404);
 
-            await sdk.db.blogs.updateOne(
-                {_id: blogId},
-                {
-                    metadata: {[METADATA_KEY]: overrides},
-                    updatedAt: Date.now()
-                }
-            );
+                await sdk.db.blogs.updateOne(
+                    {_id: blogId},
+                    {
+                        metadata: {[METADATA_KEY]: overrides},
+                        updatedAt: Date.now()
+                    }
+                );
 
-            return {code: 0, message: 'saved', payload: overrides};
+                return overrides;
+            });
         },
 
         'json-ld-structured-data:generate': async (sdk: ServerSDK, {blogId}: { blogId: string }) => {
-            const [blog, config] = await Promise.all([
-                sdk.db.generated.getHydratedBlog({_id: blogId}),
-                sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG
-            ]);
+            return handleRpc(async () => {
+                const [blog, config] = await Promise.all([
+                    sdk.db.generated.getHydratedBlog({_id: blogId}),
+                    sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG
+                ]);
 
-            if (!blog) return {code: 404, message: 'Blog not found'};
+                if (!blog) throw new ValidationError('Blog not found', 404);
 
-            const overrides = blog.metadata?.[METADATA_KEY] || {};
-            const jsonLd = generateJsonLd('blog', blog, config as any, overrides);
-
-            return {code: 0, message: 'ok', payload: jsonLd};
+                const overrides = blog.metadata?.[METADATA_KEY] || {};
+                return generateJsonLd('blog', blog, config as any, overrides);
+            });
         },
 
         // Tag endpoints
         'json-ld-structured-data:tag:get': async (sdk: ServerSDK, {tagId}: { tagId: string }) => {
-            const tag = await sdk.db.tags.findOne({_id: tagId});
-            const overrides = tag?.metadata?.[METADATA_KEY] || {};
-            return {code: 0, message: 'ok', payload: overrides};
+            return handleRpc(async () => {
+                const tag = await sdk.db.tags.findOne({_id: tagId});
+                return tag?.metadata?.[METADATA_KEY] || {};
+            });
         },
 
         'json-ld-structured-data:tag:set': async (sdk: ServerSDK, {tagId, overrides}: {
             tagId: string;
             overrides: JsonLdOverrides
         }) => {
-            const tag = await sdk.db.tags.findOne({_id: tagId});
-            if (!tag) return {code: 404, message: 'Tag not found'};
+            return handleRpc(async () => {
+                const tag = await sdk.db.tags.findOne({_id: tagId});
+                if (!tag) throw new ValidationError('Tag not found', 404);
 
-            await sdk.db.tags.updateOne(
-                {_id: tagId},
-                {
-                    metadata: {[METADATA_KEY]: overrides},
-                    updatedAt: Date.now()
-                }
-            );
+                await sdk.db.tags.updateOne(
+                    {_id: tagId},
+                    {
+                        metadata: {[METADATA_KEY]: overrides},
+                        updatedAt: Date.now()
+                    }
+                );
 
-            return {code: 0, message: 'saved', payload: overrides};
+                return overrides;
+            });
         },
 
         'json-ld-structured-data:tag:generate': async (sdk: ServerSDK, {tagId}: { tagId: string }) => {
-            const [tag, config] = await Promise.all([
-                sdk.db.tags.findOne({_id: tagId}),
-                sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG
-            ]);
+            return handleRpc(async () => {
+                const [tag, config] = await Promise.all([
+                    sdk.db.tags.findOne({_id: tagId}),
+                    sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG
+                ]);
 
-            if (!tag) return {code: 404, message: 'Tag not found'};
+                if (!tag) throw new ValidationError('Tag not found', 404);
 
-            const overrides = tag.metadata?.[METADATA_KEY] || {};
-            const jsonLd = generateJsonLd('tag', tag, config as any, overrides);
-
-            return {code: 0, message: 'ok', payload: jsonLd};
+                const overrides = tag.metadata?.[METADATA_KEY] || {};
+                return generateJsonLd('tag', tag, config as any, overrides);
+            });
         },
 
         // Category endpoints
         'json-ld-structured-data:category:get': async (sdk: ServerSDK, {categoryId}: { categoryId: string }) => {
-            const category = await sdk.db.categories.findOne({_id: categoryId});
-            const overrides = category?.metadata?.[METADATA_KEY] || {};
-            return {code: 0, message: 'ok', payload: overrides};
+            return handleRpc(async () => {
+                const category = await sdk.db.categories.findOne({_id: categoryId});
+                return category?.metadata?.[METADATA_KEY] || {};
+            });
         },
 
         'json-ld-structured-data:category:set': async (sdk: ServerSDK, {categoryId, overrides}: {
             categoryId: string;
             overrides: JsonLdOverrides
         }) => {
-            const category = await sdk.db.categories.findOne({_id: categoryId});
-            if (!category) return {code: 404, message: 'Category not found'};
+            return handleRpc(async () => {
+                const category = await sdk.db.categories.findOne({_id: categoryId});
+                if (!category) throw new ValidationError('Category not found', 404);
 
-            await sdk.db.categories.updateOne(
-                {_id: categoryId},
-                {
-                    metadata: {[METADATA_KEY]: overrides},
-                    updatedAt: Date.now()
-                }
-            );
+                await sdk.db.categories.updateOne(
+                    {_id: categoryId},
+                    {
+                        metadata: {[METADATA_KEY]: overrides},
+                        updatedAt: Date.now()
+                    }
+                );
 
-            return {code: 0, message: 'saved', payload: overrides};
+                return overrides;
+            });
         },
 
         'json-ld-structured-data:category:generate': async (sdk: ServerSDK, {categoryId}: { categoryId: string }) => {
-            const [category, config] = await Promise.all([
-                sdk.db.categories.findOne({_id: categoryId}),
-                sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG
-            ]);
+            return handleRpc(async () => {
+                const [category, config] = await Promise.all([
+                    sdk.db.categories.findOne({_id: categoryId}),
+                    sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG
+                ]);
 
-            if (!category) return {code: 404, message: 'Category not found'};
+                if (!category) throw new ValidationError('Category not found', 404);
 
-            const overrides = category.metadata?.[METADATA_KEY] || {};
-            const jsonLd = generateJsonLd('category', category, config as any, overrides);
-
-            return {code: 0, message: 'ok', payload: jsonLd};
+                const overrides = category.metadata?.[METADATA_KEY] || {};
+                return generateJsonLd('category', category, config as any, overrides);
+            });
         },
 
         // User endpoints
         'json-ld-structured-data:user:get': async (sdk: ServerSDK, {userId}: { userId: string }) => {
-            const user = await sdk.db.users.findOne({_id: userId});
-            const overrides = user?.metadata?.[METADATA_KEY] || {};
-            return {code: 0, message: 'ok', payload: overrides};
+            return handleRpc(async () => {
+                const user = await sdk.db.users.findOne({_id: userId});
+                return user?.metadata?.[METADATA_KEY] || {};
+            });
         },
 
         'json-ld-structured-data:user:set': async (sdk: ServerSDK, {userId, overrides}: {
             userId: string;
             overrides: JsonLdOverrides
         }) => {
-            const user = await sdk.db.users.findOne({_id: userId});
-            if (!user) return {code: 404, message: 'User not found'};
+            return handleRpc(async () => {
+                const user = await sdk.db.users.findOne({_id: userId});
+                if (!user) throw new ValidationError('User not found', 404);
 
-            await sdk.db.users.updateOne(
-                {_id: userId},
-                {
-                    metadata: {[METADATA_KEY]: overrides},
-                    updatedAt: Date.now()
-                }
-            );
+                await sdk.db.users.updateOne(
+                    {_id: userId},
+                    {
+                        metadata: {[METADATA_KEY]: overrides},
+                        updatedAt: Date.now()
+                    }
+                );
 
-            return {code: 0, message: 'saved', payload: overrides};
+                return overrides;
+            });
         },
 
         'json-ld-structured-data:user:generate': async (sdk: ServerSDK, {userId}: { userId: string }) => {
-            const [user, config] = await Promise.all([
-                sdk.db.users.findOne({_id: userId}),
-                sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG
-            ]);
+            return handleRpc(async () => {
+                const [user, config] = await Promise.all([
+                    sdk.db.users.findOne({_id: userId}),
+                    sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG
+                ]);
 
-            if (!user) return {code: 404, message: 'User not found'};
+                if (!user) throw new ValidationError('User not found', 404);
 
-            const overrides = user.metadata?.[METADATA_KEY] || {};
-            const jsonLd = generateJsonLd('user', user, config as any, overrides);
-
-            return {code: 0, message: 'ok', payload: jsonLd};
+                const overrides = user.metadata?.[METADATA_KEY] || {};
+                return generateJsonLd('user', user, config as any, overrides);
+            });
         },
 
         // Generic generateJsonLd RPC - automatically fetches config and overrides
@@ -303,15 +319,15 @@ export default defineServer({
             entityType: 'blog' | 'tag' | 'category' | 'user';
             entity: any;
         }) => {
+            return handleRpc(async () => {
+                // Fetch config from settings
+                const config = await sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG;
 
-            // Fetch config from settings
-            const config = await sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG;
+                // Fetch overrides from entity metadata
+                const overrides = entity?.metadata?.[METADATA_KEY] || {};
 
-            // Fetch overrides from entity metadata
-            const overrides = entity?.metadata?.[METADATA_KEY] || {};
-
-            const jsonLd = generateJsonLd(entityType, entity, config, overrides);
-            return {code: 0, message: 'ok', payload: jsonLd};
+                return generateJsonLd(entityType, entity, config, overrides);
+            });
         }
     }
 });

@@ -3,6 +3,7 @@
  */
 import {JsonLdOverrides, JsonLdSchema} from './types.js';
 import {parseCustomJson, sanitizeString, sanitizeUrl} from './validators.js';
+import {ValidationError} from './errors.js';
 
 /**
  * Add Review-specific fields
@@ -13,7 +14,7 @@ export function addReviewFields(jsonLd: JsonLdSchema, overrides: JsonLdOverrides
     const {itemName, itemType, imageMedia, rating} = overrides.review;
 
     if (!itemName) {
-        throw new Error('Review requires itemName');
+        throw new ValidationError('Review requires itemName');
     }
 
     jsonLd.itemReviewed = {
@@ -27,7 +28,7 @@ export function addReviewFields(jsonLd: JsonLdSchema, overrides: JsonLdOverrides
     }
 
     if (!rating?.value) {
-        throw new Error('Review requires rating value');
+        throw new ValidationError('Review requires rating value');
     }
 
     jsonLd.reviewRating = {
@@ -58,12 +59,12 @@ export function addHowToFields(jsonLd: JsonLdSchema, overrides: JsonLdOverrides)
 
     // Steps are required for HowTo
     if (!howTo.steps?.length) {
-        throw new Error('HowTo requires at least one step');
+        throw new ValidationError('HowTo requires at least one step');
     }
 
     jsonLd.step = howTo.steps.map((step: any, i: number) => {
         if (!step.text) {
-            throw new Error(`HowTo step ${i + 1} requires text`);
+            throw new ValidationError(`HowTo step ${i + 1} requires text`);
         }
 
         const stepObj: any = {
@@ -88,12 +89,12 @@ export function addHowToFields(jsonLd: JsonLdSchema, overrides: JsonLdOverrides)
  */
 export function addFaqFields(jsonLd: JsonLdSchema, overrides: JsonLdOverrides): JsonLdSchema {
     if (!overrides.faq?.questions?.length) {
-        throw new Error('FAQ requires at least one question');
+        throw new ValidationError('FAQ requires at least one question');
     }
 
     jsonLd.mainEntity = overrides.faq.questions.map((item: any, i: number) => {
         if (!item.question || !item.answer) {
-            throw new Error(`FAQ item ${i + 1} requires both question and answer`);
+            throw new ValidationError(`FAQ item ${i + 1} requires both question and answer`);
         }
 
         return {
@@ -123,7 +124,7 @@ export function addRecipeFields(jsonLd: JsonLdSchema, overrides: JsonLdOverrides
     if (recipe.recipeCategory) jsonLd.recipeCategory = sanitizeString(recipe.recipeCategory);
 
     if (!recipe.recipeIngredient?.length) {
-        throw new Error('Recipe requires at least one ingredient');
+        throw new ValidationError('Recipe requires at least one ingredient');
     }
 
     jsonLd.recipeIngredient = recipe.recipeIngredient.map((ing: string) => sanitizeString(ing));

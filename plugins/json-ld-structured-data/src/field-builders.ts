@@ -49,10 +49,14 @@ export function addSchemaSpecificFields(
 
     if (ARTICLE_TYPES.includes(type)) {
         if (title) jsonLd.headline = title;
-        jsonLd.datePublished = entity.createdAt;
 
-        if (config.article?.includeDateModified) {
-            jsonLd.dateModified = entity.updatedAt;
+        // Convert timestamp to ISO 8601 format for JSON-LD
+        if (entity.createdAt) {
+            jsonLd.datePublished = new Date(entity.createdAt).toISOString();
+        }
+
+        if (config.article?.includeDateModified && entity.updatedAt) {
+            jsonLd.dateModified = new Date(entity.updatedAt).toISOString();
         }
 
         if (entity.category?.name) {

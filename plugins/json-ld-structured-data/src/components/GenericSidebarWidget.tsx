@@ -1,5 +1,6 @@
 import type {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
 import {useCallback, useEffect, useMemo, useState} from '@supergrowthai/plugin-dev-kit/client';
+import {ClientError, handleRPCResponse, isValidationError} from '../errors.js';
 
 const ENTITY_SCHEMA_TYPES = {
     tag: [
@@ -63,6 +64,7 @@ export function GenericSidebarWidget({
     const [saving, setSaving] = useState(false);
     const [preview, setPreview] = useState<any>(null);
     const [showPreview, setShowPreview] = useState(false);
+    const [validationError, setValidationError] = useState<string | null>(null);
 
     const [needsAutoSave, setNeedsAutoSave] = useState(false);
 
@@ -72,10 +74,18 @@ export function GenericSidebarWidget({
             sdk.callRPC(`json-ld-structured-data:${entityType}:get`, {[`${entityType}Id`]: entityId}),
             sdk.callRPC('json-ld-structured-data:config:get', {})
         ]).then(([entityResp, configResp]) => {
-            const overridesData = entityResp?.payload?.payload || {};
+            if (entityResp.code !== 0) {
+                sdk.notify(entityResp.message, 'error');
+                return;
+            }
+            if (configResp.code !== 0) {
+                sdk.notify(configResp.message, 'error');
+                return;
+            }
+
+            const overridesData = entityResp.payload.payload || {};
             const defaultSchemaType = entityType === 'user' ? 'Person' : entityType === 'category' ? 'CategoryCode' : 'DefinedTerm';
 
-            // Ensure schemaType is always set
             const dataWithSchemaType = {
                 schemaType: defaultSchemaType,
                 ...overridesData
@@ -83,9 +93,8 @@ export function GenericSidebarWidget({
 
             setOverrides(structuredClone(dataWithSchemaType));
             setOriginalOverrides(structuredClone(dataWithSchemaType));
-            setConfig(configResp?.payload?.payload || {});
+            setConfig(configResp.payload.payload || {});
 
-            // Flag for auto-save if schema type wasn't already stored
             if (!overridesData.schemaType) {
                 setNeedsAutoSave(true);
             }
@@ -95,19 +104,18 @@ export function GenericSidebarWidget({
     const saveOverrides = useCallback(async (newOverrides: any) => {
         if (!entityId) return;
         setSaving(true);
-        try {
-            await sdk.callRPC(`json-ld-structured-data:${entityType}:set`, {
-                [`${entityType}Id`]: entityId,
-                overrides: newOverrides
-            });
+        const resp = await sdk.callRPC(`json-ld-structured-data:${entityType}:set`, {
+            [`${entityType}Id`]: entityId,
+            overrides: newOverrides
+        });
+        if (resp.code !== 0) {
+            sdk.notify(resp.message, 'error');
+        } else {
             setOverrides(newOverrides);
             setOriginalOverrides(structuredClone(newOverrides));
             sdk.notify('Settings saved successfully', 'success');
-        } catch (error) {
-            sdk.notify('Failed to save settings', 'error');
-        } finally {
-            setSaving(false);
         }
+        setSaving(false);
     }, [entityId, entityType, sdk]);
 
     // Auto-save default schema type when needed
@@ -128,11 +136,30 @@ export function GenericSidebarWidget({
 
     const generatePreview = useCallback(async () => {
         if (!entityId) return;
-        const resp = await sdk.callRPC(`json-ld-structured-data:${entityType}:generate`, {
-            [`${entityType}Id`]: entityId
-        });
-        setPreview(resp?.payload?.payload);
-        setShowPreview(true);
+
+        try {
+            const resp = await sdk.callRPC(`json-ld-structured-data:${entityType}:generate`, {
+                [`${entityType}Id`]: entityId
+            });
+            const jsonLd = handleRPCResponse(resp);
+
+            setPreview(jsonLd);
+            setShowPreview(true);
+            setValidationError(null);
+
+        } catch (error) {
+            if (isValidationError(error)) {
+                // Show validation error in the UI
+                setValidationError(error.message);
+                setPreview(null);
+                setShowPreview(false);
+            } else {
+                // Other errors get notified
+                sdk.notify(error.message || 'Failed to generate preview', 'error');
+                setPreview(null);
+                setShowPreview(false);
+            }
+        }
     }, [entityId, entityType, sdk]);
 
     const updateField = useCallback((field: string, value: any) => {
@@ -178,7 +205,8 @@ export function GenericSidebarWidget({
                 updateNestedField(field, imageData);
             }
         } catch (error) {
-            sdk.notify('Failed to select image', 'error');
+            const clientError = new ClientError('Failed to select image', 'image-selection');
+            sdk.notify(clientError.message, 'error');
         }
     }, [sdk, updateNestedField]);
 
@@ -306,6 +334,17 @@ export function GenericSidebarWidget({
                 >
                     Generate Preview
                 </button>
+
+                {validationError && (
+                    <div className="p-2 bg-red-50 border border-red-200 rounded">
+                        <p className="text-xs font-medium text-red-800 mb-1">Validation Error:</p>
+                        <p className="text-xs text-red-700">{validationError}</p>
+                        <p className="text-xs text-gray-600 mt-1 italic">
+                            Please configure the required fields in the Type-Specific section or ensure
+                            your {entityType} has the necessary data.
+                        </p>
+                    </div>
+                )}
 
                 {showPreview && preview && (
                     <div className="mt-2">

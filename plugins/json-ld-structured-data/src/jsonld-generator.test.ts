@@ -130,8 +130,8 @@ describe('Blog JSON-LD Generation', () => {
         expect(result.headline).toBe('Test Blog Post');
         expect(result.description).toBe('This is a test blog post excerpt');
         expect(result.url).toBe('https://example.com/test-blog-post');
-        expect(result.datePublished).toBe(1640995200000);
-        expect(result.dateModified).toBe(1641000000000);
+        expect(result.datePublished).toBe('2022-01-01T00:00:00.000Z');
+        expect(result.dateModified).toBe('2022-01-01T01:20:00.000Z');
         expect(result.inLanguage).toBe('en-US');
     });
 

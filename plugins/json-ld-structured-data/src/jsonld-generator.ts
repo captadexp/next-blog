@@ -4,6 +4,7 @@
 import {ARTICLE_TYPES, EntityData, EntityType, JsonLdConfig, JsonLdOverrides, JsonLdSchema} from './types.js';
 
 import {cleanSchema, sanitizeString, sanitizeUrl, validateRequiredFields} from './validators.js';
+import {UnsupportedError} from './errors.js';
 
 import {
     addAuthorFields,
@@ -197,6 +198,6 @@ export function generateJsonLd(
         case 'user':
             return generateUserJsonLd(entity, config, overrides);
         default:
-            throw new Error(`Unsupported entity type: ${entityType}`);
+            throw new UnsupportedError(`Unsupported entity type: ${entityType}`);
     }
 }

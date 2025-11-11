@@ -1,5 +1,6 @@
 import type {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
 import {useCallback, useEffect, useMemo, useState} from '@supergrowthai/plugin-dev-kit/client';
+import {ClientError} from '../errors.js';
 import {SCHEMA_TYPES} from './SchemaTypePicker.js';
 
 const AUTHOR_TYPES = [
@@ -51,7 +52,8 @@ export function GlobalSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
             setOriginalConfig(structuredClone(config));
             sdk.notify('Settings saved successfully', 'success');
         } catch (error) {
-            sdk.notify('Failed to save settings', 'error');
+            const clientError = new ClientError('Failed to save settings', 'settings-save');
+            sdk.notify(clientError.message, 'error');
         } finally {
             setSaving(false);
         }
@@ -97,7 +99,8 @@ export function GlobalSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
                 });
             }
         } catch (error) {
-            sdk.notify('Failed to select logo', 'error');
+            const clientError = new ClientError('Failed to select logo', 'logo-selection');
+            sdk.notify(clientError.message, 'error');
         }
     }, [sdk, config, updateField]);
 
