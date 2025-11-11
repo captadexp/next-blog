@@ -39,8 +39,6 @@ function matchesHookPattern(hookName: string, pattern: string): boolean {
 export class PluginExecutor {
     public initialized = false;
     private plugins: Map<string, ServerPluginModule> = new Map();
-    private hookMappings: Map<string, PluginHookMapping[]> = new Map();
-    private rpcMappings: Map<string, PluginHookMapping[]> = new Map();
     private db: DatabaseAdapter | null = null;
     private pluginModuleCache: Map<string, ServerPluginModule> = new Map();
     private logger = new Logger('PluginExecutor', LogLevel.ERROR);
@@ -56,7 +54,7 @@ export class PluginExecutor {
 
     async initialize(db: DatabaseAdapter) {
         if (process.env.NODE_ENV === "production" && this.initialized) return;
-        this.initialized = true;
+
         this.db = db;
 
         // Initialize SDK factory with dependencies
@@ -70,12 +68,14 @@ export class PluginExecutor {
         initializeSettingsHelper(db);
 
         this.plugins = new Map();
-        this.hookMappings = new Map();
-        this.rpcMappings = new Map();
         this.pluginModuleCache = new Map();
         this.hookIndex = {exact: new Map(), patterns: new Map()};
         this.rpcIndex = {exact: new Map(), patterns: new Map()};
+
         await this.loadPlugins();
+
+        // Set initialized flag only after all loading is complete
+        this.initialized = true;
     }
 
     hasHook(hookName: string): boolean {
@@ -110,7 +110,7 @@ export class PluginExecutor {
         return false;
     }
 
-    async executeHook(hookName: string, sdk: ServerSDK, context: any = {}): Promise<any> {
+    async executeHook(hookName: string, sdk: ServerSDK, context: Record<string, any> = {}): Promise<Record<string, any>> {
         this.logger.time(`Executing hook: ${hookName}`);
         this.logger.info(`Executing hook: ${hookName}`);
 
@@ -162,16 +162,16 @@ export class PluginExecutor {
         return currentContext;
     }
 
-    async executeRpc(rpcName: string, sdk: ServerSDK, context: any = {}): Promise<any> {
+    async executeRpc(rpcName: string, sdk: ServerSDK, context: Record<string, any> = {}): Promise<Record<string, any>> {
         this.logger.time(`Executing rpc: ${rpcName}`);
         this.logger.info(`Executing rpc: ${rpcName}`);
+
 
         // Use index for O(1) lookup
         const matchingMappings: PluginHookMapping[] = [];
         const seenPlugins = new Set<string>();
 
         // O(1) exact match lookup
-
         if (this.rpcIndex.exact.has(rpcName)) {
             const exactMatches = this.rpcIndex.exact.get(rpcName)!;
             exactMatches.forEach(mapping => {
@@ -196,7 +196,7 @@ export class PluginExecutor {
 
         if (matchingMappings.length === 0) {
             this.logger.warn(`No RPC mappings found for: ${rpcName}`);
-            throw new Error(`No RPC mappings found for hook: ${rpcName}`);
+            throw new Error(`No RPC mappings found for RPC: ${rpcName}`);
         }
 
         let currentContext = context;
@@ -215,15 +215,20 @@ export class PluginExecutor {
         mapping: PluginHookMapping,
         hookName: string,
         sdk: ServerSDK,
-        context: any,
+        context: Record<string, any>,
         type: 'hooks' | 'rpcs',
-        updateContext: (ctx: any) => void
+        updateContext: (ctx: Record<string, any>) => void
     ) {
         const label = `${type} ${hookName} for plugin ${mapping.pluginId}`;
         this.logger.time(label);
         this.logger.debug(`Running ${label}`);
         try {
-            const pluginEntry = await this.db!.plugins.findById(mapping.pluginId);
+            if (!this.db || !this.sdkFactory) {
+                this.logger.error('Database or SDK factory not initialized');
+                return;
+            }
+
+            const pluginEntry = await this.db.plugins.findById(mapping.pluginId);
             if (!pluginEntry) {
                 this.logger.warn(`Plugin ${mapping.pluginId} not found`);
                 return;
@@ -235,12 +240,12 @@ export class PluginExecutor {
             }
 
             // Create plugin-specific SDK using the factory
-            const pluginSDK = await this.sdkFactory!.createSDK(pluginEntry);
+            const pluginSDK = await this.sdkFactory.createSDK(pluginEntry);
 
             const result = await module[type][hookName](pluginSDK, context);
             updateContext(result);
         } catch (err) {
-            this.logger.error(`Error in ${label}:`, err);
+            this.logger.error(`Error in ${type} ${hookName} for plugin ${mapping.pluginId}:`, err);
         } finally {
             this.logger.timeEnd(label);
         }
@@ -255,17 +260,10 @@ export class PluginExecutor {
 
             const allMappings = await this.db.pluginHookMappings.find({});
 
-            // Build both legacy maps and new indexes
+            // Build indexes for O(1) lookups
             for (const mapping of allMappings) {
-                const map = mapping.type === 'rpc' ? this.rpcMappings : this.hookMappings;
                 const index = mapping.type === 'rpc' ? this.rpcIndex : this.hookIndex;
 
-                // Legacy map (kept for backward compatibility)
-                if (!map.has(mapping.hookName))
-                    map.set(mapping.hookName, []);
-                map.get(mapping.hookName)!.push(mapping);
-
-                // New index for O(1) lookups
                 if (mapping.hookName.includes('*')) {
                     // Pattern-based hook
                     if (!index.patterns.has(mapping.hookName)) {
