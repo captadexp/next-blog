@@ -1,5 +1,6 @@
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
-import type {HydratedBlog, ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
+import type {ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
+import {generateJsonLd} from './jsonld-generator.js';
 
 // Type definitions
 interface OrganizationConfig {
@@ -172,295 +173,145 @@ export default defineServer({
             if (!blog) return {code: 404, message: 'Blog not found'};
 
             const overrides = blog.metadata?.[METADATA_KEY] || {};
-            const jsonLd = generateJsonLd(blog, config as JsonLdConfig, overrides);
+            const jsonLd = generateJsonLd('blog', blog, config as any, overrides);
 
+            return {code: 0, message: 'ok', payload: jsonLd};
+        },
+
+        // Tag endpoints
+        'json-ld-structured-data:tag:get': async (sdk: ServerSDK, {tagId}: { tagId: string }) => {
+            const tag = await sdk.db.tags.findOne({_id: tagId});
+            const overrides = tag?.metadata?.[METADATA_KEY] || {};
+            return {code: 0, message: 'ok', payload: overrides};
+        },
+
+        'json-ld-structured-data:tag:set': async (sdk: ServerSDK, {tagId, overrides}: {
+            tagId: string;
+            overrides: JsonLdOverrides
+        }) => {
+            const tag = await sdk.db.tags.findOne({_id: tagId});
+            if (!tag) return {code: 404, message: 'Tag not found'};
+
+            await sdk.db.tags.updateOne(
+                {_id: tagId},
+                {
+                    metadata: {[METADATA_KEY]: overrides},
+                    updatedAt: Date.now()
+                }
+            );
+
+            return {code: 0, message: 'saved', payload: overrides};
+        },
+
+        'json-ld-structured-data:tag:generate': async (sdk: ServerSDK, {tagId}: { tagId: string }) => {
+            const [tag, config] = await Promise.all([
+                sdk.db.tags.findOne({_id: tagId}),
+                sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG
+            ]);
+
+            if (!tag) return {code: 404, message: 'Tag not found'};
+
+            const overrides = tag.metadata?.[METADATA_KEY] || {};
+            const jsonLd = generateJsonLd('tag', tag, config as any, overrides);
+
+            return {code: 0, message: 'ok', payload: jsonLd};
+        },
+
+        // Category endpoints
+        'json-ld-structured-data:category:get': async (sdk: ServerSDK, {categoryId}: { categoryId: string }) => {
+            const category = await sdk.db.categories.findOne({_id: categoryId});
+            const overrides = category?.metadata?.[METADATA_KEY] || {};
+            return {code: 0, message: 'ok', payload: overrides};
+        },
+
+        'json-ld-structured-data:category:set': async (sdk: ServerSDK, {categoryId, overrides}: {
+            categoryId: string;
+            overrides: JsonLdOverrides
+        }) => {
+            const category = await sdk.db.categories.findOne({_id: categoryId});
+            if (!category) return {code: 404, message: 'Category not found'};
+
+            await sdk.db.categories.updateOne(
+                {_id: categoryId},
+                {
+                    metadata: {[METADATA_KEY]: overrides},
+                    updatedAt: Date.now()
+                }
+            );
+
+            return {code: 0, message: 'saved', payload: overrides};
+        },
+
+        'json-ld-structured-data:category:generate': async (sdk: ServerSDK, {categoryId}: { categoryId: string }) => {
+            const [category, config] = await Promise.all([
+                sdk.db.categories.findOne({_id: categoryId}),
+                sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG
+            ]);
+
+            if (!category) return {code: 404, message: 'Category not found'};
+
+            const overrides = category.metadata?.[METADATA_KEY] || {};
+            const jsonLd = generateJsonLd('category', category, config as any, overrides);
+
+            return {code: 0, message: 'ok', payload: jsonLd};
+        },
+
+        // User endpoints
+        'json-ld-structured-data:user:get': async (sdk: ServerSDK, {userId}: { userId: string }) => {
+            const user = await sdk.db.users.findOne({_id: userId});
+            const overrides = user?.metadata?.[METADATA_KEY] || {};
+            return {code: 0, message: 'ok', payload: overrides};
+        },
+
+        'json-ld-structured-data:user:set': async (sdk: ServerSDK, {userId, overrides}: {
+            userId: string;
+            overrides: JsonLdOverrides
+        }) => {
+            const user = await sdk.db.users.findOne({_id: userId});
+            if (!user) return {code: 404, message: 'User not found'};
+
+            await sdk.db.users.updateOne(
+                {_id: userId},
+                {
+                    metadata: {[METADATA_KEY]: overrides},
+                    updatedAt: Date.now()
+                }
+            );
+
+            return {code: 0, message: 'saved', payload: overrides};
+        },
+
+        'json-ld-structured-data:user:generate': async (sdk: ServerSDK, {userId}: { userId: string }) => {
+            const [user, config] = await Promise.all([
+                sdk.db.users.findOne({_id: userId}),
+                sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG
+            ]);
+
+            if (!user) return {code: 404, message: 'User not found'};
+
+            const overrides = user.metadata?.[METADATA_KEY] || {};
+            const jsonLd = generateJsonLd('user', user, config as any, overrides);
+
+            return {code: 0, message: 'ok', payload: jsonLd};
+        },
+
+        // Generic generateJsonLd RPC - automatically fetches config and overrides
+        'json-ld-structured-data:generateJsonLd': async (sdk: ServerSDK, {
+            entityType,
+            entity
+        }: {
+            entityType: 'blog' | 'tag' | 'category' | 'user';
+            entity: any;
+        }) => {
+
+            // Fetch config from settings
+            const config = await sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG;
+
+            // Fetch overrides from entity metadata
+            const overrides = entity?.metadata?.[METADATA_KEY] || {};
+
+            const jsonLd = generateJsonLd(entityType, entity, config, overrides);
             return {code: 0, message: 'ok', payload: jsonLd};
         }
     }
 });
-
-interface JsonLdSchema {
-    '@context': string;
-    '@type': string;
-    headline?: string;
-    description?: string;
-    url?: string;
-    datePublished?: number;
-    dateModified?: number;
-    inLanguage?: string;
-    author?: {
-        '@type': string;
-        name: string;
-        url?: string;
-    };
-    publisher?: {
-        '@type': string;
-        name: string;
-        url?: string;
-        logo?: {
-            '@type': string;
-            url: string;
-        };
-    };
-    image?: string[];
-    keywords?: string;
-    articleSection?: string;
-    breadcrumb?: {
-        '@type': string;
-        itemListElement: Array<{
-            '@type': string;
-            position: number;
-            name: string;
-            item: string;
-        }>;
-    };
-    itemReviewed?: {
-        '@type': string;
-        name: string;
-        image?: string;
-    };
-    reviewRating?: {
-        '@type': string;
-        ratingValue: number;
-        bestRating: number;
-        worstRating: number;
-    };
-    totalTime?: string;
-    estimatedCost?: string;
-    tool?: Array<{
-        '@type': string;
-        name: string;
-    }>;
-    step?: Array<{
-        '@type': string;
-        name: string;
-        text: string;
-        image?: string;
-    }>;
-    mainEntity?: Array<{
-        '@type': string;
-        name: string;
-        acceptedAnswer: {
-            '@type': string;
-            text: string;
-        };
-    }>;
-    prepTime?: string;
-    cookTime?: string;
-    recipeYield?: string;
-    recipeCategory?: string;
-    recipeIngredient?: string[];
-}
-
-function generateJsonLd(blog: HydratedBlog, config: JsonLdConfig, overrides: JsonLdOverrides): JsonLdSchema {
-    const type = overrides.type || config.article?.defaultType || 'Article';
-    const baseUrl = config.website?.url || '';
-
-    const headline = overrides.headline || blog.title;
-    const description = overrides.description || blog.excerpt || '';
-
-    const jsonLd: JsonLdSchema = {
-        '@context': 'https://schema.org',
-        '@type': type,
-        headline,
-        description,
-        url: `${baseUrl}/${blog.slug}`,
-        datePublished: blog.createdAt,
-        dateModified: blog.updatedAt,
-        inLanguage: overrides.language || config.language || 'en-US'
-    };
-
-    // Author
-    if (!overrides.hideAuthor) {
-        const authorType = overrides.authorType || config.article?.authorType || 'Person';
-        const authorName = overrides.authorName || blog.user?.username || blog.user?.name;
-
-        if (authorName) {
-            jsonLd.author = {
-                '@type': authorType,
-                name: authorName,
-                url: overrides.authorUrl || ''
-            };
-        }
-    }
-
-    // Publisher (for Article types)
-    if (['Article', 'BlogPosting', 'NewsArticle'].includes(type)) {
-        if (overrides.useCustomPublisher) {
-            jsonLd.publisher = {
-                '@type': 'Organization',
-                name: overrides.publisherName!,
-                url: overrides.publisherUrl,
-                logo: overrides.publisherLogo ? {
-                    '@type': 'ImageObject',
-                    url: overrides.publisherLogo
-                } : undefined
-            };
-        } else if (config.article?.useOrgAsPublisher && config.organization?.name) {
-            const logoUrl = config.organization.logoMedia?.url || config.organization.logo;
-            jsonLd.publisher = {
-                '@type': 'Organization',
-                name: config.organization.name,
-                url: config.organization.url || '',
-                logo: logoUrl ? {
-                    '@type': 'ImageObject',
-                    url: logoUrl
-                } : undefined
-            };
-        }
-    }
-
-    // Images
-    const images: string[] = [];
-
-    // Featured image
-    if (overrides.featuredImageMedia?.url) {
-        images.push(overrides.featuredImageMedia.url);
-    } else if (blog.featuredMedia?.url && config.article?.defaultImagePolicy !== 'none') {
-        images.push(blog.featuredMedia.url);
-    }
-
-    // Add additional images from media
-    if (overrides.imagesMedia?.length) {
-        images.push(...overrides.imagesMedia.filter((img: any) => img.url).map((img: any) => img.url));
-    }
-
-
-    if (images.length) {
-        jsonLd.image = images;
-    }
-
-    // Keywords
-    const keywords: string[] = [];
-    if (blog.tags?.length) {
-        keywords.push(...blog.tags.map((t: any) => t.name));
-    }
-    if (overrides.keywords) {
-        keywords.push(...overrides.keywords.split(',').map((k: string) => k.trim()));
-    }
-    if (keywords.length) {
-        jsonLd.keywords = keywords.join(', ');
-    }
-
-    // Category as articleSection
-    if (blog.category?.name) {
-        jsonLd.articleSection = blog.category.name;
-    }
-
-    // Breadcrumb from permalink metadata if available
-    const permalinkData = blog.metadata?.['permalink-manager:permalink'].permalink;
-    if (permalinkData) {
-        const pathParts = permalinkData.split('/').filter((p: string) => p);
-        if (pathParts.length > 0) {
-            const breadcrumbItems = pathParts.map((part: string, index: number) => ({
-                '@type': 'ListItem',
-                position: index + 1,
-                name: part.charAt(0).toUpperCase() + part.slice(1).replace(/-/g, ' '),
-                item: `${baseUrl}/${pathParts.slice(0, index + 1).join('/')}`
-            }));
-
-            // Add the current page as the last item
-            breadcrumbItems.push({
-                '@type': 'ListItem',
-                position: pathParts.length + 1,
-                name: headline,
-                item: `${baseUrl}/${blog.slug}`
-            });
-
-            jsonLd.breadcrumb = {
-                '@type': 'BreadcrumbList',
-                itemListElement: breadcrumbItems
-            };
-        }
-    }
-
-    // Type-specific fields
-    if (type === 'Review' && overrides.review) {
-        if (overrides.review.itemName) {
-            jsonLd.itemReviewed = {
-                '@type': overrides.review.itemType || 'Thing',
-                name: overrides.review.itemName,
-                image: overrides.review.imageMedia?.url || undefined
-            };
-        }
-        if (overrides.review.rating?.value) {
-            jsonLd.reviewRating = {
-                '@type': 'Rating',
-                ratingValue: overrides.review.rating.value,
-                bestRating: overrides.review.rating.best || 5,
-                worstRating: overrides.review.rating.worst || 1
-            };
-        }
-    }
-
-    if (type === 'HowTo' && overrides.howTo) {
-        if (overrides.howTo.totalTime) jsonLd.totalTime = overrides.howTo.totalTime;
-        if (overrides.howTo.estimatedCost) jsonLd.estimatedCost = overrides.howTo.estimatedCost;
-        if (overrides.howTo.tools?.length) {
-            jsonLd.tool = overrides.howTo.tools.map((tool: string) => ({
-                '@type': 'HowToTool',
-                name: tool
-            }));
-        }
-        if (overrides.howTo.steps?.length) {
-            jsonLd.step = overrides.howTo.steps.map((step: any, i: number) => ({
-                '@type': 'HowToStep',
-                name: step.name || `Step ${i + 1}`,
-                text: step.text,
-                image: step.imageMedia?.url || undefined
-            }));
-        }
-    }
-
-    if (type === 'FAQ' && overrides.faq?.questions?.length) {
-        jsonLd.mainEntity = overrides.faq.questions.map((item: any) => ({
-            '@type': 'Question',
-            name: item.question,
-            acceptedAnswer: {
-                '@type': 'Answer',
-                text: item.answer
-            }
-        }));
-    }
-
-    if (type === 'Recipe' && overrides.recipe) {
-        if (overrides.recipe.prepTime) jsonLd.prepTime = overrides.recipe.prepTime;
-        if (overrides.recipe.cookTime) jsonLd.cookTime = overrides.recipe.cookTime;
-        if (overrides.recipe.recipeYield) jsonLd.recipeYield = overrides.recipe.recipeYield;
-        if (overrides.recipe.recipeCategory) jsonLd.recipeCategory = overrides.recipe.recipeCategory;
-        if (overrides.recipe.recipeIngredient?.length) {
-            jsonLd.recipeIngredient = overrides.recipe.recipeIngredient;
-        }
-        if (overrides.recipe.imageMedia?.url) {
-            if (!jsonLd.image) jsonLd.image = [];
-            if (Array.isArray(jsonLd.image)) {
-                jsonLd.image.unshift(overrides.recipe.imageMedia.url);
-            } else {
-                jsonLd.image = [overrides.recipe.imageMedia.url, jsonLd.image];
-            }
-        }
-    }
-
-    // Custom JSON properties
-    if (overrides.customJson) {
-        try {
-            const custom = JSON.parse(overrides.customJson);
-            Object.assign(jsonLd, custom);
-        } catch (e) {
-            // Invalid JSON, skip
-        }
-    }
-
-
-    // Clean up undefined values
-    Object.keys(jsonLd).forEach(key => {
-        const value = (jsonLd as any)[key];
-        if (value === undefined || value === '' ||
-            (value && typeof value === 'object' &&
-                Object.keys(value).length === 0)) {
-            delete (jsonLd as any)[key];
-        }
-    });
-
-    return jsonLd;
-}

@@ -1,17 +1,9 @@
 import {nextBlog} from "@supergrowthai/next-blog/next";
-import {dbProvider} from "@/lib/db";
+import nextBlogConfig from "@/lib/next-blog-config";
 
 
 // Initialize Next-Blog
-const {GET, POST} = nextBlog({
-    db: dbProvider,
-    ui: {
-        branding: {
-            name: "Amazing 1oh1",
-            description: "The best directory website"
-        }
-    }
-});
+const {GET, POST} = nextBlog(nextBlogConfig());
 
 // Export the route handlers
 export {GET, POST};

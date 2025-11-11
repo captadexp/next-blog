@@ -111,7 +111,7 @@ export default async function (props: { params: Promise<{ slug: string }> }) {
                     />
                 )}
 
-                <SEOAnalyzer blog={blog}/>
+                <SEOAnalyzer/>
             </article>
         </>
     );

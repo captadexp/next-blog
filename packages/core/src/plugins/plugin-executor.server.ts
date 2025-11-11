@@ -171,6 +171,7 @@ export class PluginExecutor {
         const seenPlugins = new Set<string>();
 
         // O(1) exact match lookup
+
         if (this.rpcIndex.exact.has(rpcName)) {
             const exactMatches = this.rpcIndex.exact.get(rpcName)!;
             exactMatches.forEach(mapping => {
@@ -195,7 +196,7 @@ export class PluginExecutor {
 
         if (matchingMappings.length === 0) {
             this.logger.warn(`No RPC mappings found for: ${rpcName}`);
-            return context;
+            throw new Error(`No RPC mappings found for hook: ${rpcName}`);
         }
 
         let currentContext = context;
@@ -265,7 +266,7 @@ export class PluginExecutor {
                 map.get(mapping.hookName)!.push(mapping);
 
                 // New index for O(1) lookups
-                if (mapping.hookName.includes('*') || mapping.hookName.includes(':')) {
+                if (mapping.hookName.includes('*')) {
                     // Pattern-based hook
                     if (!index.patterns.has(mapping.hookName)) {
                         index.patterns.set(mapping.hookName, []);

@@ -12,6 +12,8 @@ import {
 } from '@supergrowthai/next-blog-ui';
 import {getRelatedTestBlogs, getTestBlog} from '../../test-data';
 import "@supergrowthai/next-blog-ui/style.css"
+import {createServerSDK} from "@supergrowthai/next-blog/next";
+import nextBlogConfig from "@/lib/next-blog-config";
 
 export default async function BlogPageTestPage() {
     const blog = await getTestBlog();
@@ -19,6 +21,15 @@ export default async function BlogPageTestPage() {
     if (!blog) {
         return <div>No blog found for testing</div>;
     }
+
+    const serverSDK = await createServerSDK(nextBlogConfig())
+    const jsonLd = await serverSDK
+        .callRPC("json-ld-structured-data:generateJsonLd", {
+            entityType: "blog",
+            entity: blog
+        })
+        .then(response => response.payload)
+        .catch(err => null);
 
     const relatedBlogs = await getRelatedTestBlogs(blog._id);
 
@@ -40,6 +51,11 @@ export default async function BlogPageTestPage() {
                     url={`${baseUrl}/${blog.slug}`}
                     hrefLang="en"
                 />
+
+                <script type={"application/json+ld"}>
+                    {JSON.stringify(jsonLd)}
+                </script>
+
                 <JsonLd
                     blog={blog}
                     organization={{

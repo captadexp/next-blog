@@ -1,6 +1,5 @@
 "use client";
 import React, {ReactNode, useEffect, useState} from 'react';
-import type {HydratedBlog} from '@supergrowthai/next-blog';
 import styles from './SEOAnalyzer.module.css';
 
 // --- Types and Interfaces ---
@@ -20,7 +19,6 @@ interface SEOReport {
 }
 
 interface SEOAnalyzerProps {
-    blog: HydratedBlog;
     children?: ReactNode;
 }
 
@@ -33,16 +31,14 @@ const checkPresence = (selector: string): boolean => document.querySelector(sele
 
 // --- Analysis Functions ---
 
-const analyzeOnPage = (blog: HydratedBlog, mainContentText: string): ReportItemData[] => {
+const analyzeOnPage = (mainContentText: string): ReportItemData[] => {
     const results: ReportItemData[] = [];
-    const keyword = blog.slug.replace(/-/g, ' ');
 
     // Title
     const title = getElementText('title');
     let titleStatus: Status = 'good';
     let titleMsg = `Length is ${title.length} chars.`;
     if (title.length < 50 || title.length > 60) titleStatus = 'warning';
-    if (!title.toLowerCase().includes(keyword)) titleMsg += ' Keyword not found.';
     else titleMsg += ' Keyword found.';
     results.push({title: 'Title Tag', status: titleStatus, message: titleMsg});
 
@@ -51,25 +47,8 @@ const analyzeOnPage = (blog: HydratedBlog, mainContentText: string): ReportItemD
     let descStatus: Status = 'good';
     let descMsg = `Length is ${desc.length} chars.`;
     if (desc.length < 150 || desc.length > 160) descStatus = 'warning';
-    if (!desc.toLowerCase().includes(keyword)) descMsg += ' Keyword not found.';
     else descMsg += ' Keyword found.';
     results.push({title: 'Meta Description', status: descStatus, message: descMsg});
-
-    // Keyword Prominence
-    const first100Words = mainContentText.split(/\s+/).slice(0, 100).join(' ');
-    const prominenceChecks = {
-        inTitle: title.toLowerCase().includes(keyword),
-        inH1: getElementText('h1').toLowerCase().includes(keyword),
-        inFirst100Words: first100Words.toLowerCase().includes(keyword)
-    };
-    const prominenceScore = Object.values(prominenceChecks).filter(Boolean).length;
-    let prominenceStatus: Status = 'good';
-    if (prominenceScore < 3) prominenceStatus = 'warning';
-    results.push({
-        title: 'Keyword Prominence',
-        status: prominenceStatus,
-        message: `Keyword found in ${prominenceScore}/3 key locations (Title, H1, First 100 words).`
-    });
 
     // Headings Hierarchy
     const headings = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6'));
@@ -247,7 +226,7 @@ const TabButton: React.FC<{ active: boolean; onClick: () => void; children: Reac
 
 // --- Main Component ---
 
-export const SEOAnalyzer: React.FC<SEOAnalyzerProps> = ({blog, children}) => {
+export const SEOAnalyzer: React.FC<SEOAnalyzerProps> = ({children}) => {
     const [report, setReport] = useState<SEOReport | null>(null);
     const [activeTab, setActiveTab] = useState<'onPage' | 'technical' | 'social'>('onPage');
 
@@ -255,14 +234,14 @@ export const SEOAnalyzer: React.FC<SEOAnalyzerProps> = ({blog, children}) => {
         const runAnalysis = () => {
             const mainContentText = document.querySelector('main')?.innerText || '';
             setReport({
-                onPage: analyzeOnPage(blog, mainContentText),
+                onPage: analyzeOnPage(mainContentText),
                 technical: analyzeTechnical(),
                 social: analyzeSocial(),
             });
         };
         const timer = setTimeout(runAnalysis, 500); // Delay to ensure DOM is painted
         return () => clearTimeout(timer);
-    }, [blog]);
+    }, []);
 
     if (!report) {
         return <div className={styles.seoAnalyzer}>Loading SEO Analysis...</div>;

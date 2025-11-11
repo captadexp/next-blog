@@ -64,6 +64,8 @@ export function GenericSidebarWidget({
     const [preview, setPreview] = useState<any>(null);
     const [showPreview, setShowPreview] = useState(false);
 
+    const [needsAutoSave, setNeedsAutoSave] = useState(false);
+
     useEffect(() => {
         if (!entityId) return;
         Promise.all([
@@ -71,9 +73,22 @@ export function GenericSidebarWidget({
             sdk.callRPC('json-ld-structured-data:config:get', {})
         ]).then(([entityResp, configResp]) => {
             const overridesData = entityResp?.payload?.payload || {};
-            setOverrides(structuredClone(overridesData));
-            setOriginalOverrides(structuredClone(overridesData));
+            const defaultSchemaType = entityType === 'user' ? 'Person' : entityType === 'category' ? 'CategoryCode' : 'DefinedTerm';
+
+            // Ensure schemaType is always set
+            const dataWithSchemaType = {
+                schemaType: defaultSchemaType,
+                ...overridesData
+            };
+
+            setOverrides(structuredClone(dataWithSchemaType));
+            setOriginalOverrides(structuredClone(dataWithSchemaType));
             setConfig(configResp?.payload?.payload || {});
+
+            // Flag for auto-save if schema type wasn't already stored
+            if (!overridesData.schemaType) {
+                setNeedsAutoSave(true);
+            }
         });
     }, [entityId, entityType, sdk]);
 
@@ -94,6 +109,14 @@ export function GenericSidebarWidget({
             setSaving(false);
         }
     }, [entityId, entityType, sdk]);
+
+    // Auto-save default schema type when needed
+    useEffect(() => {
+        if (needsAutoSave && overrides.schemaType && !saving) {
+            saveOverrides(overrides);
+            setNeedsAutoSave(false);
+        }
+    }, [needsAutoSave, overrides, saving, saveOverrides]);
 
     const hasChanges = useMemo(() => {
         return !deepEqual(overrides, originalOverrides);

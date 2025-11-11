@@ -6,5 +6,3 @@ export const generateSitemapIndex = createSingleEndpointNextJSRouter(getSitemapI
 export const generateRobotsTxt = createSingleEndpointNextJSRouter(getRobotsTxt);
 export const generateLlmsTxt = createSingleEndpointNextJSRouter(getLlmsTxt);
 export const generateRssFeed = createSingleEndpointNextJSRouter(getRssFeed);
-
-export default {}
