@@ -368,15 +368,24 @@ class ApiClientImpl implements APIClient {
 
         try {
             const response = await fetch(url, options);
+            // API responses are always JSON
             const data: APIResponse<TResponsePayload> = await response.json();
+            if (!response.ok) {
+                const error = new Error('HTTP error') as Error & { payload?: unknown; isHttpError?: boolean };
+                error.payload = data;
+                error.isHttpError = true;
+                throw error;
+            }
 
             return data;
         } catch (error) {
             console.error('API request failed:', error);
+            const err = error as Error & { payload?: unknown; isHttpError?: boolean };
             return {
                 code: 500,
-                message: 'API request failed'
-            };
+                message: 'API request failed',
+                payload: err.isHttpError ? err.payload : (err.message || error),
+            } as APIResponse<TResponsePayload>;
         }
     }
 }

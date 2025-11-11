@@ -95,19 +95,8 @@ export class PluginExecutor {
     }
 
     hasRpc(rpcName: string): boolean {
-        // O(1) exact match check
-        if (this.rpcIndex.exact.has(rpcName)) {
-            return true;
-        }
-
-        // Check patterns
-        for (const pattern of this.rpcIndex.patterns.keys()) {
-            if (matchesHookPattern(rpcName, pattern)) {
-                return true;
-            }
-        }
-
-        return false;
+        // RPCs must have exact names - no pattern matching
+        return this.rpcIndex.exact.has(rpcName);
     }
 
     async executeHook(hookName: string, sdk: ServerSDK, context: Record<string, any> = {}): Promise<Record<string, any>> {
@@ -152,9 +141,7 @@ export class PluginExecutor {
 
         let currentContext = context;
         for (const mapping of matchingMappings) {
-            await this.runMapping(mapping, hookName, sdk, currentContext, 'hooks', (newContext) => {
-                currentContext = newContext;
-            });
+            currentContext = await this.runHook(mapping, hookName, sdk, currentContext);
         }
 
         this.logger.timeEnd(`Executing hook: ${hookName}`);
@@ -166,86 +153,100 @@ export class PluginExecutor {
         this.logger.time(`Executing rpc: ${rpcName}`);
         this.logger.info(`Executing rpc: ${rpcName}`);
 
+        // RPCs must have exact names - no pattern matching
+        const mappings = this.rpcIndex.exact.get(rpcName);
 
-        // Use index for O(1) lookup
-        const matchingMappings: PluginHookMapping[] = [];
-        const seenPlugins = new Set<string>();
-
-        // O(1) exact match lookup
-        if (this.rpcIndex.exact.has(rpcName)) {
-            const exactMatches = this.rpcIndex.exact.get(rpcName)!;
-            exactMatches.forEach(mapping => {
-                if (!seenPlugins.has(mapping.pluginId)) {
-                    matchingMappings.push(mapping);
-                    seenPlugins.add(mapping.pluginId);
-                }
-            });
+        if (!mappings || mappings.length === 0) {
+            this.logger.warn(`No RPC handler found for: ${rpcName}`);
+            throw new Error(`No RPC handler found for: ${rpcName}`);
         }
 
-        // Check patterns for RPCs
-        for (const [pattern, mappings] of this.rpcIndex.patterns) {
-            if (matchesHookPattern(rpcName, pattern)) {
-                mappings.forEach(mapping => {
-                    if (!seenPlugins.has(mapping.pluginId)) {
-                        matchingMappings.push(mapping);
-                        seenPlugins.add(mapping.pluginId);
-                    }
-                });
-            }
+        // Use first mapping only - RPCs should have single handler
+        const mapping = mappings[0];
+
+        if (mappings.length > 1) {
+            this.logger.warn(`Multiple handlers found for RPC: ${rpcName}, using first one`);
         }
 
-        if (matchingMappings.length === 0) {
-            this.logger.warn(`No RPC mappings found for: ${rpcName}`);
-            throw new Error(`No RPC mappings found for RPC: ${rpcName}`);
-        }
-
-        let currentContext = context;
-        for (const mapping of matchingMappings) {
-            await this.runMapping(mapping, rpcName, sdk, currentContext, 'rpcs', (newContext) => {
-                currentContext = newContext;
-            });
-        }
+        // Execute single RPC handler - let errors propagate
+        const result = await this.runRpc(mapping, rpcName, context);
 
         this.logger.timeEnd(`Executing rpc: ${rpcName}`);
         this.logger.info(`Finished executing rpc: ${rpcName}`);
-        return currentContext;
+        return result;
     }
 
-    private async runMapping(
+    private async runHook(
         mapping: PluginHookMapping,
         hookName: string,
         sdk: ServerSDK,
-        context: Record<string, any>,
-        type: 'hooks' | 'rpcs',
-        updateContext: (ctx: Record<string, any>) => void
-    ) {
-        const label = `${type} ${hookName} for plugin ${mapping.pluginId}`;
+        context: Record<string, any>
+    ): Promise<Record<string, any>> {
+        const label = `hook ${hookName} for plugin ${mapping.pluginId}`;
         this.logger.time(label);
         this.logger.debug(`Running ${label}`);
         try {
             if (!this.db || !this.sdkFactory) {
                 this.logger.error('Database or SDK factory not initialized');
-                return;
+                return context;
             }
 
             const pluginEntry = await this.db.plugins.findById(mapping.pluginId);
             if (!pluginEntry) {
                 this.logger.warn(`Plugin ${mapping.pluginId} not found`);
-                return;
+                return context;
             }
+
             const module = this.plugins.get(mapping.pluginId);
-            if (!module || typeof module[type]?.[hookName] !== 'function') {
-                this.logger.warn(`No ${type} function for ${hookName} in plugin ${mapping.pluginId}`);
-                return;
+            if (!module || typeof module.hooks?.[hookName] !== 'function') {
+                this.logger.warn(`No hook function for ${hookName} in plugin ${mapping.pluginId}`);
+                return context;
             }
 
             // Create plugin-specific SDK using the factory
             const pluginSDK = await this.sdkFactory.createSDK(pluginEntry);
-
-            const result = await module[type][hookName](pluginSDK, context);
-            updateContext(result);
+            const result = await module.hooks[hookName](pluginSDK, context);
+            return result;
         } catch (err) {
-            this.logger.error(`Error in ${type} ${hookName} for plugin ${mapping.pluginId}:`, err);
+            // Hooks swallow errors and continue
+            this.logger.error(`Error in hook ${hookName} for plugin ${mapping.pluginId}:`, err);
+            return context;
+        } finally {
+            this.logger.timeEnd(label);
+        }
+    }
+
+    private async runRpc(
+        mapping: PluginHookMapping,
+        rpcName: string,
+        context: Record<string, any>
+    ): Promise<Record<string, any>> {
+        const label = `rpc ${rpcName} for plugin ${mapping.pluginId}`;
+        this.logger.time(label);
+        this.logger.debug(`Running ${label}`);
+        try {
+            if (!this.db || !this.sdkFactory) {
+                throw new Error('Database or SDK factory not initialized');
+            }
+
+            //this could be cached
+            const pluginEntry = await this.db.plugins.findById(mapping.pluginId);
+            if (!pluginEntry) {
+                throw new Error(`Plugin ${mapping.pluginId} not found`);
+            }
+
+            const module = this.plugins.get(mapping.pluginId);
+            if (!module || typeof module.rpcs?.[rpcName] !== 'function') {
+                throw new Error(`No RPC function for ${rpcName} in plugin ${mapping.pluginId}`);
+            }
+
+            // Create plugin-specific SDK using the factory
+            const pluginSDK = await this.sdkFactory.createSDK(pluginEntry);
+            return await module.rpcs[rpcName](pluginSDK, context);
+        } catch (err) {
+            // RPCs propagate errors
+            this.logger.error(`Error in RPC ${rpcName} for plugin ${mapping.pluginId}:`, err);
+            throw err;
         } finally {
             this.logger.timeEnd(label);
         }
