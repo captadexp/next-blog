@@ -1,5 +1,5 @@
 import type {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
-import {useCallback, useEffect, useRef, useState} from '@supergrowthai/plugin-dev-kit/client';
+import {useCallback, useEffect, useMemo, useState} from '@supergrowthai/plugin-dev-kit/client';
 import {SCHEMA_TYPES} from './SchemaTypePicker.js';
 
 const AUTHOR_TYPES = [
@@ -7,60 +7,76 @@ const AUTHOR_TYPES = [
     {value: 'Organization', label: 'Organization'}
 ];
 
+const deepEqual = (a: any, b: any): boolean => {
+    if (a === b) return true;
+    if (a == null || b == null) return a === b;
+    if (typeof a !== typeof b) return false;
+    if (typeof a !== 'object') return a === b;
+
+    if (Array.isArray(a) !== Array.isArray(b)) return false;
+    if (Array.isArray(a)) {
+        if (a.length !== b.length) return false;
+        return a.every((item, i) => deepEqual(item, b[i]));
+    }
+
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+    if (keysA.length !== keysB.length) return false;
+
+    return keysA.every(key => deepEqual(a[key], b[key]));
+};
+
 export function GlobalSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
     const [config, setConfig] = useState<any>({});
+    const [originalConfig, setOriginalConfig] = useState<any>({});
     const [saving, setSaving] = useState(false);
     const [activeSection, setActiveSection] = useState<'organization' | 'website' | 'defaults'>('organization');
-    const saveTimeoutRef = useRef<number | null>(null);
 
     useEffect(() => {
         sdk.callRPC('json-ld-structured-data:config:get', {}).then(resp => {
-            setConfig(resp?.payload?.payload || {});
+            const configData = resp?.payload?.payload || {};
+            setConfig(structuredClone(configData));
+            setOriginalConfig(structuredClone(configData));
         });
     }, [sdk]);
 
-    const saveConfig = useCallback(async (newConfig: any) => {
+    const hasChanges = useMemo(() => {
+        return !deepEqual(config, originalConfig);
+    }, [config, originalConfig]);
+
+    const saveConfig = useCallback(async () => {
         setSaving(true);
         try {
-            await sdk.callRPC('json-ld-structured-data:config:set', {config: newConfig});
-            setConfig(newConfig);
+            await sdk.callRPC('json-ld-structured-data:config:set', {config});
+            setOriginalConfig(structuredClone(config));
             sdk.notify('Settings saved successfully', 'success');
         } catch (error) {
             sdk.notify('Failed to save settings', 'error');
         } finally {
             setSaving(false);
         }
-    }, [sdk]);
+    }, [sdk, config]);
 
-    const debouncedSaveConfig = useCallback((newConfig: any) => {
-        // Clear existing timeout
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-        }
-
-        // Set config immediately for UI updates
-        setConfig(newConfig);
-
-        // Set new timeout for save
-        saveTimeoutRef.current = setTimeout(() => {
-            saveConfig(newConfig);
-            saveTimeoutRef.current = null;
-        }, 500) as unknown as number;
-    }, [saveConfig]);
+    const resetChanges = useCallback(() => {
+        setConfig(structuredClone(originalConfig));
+    }, [originalConfig]);
 
     const updateField = useCallback((path: string, value: any) => {
-        const keys = path.split('.');
-        const newConfig = {...config};
-        let obj = newConfig;
+        setConfig((prevConfig: any) => {
+            const keys = path.split('.');
+            const newConfig = {...prevConfig};
+            let obj = newConfig;
 
-        for (let i = 0; i < keys.length - 1; i++) {
-            if (!obj[keys[i]]) obj[keys[i]] = {};
-            obj = obj[keys[i]];
-        }
+            for (let i = 0; i < keys.length - 1; i++) {
+                if (!obj[keys[i]]) obj[keys[i]] = {};
+                obj[keys[i]] = {...obj[keys[i]]};
+                obj = obj[keys[i]];
+            }
 
-        obj[keys[keys.length - 1]] = value;
-        debouncedSaveConfig(newConfig);
-    }, [config, debouncedSaveConfig]);
+            obj[keys[keys.length - 1]] = value;
+            return newConfig;
+        });
+    }, []);
 
     const selectLogo = useCallback(async () => {
         try {
@@ -176,22 +192,12 @@ export function GlobalSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="space-y-2">
-                                        <button
-                                            className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50"
-                                            onClick={selectLogo}
-                                        >
-                                            Select Logo from Media Library
-                                        </button>
-                                        <div className="text-center text-xs text-gray-500">OR</div>
-                                        <input
-                                            type="url"
-                                            className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
-                                            placeholder="Logo URL (fallback)"
-                                            value={config.organization?.logo || ''}
-                                            onChange={e => updateField('organization.logo', e.target.value)}
-                                        />
-                                    </div>
+                                    <button
+                                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50"
+                                        onClick={selectLogo}
+                                    >
+                                        Select Logo from Media Library
+                                    </button>
                                 )}
                             </div>
 
@@ -365,9 +371,31 @@ export function GlobalSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
                         </div>
                     )}
 
-                    {saving && (
-                        <div className="mt-4 text-sm text-center text-gray-500">Saving…</div>
+                </div>
+            </div>
+
+            {/* Save Controls */}
+            <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                    {hasChanges ? 'You have unsaved changes' : 'No changes'}
+                </div>
+                <div className="flex items-center gap-3">
+                    {hasChanges && (
+                        <button
+                            className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                            onClick={resetChanges}
+                            disabled={saving}
+                        >
+                            Reset
+                        </button>
                     )}
+                    <button
+                        className="px-4 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={saveConfig}
+                        disabled={!hasChanges || saving}
+                    >
+                        {saving ? 'Saving…' : 'Save Changes'}
+                    </button>
                 </div>
             </div>
         </div>

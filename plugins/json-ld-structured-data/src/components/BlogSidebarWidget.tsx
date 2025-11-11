@@ -1,14 +1,34 @@
 import type {BlogEditorContext, ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
-import {useCallback, useEffect, useRef, useState} from '@supergrowthai/plugin-dev-kit/client';
+import {useCallback, useEffect, useMemo, useRef, useState} from '@supergrowthai/plugin-dev-kit/client';
 import {SchemaTypePicker} from './SchemaTypePicker.js';
 import {BasicFields} from './BasicFields.js';
 import {TypeSpecificFields} from './TypeSpecificFields.js';
 import {AdvancedFields} from './AdvancedFields.js';
 import {JsonPreview} from './JsonPreview.js';
 
+const deepEqual = (a: any, b: any): boolean => {
+    if (a === b) return true;
+    if (a == null || b == null) return a === b;
+    if (typeof a !== typeof b) return false;
+    if (typeof a !== 'object') return a === b;
+
+    if (Array.isArray(a) !== Array.isArray(b)) return false;
+    if (Array.isArray(a)) {
+        if (a.length !== b.length) return false;
+        return a.every((item, i) => deepEqual(item, b[i]));
+    }
+
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+    if (keysA.length !== keysB.length) return false;
+
+    return keysA.every(key => deepEqual(a[key], b[key]));
+};
+
 export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: BlogEditorContext }) {
     const blogId = context?.blogId as string | undefined;
     const [overrides, setOverrides] = useState<any>({});
+    const [originalOverrides, setOriginalOverrides] = useState<any>({});
     const [config, setConfig] = useState<any>({});
     const [saving, setSaving] = useState(false);
     const [preview, setPreview] = useState<any>(null);
@@ -23,7 +43,9 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
             sdk.callRPC('json-ld-structured-data:blog:get', {blogId}),
             sdk.callRPC('json-ld-structured-data:config:get', {})
         ]).then(([blogResp, configResp]) => {
-            setOverrides(blogResp?.payload?.payload || {});
+            const overridesData = blogResp?.payload?.payload || {};
+            setOverrides(structuredClone(overridesData));
+            setOriginalOverrides(structuredClone(overridesData));
             setConfig(configResp?.payload?.payload || {});
         });
     }, [blogId, sdk]);
@@ -34,6 +56,10 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
         try {
             await sdk.callRPC('json-ld-structured-data:blog:set', {blogId, overrides: newOverrides});
             setOverrides(newOverrides);
+            setOriginalOverrides(structuredClone(newOverrides));
+            sdk.notify('Settings saved successfully', 'success');
+        } catch (error) {
+            sdk.notify('Failed to save settings', 'error');
         } finally {
             setSaving(false);
         }
@@ -50,8 +76,16 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
         saveTimeoutRef.current = setTimeout(() => {
             saveOverrides(newOverrides);
             saveTimeoutRef.current = null;
-        }, 500); // 500ms debounce
+        }, 500) as unknown as number; // 500ms debounce
     }, [saveOverrides]);
+
+    const hasChanges = useMemo(() => {
+        return !deepEqual(overrides, originalOverrides);
+    }, [overrides, originalOverrides]);
+
+    const saveCurrentOverrides = useCallback(async () => {
+        await saveOverrides(overrides);
+    }, [saveOverrides, overrides]);
 
     const generatePreview = useCallback(async () => {
         if (!blogId) return;
@@ -84,8 +118,7 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
     const updateField = useCallback((field: string, value: any) => {
         const newOverrides = {...overrides, [field]: value};
         setOverrides(newOverrides);
-        debouncedSaveOverrides(newOverrides);
-    }, [overrides, debouncedSaveOverrides]);
+    }, [overrides]);
 
     const updateNestedField = useCallback((path: string, value: any) => {
         const keys = path.split('.');
@@ -94,13 +127,13 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
 
         for (let i = 0; i < keys.length - 1; i++) {
             if (!obj[keys[i]]) obj[keys[i]] = {};
+            obj[keys[i]] = {...obj[keys[i]]};
             obj = obj[keys[i]];
         }
 
         obj[keys[keys.length - 1]] = value;
         setOverrides(newOverrides);
-        debouncedSaveOverrides(newOverrides);
-    }, [overrides, debouncedSaveOverrides]);
+    }, [overrides]);
 
     const selectImage = useCallback(async (field: string) => {
         try {
@@ -221,6 +254,16 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
 
             {/* Actions */}
             <div className="p-3 border-t border-gray-200 space-y-2">
+                {hasChanges && (
+                    <button
+                        className="w-full px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={saveCurrentOverrides}
+                        disabled={saving}
+                    >
+                        {saving ? 'Saving…' : 'Save Changes'}
+                    </button>
+                )}
+
                 <button
                     className="w-full px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                     onClick={generatePreview}
@@ -247,8 +290,6 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
                     show={showPreview}
                     onHide={() => setShowPreview(false)}
                 />
-
-                {saving && <div className="text-xs text-center text-gray-500">Saving…</div>}
             </div>
         </div>
     );
