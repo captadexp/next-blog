@@ -15,7 +15,9 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "noEmit": true,
-    "types": []
+    "types": [
+      "@types/bun"
+    ]
   },
   "include": [
     "src"

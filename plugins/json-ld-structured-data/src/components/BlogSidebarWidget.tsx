@@ -89,7 +89,11 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
 
     const generatePreview = useCallback(async () => {
         if (!blogId) return;
-        const resp = await sdk.callRPC('json-ld-structured-data:generate', {blogId});
+        const resp = await sdk.callRPC('json-ld-structured-data:generate', {blogId})
+        if (resp.code !== 0) {
+            sdk.notify(`${resp.message}\n${resp.payload.message}`.trim())
+        }
+
         setPreview(resp?.payload?.payload);
         setShowPreview(true);
 
