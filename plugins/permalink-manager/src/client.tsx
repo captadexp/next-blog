@@ -134,11 +134,11 @@ function PermalinkWidget({sdk, context, type, _id}: {
                 sdk.callRPC('permalink:get', {type: type, _id: _id}),
                 sdk.callRPC('permalink:settings:get', {}),
             ]);
-            const state = stored.payload?.payload?.state;
-            const fmts = settings.payload?.payload?.[type]?.formats ?? [];
+            const state = stored.payload?.state;
+            const fmts = settings.payload?.[type]?.formats ?? [];
             setFormats(fmts);
             setValue(state?.permalink ?? '');
-            setSelectedFormat(state?.pattern ?? settings.payload?.payload?.[type]?.activeFormat ?? fmts[0]);
+            setSelectedFormat(state?.pattern ?? settings.payload?.[type]?.activeFormat ?? fmts[0]);
         })();
     }, [_id, sdk]);
 
@@ -208,13 +208,12 @@ function SettingsPanel({sdk}: {
             const rpcResponse = await sdk.callRPC('permalink:settings:get', {});
             if (!rpcResponse || rpcResponse.code !== 0) return;
             const response = rpcResponse.payload!;
-            if (response.code !== 0) return;
 
             setAllSettings({
-                posts: response.payload!.posts,
-                tags: response.payload!.tags,
-                categories: response.payload!.categories,
-                users: response.payload!.users
+                posts: response.posts,
+                tags: response.tags,
+                categories: response.categories,
+                users: response.users
             });
         })();
     }, [sdk]);
@@ -226,13 +225,12 @@ function SettingsPanel({sdk}: {
         const rpcResponse = await sdk.callRPC('permalink:settings:set', update);
         if (!rpcResponse || rpcResponse.code !== 0) return;
         const response = rpcResponse.payload!;
-        if (response.code !== 0) return;
 
         setAllSettings({
-            posts: response.payload!.posts,
-            tags: response.payload!.tags,
-            categories: response.payload!.categories,
-            users: response.payload!.users
+            posts: response.posts,
+            tags: response.tags,
+            categories: response.categories,
+            users: response.users
         });
     }, [sdk, allSettings]);
 

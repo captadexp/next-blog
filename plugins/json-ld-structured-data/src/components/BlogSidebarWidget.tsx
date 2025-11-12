@@ -1,11 +1,12 @@
 import type {BlogEditorContext, ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
 import {useCallback, useEffect, useMemo, useRef, useState} from '@supergrowthai/plugin-dev-kit/client';
-import {ClientError, handleRPCResponse, isValidationError} from '../errors.js';
+import {ClientError, handleRPCResponse, RPCResponse, ValidationError} from '../errors.js';
 import {SchemaTypePicker} from './SchemaTypePicker.js';
 import {BasicFields} from './BasicFields.js';
 import {TypeSpecificFields} from './TypeSpecificFields.js';
 import {AdvancedFields} from './AdvancedFields.js';
 import {JsonPreview} from './JsonPreview.js';
+import {JsonLdSchema} from "../types";
 
 const deepEqual = (a: any, b: any): boolean => {
     if (a === b) return true;
@@ -52,10 +53,10 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
                 sdk.notify(configResp.message, 'error');
                 return;
             }
-            const overridesData = blogResp.payload.payload || {};
+            const overridesData = blogResp.payload || {};
             setOverrides(structuredClone(overridesData));
             setOriginalOverrides(structuredClone(overridesData));
-            setConfig(configResp.payload.payload || {});
+            setConfig(configResp.payload || {});
         });
     }, [blogId, sdk]);
 
@@ -99,7 +100,7 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
         if (!blogId) return;
 
         try {
-            const resp = await sdk.callRPC('json-ld-structured-data:generate', {blogId});
+            const resp: RPCResponse<JsonLdSchema> = await sdk.callRPC('json-ld-structured-data:generate', {blogId});
             const jsonLd = handleRPCResponse(resp);
 
             setPreview(jsonLd);
@@ -123,8 +124,8 @@ export function BlogSidebarWidget({sdk, context}: { sdk: ClientSDK; context: Blo
 
             setValidationErrors(warnings);
 
-        } catch (error) {
-            if (isValidationError(error)) {
+        } catch (error: any) {
+            if (error instanceof ValidationError) {
                 // Show validation error in the UI
                 setValidationErrors([error.message]);
                 setPreview(null);

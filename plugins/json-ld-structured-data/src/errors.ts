@@ -1,3 +1,5 @@
+import type {ServerSDK} from "@supergrowthai/next-blog-types";
+
 /**
  * Custom error class for validation errors
  */
@@ -32,56 +34,37 @@ export class ClientError extends Error {
 /**
  * Wrapper for RPC handlers to catch errors and return proper response format
  */
-export async function handleRpc<T>(
-    handler: () => Promise<T>
-): Promise<{ code: number; message: string; payload?: T }> {
-    try {
-        const result = await handler();
-        return {code: 0, message: 'ok', payload: result};
-    } catch (error) {
-        if (error instanceof ValidationError || error instanceof UnsupportedError) {
-            return {code: error.code, message: error.message};
+export function handleRPC<T, R>(handler: (sdk: ServerSDK, p: T) => Promise<R>) {
+    return async (sdk: ServerSDK, p: T): Promise<RPCResponse<R>> => {
+        try {
+            const result = await handler(sdk, p) as R;
+            return {code: 0, message: 'ok', payload: result};
+        } catch (error: any) {
+            if (error instanceof ValidationError || error instanceof UnsupportedError) {
+                return {code: error.code, message: error.message};
+            }
+            // Unknown errors get code 500
+            return {code: 500, message: error?.message as string || 'Internal error'};
         }
-        // Unknown errors get code 500
-        return {code: 500, message: error?.message || 'Internal error'};
     }
 }
 
 /**
  * Client-side RPC response types
  */
-export interface RPCResponse {
+export interface RPCResponse<T> {
     code: number;
     message: string;
-    payload?: {
-        code?: number;
-        message?: string;
-        payload?: any;
-    };
+    payload?: T;
 }
 
 /**
  * Handle RPC responses with proper error extraction
  */
-export function handleRPCResponse<T>(response: RPCResponse): T | null {
-    // Outer response failed
-    if (response.code !== 0) {
-        throw new ClientError(response.message, 'rpc-error');
+export function handleRPCResponse<T = any>(response: RPCResponse<T>): T | null {
+    if (response?.code !== undefined && response.code !== 0) {
+        throw new ValidationError(response.message || 'Validation failed');
     }
 
-    // Inner response has validation error
-    if (response.payload?.code !== undefined && response.payload.code !== 0) {
-        throw new ValidationError(response.payload.message || 'Validation failed');
-    }
-
-    // Success case
-    return response.payload?.payload || null;
-}
-
-export function isValidationError(error: unknown): boolean {
-    return error instanceof ValidationError;
-}
-
-export function isClientError(error: unknown): boolean {
-    return error instanceof ClientError;
+    return response.payload || null;
 }

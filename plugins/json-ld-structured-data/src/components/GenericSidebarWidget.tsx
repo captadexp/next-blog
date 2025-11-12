@@ -1,6 +1,6 @@
 import type {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
 import {useCallback, useEffect, useMemo, useState} from '@supergrowthai/plugin-dev-kit/client';
-import {ClientError, handleRPCResponse, isValidationError} from '../errors.js';
+import {ClientError, handleRPCResponse, ValidationError} from '../errors.js';
 
 const ENTITY_SCHEMA_TYPES = {
     tag: [
@@ -83,7 +83,7 @@ export function GenericSidebarWidget({
                 return;
             }
 
-            const overridesData = entityResp.payload.payload || {};
+            const overridesData = entityResp.payload || {};
             const defaultSchemaType = entityType === 'user' ? 'Person' : entityType === 'category' ? 'CategoryCode' : 'DefinedTerm';
 
             const dataWithSchemaType = {
@@ -93,7 +93,7 @@ export function GenericSidebarWidget({
 
             setOverrides(structuredClone(dataWithSchemaType));
             setOriginalOverrides(structuredClone(dataWithSchemaType));
-            setConfig(configResp.payload.payload || {});
+            setConfig(configResp.payload || {});
 
             if (!overridesData.schemaType) {
                 setNeedsAutoSave(true);
@@ -147,8 +147,8 @@ export function GenericSidebarWidget({
             setShowPreview(true);
             setValidationError(null);
 
-        } catch (error) {
-            if (isValidationError(error)) {
+        } catch (error: any) {
+            if (error instanceof ValidationError) {
                 // Show validation error in the UI
                 setValidationError(error.message);
                 setPreview(null);

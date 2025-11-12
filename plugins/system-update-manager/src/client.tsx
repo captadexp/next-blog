@@ -18,16 +18,12 @@ const renderPanel = (sdk: ClientSDK) => {
             try {
                 const response = await sdk.callRPC('system-update-manager:checkSystemUpdate', {});
 
-                if (response?.code === 0) {
-                    const {payload} = response.payload;
-                    setSystemStatus(payload);
+                const payload = response.payload;
+                setSystemStatus(payload);
 
-                    // Clear old migration result when checking
-                    if (!payload?.migrationNeeded) {
-                        setMigrationResult(null);
-                    }
-                } else {
-                    throw new Error(response?.message || 'Failed to check status');
+                // Clear old migration result when checking
+                if (!payload?.migrationNeeded) {
+                    setMigrationResult(null);
                 }
             } catch (err: any) {
                 setError(`Failed to fetch initial status: ${err.message}`);
@@ -49,23 +45,20 @@ const renderPanel = (sdk: ClientSDK) => {
         try {
             const response = await sdk.callRPC('system-update-manager:checkSystemUpdate', {});
 
-            if (response?.code === 0) {
-                const {payload} = response.payload;
-                setSystemStatus(payload);
+            const payload = response.payload;
+            setSystemStatus(payload);
 
-                // Clear old migration result when checking
-                if (!payload?.migrationNeeded) {
-                    setMigrationResult(null);
-                }
-
-                if (payload?.migrationNeeded) {
-                    sdk.notify('Migration needed for new version', 'warning');
-                } else {
-                    sdk.notify('System is up to date', 'info');
-                }
-            } else {
-                throw new Error(response?.message || 'Failed to check for updates');
+            // Clear old migration result when checking
+            if (!payload?.migrationNeeded) {
+                setMigrationResult(null);
             }
+
+            if (payload?.migrationNeeded) {
+                sdk.notify('Migration needed for new version', 'warning');
+            } else {
+                sdk.notify('System is up to date', 'info');
+            }
+
         } catch (err: any) {
             const errorMsg = `Update check failed: ${err.message}`;
             setError(errorMsg);
@@ -85,25 +78,21 @@ const renderPanel = (sdk: ClientSDK) => {
         try {
             const response = await sdk.callRPC('system-update-manager:runSystemMigration', {});
 
-            if (response?.code === 0) {
-                const {payload} = response.payload;
-                setMigrationResult(payload);
+            const payload = response.payload;
+            setMigrationResult(payload);
 
-                if (payload?.migrated) {
-                    sdk.notify(
-                        `Migration completed: ${payload.fromVersion} → ${payload.toVersion}`,
-                        'success'
-                    );
-                    // Re-check status after successful migration
-                    setSystemStatus(null);
-                    setError(null);
-                    // Re-fetch status after migration
-                    await checkForUpdates();
-                } else {
-                    sdk.notify(payload?.reason || 'No migration needed', 'info');
-                }
+            if (payload?.migrated) {
+                sdk.notify(
+                    `Migration completed: ${payload.fromVersion} → ${payload.toVersion}`,
+                    'success'
+                );
+                // Re-check status after successful migration
+                setSystemStatus(null);
+                setError(null);
+                // Re-fetch status after migration
+                await checkForUpdates();
             } else {
-                throw new Error(response?.message || 'Migration failed');
+                sdk.notify(payload?.reason || 'No migration needed', 'info');
             }
         } catch (err: any) {
             const errorMsg = `Migration failed: ${err.message}`;

@@ -11,7 +11,7 @@ export function createBaseJsonLd(
     entity: EntityData,
     config: JsonLdConfig,
     overrides: JsonLdOverrides,
-    type: string
+    type: typeof ARTICLE_TYPES[number]
 ): JsonLdSchema {
     const baseUrl = config.website?.url?.replace(/\/$/, '') || '';
     const title = sanitizeString(overrides.headline || overrides.name || entity.title || entity.name);
@@ -43,7 +43,7 @@ export function addSchemaSpecificFields(
     entity: EntityData,
     config: JsonLdConfig,
     overrides: JsonLdOverrides,
-    type: string
+    type: typeof ARTICLE_TYPES[number]
 ): JsonLdSchema {
     const title = sanitizeString(overrides.headline || overrides.name || entity.title || entity.name);
 
@@ -104,7 +104,7 @@ export function addPublisherFields(
     jsonLd: JsonLdSchema,
     config: JsonLdConfig,
     overrides: JsonLdOverrides,
-    type: string
+    type: typeof PUBLISHER_TYPES[number]
 ): JsonLdSchema {
     if (!PUBLISHER_TYPES.includes(type)) return jsonLd;
 
@@ -191,14 +191,14 @@ export function addKeywordFields(
     const keywords: string[] = [];
 
     if (entity.tags?.length) {
-        keywords.push(...entity.tags.map(t => sanitizeString(t.name)).filter(Boolean));
+        keywords.push(...entity.tags.map(t => sanitizeString(t.name)).filter(Boolean) as string[]);
     }
 
     if (overrides.keywords) {
         const additionalKeywords = overrides.keywords
             .split(',')
             .map(k => sanitizeString(k.trim()))
-            .filter(Boolean);
+            .filter(Boolean) as string[];
         keywords.push(...additionalKeywords);
     }
 

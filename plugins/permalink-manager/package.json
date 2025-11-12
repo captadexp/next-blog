@@ -1,5 +1,5 @@
 {
-  "name": "permalink-manager",
+  "name": "@plugins/permalink-manager",
   "version": "1.0.0",
   "type": "module",
   "scripts": {

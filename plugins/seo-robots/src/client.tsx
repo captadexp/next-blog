@@ -21,8 +21,8 @@ function SettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
 
     useEffect(() => {
         sdk.callRPC('robots:settings:get', {}).then((resp: any) => {
-            if (resp?.payload?.payload) {
-                setSettings(resp.payload.payload);
+            if (resp?.payload) {
+                setSettings(resp.payload);
             }
         }).catch(() => {
         });

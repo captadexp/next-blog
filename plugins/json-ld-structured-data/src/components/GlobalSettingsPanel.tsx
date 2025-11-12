@@ -35,7 +35,7 @@ export function GlobalSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
 
     useEffect(() => {
         sdk.callRPC('json-ld-structured-data:config:get', {}).then(resp => {
-            const configData = resp?.payload?.payload || {};
+            const configData = resp?.payload || {};
             setConfig(structuredClone(configData));
             setOriginalConfig(structuredClone(configData));
         });

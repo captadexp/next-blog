@@ -42,7 +42,7 @@ export function isValidUrl(url: string): boolean {
 /**
  * Sanitize URL
  */
-export function sanitizeUrl(url: string | undefined): string | undefined {
+export function sanitizeUrl(url: string | null | undefined): string | undefined {
     if (!url) return undefined;
     const sanitized = sanitizeString(url);
     if (!sanitized) return undefined;
@@ -85,7 +85,7 @@ export function parseCustomJson(jsonStr: string): Record<string, any> | null {
         }
 
         return sanitizeObjectValues(parsed);
-    } catch (error) {
+    } catch (error: any) {
         if (error instanceof ValidationError) throw error;
         throw new ValidationError(`Invalid custom JSON: ${error.message}`);
     }

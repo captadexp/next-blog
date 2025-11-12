@@ -302,7 +302,7 @@ const editorSidebarWidget: ClientHookFunction = (sdk: ClientSDK, prev, context: 
 
 
         sdk.callRPC('seo-analyzer:config:get', {blogId}).then((resp) => {
-            const config = resp?.payload.payload?.config || {};
+            const config = resp?.payload?.config || {};
             const savedKeyword = config.focusKeyword;
             setFocusKeyword(savedKeyword);
             lastSavedKeywordRef.current = savedKeyword;

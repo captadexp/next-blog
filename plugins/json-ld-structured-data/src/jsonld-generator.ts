@@ -23,7 +23,7 @@ export * from './types.js';
 /**
  * Remove fields that don't belong to the schema type
  */
-function removeInvalidFields(jsonLd: JsonLdSchema, type: string): JsonLdSchema {
+function removeInvalidFields(jsonLd: JsonLdSchema, type: typeof ARTICLE_TYPES[number]): JsonLdSchema {
     // Article-specific cleanup
     if (ARTICLE_TYPES.includes(type)) {
         delete jsonLd.name; // Articles use headline
@@ -64,7 +64,7 @@ export function generateBlogJsonLd(
     config: JsonLdConfig,
     overrides: JsonLdOverrides = {}
 ): JsonLdSchema {
-    const type = overrides.type || config.article?.defaultType || 'Article';
+    const type = overrides.type || config.article?.defaultType || 'Article' as any;
 
     let jsonLd = createBaseJsonLd(blog, config, overrides, type);
     jsonLd = addSchemaSpecificFields(jsonLd, blog, config, overrides, type);
@@ -89,7 +89,7 @@ export function generateTagJsonLd(
     config: JsonLdConfig,
     overrides: JsonLdOverrides = {}
 ): JsonLdSchema {
-    const schemaType = overrides.schemaType || 'DefinedTerm';
+    const schemaType = overrides.schemaType || 'DefinedTerm' as any;
     const baseUrl = config.website?.url?.replace(/\/$/, '') || '';
 
     const tagUrl = sanitizeUrl(overrides.url || `${baseUrl}/tags/${tag.slug}`);
@@ -117,7 +117,7 @@ export function generateCategoryJsonLd(
     config: JsonLdConfig,
     overrides: JsonLdOverrides = {}
 ): JsonLdSchema {
-    const schemaType = overrides.schemaType || 'CategoryCode';
+    const schemaType = overrides.schemaType || 'CategoryCode' as any;
     const baseUrl = config.website?.url?.replace(/\/$/, '') || '';
 
     const categoryUrl = sanitizeUrl(overrides.url || `${baseUrl}/categories/${category.slug}`);
@@ -149,7 +149,7 @@ export function generateUserJsonLd(
     config: JsonLdConfig,
     overrides: JsonLdOverrides = {}
 ): JsonLdSchema {
-    const schemaType = overrides.schemaType || 'Person';
+    const schemaType = overrides.schemaType || 'Person' as any;
     const baseUrl = config.website?.url?.replace(/\/$/, '') || '';
 
     const userUrl = sanitizeUrl(overrides.url || `${baseUrl}/authors/${user.slug}`);

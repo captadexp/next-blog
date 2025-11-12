@@ -69,7 +69,7 @@ export type CallServerHookFunction<T extends Record<string, HookDefinition>> = <
 export type CallClientHookFunction<T extends Record<string, HookDefinition>> = <K extends keyof T>(
     hookName: K,
     request: T[K]['payload']
-) => Promise<{ code: number, message: string, payload: T[K]['response'] }>;
+) => Promise<T[K]['response']>;
 
 /**
  * Function to call an RPC from SDK (server)
@@ -85,7 +85,7 @@ export type CallServerRPCFunction<T extends Record<string, RPCDefinition>> = <K 
 export type CallClientRPCFunction<T extends Record<string, RPCDefinition>> = <K extends keyof T>(
     method: K,
     request: T[K]['request']
-) => Promise<{ code: number, message: string, payload: T[K]['response'] }>;
+) => Promise<T[K]['response']>;
 
 /**
  * Server hooks definition using unified types

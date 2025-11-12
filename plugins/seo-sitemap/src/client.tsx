@@ -204,26 +204,27 @@ function SettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        sdk.callRPC('sitemap:settings:get', {}).then((resp) => {
-            //could declare type with type augmentation like in json-ld-structure-data plugin and handle cases better
-            const payload = resp?.payload?.payload;
-            if (payload) {
-                // Ensure all fields have defaults
-                const loadedSettings = {
-                    enablePosts: payload.enablePosts ?? true,
-                    enableCategories: payload.enableCategories ?? false,
-                    enableTags: payload.enableTags ?? false,
-                    enableAuthors: payload.enableAuthors ?? false,
-                    postsPerPage: payload.postsPerPage ?? 1000,
-                    enableNews: payload.enableNews ?? false,
-                    newsMaxAge: payload.newsMaxAge ?? 2,
-                    newsPublications: payload.newsPublications ?? [],
-                    newsTagSlug: payload.newsTagSlug ?? 'news',
-                    newsCategorySlug: payload.newsCategorySlug ?? 'news'
-                };
-                setSettings(loadedSettings);
-            }
-        }).catch(() => {
+        sdk.callRPC('sitemap:settings:get', {})
+            .then((resp) => {
+                //could declare type with type augmentation like in json-ld-structure-data plugin and handle cases better
+                const payload = resp?.payload;
+                if (payload) {
+                    // Ensure all fields have defaults
+                    const loadedSettings = {
+                        enablePosts: payload.enablePosts ?? true,
+                        enableCategories: payload.enableCategories ?? false,
+                        enableTags: payload.enableTags ?? false,
+                        enableAuthors: payload.enableAuthors ?? false,
+                        postsPerPage: payload.postsPerPage ?? 1000,
+                        enableNews: payload.enableNews ?? false,
+                        newsMaxAge: payload.newsMaxAge ?? 2,
+                        newsPublications: payload.newsPublications ?? [],
+                        newsTagSlug: payload.newsTagSlug ?? 'news',
+                        newsCategorySlug: payload.newsCategorySlug ?? 'news'
+                    };
+                    setSettings(loadedSettings);
+                }
+            }).catch(() => {
         });
     }, [sdk]);
 

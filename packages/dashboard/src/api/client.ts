@@ -270,11 +270,13 @@ class ApiClientImpl implements APIClient {
     }
 
     async callPluginHook<TPayload = any, TResponse = any>(hookName: string, payload: TPayload): Promise<TResponse> {
-        return this.request<any>(`/plugin/hook/${hookName}`, 'POST', payload) as any;
+        const response = await this.request<any>(`/plugin/hook/${hookName}`, 'POST', payload);
+        return response.payload;
     }
 
     async callPluginRPC<TPayload = any, TResponse = any>(rpcName: string, payload: TPayload): Promise<TResponse> {
-        return this.request<any>(`/plugin/rpc/${rpcName}`, 'POST', payload) as any;
+        const response = await this.request<any>(`/plugin/rpc/${rpcName}`, 'POST', payload);
+        return response.payload;
     }
 
     // Media APIs
@@ -383,7 +385,7 @@ class ApiClientImpl implements APIClient {
                 throw reconstructError(data);
             }
 
-            return data;
+            return data as APIResponse<TResponsePayload>;
         } catch (error) {
             console.error('API request failed:', error);
             const err = error as Error & { payload?: unknown; isHttpError?: boolean };
