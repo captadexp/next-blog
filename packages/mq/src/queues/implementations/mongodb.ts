@@ -23,7 +23,7 @@ export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
         });
     }
 
-    abstract get collection(): Promise<Collection<Omit<BaseMessage<ObjectId>, 'id'> & { _id: ObjectId }>>;
+    abstract get collection(): Promise<Collection<Omit<BaseMessage<ObjectId>, 'id'> & { _id?: ObjectId }>>;
 
     register(queueId: QueueName): void {
         const normalizedQueueId = getEnvironmentQueueName(queueId);

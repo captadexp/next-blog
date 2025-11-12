@@ -8,6 +8,13 @@ const logger = new Logger('MongoDbAdapter', LogLevel.INFO);
 const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
 
 /**
+ * Convert MongoDB document with _id to CronTask with id
+ */
+function toPublicTask<T>({_id, ...rest}: Omit<CronTask<T>, 'id'> & { _id: T }): CronTask<T> {
+    return {...rest, id: _id} as CronTask<T>;
+}
+
+/**
  * MongoDB implementation of IDatabaseAdapter
  */
 export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
@@ -15,7 +22,7 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
     protected constructor() {
     }
 
-    abstract get collection(): Promise<Collection<CronTask<ObjectId>>>;
+    abstract get collection(): Promise<Collection<Omit<CronTask<ObjectId>, 'id'> & { _id?: ObjectId; }>> ;
 
     async addTasksToScheduled(tasks: CronTask<ObjectId>[]): Promise<CronTask<ObjectId>[]> {
         if (!tasks.length) return [];
@@ -23,7 +30,7 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
         const collection = await this.collection;
 
         const transformedTasks = tasks.map((task) => ({
-            id: task.id,
+            _id: task.id,
             type: task.type,
             payload: task.payload,
             execute_at: task.execute_at,
@@ -43,14 +50,14 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
 
         try {
             await collection.insertMany(transformedTasks, {ordered: false});
-            return transformedTasks;
+            return transformedTasks.map(toPublicTask);
         } catch (error: unknown) {
             if (error && typeof error === 'object' && 'writeErrors' in error) {
                 const mongoError = error as { writeErrors: Array<{ index: number }> };
                 const successfulTasks = transformedTasks.filter((_, index) =>
                     !mongoError.writeErrors.some((e) => e.index === index)
                 );
-                return successfulTasks;
+                return successfulTasks.map(toPublicTask);
             }
             throw error;
         }
@@ -83,9 +90,9 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
             .toArray();
 
         if (tasks.length > 0) {
-            const taskIds = tasks.map(t => t.id);
+            const taskIds = tasks.map(t => t._id);
             await collection.updateMany(
-                {id: {$in: taskIds}},
+                {_id: {$in: taskIds}},
                 {
                     $set: {
                         status: 'processing',
@@ -95,7 +102,7 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
             );
         }
 
-        return tasks;
+        return tasks.map(toPublicTask);
     }
 
     async markTasksAsProcessing(tasks: CronTask<ObjectId>[], processingStartedAt: Date): Promise<void> {
@@ -103,7 +110,7 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
         const taskIds = tasks.map(t => t.id).filter(Boolean) as ObjectId[];
 
         await collection.updateMany(
-            {id: {$in: taskIds}},
+            {_id: {$in: taskIds}},
             {
                 $set: {
                     status: 'processing',
@@ -120,7 +127,7 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
 
 
         await collection.updateMany(
-            {id: {$in: taskIds}},
+            {_id: {$in: taskIds}},
             {
                 $set: {
                     status: 'executed',
@@ -136,7 +143,7 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
 
 
         await collection.updateMany(
-            {id: {$in: taskIds}},
+            {_id: {$in: taskIds}},
             {
                 $set: {
                     status: 'failed',
@@ -150,8 +157,9 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
         const collection = await this.collection;
 
         return collection
-            .find({id: {$in: taskIds}})
-            .toArray();
+            .find({_id: {$in: taskIds}})
+            .toArray()
+            .then(result => result.map(toPublicTask));
     }
 
     async getCleanupStats(): Promise<{ orphanedTasks: number; expiredTasks: number }> {
@@ -190,7 +198,7 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
 
         const bulkOps = updates.map(({id, updates}) => ({
             updateOne: {
-                filter: {id: id},
+                filter: {_id: id},
                 update: {
                     $set: {
                         ...updates,
@@ -221,7 +229,7 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
 
 
         await collection.updateMany(
-            {id: {$in: taskIds}},
+            {_id: {$in: taskIds}},
             {
                 $set: {
                     status: 'ignored',
