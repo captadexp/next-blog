@@ -1,4 +1,4 @@
-import type {ServerSDK} from "@supergrowthai/next-blog-types";
+import type {ServerSDK} from "@supergrowthai/plugin-dev-kit/server";
 
 /**
  * Custom error class for validation errors
