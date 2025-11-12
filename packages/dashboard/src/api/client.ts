@@ -14,6 +14,7 @@ import type {
     UIConfiguration,
     User
 } from '@supergrowthai/next-blog-types';
+import {reconstructError} from './errors.js';
 
 class ApiClientImpl implements APIClient {
     private readonly baseUrl: string;
@@ -375,6 +376,11 @@ class ApiClientImpl implements APIClient {
                 error.payload = data;
                 error.isHttpError = true;
                 throw error;
+            }
+
+            // Check for non-zero error codes and reconstruct appropriate error classes
+            if (data.code !== 0) {
+                throw reconstructError(data);
             }
 
             return data;

@@ -11,6 +11,8 @@ import {ServerSDKFactory} from "./sdk-factory.server.js";
 import {initializeSettingsHelper} from "./settings-helper.server.js";
 import {VERSION_INFO} from "../version.js";
 import {getSystemPluginId} from "../utils/defaultSettings.js";
+import {PluginInitializationError, PluginNotFoundError, PluginRpcError, RpcHandlerNotFoundError} from "./errors.js";
+import {objectCacheForDev} from "@supergrowthai/utils";
 
 /**
  * Matches hook names against patterns
@@ -53,7 +55,9 @@ export class PluginExecutor {
     } = {exact: new Map(), patterns: new Map()};
 
     async initialize(db: DatabaseAdapter) {
-        if (process.env.NODE_ENV === "production" && this.initialized) return;
+        if (this.initialized) return;
+
+        console.log("Initializing Plugin Executor", this.initialized);
 
         this.db = db;
 
@@ -74,7 +78,6 @@ export class PluginExecutor {
 
         await this.loadPlugins();
 
-        // Set initialized flag only after all loading is complete
         this.initialized = true;
     }
 
@@ -141,7 +144,7 @@ export class PluginExecutor {
 
         let currentContext = context;
         for (const mapping of matchingMappings) {
-            currentContext = await this.runHook(mapping, hookName, sdk, currentContext);
+            currentContext = await this.runHook(mapping, hookName, currentContext);
         }
 
         this.logger.timeEnd(`Executing hook: ${hookName}`);
@@ -158,7 +161,7 @@ export class PluginExecutor {
 
         if (!mappings || mappings.length === 0) {
             this.logger.warn(`No RPC handler found for: ${rpcName}`);
-            throw new Error(`No RPC handler found for: ${rpcName}`);
+            throw new RpcHandlerNotFoundError(rpcName);
         }
 
         // Use first mapping only - RPCs should have single handler
@@ -179,7 +182,6 @@ export class PluginExecutor {
     private async runHook(
         mapping: PluginHookMapping,
         hookName: string,
-        sdk: ServerSDK,
         context: Record<string, any>
     ): Promise<Record<string, any>> {
         const label = `hook ${hookName} for plugin ${mapping.pluginId}`;
@@ -226,18 +228,18 @@ export class PluginExecutor {
         this.logger.debug(`Running ${label}`);
         try {
             if (!this.db || !this.sdkFactory) {
-                throw new Error('Database or SDK factory not initialized');
+                throw new PluginInitializationError('Database or SDK factory not initialized', 'rpc');
             }
 
             //this could be cached
             const pluginEntry = await this.db.plugins.findById(mapping.pluginId);
             if (!pluginEntry) {
-                throw new Error(`Plugin ${mapping.pluginId} not found`);
+                throw new PluginNotFoundError(mapping.pluginId, 'rpc');
             }
 
             const module = this.plugins.get(mapping.pluginId);
             if (!module || typeof module.rpcs?.[rpcName] !== 'function') {
-                throw new Error(`No RPC function for ${rpcName} in plugin ${mapping.pluginId}`);
+                throw new PluginRpcError(`No RPC function for ${rpcName} in plugin ${mapping.pluginId}`, mapping.pluginId, rpcName);
             }
 
             // Create plugin-specific SDK using the factory
@@ -360,5 +362,5 @@ export class PluginExecutor {
     }
 }
 
-const pluginExecutor = new PluginExecutor();
+const pluginExecutor = objectCacheForDev("plugin-executor-1", () => new PluginExecutor());
 export default pluginExecutor;
