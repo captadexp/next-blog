@@ -30,12 +30,12 @@ export default async function TagListTestPage() {
 
             <div style={{marginBottom: '40px'}}>
                 <h2 style={{marginBottom: '20px'}}>Grid with 2 Columns</h2>
-                <TagList tags={tags} columns={2}/>
+                <TagList tags={tags} columns={{sm: 1, md: 2}}/>
             </div>
 
             <div style={{marginBottom: '40px'}}>
                 <h2 style={{marginBottom: '20px'}}>Grid with 4 Columns</h2>
-                <TagList tags={tags} columns={4}/>
+                <TagList tags={tags} columns={{sm: 2, md: 4}}/>
             </div>
 
             <div style={{marginBottom: '40px'}}>

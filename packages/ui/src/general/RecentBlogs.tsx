@@ -7,7 +7,7 @@ interface RecentBlogsProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 's
     blogs: HydratedBlog[];
     title?: string;
     layout?: 'grid' | 'list';
-    columns?: number;
+    columns?: { sm?: number; md?: number; lg?: number };
     limit?: number;
     showImage?: boolean;
     showExcerpt?: boolean;
@@ -23,7 +23,7 @@ export const RecentBlogs: React.FC<RecentBlogsProps> = ({
                                                             blogs,
                                                             title = 'Recent Posts',
                                                             layout = 'grid',
-                                                            columns = 3,
+                                                            columns = {sm: 1, md: 2, lg: 2},
                                                             limit = 6,
                                                             showImage = true,
                                                             showExcerpt = true,

@@ -38,12 +38,12 @@ export default async function AuthorListTestPage() {
 
             <div style={{marginBottom: '40px'}}>
                 <h2 style={{marginBottom: '20px'}}>2 Columns Grid</h2>
-                <AuthorList authors={authorsWithCount} columns={2}/>
+                <AuthorList authors={authorsWithCount} columns={{sm: 1, md: 2}}/>
             </div>
 
             <div style={{marginBottom: '40px'}}>
                 <h2 style={{marginBottom: '20px'}}>4 Columns Grid</h2>
-                <AuthorList authors={authorsWithCount} columns={4}/>
+                <AuthorList authors={authorsWithCount} columns={{sm: 2, md: 4}}/>
             </div>
 
             <div style={{marginBottom: '40px'}}>

@@ -5,15 +5,14 @@ import {
     BlogContent,
     BlogMeta,
     BlogTitle,
-    Canonical,
     FeaturedMedia,
-    JsonLd,
-    MetaTags,
-    RelatedBlogs
+    RelatedBlogs,
+    SEO
 } from '@supergrowthai/next-blog-ui';
 import '@supergrowthai/next-blog-ui/style.css';
 import {dbProvider} from "@/lib/db";
 import {SEOAnalyzer} from "../_components/seo/SEOAnalyzer";
+import nextBlogConfig from "@/lib/next-blog-config";
 
 export default async function (props: { params: Promise<{ slug: string }> }) {
     const {params} = props;
@@ -26,36 +25,14 @@ export default async function (props: { params: Promise<{ slug: string }> }) {
 
     const relatedBlogs = await blogDb.generated.getRelatedBlogs(blog._id, 3)
 
-    const baseUrl = 'https://next-blog-test-app.vercel.app';
-    const siteName = 'Next-Blog';
-
     return (
         <>
-            {/* SEO Components would normally go in <head> */}
+            {/* SEO Component would normally go in <head> */}
             <div style={{display: 'none'}}>
-                <MetaTags
-                    type="blog"
-                    blog={blog}
-                    baseUrl={baseUrl}
-                    siteName={siteName}
-                    twitterHandle="@nextblog"
-                />
-                <Canonical
-                    url={`${baseUrl}/${blog.slug}`}
-                    hrefLang="en"
-                />
-                <JsonLd
-                    blog={blog}
-                    organization={{
-                        name: siteName,
-                        url: baseUrl,
-                        logo: `${baseUrl}/logo.png`
-                    }}
-                    website={{
-                        name: siteName,
-                        url: baseUrl,
-                        searchAction: true
-                    }}
+                <SEO
+                    entity={blog}
+                    entityType="blog"
+                    config={nextBlogConfig()}
                 />
             </div>
 
@@ -107,7 +84,7 @@ export default async function (props: { params: Promise<{ slug: string }> }) {
                         currentBlogId={blog._id}
                         title="You Might Also Like"
                         layout="cards"
-                        columns={2}
+                        columns={{sm: 1, md: 2}}
                     />
                 )}
 

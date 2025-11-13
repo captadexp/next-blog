@@ -5,7 +5,7 @@ import {PermalinkWrapper} from '../components/PermalinkWrapper';
 interface CategoryListProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     categories: Category[];
     layout?: 'grid' | 'list' | 'cards';
-    columns?: number;
+    columns?: { sm?: number; md?: number; lg?: number };
     style?: React.CSSProperties;
     itemStyle?: React.CSSProperties;
     nameStyle?: React.CSSProperties;
@@ -15,7 +15,7 @@ interface CategoryListProps extends Omit<React.HTMLAttributes<HTMLDivElement>, '
 export const CategoryList: React.FC<CategoryListProps> = ({
                                                               categories,
                                                               layout = 'grid',
-                                                              columns = 3,
+                                                              columns = {sm: 1, md: 2, lg: 3},
                                                               style,
                                                               itemStyle,
                                                               nameStyle,
@@ -23,6 +23,11 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                                                               className,
                                                               ...rest
                                                           }) => {
+    const sm = columns.sm || 1;
+    const md = columns.md || 2;
+    const lg = columns.lg || 3;
+    const gridClassName = `category-grid-${Math.random().toString(36).substr(2, 9)}`;
+
     const getContainerStyles = (): React.CSSProperties => {
         const baseStyles: React.CSSProperties = {
             ...style
@@ -30,24 +35,13 @@ export const CategoryList: React.FC<CategoryListProps> = ({
 
         switch (layout) {
             case 'grid':
-                return {
-                    display: 'grid',
-                    gridTemplateColumns: `repeat(${columns}, 1fr)`,
-                    gap: '20px',
-                    ...baseStyles
-                };
+            case 'cards':
+                return baseStyles;
             case 'list':
                 return {
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '16px',
-                    ...baseStyles
-                };
-            case 'cards':
-                return {
-                    display: 'grid',
-                    gridTemplateColumns: `repeat(${columns}, 1fr)`,
-                    gap: '24px',
                     ...baseStyles
                 };
             default:
@@ -98,22 +92,49 @@ export const CategoryList: React.FC<CategoryListProps> = ({
     };
 
     return (
-        <div style={getContainerStyles()} className={className} {...rest}>
-            {categories.map(category => (
-                <PermalinkWrapper
-                    key={category._id}
-                    entity={category}
-                    fallbackElement="div"
-                    style={getItemStyles()}
-                >
-                    <h3 style={defaultNameStyles}>
-                        {category.name}
-                    </h3>
-                    <p style={defaultDescriptionStyles}>
-                        {category.description}
-                    </p>
-                </PermalinkWrapper>
-            ))}
-        </div>
+        <>
+            {(layout === 'grid' || layout === 'cards') && (
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                        .${gridClassName} {
+                            display: grid;
+                            grid-template-columns: repeat(${sm}, 1fr);
+                            gap: ${layout === 'cards' ? '24px' : '20px'};
+                        }
+                        @media (min-width: 768px) {
+                            .${gridClassName} {
+                                grid-template-columns: repeat(${md}, 1fr);
+                            }
+                        }
+                        @media (min-width: 1024px) {
+                            .${gridClassName} {
+                                grid-template-columns: repeat(${lg}, 1fr);
+                            }
+                        }
+                    `
+                }}/>
+            )}
+            <div
+                style={getContainerStyles()}
+                className={`${(layout === 'grid' || layout === 'cards') ? gridClassName : ''} ${className || ''}`}
+                {...rest}
+            >
+                {categories.map(category => (
+                    <PermalinkWrapper
+                        key={category._id}
+                        entity={category}
+                        fallbackElement="div"
+                        style={getItemStyles()}
+                    >
+                        <h3 style={defaultNameStyles}>
+                            {category.name}
+                        </h3>
+                        <p style={defaultDescriptionStyles}>
+                            {category.description}
+                        </p>
+                    </PermalinkWrapper>
+                ))}
+            </div>
+        </>
     );
 };

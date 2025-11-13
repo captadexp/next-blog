@@ -8,7 +8,7 @@ interface RelatedBlogsProps extends Omit<React.HTMLAttributes<HTMLDivElement>, '
     currentBlogId?: string;
     title?: string;
     layout?: 'grid' | 'list' | 'cards';
-    columns?: number;
+    columns?: { sm?: number; md?: number; lg?: number };
     limit?: number;
     showImage?: boolean;
     showExcerpt?: boolean;
@@ -23,7 +23,7 @@ export const RelatedBlogs: React.FC<RelatedBlogsProps> = ({
                                                               currentBlogId,
                                                               title = 'Related Articles',
                                                               layout = 'cards',
-                                                              columns = 2,
+                                                              columns = {sm: 1, md: 2, lg: 2},
                                                               limit = 4,
                                                               showImage = true,
                                                               showExcerpt = true,

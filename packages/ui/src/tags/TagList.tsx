@@ -5,7 +5,7 @@ import {PermalinkWrapper} from '../components/PermalinkWrapper';
 interface TagListProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     tags: Tag[];
     layout?: 'grid' | 'list' | 'inline';
-    columns?: number;
+    columns?: { sm?: number; md?: number; lg?: number };
     style?: React.CSSProperties;
     itemStyle?: React.CSSProperties;
     linkStyle?: React.CSSProperties;
@@ -14,13 +14,18 @@ interface TagListProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style
 export const TagList: React.FC<TagListProps> = ({
                                                     tags,
                                                     layout = 'grid',
-                                                    columns = 3,
+                                                    columns = {sm: 2, md: 3, lg: 4},
                                                     style,
                                                     itemStyle,
                                                     linkStyle,
                                                     className,
                                                     ...rest
                                                 }) => {
+    const sm = columns.sm || 2;
+    const md = columns.md || 3;
+    const lg = columns.lg || 4;
+    const gridClassName = `tag-grid-${Math.random().toString(36).substr(2, 9)}`;
+
     const getContainerStyles = (): React.CSSProperties => {
         const baseStyles: React.CSSProperties = {
             ...style
@@ -28,12 +33,7 @@ export const TagList: React.FC<TagListProps> = ({
 
         switch (layout) {
             case 'grid':
-                return {
-                    display: 'grid',
-                    gridTemplateColumns: `repeat(${columns}, 1fr)`,
-                    gap: '16px',
-                    ...baseStyles
-                };
+                return baseStyles;
             case 'list':
                 return {
                     display: 'flex',
@@ -71,14 +71,41 @@ export const TagList: React.FC<TagListProps> = ({
     };
 
     return (
-        <div style={getContainerStyles()} className={className} {...rest}>
-            {tags.map(tag => (
-                <PermalinkWrapper key={tag._id} entity={tag} fallbackElement="div" style={defaultItemStyles}>
-                    <span style={defaultLinkStyles}>
-                        #{tag.name}
-                    </span>
-                </PermalinkWrapper>
-            ))}
-        </div>
+        <>
+            {layout === 'grid' && (
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                        .${gridClassName} {
+                            display: grid;
+                            grid-template-columns: repeat(${sm}, 1fr);
+                            gap: 16px;
+                        }
+                        @media (min-width: 768px) {
+                            .${gridClassName} {
+                                grid-template-columns: repeat(${md}, 1fr);
+                            }
+                        }
+                        @media (min-width: 1024px) {
+                            .${gridClassName} {
+                                grid-template-columns: repeat(${lg}, 1fr);
+                            }
+                        }
+                    `
+                }}/>
+            )}
+            <div
+                style={getContainerStyles()}
+                className={`${layout === 'grid' ? gridClassName : ''} ${className || ''}`}
+                {...rest}
+            >
+                {tags.map(tag => (
+                    <PermalinkWrapper key={tag._id} entity={tag} fallbackElement="div" style={defaultItemStyles}>
+                        <span style={defaultLinkStyles}>
+                            #{tag.name}
+                        </span>
+                    </PermalinkWrapper>
+                ))}
+            </div>
+        </>
     );
 };

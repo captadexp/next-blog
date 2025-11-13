@@ -30,12 +30,12 @@ export default async function CategoryListTestPage() {
 
             <div style={{marginBottom: '40px'}}>
                 <h2 style={{marginBottom: '20px'}}>2 Columns Grid</h2>
-                <CategoryList categories={categories} columns={2}/>
+                <CategoryList categories={categories} columns={{sm: 1, md: 2}}/>
             </div>
 
             <div style={{marginBottom: '40px'}}>
                 <h2 style={{marginBottom: '20px'}}>4 Columns Cards</h2>
-                <CategoryList categories={categories} layout="cards" columns={4}/>
+                <CategoryList categories={categories} layout="cards" columns={{sm: 2, md: 4}}/>
             </div>
 
             <div style={{marginBottom: '40px'}}>

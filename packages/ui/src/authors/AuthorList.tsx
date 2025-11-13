@@ -9,7 +9,7 @@ interface AuthorWithCount extends User {
 interface AuthorListProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     authors: AuthorWithCount[];
     layout?: 'grid' | 'list';
-    columns?: number;
+    columns?: { sm?: number; md?: number; lg?: number };
     showBio?: boolean;
     showPostCount?: boolean;
     style?: React.CSSProperties;
@@ -23,7 +23,7 @@ interface AuthorListProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'st
 export const AuthorList: React.FC<AuthorListProps> = ({
                                                           authors,
                                                           layout = 'grid',
-                                                          columns = 3,
+                                                          columns = {sm: 1, md: 2, lg: 3},
                                                           showBio = true,
                                                           showPostCount = true,
                                                           style,
@@ -35,18 +35,18 @@ export const AuthorList: React.FC<AuthorListProps> = ({
                                                           className,
                                                           ...rest
                                                       }) => {
+    const sm = columns.sm || 1;
+    const md = columns.md || 2;
+    const lg = columns.lg || 3;
+    const gridClassName = `author-grid-${Math.random().toString(36).substring(2, 9)}`;
+
     const getContainerStyles = (): React.CSSProperties => {
         const baseStyles: React.CSSProperties = {
             ...style
         };
 
         if (layout === 'grid') {
-            return {
-                display: 'grid',
-                gridTemplateColumns: `repeat(${columns}, 1fr)`,
-                gap: '24px',
-                ...baseStyles
-            };
+            return baseStyles;
         }
 
         return {
@@ -141,37 +141,64 @@ export const AuthorList: React.FC<AuthorListProps> = ({
     };
 
     return (
-        <div style={getContainerStyles()} className={className} {...rest}>
-            {authors.map(author => (
-                <PermalinkWrapper
-                    key={author._id}
-                    entity={author}
-                    fallbackElement="div"
-                    style={getItemStyles()}
-                >
-                    <div style={defaultAvatarStyles}>
-                        {getInitials(author.name)}
-                    </div>
+        <>
+            {layout === 'grid' && (
+                <style dangerouslySetInnerHTML={{
+                    __html: `
+                        .${gridClassName} {
+                            display: grid;
+                            grid-template-columns: repeat(${sm}, 1fr);
+                            gap: 24px;
+                        }
+                        @media (min-width: 768px) {
+                            .${gridClassName} {
+                                grid-template-columns: repeat(${md}, 1fr);
+                            }
+                        }
+                        @media (min-width: 1024px) {
+                            .${gridClassName} {
+                                grid-template-columns: repeat(${lg}, 1fr);
+                            }
+                        }
+                    `
+                }}/>
+            )}
+            <div
+                style={getContainerStyles()}
+                className={`${layout === 'grid' ? gridClassName : ''} ${className || ''}`}
+                {...rest}
+            >
+                {authors.map(author => (
+                    <PermalinkWrapper
+                        key={author._id}
+                        entity={author}
+                        fallbackElement="div"
+                        style={getItemStyles()}
+                    >
+                        <div style={defaultAvatarStyles}>
+                            {getInitials(author.name)}
+                        </div>
 
-                    <div style={{flex: layout === 'list' ? 1 : 'none'}}>
-                        <h3 style={defaultNameStyles}>
-                            {author.name}
-                        </h3>
+                        <div style={{flex: layout === 'list' ? 1 : 'none'}}>
+                            <h3 style={defaultNameStyles}>
+                                {author.name}
+                            </h3>
 
-                        {showBio && author.bio && (
-                            <p style={defaultBioStyles}>
-                                {author.bio}
-                            </p>
-                        )}
+                            {showBio && author.bio && (
+                                <p style={defaultBioStyles}>
+                                    {author.bio}
+                                </p>
+                            )}
 
-                        {showPostCount && author.postCount !== undefined && (
-                            <p style={defaultCountStyles}>
-                                {author.postCount} {author.postCount === 1 ? 'article' : 'articles'}
-                            </p>
-                        )}
-                    </div>
-                </PermalinkWrapper>
-            ))}
-        </div>
+                            {showPostCount && author.postCount !== undefined && (
+                                <p style={defaultCountStyles}>
+                                    {author.postCount} {author.postCount === 1 ? 'article' : 'articles'}
+                                </p>
+                            )}
+                        </div>
+                    </PermalinkWrapper>
+                ))}
+            </div>
+        </>
     );
 };

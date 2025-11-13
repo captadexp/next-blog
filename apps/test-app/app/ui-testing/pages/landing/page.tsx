@@ -1,4 +1,4 @@
-import {BlogGrid, CategoryList, JsonLd, MetaTags, RecentBlogs, TagCloud} from '@supergrowthai/next-blog-ui';
+import {BlogGrid, CategoryList, HomeSEO, RecentBlogs, TagCloud} from '@supergrowthai/next-blog-ui';
 import {getTestBlogs, getTestCategories, getTestTags} from '../../test-data';
 import "@supergrowthai/next-blog-ui/style.css";
 
@@ -20,29 +20,11 @@ export default async function LandingPageTestPage() {
         <>
             {/* SEO Components would normally go in <head> */}
             <div style={{display: 'none'}}>
-                <MetaTags
-                    type="home"
+                <HomeSEO
                     title="Welcome to Our Blog"
                     description="Discover insightful articles about technology, design, and more"
-                    baseUrl={baseUrl}
+                    url={baseUrl}
                     siteName={siteName}
-                />
-                <JsonLd
-                    organization={{
-                        name: siteName,
-                        url: baseUrl,
-                        logo: `${baseUrl}/logo.png`,
-                        sameAs: [
-                            'https://twitter.com/testblog',
-                            'https://facebook.com/testblog',
-                            'https://linkedin.com/company/testblog'
-                        ]
-                    }}
-                    website={{
-                        name: siteName,
-                        url: baseUrl,
-                        searchAction: true
-                    }}
                 />
             </div>
 
@@ -66,7 +48,7 @@ export default async function LandingPageTestPage() {
                         <h2 style={{fontSize: '36px', textAlign: 'center', marginBottom: '40px'}}>
                             Featured Articles
                         </h2>
-                        <BlogGrid blogs={blogs.slice(0, 3)} columns={3}/>
+                        <BlogGrid blogs={blogs.slice(0, 3)} columns={{sm: 1, md: 2, lg: 3}}/>
                     </div>
                 </section>
 
@@ -77,7 +59,7 @@ export default async function LandingPageTestPage() {
                             blogs={blogs}
                             title="Latest Posts"
                             limit={6}
-                            columns={2}
+                            columns={{sm: 1, md: 2}}
                         />
                     </div>
                 </section>
@@ -89,7 +71,7 @@ export default async function LandingPageTestPage() {
                             {/* Categories */}
                             <div>
                                 <h2 style={{fontSize: '28px', marginBottom: '24px'}}>Browse by Category</h2>
-                                <CategoryList categories={categories} layout="cards" columns={2}/>
+                                <CategoryList categories={categories} layout="cards" columns={{sm: 1, md: 2}}/>
                             </div>
 
                             {/* Tag Cloud */}
@@ -114,7 +96,7 @@ export default async function LandingPageTestPage() {
                         <h2 style={{fontSize: '36px', textAlign: 'center', marginBottom: '40px'}}>
                             More Articles
                         </h2>
-                        <BlogGrid blogs={blogs.slice(6, 12)} columns={3} showExcerpt={false}/>
+                        <BlogGrid blogs={blogs.slice(6, 12)} columns={{sm: 1, md: 2, lg: 3}} showExcerpt={false}/>
                     </div>
                 </section>
             </div>

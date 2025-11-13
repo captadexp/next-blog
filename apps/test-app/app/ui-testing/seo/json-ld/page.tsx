@@ -1,37 +1,28 @@
-import {JsonLd} from '@supergrowthai/next-blog-ui';
+import {SEO} from '@supergrowthai/next-blog-ui';
 import {getTestBlog} from '../../test-data';
 import "@supergrowthai/next-blog-ui/style.css";
+import nextBlogConfig from "@/lib/next-blog-config";
 
 export default async function UITest_SEO_JsonLd_Page() {
     const blog = await getTestBlog();
 
     if (!blog) {
-        return <div style={{padding: 24}}>No blog found for testing JsonLd.</div>;
+        return <div style={{padding: 24}}>No blog found for testing SEO.</div>;
     }
 
-    const baseUrl = 'https://example.com';
-    const siteName = 'Test Blog Site';
 
     // Normally this would be in <head>; for UI testing we render invisibly
     return (
         <div style={{padding: 24}}>
-            <h1 style={{marginBottom: 16}}>SEO JsonLd</h1>
+            <h1 style={{marginBottom: 16}}>SEO Component (includes JSON-LD)</h1>
             <div style={{display: 'none'}}>
-                <JsonLd
-                    blog={blog}
-                    organization={{
-                        name: siteName,
-                        url: baseUrl,
-                        logo: `${baseUrl}/logo.png`
-                    }}
-                    website={{
-                        name: siteName,
-                        url: baseUrl,
-                        searchAction: true
-                    }}
+                <SEO
+                    entity={blog}
+                    entityType="blog"
+                    config={nextBlogConfig()}
                 />
             </div>
-            <p>JsonLd component rendered (hidden). View page source to inspect structured data.</p>
+            <p>SEO component rendered (hidden). View page source to inspect structured data and meta tags.</p>
         </div>
     );
 }

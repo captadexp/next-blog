@@ -23,7 +23,7 @@ export default async function RelatedBlogsTestPage() {
                 currentBlogId={blog._id}
                 title="You Might Also Like"
                 layout="cards"
-                columns={3}
+                columns={{sm: 1, md: 2, lg: 3}}
             />
         </div>
     );

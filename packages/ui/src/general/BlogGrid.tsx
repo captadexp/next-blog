@@ -4,7 +4,7 @@ import {BlogCard} from './BlogCard';
 
 interface BlogGridProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style'> {
     blogs: HydratedBlog[];
-    columns?: number | { sm?: number; md?: number; lg?: number };
+    columns?: { sm?: number; md?: number; lg?: number };
     gap?: number;
     showImage?: boolean;
     showExcerpt?: boolean;
@@ -19,7 +19,7 @@ interface BlogGridProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'styl
 
 export const BlogGrid: React.FC<BlogGridProps> = ({
                                                       blogs,
-                                                      columns = 3,
+                                                      columns = {sm: 1, md: 2, lg: 2},
                                                       gap = 24,
                                                       showImage = true,
                                                       showExcerpt = true,
@@ -33,38 +33,53 @@ export const BlogGrid: React.FC<BlogGridProps> = ({
                                                       className,
                                                       ...rest
                                                   }) => {
-    const getGridColumns = (): string => {
-        if (typeof columns === 'number') {
-            return `repeat(${columns}, 1fr)`;
-        }
-        // For responsive columns, use the largest defined value
-        const cols = columns.lg || columns.md || columns.sm || 1;
-        return `repeat(auto-fill, minmax(${Math.floor(100 / cols) - 2}%, 1fr))`;
-    };
+    const sm = columns.sm || 1;
+    const md = columns.md || 2;
+    const lg = columns.lg || 2;
 
-    const containerStyles: React.CSSProperties = {
-        display: 'grid',
-        gridTemplateColumns: getGridColumns(),
-        gap: `${gap}px`,
-        ...style
-    };
+    const gridClassName = `blog-grid-responsive-${Math.random().toString(36).substr(2, 9)}`;
 
     return (
-        <div style={containerStyles} className={className} {...rest}>
-            {blogs.map(blog => (
-                <BlogCard
-                    key={blog._id}
-                    blog={blog}
-                    showImage={showImage}
-                    showExcerpt={showExcerpt}
-                    showAuthor={showAuthor}
-                    showDate={showDate}
-                    showCategory={showCategory}
-                    showTags={showTags}
-                    showReadMore={showReadMore}
-                    style={cardStyle}
-                />
-            ))}
-        </div>
+        <>
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                    .${gridClassName} {
+                        display: grid;
+                        grid-template-columns: repeat(${sm}, 1fr);
+                        gap: ${gap}px;
+                    }
+                    @media (min-width: 768px) {
+                        .${gridClassName} {
+                            grid-template-columns: repeat(${md}, 1fr);
+                        }
+                    }
+                    @media (min-width: 1024px) {
+                        .${gridClassName} {
+                            grid-template-columns: repeat(${lg}, 1fr);
+                        }
+                    }
+                `
+            }}/>
+            <div
+                className={`${gridClassName} ${className || ''}`}
+                style={style}
+                {...rest}
+            >
+                {blogs.map(blog => (
+                    <BlogCard
+                        key={blog._id}
+                        blog={blog}
+                        showImage={showImage}
+                        showExcerpt={showExcerpt}
+                        showAuthor={showAuthor}
+                        showDate={showDate}
+                        showCategory={showCategory}
+                        showTags={showTags}
+                        showReadMore={showReadMore}
+                        style={cardStyle}
+                    />
+                ))}
+            </div>
+        </>
     );
 };

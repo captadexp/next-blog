@@ -4,16 +4,15 @@ import {
     BlogContent,
     BlogMeta,
     BlogTitle,
-    Canonical,
     FeaturedMedia,
-    JsonLd,
-    MetaTags,
-    RelatedBlogs
+    RelatedBlogs,
+    SEO
 } from '@supergrowthai/next-blog-ui';
 import {getRelatedTestBlogs, getTestBlog} from '../../test-data';
 import "@supergrowthai/next-blog-ui/style.css"
-import {createServerSDK} from "@supergrowthai/next-blog/next";
 import nextBlogConfig from "@/lib/next-blog-config";
+
+const config = nextBlogConfig();
 
 export default async function BlogPageTestPage() {
     const blog = await getTestBlog();
@@ -22,53 +21,13 @@ export default async function BlogPageTestPage() {
         return <div>No blog found for testing</div>;
     }
 
-    const serverSDK = await createServerSDK(nextBlogConfig())
-    const jsonLd = await serverSDK
-        .callRPC("json-ld-structured-data:generateJsonLd", {
-            entityType: "blog",
-            entity: blog
-        })
-        .then(response => response.payload)
-        .catch(err => null);
-
     const relatedBlogs = await getRelatedTestBlogs(blog._id);
-
-    const baseUrl = 'https://example.com';
-    const siteName = 'Test Blog Site';
 
     return (
         <>
             {/* SEO Components would normally go in <head> */}
             <div style={{display: 'none'}}>
-                <MetaTags
-                    type="blog"
-                    blog={blog}
-                    baseUrl={baseUrl}
-                    siteName={siteName}
-                    twitterHandle="@testblog"
-                />
-                <Canonical
-                    url={`${baseUrl}/${blog.slug}`}
-                    hrefLang="en"
-                />
-
-                <script type={"application/json+ld"}>
-                    {JSON.stringify(jsonLd)}
-                </script>
-
-                <JsonLd
-                    blog={blog}
-                    organization={{
-                        name: siteName,
-                        url: baseUrl,
-                        logo: `${baseUrl}/logo.png`
-                    }}
-                    website={{
-                        name: siteName,
-                        url: baseUrl,
-                        searchAction: true
-                    }}
-                />
+                <SEO entity={blog} entityType="blog" config={config}/>
             </div>
 
             <article style={{maxWidth: '800px', margin: '0 auto', padding: '40px 20px'}}>
@@ -119,7 +78,7 @@ export default async function BlogPageTestPage() {
                         currentBlogId={blog._id}
                         title="You Might Also Like"
                         layout="cards"
-                        columns={2}
+                        columns={{sm: 1, md: 2, lg: 2}}
                     />
                 )}
             </article>

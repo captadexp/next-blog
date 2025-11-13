@@ -20,12 +20,12 @@ export default async function BlogGridTestPage() {
 
             <div style={{marginBottom: '60px'}}>
                 <h2 style={{marginBottom: '20px'}}>2 Columns Grid</h2>
-                <BlogGrid blogs={blogs.slice(0, 4)} columns={2}/>
+                <BlogGrid blogs={blogs.slice(0, 4)} columns={{sm: 1, md: 2, lg: 2}}/>
             </div>
 
             <div style={{marginBottom: '60px'}}>
                 <h2 style={{marginBottom: '20px'}}>4 Columns Grid</h2>
-                <BlogGrid blogs={blogs.slice(0, 8)} columns={4}/>
+                <BlogGrid blogs={blogs.slice(0, 8)} columns={{sm: 2, md: 3, lg: 4}}/>
             </div>
 
             <div style={{marginBottom: '60px'}}>
