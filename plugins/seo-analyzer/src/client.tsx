@@ -262,7 +262,7 @@ const editorSidebarWidget: ClientHookFunction = (sdk: ClientSDK, prev, context: 
                 const response = await sdk.callRPC("seo-analyzer:flesch-score:get", {content: analysisData.contentObject});
                 if (response.code !== 0) throw new Error(response.message);
 
-                const {payload} = response.payload;
+                const payload = response.payload;
                 const score = payload.score;
 
                 if (score >= SEO_CONSTANTS.GOOD_READABILITY_SCORE) {
