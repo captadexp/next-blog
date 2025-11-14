@@ -155,14 +155,14 @@ const useMediaLibrary = (activeTab: TabType) => {
             loadMedia(true);
         }, DEBOUNCE_DELAY);
         return () => clearTimeout(handler);
-    }, [search, loadMedia]);
+    }, [search]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Effect for pagination
     useEffect(() => {
         if (page > 1) {
             loadMedia(false);
         }
-    }, [page, loadMedia]);
+    }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Effect to reset and load on tab change
     useEffect(() => {
