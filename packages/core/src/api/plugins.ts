@@ -20,7 +20,12 @@ export const getPlugins = secure(async (session: SessionData, request: MinimumRe
     const limit = Number(params?.limit) || 10;
 
     const skip = (page - 1) * limit;
-    const plugins = await db.plugins.find({}, {skip, limit, sort: {_id: -1}});
+    const plugins = await db.plugins.find({}, {
+        skip,
+        limit,
+        sort: {_id: -1},
+        projection: {description: 0}
+    });
 
     const paginatedResponse: PaginatedResponse<Plugin> = {
         data: plugins,

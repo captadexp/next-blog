@@ -29,7 +29,11 @@ export const getCategories = secure(async (session: SessionData, request: Minimu
             query._id = {$in: ids};
         }
 
-        let categories = await db.categories.find(query, {skip, limit});
+        let categories = await db.categories.find(query, {
+            skip,
+            limit,
+            projection: {description: 0, metadata: 0}
+        });
 
         // Execute hook for list operation
         const hookResult = await extra.sdk.callHook('category:onList', {

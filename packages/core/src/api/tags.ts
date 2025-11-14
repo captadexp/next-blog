@@ -29,7 +29,11 @@ export const getTags = secure(async (session: SessionData, request: MinimumReque
             query._id = {$in: ids};
         }
 
-        let tags = await db.tags.find(query, {skip, limit});
+        let tags = await db.tags.find(query, {
+            skip,
+            limit,
+            projection: {description: 0, metadata: 0}
+        });
 
         // Execute hook for list operation
         const hookResult = await extra.sdk.callHook('tag:onList', {

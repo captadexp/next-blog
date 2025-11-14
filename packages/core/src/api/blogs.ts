@@ -19,7 +19,7 @@ export const getBlogs = secure(async (session: SessionData, request: MinimumRequ
             skip,
             limit,
             sort: {_id: -1},
-            projection: {_id: 1, title: 1, createdAt: 1, updatedAt: 1}
+            projection: {content: 0, metadata: 0}
         });
 
         // Execute hook for list operation if available
