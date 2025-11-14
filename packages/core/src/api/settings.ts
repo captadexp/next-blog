@@ -25,7 +25,7 @@ export const getSettings = secure(async (session: SessionData, request: MinimumR
     }
 
     const skip = (page - 1) * limit;
-    let settings: ExtendedSettingsEntry[] = await db.settings.find(filter, {skip, limit});
+    let settings: ExtendedSettingsEntry[] = await db.settings.find(filter, {skip, limit, sort: {_id: -1}});
 
     const pluginOwnerIds = settings
         .filter(setting => setting.ownerType === 'plugin')

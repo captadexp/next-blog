@@ -661,6 +661,10 @@ export class MongoDBAdapter implements DatabaseAdapter {
                 const dbFilter = transformer.toDbFilter(filter);
                 let query = collection.find(dbFilter);
 
+                if (options?.projection)
+                    query = query.project(options.projection);
+                if (options?.sort)
+                    query = query.sort(options.sort);
                 if (options?.skip)
                     query = query.skip(options.skip);
                 if (options?.limit)
@@ -1064,6 +1068,10 @@ export class MongoDBAdapter implements DatabaseAdapter {
                 const dbFilter = transformer.toDbFilter(filter);
                 let query = collection.find(dbFilter);
 
+                if (options?.projection)
+                    query = query.project(options.projection);
+                if (options?.sort)
+                    query = query.sort(options.sort);
                 if (options?.skip)
                     query = query.skip(options.skip);
                 if (options?.limit)

@@ -54,7 +54,7 @@ export const listUsers = secure(async (session: SessionData, request: MinimumReq
     const limit = Number(params?.limit) || 10;
     const skip = (page - 1) * limit;
 
-    let users = await db.users.find({}, {skip, limit});
+    let users = await db.users.find({}, {skip, limit, sort: {_id: -1}});
 
     // Remove password fields
     let sanitizedUsers = users.map((user: User) => {

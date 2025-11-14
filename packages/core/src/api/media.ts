@@ -46,7 +46,7 @@ export const getMedia = secure(async (session, request, extra) => {
 
     const skip = (page - 1) * limit;
 
-    let media = await db.media.find(filter, {skip, limit});
+    let media = await db.media.find(filter, {skip, limit, sort: {_id: -1}});
 
     const hookResult = await extra.sdk.callHook('media:onList', {
         entity: 'media',
