@@ -1,4 +1,4 @@
-import {BlogGrid, CategoryList, HomeSEO, RecentBlogs, TagCloud} from '@supergrowthai/next-blog-ui';
+import {BlogGrid, CategoryList, RecentBlogs, TagCloud} from '@supergrowthai/next-blog-ui';
 import {getTestBlogs, getTestCategories, getTestTags} from '../../test-data';
 import "@supergrowthai/next-blog-ui/style.css";
 
@@ -18,16 +18,6 @@ export default async function LandingPageTestPage() {
 
     return (
         <>
-            {/* SEO Components would normally go in <head> */}
-            <div style={{display: 'none'}}>
-                <HomeSEO
-                    title="Welcome to Our Blog"
-                    description="Discover insightful articles about technology, design, and more"
-                    url={baseUrl}
-                    siteName={siteName}
-                />
-            </div>
-
             <div style={{minHeight: '100vh'}}>
                 {/* Hero Section */}
                 <header style={{

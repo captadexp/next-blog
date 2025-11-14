@@ -16,7 +16,7 @@ export default defineConfig({
             external: [
                 /^react($|\/)/,
                 /^react-dom($|\/)/,
-                /^@supergrowthai\/next-blog.*/
+                /^@supergrowthai\/next-blog\/.*/
             ],
         },
         sourcemap: true,

@@ -20,3 +20,6 @@ export * from './general';
 
 // SEO components
 export * from './seo';
+
+// Utils
+export * from './utils/permalink';

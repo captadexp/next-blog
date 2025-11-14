@@ -5,12 +5,13 @@ import {
     BlogMeta,
     BlogTitle,
     FeaturedMedia,
-    RelatedBlogs,
-    SEO
+    generateJsonLd,
+    RelatedBlogs
 } from '@supergrowthai/next-blog-ui';
 import {getRelatedTestBlogs, getTestBlog} from '../../test-data';
 import "@supergrowthai/next-blog-ui/style.css"
 import nextBlogConfig from "@/lib/next-blog-config";
+import {createServerSDK} from "@supergrowthai/next-blog/next";
 
 const config = nextBlogConfig();
 
@@ -23,12 +24,18 @@ export default async function BlogPageTestPage() {
 
     const relatedBlogs = await getRelatedTestBlogs(blog._id);
 
+    // Generate JSON-LD for structured data
+    const sdk = await createServerSDK(config);
+    const jsonLd = await generateJsonLd({entity: blog, entityType: 'blog', sdk}).catch(() => null);
+
     return (
         <>
-            {/* SEO Components would normally go in <head> */}
-            <div style={{display: 'none'}}>
-                <SEO entity={blog} entityType="blog" config={config}/>
-            </div>
+            {jsonLd && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{__html: JSON.stringify(jsonLd)}}
+                />
+            )}
 
             <article style={{maxWidth: '800px', margin: '0 auto', padding: '40px 20px'}}>
                 {/* Blog Header */}
