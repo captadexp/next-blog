@@ -1,4 +1,4 @@
-import type {OneApiFunction, PathObject} from "@supergrowthai/oneapi";
+import type {MinimumRequest, OneApiFunction, PathObject, SessionData} from "@supergrowthai/oneapi";
 import {DashboardPage} from "@supergrowthai/next-blog-dashboard";
 import {
     createBlog,
@@ -53,6 +53,7 @@ import {
     uploadMedia
 } from "./api";
 import {handleStaticFileRequest} from "./utils/staticFileHandler.js";
+import type {ApiExtra} from "./types/api.ts";
 
 // Helper to create method-aware handlers
 function methodHandler(handlers: {
@@ -197,6 +198,16 @@ const cmsPaths: PathObject = {
                 GET: handleStaticFileRequest
             })
         }
+    },
+    '[...]': async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
+        const currentPath = request.url
+
+        return new Response('', {
+            status: 301,
+            headers: {
+                'Location': currentPath + '/dashboard'
+            }
+        });
     }
 };
 
