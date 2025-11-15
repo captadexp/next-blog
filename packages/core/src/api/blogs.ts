@@ -104,13 +104,13 @@ export const createBlog = secure(async (session: SessionData, request: MinimumRe
             updatedAt: Date.now()
         };
 
-        const cleanedBody = filterKeys<BlogData>({
+        const cleanedBody = {
             ...data,
             ...extras,
             userId: session.user._id
-        }, BLOG_CREATE_FIELDS);
+        } as BlogData;
 
-        const creation = await db.blogs.create(cleanedBody as BlogData);
+        const creation = await db.blogs.create(cleanedBody);
 
         await extra.sdk.callHook('blog:afterCreate', {
             blogId: creation._id,

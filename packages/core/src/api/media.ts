@@ -101,7 +101,9 @@ export const createMedia = secure(async (session, request, extra) => {
 
     const mediaData = {
         ...data,
-        userId: session.user.id
+        userId: session.user._id,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
     };
 
     await extra.sdk.callHook('media:onCreate:before', {data: mediaData});
