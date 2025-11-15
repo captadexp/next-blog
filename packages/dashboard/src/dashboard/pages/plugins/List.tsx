@@ -1,4 +1,3 @@
-import {h} from 'preact';
 import {useUser} from '../../../context/UserContext';
 import {Plugin} from '@supergrowthai/next-blog-types';
 import {usePlugins} from "../../../context/PluginContext.tsx";
@@ -9,12 +8,16 @@ import {PaginationControls} from '../../../components/PaginationControls';
 import Loader from '../../../components/Loader';
 import {useEntityList} from '../../../hooks/useEntityList';
 import ListPage from '../../../components/ListPageLayout';
+import {PluginActionsDropdown} from '../../components/PluginActionsDropdown';
+import {UpdatePluginDialog} from '../../components/UpdatePluginDialog';
 
 const PluginsList = () => {
     const {hasPermission, hasAllPermissions, apis: api} = useUser();
     const {loadedPlugins, hardReloadPlugins} = usePlugins();
     const location = useLocation();
     const [isReloading, setIsReloading] = useState(false);
+    const [selectedPlugin, setSelectedPlugin] = useState<Plugin | null>(null);
+    const [showUpdateDialog, setShowUpdateDialog] = useState(false);
 
     const {
         entities: plugins,
@@ -78,36 +81,28 @@ const PluginsList = () => {
             cell: (plugin: Plugin) => {
                 const clientModule = loadedPlugins.get(plugin._id);
                 const hasSettingsPanel = clientModule?.hasSettingsPanel;
+                const isProcessing = reinstallingIds.has(plugin._id) || deletingIds.has(plugin._id);
 
                 return (
-                    <div className="flex space-x-2">
-                        {hasSettingsPanel && (
-                            <button
-                                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                                onClick={() => location.route(`/api/next-blog/dashboard/plugins/${plugin._id}`)}
-                            >
-                                Settings
-                            </button>
-                        )}
-                        {hasAllPermissions(['plugins:create', 'plugins:delete']) && !plugin.isSystem && (
-                            <button
-                                className="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-                                onClick={() => handleReinstall(plugin._id)}
-                                disabled={reinstallingIds.has(plugin._id)}
-                            >
-                                {reinstallingIds.has(plugin._id) ? <Loader size="sm" text=""/> : 'Reinstall'}
-                            </button>
-                        )}
-                        {hasPermission('plugins:delete') && !plugin.isSystem && (
-                            <button
-                                className="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-                                onClick={() => handleDelete(plugin, 'Are you sure you want to delete this plugin? This will also delete all hook mappings for this plugin.')}
-                                disabled={deletingIds.has(plugin._id)}
-                            >
-                                {deletingIds.has(plugin._id) ? <Loader size="sm" text=""/> : 'Delete'}
-                            </button>
-                        )}
-                    </div>
+                    <PluginActionsDropdown
+                        plugin={plugin}
+                        onSettings={hasSettingsPanel ?
+                            () => location.route(`/api/next-blog/dashboard/plugins/${plugin._id}`) :
+                            undefined
+                        }
+                        onUpdate={() => {
+                            setSelectedPlugin(plugin);
+                            setShowUpdateDialog(true);
+                        }}
+                        onReinstall={() => handleReinstall(plugin._id)}
+                        onDelete={() => handleDelete(plugin, 'Are you sure you want to delete this plugin? This will also delete all hook mappings for this plugin.')}
+                        isProcessing={isProcessing}
+                        permissions={{
+                            canUpdate: hasPermission('plugins:create'),
+                            canReinstall: hasAllPermissions(['plugins:create', 'plugins:delete']),
+                            canDelete: hasPermission('plugins:delete')
+                        }}
+                    />
                 )
             },
         },
@@ -197,6 +192,15 @@ const PluginsList = () => {
                     />
                 </ListPage>
             </div>
+
+            <UpdatePluginDialog
+                plugin={selectedPlugin}
+                show={showUpdateDialog}
+                onClose={() => {
+                    setShowUpdateDialog(false);
+                    setSelectedPlugin(null);
+                }}
+            />
         </ExtensionZone>
     );
 };

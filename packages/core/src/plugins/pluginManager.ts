@@ -110,5 +110,7 @@ export default {
     loadPluginManifest,
     loadPluginModule,
     deletePluginAndMappings,
-    installPlugin
+    installPlugin,
+    registerHooks,
+    registerRpcs
 }

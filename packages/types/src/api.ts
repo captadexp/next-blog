@@ -177,12 +177,9 @@ export interface PluginAPI {
         url: string;
     }): Promise<APIResponse<Plugin>>;
 
-    updatePlugin(id: string, data: {
-        name?: string;
-        description?: string;
-        version?: string;
+    updatePlugin(installationId: string, data?: {
+        manifestId?: string;
         url?: string;
-        author?: string;
     }): Promise<APIResponse<Plugin>>;
 
     deletePlugin(id: string): Promise<APIResponse<null>>;

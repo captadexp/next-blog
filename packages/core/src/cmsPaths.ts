@@ -46,6 +46,7 @@ import {
     updateBlog,
     updateCategory,
     updateMedia,
+    updatePlugin,
     updateSetting,
     updateTag,
     updateUser,
@@ -146,7 +147,8 @@ const cmsPaths: PathObject = {
         plugin: {
             ':id': {
                 delete: methodHandler({POST: deletePlugin}),
-                reinstall: methodHandler({POST: reinstallPlugin})
+                reinstall: methodHandler({POST: reinstallPlugin}),
+                update: methodHandler({POST: updatePlugin})
             },
             ':pluginId': {
                 settings: {
