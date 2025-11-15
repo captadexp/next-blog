@@ -758,65 +758,89 @@ export class MongoDBAdapter implements DatabaseAdapter {
     get generated() {
         const self = this;
 
-        // ---------- low-level collection handles ----------
-        const blogsCol = () => this.db.collection('blogs') as Collection<any>;
-        const usersCol = () => this.db.collection('users') as Collection<any>;
-        const catsCol = () => this.db.collection('categories') as Collection<any>;
-        const tagsCol = () => this.db.collection('tags') as Collection<any>;
-        const mediaCol = () => this.db.collection('media') as Collection<any>;
-
         // ---------- tiny utils ----------
         const uniq = <T>(xs: T[]) => Array.from(new Set(xs));
         const truthy = <T>(x: T | null | undefined): x is T => !!x;
 
-        const indexById = <T extends { _id: ObjectId }>(rows: T[]) => {
-            const m = new Map<string, T>();
-            for (const r of rows) {
-                const key = r._id.toString();
-                m.set(key, r);
+        // ---------- swappable loaders (cache-ready) ----------
+        const loadUsersByIds = async (ids: string[], projection?: Record<string, 0 | 1>) => {
+            if (!ids.length) return new Map<string, any>();
+            const uniqueIds = uniq(ids);
+            const results = await self.users.find(
+                {_id: {$in: uniqueIds}},
+                projection ? {projection} : undefined
+            );
+            const m = new Map<string, any>();
+            for (const user of results) {
+                // Use the original string ID as key (before transformation)
+                const key = user._id.replace('user_', '');
+                m.set(key, user);
             }
             return m;
         };
 
-        // ---------- swappable loaders (cache-ready) ----------
-        const loadUsersByIds = async (ids: string[], projection?: Record<string, 0 | 1>) => {
-            if (!ids.length) return new Map<string, any>();
-            let query = usersCol().find({_id: {$in: uniq(ids)}});
-            if (projection) query = query.project(projection);
-            const rows = await query.toArray();
-            return indexById(rows);
-        };
-
         const loadCategoriesByIds = async (ids: string[], projection?: Record<string, 0 | 1>) => {
             if (!ids.length) return new Map<string, any>();
-            let query = catsCol().find({_id: {$in: uniq(ids)}});
-            if (projection) query = query.project(projection);
-            const rows = await query.toArray();
-            return indexById(rows);
+            const uniqueIds = uniq(ids);
+            const results = await self.categories.find(
+                {_id: {$in: uniqueIds}},
+                projection ? {projection} : undefined
+            );
+            const m = new Map<string, any>();
+            for (const category of results) {
+                // Use the original string ID as key (before transformation)
+                const key = category._id.replace('category_', '');
+                m.set(key, category);
+            }
+            return m;
         };
 
         const loadTagsByIds = async (ids: string[], projection?: Record<string, 0 | 1>) => {
             if (!ids.length) return new Map<string, any>();
-            let query = tagsCol().find({_id: {$in: uniq(ids)}});
-            if (projection) query = query.project(projection);
-            const rows = await query.toArray();
-            return indexById(rows);
+            const uniqueIds = uniq(ids);
+            const results = await self.tags.find(
+                {_id: {$in: uniqueIds}},
+                projection ? {projection} : undefined
+            );
+            const m = new Map<string, any>();
+            for (const tag of results) {
+                // Use the original string ID as key (before transformation)
+                const key = tag._id.replace('tag_', '');
+                m.set(key, tag);
+            }
+            return m;
         };
 
         const loadMediaByIds = async (ids: string[], projection?: Record<string, 0 | 1>) => {
             if (!ids.length) return new Map<string, any>();
-            let query = mediaCol().find({_id: {$in: uniq(ids)}});
-            if (projection) query = query.project(projection);
-            const rows = await query.toArray();
-            return indexById(rows);
+            const uniqueIds = uniq(ids);
+            const results = await self.media.find(
+                {_id: {$in: uniqueIds}},
+                projection ? {projection} : undefined
+            );
+            const m = new Map<string, any>();
+            for (const media of results) {
+                // Use the original string ID as key (before transformation)
+                const key = media._id.replace('media_', '');
+                m.set(key, media);
+            }
+            return m;
         };
 
         const loadBlogsByIds = async (ids: string[], projection?: Record<string, 0 | 1>) => {
             if (!ids.length) return new Map<string, any>();
-            let query = blogsCol().find({_id: {$in: uniq(ids)}});
-            if (projection) query = query.project(projection);
-            const rows = await query.toArray();
-            return indexById(rows);
+            const uniqueIds = uniq(ids);
+            const results = await self.blogs.find(
+                {_id: {$in: uniqueIds}},
+                projection ? {projection} : undefined
+            );
+            const m = new Map<string, any>();
+            for (const blog of results) {
+                // Use the original string ID as key (before transformation)
+                const key = blog._id.replace('blog_', '');
+                m.set(key, blog);
+            }
+            return m;
         };
 
         // ---------- core hydrator (from raw DB rows) ----------
@@ -826,12 +850,12 @@ export class MongoDBAdapter implements DatabaseAdapter {
         ): Promise<HydratedBlog[]> => {
             if (!rawBlogs.length) return [];
 
-            // collect all foreign keys
-            const userIds = uniq(rawBlogs.map(b => b.userId).filter(truthy));
-            const categoryIds = uniq(rawBlogs.map(b => b.categoryId).filter(truthy));
-            const allTagIds = uniq(rawBlogs.flatMap(b => (b.tagIds || [])).filter(truthy));
-            const mediaIds = uniq(rawBlogs.map(b => b.featuredMediaId).filter(truthy));
-            const parentIds = uniq(rawBlogs.map(b => b.parentId).filter(truthy));
+            // collect all foreign keys (already as ObjectIds from DB)
+            const userIds = uniq(rawBlogs.map(b => b.userId?.toString()).filter(truthy));
+            const categoryIds = uniq(rawBlogs.map(b => b.categoryId?.toString()).filter(truthy));
+            const allTagIds = uniq(rawBlogs.flatMap(b => (b.tagIds || []).map((id: any) => id?.toString())).filter(truthy));
+            const mediaIds = uniq(rawBlogs.map(b => b.featuredMediaId?.toString()).filter(truthy));
+            const parentIds = uniq(rawBlogs.map(b => b.parentId?.toString()).filter(truthy));
 
             // extract relationship projections
             const userProjection = projections?.user;
@@ -852,60 +876,48 @@ export class MongoDBAdapter implements DatabaseAdapter {
             // transform + stitch
             const out: HydratedBlog[] = [];
             for (const row of rawBlogs) {
-                const userKey = row.userId.toString();
-                const categoryKey = row.categoryId.toString();
-
-                const dbUser = usersMap.get(userKey);
-                const dbCat = catsMap.get(categoryKey);
-                if (!dbUser || !dbCat) continue; // skip incomplete
-
                 const blog = this.blogTransformer.fromDb(row);
-                const user = this.userTransformer.fromDb(dbUser);
-                const category = this.categoryTransformer.fromDb(dbCat);
-                const tags = (row.tagIds || [])
-                    .map((tid: ObjectId) => {
-                        const tagKey = tid.toString();
-                        return tagsMap.get(tagKey);
-                    })
-                    .filter(truthy)
-                    .map((t: Tag) => this.tagTransformer.fromDb(t));
+                const outRow: any = {...blog}
+                if (row.userId) {
+                    const userKey = row.userId.toString();
+                    outRow.user = usersMap.get(userKey); // Already transformed by loadUsersByIds
+                }
 
-                const featuredMediaKey = row.featuredMediaId?.toString();
-                const featuredMedia = featuredMediaKey
-                    ? (mediaMap.get(featuredMediaKey) ? this.mediaTransformer.fromDb(mediaMap.get(featuredMediaKey)) : undefined)
-                    : undefined;
+                if (row.categoryId) {
+                    const categoryKey = row.categoryId.toString();
+                    outRow.category = catsMap.get(categoryKey); // Already transformed by loadCategoriesByIds
+                }
 
-                const parentKey = row.parentId?.toString();
-                const parent = parentKey
-                    ? (parentsMap.get(parentKey) ? this.blogTransformer.fromDb(parentsMap.get(parentKey)) : undefined)
-                    : undefined;
+                if (row.tagIds) {
+                    outRow.tags = (row.tagIds || [])
+                        .map((tid: ObjectId) => {
+                            const tagKey = tid.toString();
+                            return tagsMap.get(tagKey);
+                        })
+                        .filter(truthy); // Already transformed by loadTagsByIds
+                }
 
-                out.push({
-                    ...blog,
-                    user,
-                    category,
-                    tags,
-                    featuredMedia,
-                    parent,
-                } as HydratedBlog);
+                if (row.featuredMediaId) {
+                    const featuredMediaKey = row.featuredMediaId?.toString();
+                    outRow.featuredMedia = featuredMediaKey
+                        ? mediaMap.get(featuredMediaKey) // Already transformed by loadMediaByIds
+                        : undefined;
+                }
+
+                if (outRow.parentId) {
+                    const parentKey = row.parentId?.toString();
+                    outRow.parent = parentKey
+                        ? parentsMap.get(parentKey) // Already transformed by loadBlogsByIds
+                        : undefined;
+                }
+
+                out.push(outRow);
             }
             return out;
         };
 
         // ---------- query helpers ----------
-        const applyFindOptions = (cursor: any, options?: {
-            skip?: number;
-            limit?: number;
-            sort?: Record<string, 1 | -1>;
-            projection?: Record<string, 0 | 1>;
-        }) => {
-            if (!options) return cursor;
-            if (options.projection) cursor = cursor.project(options.projection);
-            if (options.sort) cursor = cursor.sort(options.sort);
-            if (typeof options.skip === 'number') cursor = cursor.skip(options.skip);
-            if (typeof options.limit === 'number') cursor = cursor.limit(options.limit);
-            return cursor;
-        };
+        // Note: No longer needed since we use collection operations
 
         // ---------- public API ----------
         return {
@@ -919,9 +931,6 @@ export class MongoDBAdapter implements DatabaseAdapter {
                 filter: Filter<Blog>,
                 options?: HydratedBlogQueryOptions
             ): Promise<HydratedBlog[]> => {
-                const dbFilter = this.blogTransformer.toDbFilter(filter);
-                let cursor = blogsCol().find(dbFilter);
-
                 // Extract blog-level projections (exclude relationship projections)
                 const blogProjection = options?.projections ?
                     Object.fromEntries(
@@ -929,14 +938,25 @@ export class MongoDBAdapter implements DatabaseAdapter {
                             .filter(([key]) => !['user', 'category', 'tag', 'featuredMedia', 'parent'].includes(key))
                     ) as Record<string, 0 | 1> : options?.projection;
 
-                // Apply query options including blog-level projections
-                cursor = applyFindOptions(cursor, {
+                // Use the blogs collection operations to get raw data
+                const blogs = await self.blogs.find(filter, {
                     ...options,
                     projection: blogProjection
                 });
 
-                const raw = await cursor.toArray();
-                return hydrateRawBlogs(raw, options?.projections);
+                // Now we need to get the raw DB documents for hydration
+                // We have the transformed blogs, need to get back to raw for hydration
+                const blogIds = blogs.map(b => oid(b._id));
+                if (blogIds.length === 0) return [];
+
+                const blogsCol = this.db.collection('blogs');
+                const rawBlogs = await blogsCol.find({_id: {$in: blogIds}}).toArray();
+
+                // Sort raw blogs to match the original order
+                const rawBlogMap = new Map(rawBlogs.map(b => [b._id.toString(), b]));
+                const sortedRawBlogs = blogIds.map(id => rawBlogMap.get(id.toString())).filter(truthy);
+
+                return hydrateRawBlogs(sortedRawBlogs, options?.projections);
             },
 
             getRecentBlogs: async (limit: number = 10): Promise<HydratedBlog[]> => {
@@ -947,23 +967,38 @@ export class MongoDBAdapter implements DatabaseAdapter {
             },
 
             getRelatedBlogs: async (blogId: string, limit: number = 5): Promise<HydratedBlog[]> => {
-                const seed = await blogsCol().findOne({_id: blogId});
+                const seed = await self.blogs.findById(blogId);
                 if (!seed) return [];
 
                 const seedTags: string[] = Array.isArray(seed.tagIds) ? seed.tagIds : [];
                 const seedCategoryId: string | undefined = seed.categoryId;
 
-                // prefilter server-side (but no aggregation): category OR overlapping tagIds
-                const query: any = {
-                    status: 'published',
-                    _id: {$ne: blogId},
-                    $or: [
-                        {categoryId: seedCategoryId},
-                        {tagIds: {$in: seedTags}},
-                    ],
-                };
+                if (!seedCategoryId && seedTags.length === 0) return [];
 
-                const candidates = await blogsCol().find(query).toArray();
+                // Get candidates by category
+                const categoryBlogs = seedCategoryId
+                    ? await self.blogs.find({
+                        status: 'published',
+                        _id: {$ne: blogId},
+                        categoryId: seedCategoryId
+                    })
+                    : [];
+
+                // Get candidates by tags
+                const tagBlogs = seedTags.length > 0
+                    ? await self.blogs.find({
+                        status: 'published',
+                        _id: {$ne: blogId},
+                        tagIds: {$in: seedTags} as any
+                    })
+                    : [];
+
+                // Combine and deduplicate
+                const blogMap = new Map<string, Blog>();
+                [...categoryBlogs, ...tagBlogs].forEach(blog => {
+                    blogMap.set(blog._id, blog);
+                });
+                const candidates = Array.from(blogMap.values());
 
                 // score in memory
                 const scored = candidates.map(b => {
@@ -977,12 +1012,23 @@ export class MongoDBAdapter implements DatabaseAdapter {
                     .slice(0, limit)
                     .map(s => s.b);
 
-                return hydrateRawBlogs(scored);
+                // Now we need to get the raw DB documents for hydration
+                const blogIds = scored.map(blog => oid(blog._id));
+                if (blogIds.length === 0) return [];
+
+                const blogsCol = this.db.collection('blogs');
+                const rawBlogs = await blogsCol.find({_id: {$in: blogIds}}).toArray();
+
+                // Sort raw blogs to match the scored order
+                const sortedRawBlogs = blogIds.map(id =>
+                    rawBlogs.find(b => b._id.toString() === id.toString())
+                ).filter(truthy);
+
+                return hydrateRawBlogs(sortedRawBlogs);
             },
 
             getHydratedAuthor: async (userId: string): Promise<User | null> => {
-                const raw = await usersCol().findOne({_id: userId});
-                return raw ? this.userTransformer.fromDb(raw) : null;
+                return await self.users.findById(userId);
             },
 
             getAuthorBlogs: async (
@@ -993,46 +1039,44 @@ export class MongoDBAdapter implements DatabaseAdapter {
             },
 
             getHydratedCategories: async (): Promise<Category[]> => {
-                const rows = await catsCol().find({}).toArray();
-                return rows.map((c: any) => this.categoryTransformer.fromDb(c));
+                return await self.categories.find({});
             },
 
             getCategoryWithBlogs: async (
                 categoryId: string,
                 options?: HydratedBlogQueryOptions
             ): Promise<{ category: Category | null; blogs: HydratedBlog[] }> => {
-                const raw = await catsCol().findOne({_id: categoryId});
-                if (!raw) return {category: null, blogs: []};
+                const category = await self.categories.findById(categoryId);
+                if (!category) return {category: null, blogs: []};
                 const blogs = await self.generated.getHydratedBlogs({categoryId, status: 'published'}, options);
-                return {category: this.categoryTransformer.fromDb(raw), blogs};
+                return {category, blogs};
             },
 
             getHydratedTags: async (): Promise<Tag[]> => {
-                const rows = await tagsCol().find({}).toArray();
-                return rows.map((t: any) => this.tagTransformer.fromDb(t));
+                return await self.tags.find({});
             },
 
             getTagWithBlogs: async (
                 tagId: string,
                 options?: HydratedBlogQueryOptions
             ): Promise<{ tag: Tag | null; blogs: HydratedBlog[] }> => {
-                const raw = await tagsCol().findOne({_id: tagId});
-                if (!raw) return {tag: null, blogs: []};
+                const tag = await self.tags.findById(tagId);
+                if (!tag) return {tag: null, blogs: []};
                 const blogs = await self.generated.getHydratedBlogs(
                     {status: 'published', tagIds: {$in: [tagId]}},
                     options
                 );
-                return {tag: this.tagTransformer.fromDb(raw), blogs};
+                return {tag, blogs};
             },
 
             getBlogsByTag: async (
                 tagSlug: string,
                 options?: HydratedBlogQueryOptions
             ): Promise<HydratedBlog[]> => {
-                const raw = await tagsCol().findOne({slug: tagSlug});
-                if (!raw) return [];
+                const tag = await self.tags.findOne({slug: tagSlug});
+                if (!tag) return [];
                 return self.generated.getHydratedBlogs(
-                    {status: 'published', tagIds: {$in: [raw._id]}},
+                    {status: 'published', tagIds: {$in: [tag._id]}},
                     options
                 );
             },
@@ -1041,10 +1085,10 @@ export class MongoDBAdapter implements DatabaseAdapter {
                 categorySlug: string,
                 options?: HydratedBlogQueryOptions
             ): Promise<HydratedBlog[]> => {
-                const raw = await catsCol().findOne({slug: categorySlug});
-                if (!raw) return [];
+                const category = await self.categories.findOne({slug: categorySlug});
+                if (!category) return [];
                 return self.generated.getHydratedBlogs(
-                    {status: 'published', categoryId: raw._id},
+                    {status: 'published', categoryId: category._id},
                     options
                 );
             },

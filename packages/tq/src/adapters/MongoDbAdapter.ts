@@ -236,8 +236,7 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
                     //update execution_stats
                     updated_at: new Date()
                 },
-            },
-            {upsert: true} // Always upsert ignored tasks to ensure they're recorded
+            }
         );
     }
 }
