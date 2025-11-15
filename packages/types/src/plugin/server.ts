@@ -22,6 +22,8 @@ export interface ServerPluginModule {
  * Server hook definitions with payloads and responses
  */
 export interface ServerHooks extends Record<string, { payload?: any; response: any }> {
+    // Dynamic plugin-specific update hooks
+    [key: `plugin:update:${string}`]: { payload: PluginUpdatePayload; response: void | { success?: boolean; message?: string } };
     // Blog hooks
     'blog:beforeCreate': {
         payload: { title: string; content: ContentObject; data?: any };
@@ -181,7 +183,6 @@ export interface ServerHooks extends Record<string, { payload?: any; response: a
     'plugin:afterEnable': { payload: CrudPayload; response: void };
     'plugin:beforeDisable': { payload: CrudPayload; response: void | { cancel?: boolean } };
     'plugin:afterDisable': { payload: CrudPayload; response: void };
-    'plugin:update': { payload: PluginUpdatePayload; response: void | { success?: boolean; message?: string } };
 
     // System hooks
     'system:update': { payload: SystemUpdatePayload; response: void | { success?: boolean; message?: string } };
@@ -240,9 +241,9 @@ export interface CrudPayload<T = any> {
  * Plugin update hook payload
  */
 export interface PluginUpdatePayload {
-    pluginId: string;
-    fromVersion: string;
-    toVersion: string;
+    installationId: string;
+    oldVersion: string;
+    newVersion: string;
     data?: any;
 }
 
