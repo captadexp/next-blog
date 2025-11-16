@@ -120,7 +120,7 @@ export class TaskRunner<ID> {
             this.logger.info(`[${taskRunnerId}] Processing ${taskGroup.tasks.length} tasks of type: ${taskGroup.type}`);
 
             if (executor.multiple) {
-                await executor.onTasks(taskGroup.tasks, actions).catch(err => this.logger.error(`[${taskRunnerId}] executor.onTasks failed: ${err}`))
+                await executor.onTasks(taskGroup.tasks as any[], actions).catch(err => this.logger.error(`[${taskRunnerId}] executor.onTasks failed: ${err}`))
             } else {
                 if (executor.parallel) {
                     const chunks = chunk(taskGroup.tasks, executor.chunkSize) as CronTask<ID>[][];

@@ -12,10 +12,12 @@ import {AsyncTaskManager} from "../core/async/AsyncTaskManager.js";
 declare module "@supergrowthai/mq" {
     interface QueueRegistry {
         "test-tq-queue": "test-tq-queue";
+        "test-tq-queue-2": "test-tq-queue-2";
     }
 
     interface MessagePayloadRegistry {
         "test-task": { message: string };
+        "test-task-x": { x: number };
     }
 }
 

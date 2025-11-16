@@ -1,4 +1,4 @@
-import type {QueueName} from "@supergrowthai/mq";
+import type {MessageType, QueueName} from "@supergrowthai/mq";
 
 export interface TaskQueueStats {
     queueName: QueueName;
@@ -17,7 +17,7 @@ export interface DiscardedTaskInfo {
 export interface TaskErrorInfo {
     error: string;
     context: string;
-    taskType?: string;
+    taskType?: MessageType;
     queueName?: QueueName;
 }
 
