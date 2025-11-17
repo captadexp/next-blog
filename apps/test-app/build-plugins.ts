@@ -43,8 +43,30 @@ console.log('🚀 Building plugins for deployment...');
 console.log(`📍 Using host URL: ${PLUGIN_HOST_URL}`);
 
 const ROOT_DIR = join(import.meta.dir, '../..');
-const PLUGINS_DIR = join(ROOT_DIR, 'plugins');
 const PUBLIC_PLUGINS_DIR = join(import.meta.dir, 'public/plugins');
+
+// Define plugin paths to build (relative to ROOT_DIR)
+// These paths should contain a package.json file
+const PLUGIN_PATHS = [
+    // Top-level plugins
+    'plugins/ai-blog-generator',
+    'plugins/api-widget',
+    'plugins/broken-link-checker',
+    'plugins/test-plugin',
+
+    // SEO plugins
+    'plugins/seo/analyzer',
+    'plugins/seo/json-ld-structured-data',
+    'plugins/seo/llms',
+    'plugins/seo/permalink-manager',
+    'plugins/seo/robots',
+    'plugins/seo/rss',
+    'plugins/seo/sitemap',
+
+    // Note: Internal plugins excluded
+    // 'plugins/internal/system-update-manager',
+    // 'plugins/internal/system',
+];
 
 // Clean and create public/plugins directory
 if (existsSync(PUBLIC_PLUGINS_DIR)) {
@@ -52,18 +74,28 @@ if (existsSync(PUBLIC_PLUGINS_DIR)) {
 }
 mkdirSync(PUBLIC_PLUGINS_DIR, {recursive: true});
 
-// Get all plugin directories
-const pluginDirs = execSync(`ls -d ${PLUGINS_DIR}/*/`, {encoding: 'utf-8'})
-    .trim()
-    .split('\n')
-    .filter(Boolean)
-    .map(dir => dir.replace(/\/$/, ''));
+// Convert relative paths to absolute paths and validate
+const pluginDirs = PLUGIN_PATHS
+    .map(path => join(ROOT_DIR, path))
+    .filter(dir => {
+        if (!existsSync(dir)) {
+            console.log(`⚠️  Plugin path not found: ${dir}, skipping...`);
+            return false;
+        }
+        if (!existsSync(join(dir, 'package.json'))) {
+            console.log(`⚠️  No package.json found in: ${dir}, skipping...`);
+            return false;
+        }
+        return true;
+    });
 
 const manifestEntries: ManifestEntry[] = [];
 
 for (const pluginDir of pluginDirs) {
+    // Get relative path from plugins directory to maintain nesting structure
+    const relativePath = pluginDir.replace(join(ROOT_DIR, 'plugins/'), '');
     const pluginName = basename(pluginDir);
-    console.log(`📦 Building plugin: ${pluginName}`);
+    console.log(`📦 Building plugin: ${relativePath}`);
 
     const packageJsonPath = join(pluginDir, 'package.json');
     if (!existsSync(packageJsonPath)) {
@@ -74,8 +106,16 @@ for (const pluginDir of pluginDirs) {
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
     const version = packageJson.version || '1.0.0';
 
-    // Set PLUGIN_BASE_URL for the build
-    process.env.PLUGIN_BASE_URL = `${PLUGIN_HOST_URL}/plugins/${pluginName}/${version}`;
+    // Extract plugin manifest ID from the built plugin first (if available)
+    let pluginId = pluginName; // Default to directory name
+
+    // Try to get the actual plugin ID from package.json or manifest
+    if (packageJson.pluginId) {
+        pluginId = packageJson.pluginId;
+    }
+
+    // Set PLUGIN_BASE_URL for the build using the relative path structure
+    process.env.PLUGIN_BASE_URL = `${PLUGIN_HOST_URL}/plugins/${relativePath}/${version}`;
 
     try {
         // Build the plugin
@@ -91,12 +131,12 @@ for (const pluginDir of pluginDirs) {
             continue;
         }
 
-        // Create versioned directory and copy files
-        const targetDir = join(PUBLIC_PLUGINS_DIR, pluginName, version);
+        // Create versioned directory maintaining the folder structure
+        const targetDir = join(PUBLIC_PLUGINS_DIR, relativePath, version);
         mkdirSync(targetDir, {recursive: true});
         cpSync(distDir, targetDir, {recursive: true});
 
-        console.log(`✅ Plugin ${pluginName} v${version} copied to public/plugins/`);
+        console.log(`✅ Plugin ${relativePath} v${version} copied to public/plugins/`);
 
         // Extract plugin metadata from the built plugin.js
         const pluginJsPath = join(targetDir, 'plugin.js');
@@ -112,23 +152,27 @@ for (const pluginDir of pluginDirs) {
         try {
             // Execute the IIFE to get the plugin manifest
             pluginData = eval(pluginContent) as PluginManifest;
+            // Use the actual plugin ID from the manifest
+            if (pluginData.id) {
+                pluginId = pluginData.id;
+            }
         } catch (e) {
             console.log(`⚠️  Failed to extract metadata from ${pluginName}, using defaults`);
             pluginData = {
-                id: pluginName,
+                id: pluginId,
                 name: pluginName,
                 version: version,
                 author: 'Unknown'
             };
         }
 
-        // Build manifest entry
+        // Build manifest entry using the actual plugin ID
         const entry: ManifestEntry = {
-            id: pluginName,
+            id: pluginId,
             name: pluginData.name || pluginName,
             version: version,
             author: pluginData.author || 'Unknown',
-            path: `${PLUGIN_HOST_URL}/plugins/${pluginName}/${version}`,
+            path: `${PLUGIN_HOST_URL}/plugins/${relativePath}/${version}`,
             files: {}
         };
 
@@ -138,7 +182,7 @@ for (const pluginDir of pluginDirs) {
 
         // Add file references
         if (existsSync(join(targetDir, 'plugin.js'))) {
-            entry.files.plugin = `${PLUGIN_HOST_URL}/plugins/${pluginName}/${version}/plugin.js`;
+            entry.files.plugin = `${PLUGIN_HOST_URL}/plugins/${relativePath}/${version}/plugin.js`;
         }
 
         manifestEntries.push(entry);
