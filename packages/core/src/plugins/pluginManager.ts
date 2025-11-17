@@ -173,38 +173,96 @@ async function updatePlugin(db: DatabaseAdapter, manifestId: string, url: string
 async function installAllInternalPlugins(db: DatabaseAdapter): Promise<void> {
     logger.info('Installing all internal plugins...');
 
-    //todo this can be optimized to do a {$in:[id1,id2]} type query and even cached in mem (overkill?)
+    // Get all internal plugin IDs
+    const internalPluginIds = Object.keys(INTERNAL_PLUGINS);
+
+    // Fetch all existing internal plugins in a single query
+    const existingPlugins = await db.plugins.find({
+        id: {$in: internalPluginIds}
+    });
+
+    // Create a Set of existing plugin IDs for quick lookup
+    const existingPluginIds = new Set(existingPlugins.map(p => p.id));
+
+    // Find plugins that need to be installed
+    const toInstall: Array<[string, string]> = [];
     for (const [pluginId, url] of Object.entries(INTERNAL_PLUGINS)) {
-        try {
-            // Check if already installed
-            const existing = await db.plugins.findOne({id: pluginId});
-            if (!existing) {
-                logger.info(`Installing internal plugin: ${pluginId}`);
-                await installPlugin(db, url);
-            } else {
-                logger.debug(`Internal plugin ${pluginId} already installed`);
-            }
-        } catch (error) {
-            logger.error(`Failed to install internal plugin ${pluginId}:`, error);
+        if (!existingPluginIds.has(pluginId)) {
+            toInstall.push([pluginId, url]);
         }
     }
 
-    logger.info('All internal plugins installation complete');
+    // Install missing plugins
+    if (toInstall.length > 0) {
+        logger.info(`Installing ${toInstall.length} internal plugins...`);
+        for (const [pluginId, url] of toInstall) {
+            try {
+                logger.info(`Installing internal plugin: ${pluginId}`);
+                await installPlugin(db, url);
+            } catch (error) {
+                logger.error(`Failed to install internal plugin ${pluginId}:`, error);
+            }
+        }
+    } else {
+        logger.info('All internal plugins already installed');
+    }
+
+    logger.info('Internal plugins installation complete');
 }
 
 async function updateInternalPlugins(db: DatabaseAdapter): Promise<void> {
-    logger.info('Updating all internal plugins...');
+    logger.info('Syncing all internal plugins (install new, update existing)...');
+
+    // Get all internal plugin IDs
+    const internalPluginIds = Object.keys(INTERNAL_PLUGINS);
+
+    // Fetch all existing internal plugins in a single query
+    const existingPlugins = await db.plugins.find({
+        id: {$in: internalPluginIds}
+    });
+
+    // Create a Set of existing plugin IDs for quick lookup
+    const existingPluginIds = new Set(existingPlugins.map(p => p.id));
+
+    // Separate plugins into install and update lists
+    const toInstall: Array<[string, string]> = [];
+    const toUpdate: Array<[string, string]> = [];
 
     for (const [pluginId, url] of Object.entries(INTERNAL_PLUGINS)) {
-        try {
-            logger.info(`Updating internal plugin: ${pluginId}`);
-            await updatePlugin(db, pluginId, url);
-        } catch (error) {
-            logger.error(`Failed to update internal plugin ${pluginId}:`, error);
+        if (existingPluginIds.has(pluginId)) {
+            toUpdate.push([pluginId, url]);
+        } else {
+            toInstall.push([pluginId, url]);
         }
     }
 
-    logger.info('All internal plugins update complete');
+    // Install new plugins
+    if (toInstall.length > 0) {
+        logger.info(`Installing ${toInstall.length} new internal plugins...`);
+        for (const [pluginId, url] of toInstall) {
+            try {
+                logger.info(`Installing internal plugin: ${pluginId}`);
+                await installPlugin(db, url);
+            } catch (error) {
+                logger.error(`Failed to install internal plugin ${pluginId}:`, error);
+            }
+        }
+    }
+
+    // Update existing plugins
+    if (toUpdate.length > 0) {
+        logger.info(`Updating ${toUpdate.length} existing internal plugins...`);
+        for (const [pluginId, url] of toUpdate) {
+            try {
+                logger.info(`Updating internal plugin: ${pluginId}`);
+                await updatePlugin(db, pluginId, url);
+            } catch (error) {
+                logger.error(`Failed to update internal plugin ${pluginId}:`, error);
+            }
+        }
+    }
+
+    logger.info(`Internal plugins sync complete: ${toInstall.length} installed, ${toUpdate.length} updated`);
 }
 
 

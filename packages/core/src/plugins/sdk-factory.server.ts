@@ -23,7 +23,7 @@ import {ServerSettingsHelper} from "./settings-helper.server.js";
  */
 async function internalHooks(hookName: string, db: DatabaseAdapter, log: Logger, payload: any): Promise<void> {
     // Special handling for system:update - update all internal plugins
-    // we can add pluginManager to the sdk object if plugin.isSystem==true so we dont need to do this special handling.
+    // todo later: we can add pluginManager to the sdk object if plugin.isSystem==true so we dont need to do this special handling.
     if (hookName === 'system:update') {
         log.info('Processing system:update hook - updating internal plugins');
         await pluginManager.updateInternalPlugins(db);
