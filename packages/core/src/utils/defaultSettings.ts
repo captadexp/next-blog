@@ -42,9 +42,8 @@ export async function getOrCreateSystemPlugin(db: DatabaseAdapter): Promise<Plug
     let systemPlugin = await db.plugins.findOne({id: 'system'});
 
     if (!systemPlugin) {
-        //todo add code to install all internal plugins
-        await pluginManager.installPlugin(db, INTERNAL_PLUGINS.system);
-        console.log('Installed system plugin');
+        await pluginManager.installAllInternalPlugins(db);
+        console.log('Installed internal plugins');
         systemPlugin = await db.plugins.findOne({id: 'system'});
     }
 

@@ -42,7 +42,7 @@ jobs:
         run: bun run build
 
       - name: Build plugins
-        run: bun --filter="./plugins/*" run build
+        run: bun --filter="@plugins/*" run build
 
       - name: Run typecheck
         run: |

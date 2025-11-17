@@ -2,6 +2,7 @@ import {createId, DatabaseAdapter, PluginManifest, ServerPluginModule} from "@su
 import {ValidationError} from "../utils/errors.js";
 import Logger from "../utils/Logger.js";
 import {readInternalPluginFile} from "../utils/dashboardAssets.js";
+import {INTERNAL_PLUGINS} from "./internalPlugins.js";
 
 const logger = new Logger('plugins-manager');
 
@@ -100,12 +101,18 @@ async function installPlugin(db: DatabaseAdapter, url: string): Promise<any> {
         throw new ValidationError(`Plugin with id '${manifest.id}' is already installed`);
     }
 
+    // Internal plugins (internal://) are system plugins unless in devMode
+    const isInternalPlugin = url.startsWith('internal://');
+    const isSystem = isInternalPlugin && !manifest.devMode;
+
     const creation = await db.plugins.create({
         ...manifest,
         url,
-        devMode: !!manifest.devMode
+        devMode: !!manifest.devMode,
+        isSystem
     });
-    logger.info(`Plugin created: ${creation._id}${manifest.devMode ? ' (devMode enabled)' : ''}`);
+
+    logger.info(`Plugin created: ${creation._id}${manifest.devMode ? ' (devMode enabled)' : ''}${isSystem ? ' (system)' : ''}`);
 
     if (manifest.server?.url) {
         const server: ServerPluginModule = await loadPluginModule(manifest.server?.url);
@@ -163,6 +170,43 @@ async function updatePlugin(db: DatabaseAdapter, manifestId: string, url: string
     return db.plugins.findOne({_id: installationId});
 }
 
+async function installAllInternalPlugins(db: DatabaseAdapter): Promise<void> {
+    logger.info('Installing all internal plugins...');
+
+    //todo this can be optimized to do a {$in:[id1,id2]} type query and even cached in mem (overkill?)
+    for (const [pluginId, url] of Object.entries(INTERNAL_PLUGINS)) {
+        try {
+            // Check if already installed
+            const existing = await db.plugins.findOne({id: pluginId});
+            if (!existing) {
+                logger.info(`Installing internal plugin: ${pluginId}`);
+                await installPlugin(db, url);
+            } else {
+                logger.debug(`Internal plugin ${pluginId} already installed`);
+            }
+        } catch (error) {
+            logger.error(`Failed to install internal plugin ${pluginId}:`, error);
+        }
+    }
+
+    logger.info('All internal plugins installation complete');
+}
+
+async function updateInternalPlugins(db: DatabaseAdapter): Promise<void> {
+    logger.info('Updating all internal plugins...');
+
+    for (const [pluginId, url] of Object.entries(INTERNAL_PLUGINS)) {
+        try {
+            logger.info(`Updating internal plugin: ${pluginId}`);
+            await updatePlugin(db, pluginId, url);
+        } catch (error) {
+            logger.error(`Failed to update internal plugin ${pluginId}:`, error);
+        }
+    }
+
+    logger.info('All internal plugins update complete');
+}
+
 
 export default {
     loadPluginFromUrl,
@@ -171,6 +215,8 @@ export default {
     deletePluginAndMappings,
     installPlugin,
     updatePlugin,
+    installAllInternalPlugins,
+    updateInternalPlugins,
     registerHooks,
     registerRpcs
 }

@@ -147,7 +147,6 @@ export const reinstallPlugin = secure(async (session: SessionData, request: Mini
     const pluginId = request._params?.id;
     logger.time(`Reinstall plugin ${pluginId}`);
     logger.info(`Attempting to reinstall plugin ID: ${pluginId}`);
-    //todo should we reinstall with same installation id again?
 
     try {
         if (!pluginId) {

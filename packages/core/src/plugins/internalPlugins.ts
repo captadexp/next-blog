@@ -3,7 +3,8 @@
  * Future system-update-manager plugin will handle version updates
  */
 export const INTERNAL_PLUGINS = {
-    system: "internal://internal-plugins/system/plugin.js"
+    system: "internal://internal-plugins/system/plugin.js",
+    "system-update-manager": "internal://internal-plugins/system-update-manager/plugin.js"
     // Add more internal plugins here as they are created
 } as const;
 

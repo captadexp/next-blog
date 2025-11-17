@@ -1,5 +1,4 @@
 import type {DatabaseAdapter, Logger, Plugin, ServerSDK} from '@supergrowthai/next-blog-types/server';
-import {INTERNAL_PLUGINS} from './internalPlugins.js';
 import pluginManager from './pluginManager.js';
 import {ServerCacheHelper} from './cache-helper.server.js';
 import {ServerEventsHelper} from './events-helper.server.js';
@@ -18,6 +17,18 @@ import {
     createScopedUserDb,
 } from '../services/ScopedCollectionDb.js';
 import {ServerSettingsHelper} from "./settings-helper.server.js";
+
+/**
+ * Handle internal system hooks
+ */
+async function internalHooks(hookName: string, db: DatabaseAdapter, log: Logger, payload: any): Promise<void> {
+    // Special handling for system:update - update all internal plugins
+    // we can add pluginManager to the sdk object if plugin.isSystem==true so we dont need to do this special handling.
+    if (hookName === 'system:update') {
+        log.info('Processing system:update hook - updating internal plugins');
+        await pluginManager.updateInternalPlugins(db);
+    }
+}
 
 /**
  * Dependencies required to create a server SDK instance
@@ -84,18 +95,7 @@ export class ServerSDKFactory {
             callHook: async (hookName, payload) => {
                 this.deps.log.debug(`Plugin ${plugin.id} calling hook: ${hookName}`);
 
-                // Special handling for system:update - update all internal plugins
-                //todo move this away from here
-                if (hookName === 'system:update') {
-                    for (const [pluginId, url] of Object.entries(INTERNAL_PLUGINS)) {
-                        try {
-                            this.deps.log.info(`Updating internal plugin: ${pluginId}`);
-                            await pluginManager.updatePlugin(this.deps.db, pluginId, url);
-                        } catch (error) {
-                            this.deps.log.error(`Failed to update internal plugin ${pluginId}:`, error);
-                        }
-                    }
-                }
+                await internalHooks(String(hookName), this.deps.db, this.deps.log, payload);
 
                 return this.deps.pluginExecutor.executeHook(String(hookName), sdk, payload);
             },

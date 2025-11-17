@@ -333,6 +333,28 @@
         "typescript": "^5.9.2",
       },
     },
+    "plugins/internal/system": {
+      "name": "@plugins/system",
+      "version": "1.0.0",
+      "devDependencies": {
+        "@supergrowthai/plugin-dev-kit": "workspace:*",
+        "typescript": "^5.9.3",
+        "vite": "^7.2.2",
+      },
+    },
+    "plugins/internal/system-update-manager": {
+      "name": "@plugins/internal-system-update-manager",
+      "version": "1.0.0",
+      "dependencies": {
+        "@tailwindcss/vite": "^4.1.14",
+        "tailwindcss": "^4.1.14",
+      },
+      "devDependencies": {
+        "@supergrowthai/plugin-dev-kit": "workspace:*",
+        "typescript": "^5.9.3",
+        "vite": "^7.1.9",
+      },
+    },
     "plugins/json-ld-structured-data": {
       "name": "@plugins/json-ld-structured-data",
       "version": "1.0.0",
@@ -769,6 +791,8 @@
 
     "@plugins/broken-link-checker": ["@plugins/broken-link-checker@workspace:plugins/broken-link-checker"],
 
+    "@plugins/internal-system-update-manager": ["@plugins/internal-system-update-manager@workspace:plugins/internal/system-update-manager"],
+
     "@plugins/json-ld-structured-data": ["@plugins/json-ld-structured-data@workspace:plugins/json-ld-structured-data"],
 
     "@plugins/permalink-manager": ["@plugins/permalink-manager@workspace:plugins/permalink-manager"],
@@ -782,6 +806,8 @@
     "@plugins/seo-rss": ["@plugins/seo-rss@workspace:plugins/seo-rss"],
 
     "@plugins/seo-sitemap": ["@plugins/seo-sitemap@workspace:plugins/seo-sitemap"],
+
+    "@plugins/system": ["@plugins/system@workspace:plugins/internal/system"],
 
     "@plugins/system-update-manager": ["@plugins/system-update-manager@workspace:plugins/system-update-manager"],
 

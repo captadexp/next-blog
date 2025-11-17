@@ -1,0 +1,8 @@
+node_modules/
+dist/*
+!dist/plugin.js
+!dist/client.js
+!dist/server.js
+*.log
+.DS_Store
+bun.lockb
