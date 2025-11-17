@@ -73,7 +73,7 @@ const PLUGIN_PATHS = [
 const PATH_MAPPINGS: Record<string, string> = {
     // Flatten SEO plugins to top level with prefixed names
     'plugins/seo/analyzer': 'seo-analyzer',
-    'plugins/seo/json-ld-structured-data': 'seo-json-ld',
+    'plugins/seo/json-ld-structured-data': 'json-ld-structured-data',
     'plugins/seo/llms': 'seo-llms',
     'plugins/seo/permalink-manager': 'seo-permalinks',
     'plugins/seo/robots': 'seo-robots',
