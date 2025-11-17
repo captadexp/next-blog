@@ -68,6 +68,22 @@ const PLUGIN_PATHS = [
     // 'plugins/internal/system',
 ];
 
+// Optional: Map source paths to custom output paths
+// If not specified, the source structure will be maintained
+const PATH_MAPPINGS: Record<string, string> = {
+    // Flatten SEO plugins to top level with prefixed names
+    'plugins/seo/analyzer': 'seo-analyzer',
+    'plugins/seo/json-ld-structured-data': 'seo-json-ld',
+    'plugins/seo/llms': 'seo-llms',
+    'plugins/seo/permalink-manager': 'seo-permalinks',
+    'plugins/seo/robots': 'seo-robots',
+    'plugins/seo/rss': 'seo-rss',
+    'plugins/seo/sitemap': 'seo-sitemap',
+
+    // Keep other plugins as-is (using their folder name)
+    // These will automatically use their relative path if not mapped
+};
+
 // Clean and create public/plugins directory
 if (existsSync(PUBLIC_PLUGINS_DIR)) {
     rmSync(PUBLIC_PLUGINS_DIR, {recursive: true});
@@ -76,14 +92,18 @@ mkdirSync(PUBLIC_PLUGINS_DIR, {recursive: true});
 
 // Convert relative paths to absolute paths and validate
 const pluginDirs = PLUGIN_PATHS
-    .map(path => join(ROOT_DIR, path))
-    .filter(dir => {
-        if (!existsSync(dir)) {
-            console.log(`⚠️  Plugin path not found: ${dir}, skipping...`);
+    .map(path => ({
+        sourcePath: path,
+        absolutePath: join(ROOT_DIR, path),
+        outputPath: PATH_MAPPINGS[path] || path.replace('plugins/', '')
+    }))
+    .filter(plugin => {
+        if (!existsSync(plugin.absolutePath)) {
+            console.log(`⚠️  Plugin path not found: ${plugin.absolutePath}, skipping...`);
             return false;
         }
-        if (!existsSync(join(dir, 'package.json'))) {
-            console.log(`⚠️  No package.json found in: ${dir}, skipping...`);
+        if (!existsSync(join(plugin.absolutePath, 'package.json'))) {
+            console.log(`⚠️  No package.json found in: ${plugin.absolutePath}, skipping...`);
             return false;
         }
         return true;
@@ -91,18 +111,11 @@ const pluginDirs = PLUGIN_PATHS
 
 const manifestEntries: ManifestEntry[] = [];
 
-for (const pluginDir of pluginDirs) {
-    // Get relative path from plugins directory to maintain nesting structure
-    const relativePath = pluginDir.replace(join(ROOT_DIR, 'plugins/'), '');
-    const pluginName = basename(pluginDir);
-    console.log(`📦 Building plugin: ${relativePath}`);
+for (const plugin of pluginDirs) {
+    const pluginName = basename(plugin.absolutePath);
+    console.log(`📦 Building plugin: ${plugin.sourcePath} -> ${plugin.outputPath}`);
 
-    const packageJsonPath = join(pluginDir, 'package.json');
-    if (!existsSync(packageJsonPath)) {
-        console.log(`⚠️  No package.json found for ${pluginName}, skipping...`);
-        continue;
-    }
-
+    const packageJsonPath = join(plugin.absolutePath, 'package.json');
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
     const version = packageJson.version || '1.0.0';
 
@@ -114,29 +127,29 @@ for (const pluginDir of pluginDirs) {
         pluginId = packageJson.pluginId;
     }
 
-    // Set PLUGIN_BASE_URL for the build using the relative path structure
-    process.env.PLUGIN_BASE_URL = `${PLUGIN_HOST_URL}/plugins/${relativePath}/${version}`;
+    // Set PLUGIN_BASE_URL for the build using the output path
+    process.env.PLUGIN_BASE_URL = `${PLUGIN_HOST_URL}/plugins/${plugin.outputPath}/${version}`;
 
     try {
         // Build the plugin
         execSync('bun run build', {
-            cwd: pluginDir,
+            cwd: plugin.absolutePath,
             stdio: 'inherit',
             env: process.env
         });
 
-        const distDir = join(pluginDir, 'dist');
+        const distDir = join(plugin.absolutePath, 'dist');
         if (!existsSync(distDir)) {
             console.log(`⚠️  Build failed for ${pluginName} (no dist folder found)`);
             continue;
         }
 
-        // Create versioned directory maintaining the folder structure
-        const targetDir = join(PUBLIC_PLUGINS_DIR, relativePath, version);
+        // Create versioned directory using the mapped output path
+        const targetDir = join(PUBLIC_PLUGINS_DIR, plugin.outputPath, version);
         mkdirSync(targetDir, {recursive: true});
         cpSync(distDir, targetDir, {recursive: true});
 
-        console.log(`✅ Plugin ${relativePath} v${version} copied to public/plugins/`);
+        console.log(`✅ Plugin ${plugin.sourcePath} v${version} copied to public/plugins/${plugin.outputPath}/`);
 
         // Extract plugin metadata from the built plugin.js
         const pluginJsPath = join(targetDir, 'plugin.js');
@@ -172,7 +185,7 @@ for (const pluginDir of pluginDirs) {
             name: pluginData.name || pluginName,
             version: version,
             author: pluginData.author || 'Unknown',
-            path: `${PLUGIN_HOST_URL}/plugins/${relativePath}/${version}`,
+            path: `${PLUGIN_HOST_URL}/plugins/${plugin.outputPath}/${version}`,
             files: {}
         };
 
@@ -182,7 +195,7 @@ for (const pluginDir of pluginDirs) {
 
         // Add file references
         if (existsSync(join(targetDir, 'plugin.js'))) {
-            entry.files.plugin = `${PLUGIN_HOST_URL}/plugins/${relativePath}/${version}/plugin.js`;
+            entry.files.plugin = `${PLUGIN_HOST_URL}/plugins/${plugin.outputPath}/${version}/plugin.js`;
         }
 
         manifestEntries.push(entry);
