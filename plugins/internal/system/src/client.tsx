@@ -2,39 +2,33 @@ import type {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
 import {useCallback, useEffect, useState} from '@supergrowthai/plugin-dev-kit/client';
 import {defineClient} from "@supergrowthai/plugin-dev-kit";
 
-interface CommonSettings {
-    website: {
-        url: string;
+interface SystemSettings {
+    site: {
         name: string;
+        url: string;
+        title: string;
         description: string;
+        language: string;
     };
     organization: {
         name: string;
         url: string;
         logoMediaId?: string;
     };
-    site: {
-        title: string;
-        description: string;
-        language: string;
-    };
 }
 
-const DEFAULT_SETTINGS: CommonSettings = {
-    website: {
-        url: '',
+const DEFAULT_SETTINGS: SystemSettings = {
+    site: {
         name: '',
-        description: ''
+        url: '',
+        title: '',
+        description: '',
+        language: 'en-US'
     },
     organization: {
         name: '',
         url: '',
         logoMediaId: undefined
-    },
-    site: {
-        title: '',
-        description: '',
-        language: 'en-US'
     }
 };
 
@@ -56,64 +50,13 @@ const LANGUAGE_OPTIONS = [
     {value: 'hi', label: 'Hindi'}
 ];
 
-function WebsiteSection({settings, onChange}: {
-    settings: CommonSettings;
-    onChange: (updates: Partial<CommonSettings>) => void;
+
+function OrganizationSection({settings, onChange, sdk}: {
+    settings: SystemSettings;
+    onChange: (updates: Partial<SystemSettings>) => void;
+    sdk: ClientSDK;
 }) {
-    const handleWebsiteChange = useCallback((field: keyof CommonSettings['website'], value: string) => {
-        onChange({
-            website: {...settings.website, [field]: value}
-        });
-    }, [settings.website, onChange]);
-
-    return (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-            <h4 className="text-base font-semibold text-gray-800 mb-5 pb-3 border-b">Website Configuration</h4>
-
-            <div className="mb-5">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Website URL</label>
-                <input
-                    type="url"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={settings.website.url}
-                    onChange={e => handleWebsiteChange('url', (e.target as HTMLInputElement).value)}
-                    placeholder="https://example.com"
-                />
-                <span className="block text-xs text-gray-500 mt-1">Full URL including protocol</span>
-            </div>
-
-            <div className="mb-5">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Website Name</label>
-                <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={settings.website.name}
-                    onChange={e => handleWebsiteChange('name', (e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).value)}
-                    placeholder="My Website"
-                />
-                <span className="block text-xs text-gray-500 mt-1">Display name for your website</span>
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Website Description</label>
-                <textarea
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
-                    value={settings.website.description}
-                    onChange={e => handleWebsiteChange('description', (e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).value)}
-                    placeholder="A brief description of your website"
-                    rows={3}
-                />
-                <span className="block text-xs text-gray-500 mt-1">Used in meta descriptions and structured data</span>
-            </div>
-        </div>
-    );
-}
-
-function OrganizationSection({settings, onChange}: {
-    settings: CommonSettings;
-    onChange: (updates: Partial<CommonSettings>) => void;
-}) {
-    const handleOrgChange = useCallback((field: keyof CommonSettings['organization'], value: string | undefined) => {
+    const handleOrgChange = useCallback((field: keyof SystemSettings['organization'], value: string | undefined) => {
         onChange({
             organization: {...settings.organization, [field]: value}
         });
@@ -148,25 +91,59 @@ function OrganizationSection({settings, onChange}: {
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Logo Media ID</label>
-                <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={settings.organization.logoMediaId || ''}
-                    onChange={e => handleOrgChange('logoMediaId', (e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).value || undefined)}
-                    placeholder="media-id-123"
-                />
-                <span className="block text-xs text-gray-500 mt-1">Media ID for organization logo (optional)</span>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Organization Logo</label>
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={settings.organization.logoMediaId || ''}
+                        onChange={e => handleOrgChange('logoMediaId', (e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).value || undefined)}
+                        placeholder="Select or enter media ID"
+                        readOnly
+                    />
+                    <button
+                        type="button"
+                        className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onClick={async () => {
+                            try {
+                                const response: any = await sdk.startIntent('select-media', {
+                                    options: {
+                                        mediaType: 'image',
+                                        mimeTypes: ['image/png', 'image/jpeg', 'image/svg+xml'],
+                                        maxSize: 2 * 1024 * 1024
+                                    }
+                                });
+                                if (response?.mediaId) {
+                                    handleOrgChange('logoMediaId', response.mediaId);
+                                }
+                            } catch (error) {
+                                sdk.notify('Failed to select logo', 'error');
+                            }
+                        }}
+                    >
+                        Select Logo
+                    </button>
+                    {settings.organization.logoMediaId && (
+                        <button
+                            type="button"
+                            className="px-3 py-2 bg-gray-200 text-gray-700 text-sm rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            onClick={() => handleOrgChange('logoMediaId', undefined)}
+                        >
+                            Clear
+                        </button>
+                    )}
+                </div>
+                <span className="block text-xs text-gray-500 mt-1">Organization logo image (optional)</span>
             </div>
         </div>
     );
 }
 
 function SiteSection({settings, onChange}: {
-    settings: CommonSettings;
-    onChange: (updates: Partial<CommonSettings>) => void;
+    settings: SystemSettings;
+    onChange: (updates: Partial<SystemSettings>) => void;
 }) {
-    const handleSiteChange = useCallback((field: keyof CommonSettings['site'], value: string) => {
+    const handleSiteChange = useCallback((field: keyof SystemSettings['site'], value: string) => {
         onChange({
             site: {...settings.site, [field]: value}
         });
@@ -174,7 +151,31 @@ function SiteSection({settings, onChange}: {
 
     return (
         <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
-            <h4 className="text-base font-semibold text-gray-800 mb-5 pb-3 border-b">Site Metadata</h4>
+            <h4 className="text-base font-semibold text-gray-800 mb-5 pb-3 border-b">Site Configuration</h4>
+
+            <div className="mb-5">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Site Name</label>
+                <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={settings.site.name}
+                    onChange={e => handleSiteChange('name', (e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).value)}
+                    placeholder="My Website"
+                />
+                <span className="block text-xs text-gray-500 mt-1">Display name for your website</span>
+            </div>
+
+            <div className="mb-5">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Site URL</label>
+                <input
+                    type="url"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={settings.site.url}
+                    onChange={e => handleSiteChange('url', (e.target as HTMLInputElement).value)}
+                    placeholder="https://example.com"
+                />
+                <span className="block text-xs text-gray-500 mt-1">Full URL including protocol</span>
+            </div>
 
             <div className="mb-5">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Site Title</label>
@@ -220,13 +221,13 @@ function SiteSection({settings, onChange}: {
 }
 
 function SystemSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
-    const [settings, setSettings] = useState<CommonSettings | null>(null);
+    const [settings, setSettings] = useState<SystemSettings | null>(null);
     const [saving, setSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
 
     useEffect(() => {
         // Load settings on mount
-        sdk.callRPC('settings:common:get', {})
+        sdk.callRPC('system:settings:get', {})
             .then((resp) => {
                 if (resp?.payload) {
                     setSettings(resp.payload);
@@ -239,7 +240,7 @@ function SystemSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
             });
     }, [sdk]);
 
-    const handleSettingChange = useCallback((updates: Partial<CommonSettings>) => {
+    const handleSettingChange = useCallback((updates: Partial<SystemSettings>) => {
         setSettings(prev => {
             if (!prev) return null;
             return {...prev, ...updates};
@@ -252,7 +253,7 @@ function SystemSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
 
         setSaving(true);
         try {
-            await sdk.callRPC('settings:common:set', {settings});
+            await sdk.callRPC('system:settings:set', {value: settings});
             sdk.notify('Settings saved successfully', 'success');
             setHasChanges(false);
         } catch (error) {
@@ -275,7 +276,7 @@ function SystemSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
                 </p>
             </div>
 
-            <WebsiteSection
+            <SiteSection
                 settings={settings}
                 onChange={handleSettingChange}
             />
@@ -283,11 +284,7 @@ function SystemSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
             <OrganizationSection
                 settings={settings}
                 onChange={handleSettingChange}
-            />
-
-            <SiteSection
-                settings={settings}
-                onChange={handleSettingChange}
+                sdk={sdk}
             />
 
             <div className="flex justify-end gap-3 mt-8 pt-6 border-t">
