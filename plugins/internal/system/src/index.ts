@@ -6,5 +6,5 @@ export default definePlugin({
     name: 'System',
     version: '1.0.0', // Auto-updated from package.json during build
     description: 'Core system plugin for internal operations and common settings management',
-    author: 'System',
+    author: 'Next-Blog Team',
 });

@@ -55,7 +55,6 @@ async function getSettings(sdk: ServerSDK): Promise<CommonSettings> {
 
 export default defineServer({
     hooks: {
-        // System plugin can hook into various lifecycle events
         'plugins:loaded': async (sdk: ServerSDK) => {
             sdk.log.info('System plugin initialized');
 
