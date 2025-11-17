@@ -39,19 +39,77 @@
         "bun-types": "^1.2.22",
       },
     },
-    "packages/cache": {
-      "name": "@supergrowthai/cache",
+    "lib/mq": {
+      "name": "@supergrowthai/mq",
       "version": "1.0.1",
       "dependencies": {
+        "@aws-sdk/client-kinesis": "^3.797.0",
+        "bson": "^6.10.3",
         "ioredis": "^5.6.1",
         "memoose-js": "2.0.0-canary.7fa17b2",
+        "moment": "^2.30.1",
+        "mongodb": "^6.16.0",
       },
       "devDependencies": {
+        "@prisma/client": "^6.19.0",
+        "@supergrowthai/utils": "workspace:*",
         "@types/bun": "^1.3.1",
         "@types/node": "^24.5.2",
+        "publint": "^0.3.15",
         "typescript": "^5.9.2",
         "vite": "^7.1.5",
         "vite-plugin-dts": "^4.5.4",
+      },
+    },
+    "lib/oneapi": {
+      "name": "@supergrowthai/oneapi",
+      "version": "2.0.1-beta.1",
+      "dependencies": {
+        "iron-session": "^8.0.4",
+      },
+      "devDependencies": {
+        "@types/bun": "^1.3.0",
+        "@types/express": "^5.0.3",
+        "@types/node": "^24.3.0",
+        "@types/react": "^19.0.0",
+        "@types/supertest": "^6.0.3",
+        "express": "^5.1.0",
+        "next": "^15.0.0",
+        "publint": "^0.3.15",
+        "supertest": "^7.1.4",
+        "vite": "^7.1.5",
+        "vite-plugin-dts": "^4.5.4",
+      },
+      "peerDependencies": {
+        "express": ">=5.0.0",
+        "next": ">=15.0.0",
+      },
+      "optionalPeers": [
+        "express",
+        "next",
+      ],
+    },
+    "lib/tq": {
+      "name": "@supergrowthai/tq",
+      "version": "1.0.1",
+      "dependencies": {
+        "@supergrowthai/mq": "workspace:*",
+        "lodash": "^4.17.21",
+        "moment": "^2.30.1",
+        "mongodb": "^6.16.0",
+      },
+      "devDependencies": {
+        "@prisma/client": "^6.19.0",
+        "@supergrowthai/utils": "workspace:*",
+        "@types/bun": "^1.3.1",
+        "@types/node": "^24.5.2",
+        "publint": "^0.3.15",
+        "typescript": "^5.9.2",
+        "vite": "^7.1.5",
+        "vite-plugin-dts": "^4.5.4",
+      },
+      "peerDependencies": {
+        "memoose-js": "2.0.0-canary.7fa17b2",
       },
     },
     "packages/core": {
@@ -135,56 +193,6 @@
         "vite-plugin-static-copy": "^3.1.3",
       },
     },
-    "packages/mq": {
-      "name": "@supergrowthai/mq",
-      "version": "1.0.1",
-      "dependencies": {
-        "@aws-sdk/client-kinesis": "^3.797.0",
-        "bson": "^6.10.3",
-        "ioredis": "^5.6.1",
-        "memoose-js": "2.0.0-canary.7fa17b2",
-        "moment": "^2.30.1",
-        "mongodb": "^6.16.0",
-      },
-      "devDependencies": {
-        "@prisma/client": "^6.19.0",
-        "@supergrowthai/utils": "workspace:*",
-        "@types/bun": "^1.3.1",
-        "@types/node": "^24.5.2",
-        "publint": "^0.3.15",
-        "typescript": "^5.9.2",
-        "vite": "^7.1.5",
-        "vite-plugin-dts": "^4.5.4",
-      },
-    },
-    "packages/oneapi": {
-      "name": "@supergrowthai/oneapi",
-      "version": "2.0.1-beta.1",
-      "dependencies": {
-        "iron-session": "^8.0.4",
-      },
-      "devDependencies": {
-        "@types/bun": "^1.3.0",
-        "@types/express": "^5.0.3",
-        "@types/node": "^24.3.0",
-        "@types/react": "^19.0.0",
-        "@types/supertest": "^6.0.3",
-        "express": "^5.1.0",
-        "next": "^15.0.0",
-        "publint": "^0.3.15",
-        "supertest": "^7.1.4",
-        "vite": "^7.1.5",
-        "vite-plugin-dts": "^4.5.4",
-      },
-      "peerDependencies": {
-        "express": ">=5.0.0",
-        "next": ">=15.0.0",
-      },
-      "optionalPeers": [
-        "express",
-        "next",
-      ],
-    },
     "packages/plugin-dev-kit": {
       "name": "@supergrowthai/plugin-dev-kit",
       "version": "0.1.0",
@@ -220,29 +228,6 @@
       "optionalPeers": [
         "tailwindcss",
       ],
-    },
-    "packages/tq": {
-      "name": "@supergrowthai/tq",
-      "version": "1.0.1",
-      "dependencies": {
-        "@supergrowthai/mq": "workspace:*",
-        "lodash": "^4.17.21",
-        "moment": "^2.30.1",
-        "mongodb": "^6.16.0",
-      },
-      "devDependencies": {
-        "@prisma/client": "^6.19.0",
-        "@supergrowthai/utils": "workspace:*",
-        "@types/bun": "^1.3.1",
-        "@types/node": "^24.5.2",
-        "publint": "^0.3.15",
-        "typescript": "^5.9.2",
-        "vite": "^7.1.5",
-        "vite-plugin-dts": "^4.5.4",
-      },
-      "peerDependencies": {
-        "memoose-js": "2.0.0-canary.7fa17b2",
-      },
     },
     "packages/types": {
       "name": "@supergrowthai/next-blog-types",
@@ -343,7 +328,7 @@
       },
     },
     "plugins/internal/system-update-manager": {
-      "name": "@plugins/internal-system-update-manager",
+      "name": "@plugins/system-update-manager",
       "version": "1.0.0",
       "dependencies": {
         "@tailwindcss/vite": "^4.1.14",
@@ -355,7 +340,20 @@
         "vite": "^7.1.9",
       },
     },
-    "plugins/json-ld-structured-data": {
+    "plugins/seo/analyzer": {
+      "name": "@plugins/seo-analyzer",
+      "version": "1.0.0",
+      "dependencies": {
+        "@tailwindcss/vite": "^4.1.14",
+        "tailwindcss": "^4.1.14",
+      },
+      "devDependencies": {
+        "@supergrowthai/plugin-dev-kit": "workspace:*",
+        "typescript": "^5.7.3",
+        "vite": "^7.1.9",
+      },
+    },
+    "plugins/seo/json-ld-structured-data": {
       "name": "@plugins/json-ld-structured-data",
       "version": "1.0.0",
       "dependencies": {
@@ -369,7 +367,16 @@
         "vite": "^7.1.9",
       },
     },
-    "plugins/permalink-manager": {
+    "plugins/seo/llms": {
+      "name": "@plugins/seo-llms",
+      "version": "1.0.0",
+      "devDependencies": {
+        "@supergrowthai/plugin-dev-kit": "workspace:*",
+        "typescript": "^5.0.0",
+        "vite": "^5.0.0",
+      },
+    },
+    "plugins/seo/permalink-manager": {
       "name": "@plugins/permalink-manager",
       "version": "1.0.0",
       "devDependencies": {
@@ -380,29 +387,7 @@
         "vite": "^5.0.0",
       },
     },
-    "plugins/seo-analyzer": {
-      "name": "@plugins/seo-analyzer",
-      "version": "1.0.0",
-      "dependencies": {
-        "@tailwindcss/vite": "^4.1.14",
-        "tailwindcss": "^4.1.14",
-      },
-      "devDependencies": {
-        "@supergrowthai/plugin-dev-kit": "workspace:*",
-        "typescript": "^5.7.3",
-        "vite": "^7.1.9",
-      },
-    },
-    "plugins/seo-llms": {
-      "name": "@plugins/seo-llms",
-      "version": "1.0.0",
-      "devDependencies": {
-        "@supergrowthai/plugin-dev-kit": "workspace:*",
-        "typescript": "^5.0.0",
-        "vite": "^5.0.0",
-      },
-    },
-    "plugins/seo-robots": {
+    "plugins/seo/robots": {
       "name": "@plugins/seo-robots",
       "version": "1.0.0",
       "devDependencies": {
@@ -413,7 +398,7 @@
         "vite": "^5.0.0",
       },
     },
-    "plugins/seo-rss": {
+    "plugins/seo/rss": {
       "name": "@plugins/seo-rss",
       "version": "1.0.0",
       "devDependencies": {
@@ -422,7 +407,7 @@
         "vite": "^5.0.0",
       },
     },
-    "plugins/seo-sitemap": {
+    "plugins/seo/sitemap": {
       "name": "@plugins/seo-sitemap",
       "version": "1.0.0",
       "devDependencies": {
@@ -431,19 +416,6 @@
         "tailwindcss": "^4.1.14",
         "typescript": "^5.0.0",
         "vite": "^5.0.0",
-      },
-    },
-    "plugins/system-update-manager": {
-      "name": "@plugins/system-update-manager",
-      "version": "1.0.0",
-      "dependencies": {
-        "@tailwindcss/vite": "^4.1.14",
-        "tailwindcss": "^4.1.14",
-      },
-      "devDependencies": {
-        "@supergrowthai/plugin-dev-kit": "workspace:*",
-        "typescript": "^5.9.3",
-        "vite": "^7.1.9",
       },
     },
     "plugins/test-plugin": {
@@ -791,25 +763,23 @@
 
     "@plugins/broken-link-checker": ["@plugins/broken-link-checker@workspace:plugins/broken-link-checker"],
 
-    "@plugins/internal-system-update-manager": ["@plugins/internal-system-update-manager@workspace:plugins/internal/system-update-manager"],
+    "@plugins/json-ld-structured-data": ["@plugins/json-ld-structured-data@workspace:plugins/seo/json-ld-structured-data"],
 
-    "@plugins/json-ld-structured-data": ["@plugins/json-ld-structured-data@workspace:plugins/json-ld-structured-data"],
+    "@plugins/permalink-manager": ["@plugins/permalink-manager@workspace:plugins/seo/permalink-manager"],
 
-    "@plugins/permalink-manager": ["@plugins/permalink-manager@workspace:plugins/permalink-manager"],
+    "@plugins/seo-analyzer": ["@plugins/seo-analyzer@workspace:plugins/seo/analyzer"],
 
-    "@plugins/seo-analyzer": ["@plugins/seo-analyzer@workspace:plugins/seo-analyzer"],
+    "@plugins/seo-llms": ["@plugins/seo-llms@workspace:plugins/seo/llms"],
 
-    "@plugins/seo-llms": ["@plugins/seo-llms@workspace:plugins/seo-llms"],
+    "@plugins/seo-robots": ["@plugins/seo-robots@workspace:plugins/seo/robots"],
 
-    "@plugins/seo-robots": ["@plugins/seo-robots@workspace:plugins/seo-robots"],
+    "@plugins/seo-rss": ["@plugins/seo-rss@workspace:plugins/seo/rss"],
 
-    "@plugins/seo-rss": ["@plugins/seo-rss@workspace:plugins/seo-rss"],
-
-    "@plugins/seo-sitemap": ["@plugins/seo-sitemap@workspace:plugins/seo-sitemap"],
+    "@plugins/seo-sitemap": ["@plugins/seo-sitemap@workspace:plugins/seo/sitemap"],
 
     "@plugins/system": ["@plugins/system@workspace:plugins/internal/system"],
 
-    "@plugins/system-update-manager": ["@plugins/system-update-manager@workspace:plugins/system-update-manager"],
+    "@plugins/system-update-manager": ["@plugins/system-update-manager@workspace:plugins/internal/system-update-manager"],
 
     "@plugins/test-plugin": ["@plugins/test-plugin@workspace:plugins/test-plugin"],
 
@@ -977,11 +947,9 @@
 
     "@smithy/uuid": ["@smithy/uuid@1.1.0", "", { "dependencies": { "tslib": "^2.6.2" } }, "sha512-4aUIteuyxtBUhVdiQqcDhKFitwfd9hqoSDYY2KRXiWtgoWJ9Bmise+KfEPDiVHWeJepvF8xJO9/9+WDIciMFFw=="],
 
-    "@supergrowthai/cache": ["@supergrowthai/cache@workspace:packages/cache"],
-
     "@supergrowthai/jsx-runtime": ["@supergrowthai/jsx-runtime@workspace:packages/jsx-runtime"],
 
-    "@supergrowthai/mq": ["@supergrowthai/mq@workspace:packages/mq"],
+    "@supergrowthai/mq": ["@supergrowthai/mq@workspace:lib/mq"],
 
     "@supergrowthai/next-blog": ["@supergrowthai/next-blog@workspace:packages/core"],
 
@@ -991,11 +959,11 @@
 
     "@supergrowthai/next-blog-ui": ["@supergrowthai/next-blog-ui@workspace:packages/ui"],
 
-    "@supergrowthai/oneapi": ["@supergrowthai/oneapi@workspace:packages/oneapi"],
+    "@supergrowthai/oneapi": ["@supergrowthai/oneapi@workspace:lib/oneapi"],
 
     "@supergrowthai/plugin-dev-kit": ["@supergrowthai/plugin-dev-kit@workspace:packages/plugin-dev-kit"],
 
-    "@supergrowthai/tq": ["@supergrowthai/tq@workspace:packages/tq"],
+    "@supergrowthai/tq": ["@supergrowthai/tq@workspace:lib/tq"],
 
     "@supergrowthai/utils": ["@supergrowthai/utils@workspace:packages/utils"],
 

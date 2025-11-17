@@ -5,6 +5,16 @@
   ],
   "envMode": "loose",
   "tasks": {
+    "@supergrowthai/next-blog-dashboard#build": {
+      "dependsOn": [
+        "@plugins/system-update-manager#build",
+        "@plugins/system#build",
+        "^build"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
+    },
     "build": {
       "dependsOn": [
         "^build"
@@ -60,6 +70,12 @@
         "^build"
       ]
     },
+    "@internal/*#build": {
+      "dependsOn": [
+        "@supergrowthai/plugin-dev-kit#build",
+        "^build"
+      ]
+    },
     "@supergrowthai/next-blog#build": {
       "dependsOn": [
         "^build"
@@ -71,6 +87,16 @@
     "@supergrowthai/tq#typecheck": {
       "dependsOn": [
         "@supergrowthai/mq#build",
+        "^build"
+      ]
+    },
+    "@supergrowthai/mq#build": {
+      "dependsOn": [
+        "^build"
+      ]
+    },
+    "@supergrowthai/oneapi#build": {
+      "dependsOn": [
         "^build"
       ]
     }

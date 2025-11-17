@@ -1,5 +1,5 @@
 {
-  "name": "@plugins/internal-system-update-manager",
+  "name": "@plugins/system-update-manager",
   "version": "1.0.0",
   "type": "module",
   "scripts": {

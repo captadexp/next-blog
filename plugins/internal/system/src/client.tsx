@@ -1,4 +1,4 @@
-import type {ClientPluginModule, ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
+import type {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
 import {useCallback, useEffect, useState} from '@supergrowthai/plugin-dev-kit/client';
 import {defineClient} from "@supergrowthai/plugin-dev-kit";
 
@@ -307,7 +307,7 @@ function SystemSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
     );
 }
 
-const clientModule: ClientPluginModule = defineClient({
+const clientModule = defineClient({
     hooks: {
         'system:plugin:settings-panel': (sdk, _prev, context) => <SystemSettingsPanel sdk={sdk} context={context}/>
     },
