@@ -1,0 +1,20 @@
+{
+  "name": "@plugins/system",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "next-blog build",
+    "dev": "next-blog dev --port 63929",
+    "watch": "next-blog watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@supergrowthai/plugin-dev-kit": "workspace:*",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.2"
+  },
+  "nextBlog": {
+    "baseUrl": "http://localhost:3248/plugins/system",
+    "devBaseUrl": "http://localhost:3001"
+  }
+}

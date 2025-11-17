@@ -1,5 +1,7 @@
 import {BrandedId, createId, DatabaseAdapter, Plugin, User} from "@supergrowthai/next-blog-types/server";
 import {StorageFactory} from "../storage/storage-factory.ts";
+import {INTERNAL_PLUGINS} from "../plugins/internalPlugins.js";
+import pluginManager from "../plugins/pluginManager.ts";
 
 // Cache for system IDs
 let cachedSystemUserId: string | null = null;
@@ -37,26 +39,17 @@ export async function getOrCreateSystemUser(db: DatabaseAdapter): Promise<User> 
  * @param db Database adapter
  */
 export async function getOrCreateSystemPlugin(db: DatabaseAdapter): Promise<Plugin> {
-    // Check if system plugin already exists
-    let systemPlugin = await db.plugins.findOne({name: 'system'});
+    let systemPlugin = await db.plugins.findOne({id: 'system'});
 
     if (!systemPlugin) {
-        // Create system plugin - let the database generate the ID naturally
-        systemPlugin = await db.plugins.create({
-            id: 'system',
-            name: 'system',
-            description: 'Core system plugin for internal operations',
-            version: '1.0.0',
-            author: 'System',
-            url: 'internal://system',
-            devMode: false,
-            isSystem: true
-        });
-        console.log('Created system plugin with ID:', systemPlugin._id);
+        //todo add code to install all internal plugins
+        await pluginManager.installPlugin(db, INTERNAL_PLUGINS.system);
+        console.log('Installed system plugin');
+        systemPlugin = await db.plugins.findOne({id: 'system'});
     }
 
-    cachedSystemPluginId = systemPlugin._id;
-    return systemPlugin;
+    cachedSystemPluginId = systemPlugin!._id;
+    return systemPlugin!;
 }
 
 /**

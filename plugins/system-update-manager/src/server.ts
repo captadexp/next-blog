@@ -1,7 +1,7 @@
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
 import type {ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
 import type {SystemMigrationResult, SystemUpdateStatus} from './types';
-import './types'; // Ensure type augmentation is loaded
+import './types';
 
 // Server-side hooks that run in Node.js
 export default defineServer({

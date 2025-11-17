@@ -1,6 +1,5 @@
 import type {MinimumRequest, OneApiFunctionResponse, SessionData} from "@supergrowthai/oneapi";
 import {BadRequest, NotFound} from "@supergrowthai/oneapi";
-import {ServerPluginModule} from "@supergrowthai/next-blog-types/server";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import pluginExecutor from "../plugins/plugin-executor.server.js";
@@ -45,57 +44,26 @@ export const updatePlugin = secure(async (session: SessionData, request: Minimum
             throw new BadRequest(`Manifest ID mismatch. Expected ${existing.id}, got ${body.manifestId}`);
         }
 
-        // Fetch and validate new plugin manifest
-        const newManifest = await pluginManager.loadPluginManifest(pluginUrl);
-
-        // Verify manifest ID hasn't changed
-        if (newManifest.id !== expectedManifestId) {
-            throw new BadRequest(`New plugin manifest ID (${newManifest.id}) does not match expected ID (${expectedManifestId})`);
-        }
-
-        // Store old version for hook callback
         const oldVersion = existing.version;
-        const newVersion = newManifest.version;
 
-        // Begin atomic update operation
-        // 1. Delete old hook mappings
-        await db.pluginHookMappings.delete({pluginId: installationId});
+        // Use the centralized updatePlugin function
+        const updatedPlugin = await pluginManager.updatePlugin(db, expectedManifestId, pluginUrl);
+        const newVersion = updatedPlugin.version;
 
-        // 2. Update plugin record with new manifest data
-        await db.plugins.updateOne(
-            {_id: installationId},
-            {
-                ...newManifest,
-                url: pluginUrl,
-                devMode: !!newManifest.devMode,
-                updatedAt: new Date()
-            }
-        );
-
-        // 3. Register new hooks if server module exists
-        if (newManifest.server?.url) {
-            const server: ServerPluginModule = await pluginManager.loadPluginModule(newManifest.server.url);
-            await pluginManager.registerHooks(db, installationId, server.hooks, 'server');
-            await pluginManager.registerRpcs(db, installationId, server.rpcs);
-        }
-
-        // 4. Call plugin:update hook on the updated plugin
+        // Call plugin:update hook on the updated plugin
         try {
-            await pluginExecutor.executeHook(`plugin:update:${newManifest.id}`, extra.sdk, {
+            await pluginExecutor.executeHook(`plugin:update:${updatedPlugin.id}`, extra.sdk, {
                 oldVersion,
                 newVersion,
                 installationId
             });
         } catch (hookError) {
-            logger.warn(`plugin:update hook failed for ${newManifest.id}:`, hookError);
+            logger.warn(`plugin:update hook failed for ${updatedPlugin.id}:`, hookError);
             // Hook failure should not fail the entire update
         }
 
         // Reset plugin executor cache
         pluginExecutor.initialized = false;
-
-        // Fetch and return updated plugin
-        const updatedPlugin = await db.plugins.findOne({_id: installationId});
 
         logger.info(`Plugin ${installationId} updated successfully from v${oldVersion} to v${newVersion}`);
 

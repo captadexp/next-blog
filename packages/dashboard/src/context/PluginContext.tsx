@@ -8,6 +8,21 @@ import {ClientPluginModule} from "@supergrowthai/next-blog-types/client";
 
 const logger = new Logger('PluginSystem', LogLevel.INFO);
 
+// Helper to resolve internal:// URLs to static paths
+function resolveInternalUrl(url: string): string | null {
+    if (!url.startsWith('internal://')) {
+        return null;
+    }
+
+    const path = url.replace('internal://', '');
+
+    return `/api/next-blog/dashboard/static/${path}`;
+}
+
+function isInternalPlugin(url: string): boolean {
+    return url.startsWith('internal://');
+}
+
 /**
  * Matches hook names against patterns
  * @param hookName The actual hook name
@@ -58,7 +73,19 @@ export const PluginProvider: FunctionComponent = ({children}) => {
             throw new Error("No client side found for plugin");
 
         try {
-            const url = plugin.client.url;
+            let url = plugin.client.url;
+
+            // Resolve internal:// URLs to static paths
+            if (isInternalPlugin(url)) {
+                const resolvedUrl = resolveInternalUrl(url);
+                if (!resolvedUrl) {
+                    throw new Error(`Failed to resolve internal URL: ${url}`);
+                }
+                url = resolvedUrl;
+                logger.debug(`Resolved internal plugin ${plugin.name}: ${url}`);
+            }
+
+            // Load all plugins the same way now
             let code: string;
 
             // Skip caching for devMode plugins

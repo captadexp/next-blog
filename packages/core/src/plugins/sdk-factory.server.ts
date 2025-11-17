@@ -1,4 +1,6 @@
 import type {DatabaseAdapter, Logger, Plugin, ServerSDK} from '@supergrowthai/next-blog-types/server';
+import {INTERNAL_PLUGINS} from './internalPlugins.js';
+import pluginManager from './pluginManager.js';
 import {ServerCacheHelper} from './cache-helper.server.js';
 import {ServerEventsHelper} from './events-helper.server.js';
 import {StorageFactory} from '../storage/storage-factory.js';
@@ -81,6 +83,20 @@ export class ServerSDKFactory {
             // Hook execution with plugin tracking
             callHook: async (hookName, payload) => {
                 this.deps.log.debug(`Plugin ${plugin.id} calling hook: ${hookName}`);
+
+                // Special handling for system:update - update all internal plugins
+                //todo move this away from here
+                if (hookName === 'system:update') {
+                    for (const [pluginId, url] of Object.entries(INTERNAL_PLUGINS)) {
+                        try {
+                            this.deps.log.info(`Updating internal plugin: ${pluginId}`);
+                            await pluginManager.updatePlugin(this.deps.db, pluginId, url);
+                        } catch (error) {
+                            this.deps.log.error(`Failed to update internal plugin ${pluginId}:`, error);
+                        }
+                    }
+                }
+
                 return this.deps.pluginExecutor.executeHook(String(hookName), sdk, payload);
             },
 

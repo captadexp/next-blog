@@ -7,11 +7,12 @@
   "workspaces": [
     "packages/*",
     "plugins/*",
+    "plugins/internal/*",
     "apps/*"
   ],
   "scripts": {
     "build": "turbo build --filter='./packages/*'",
-    "dev": "turbo build --filter='./packages/*' && turbo dev --filter='./packages/*'",
+    "dev": "turbo build --filter='./packages/*' && turbo dev --filter='./packages/*' --concurrency=30",
     "dev:fast": "turbo dev --filter='./packages/*'",
     "clean": "turbo clean --filter='./packages/*'",
     "typecheck": "turbo typecheck --filter='./packages/*'",
@@ -36,7 +37,7 @@
   },
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "MIT",
-  "packageManager": "bun@1.2.23",
+  "packageManager": "bun@1.3.2",
   "devDependencies": {
     "@typescript/native-preview": "^7.0.0-dev.20251112.1",
     "jsdom": "^27.2.0",

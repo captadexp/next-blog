@@ -3,7 +3,31 @@ import {resolve} from 'path';
 import dts from 'vite-plugin-dts';
 import tailwindcss from "@tailwindcss/vite";
 import cssInjectedByJs from 'vite-plugin-css-injected-by-js';
-import {viteStaticCopy} from 'vite-plugin-static-copy';
+import {Target, viteStaticCopy} from 'vite-plugin-static-copy';
+import * as fs from 'fs';
+
+
+function generateInternalPluginSourcePaths() {
+    const internalPluginsDir = resolve(__dirname, '../../plugins/internal');
+    const targets: Target[] = [];
+
+    if (fs.existsSync(internalPluginsDir)) {
+        const plugins = fs.readdirSync(internalPluginsDir, {withFileTypes: true})
+            .filter(dirent => dirent.isDirectory());
+
+        for (const plugin of plugins) {
+            const distPath = resolve(internalPluginsDir, plugin.name, 'dist');
+            if (fs.existsSync(distPath)) {
+                targets.push({
+                    src: `${distPath}/**/*`,
+                    dest: `static/internal-plugins/${plugin.name}`
+                });
+            }
+        }
+    }
+
+    return targets;
+}
 
 export default defineConfig({
     base: "/static/",
@@ -45,7 +69,8 @@ export default defineConfig({
                     src: resolve(__dirname, '../jsx-runtime/dist/runtime.umd.js'),
                     dest: 'static',
                     rename: 'plugin-runtime.js'
-                }
+                },
+                ...generateInternalPluginSourcePaths()
             ]
         }),
     ],
