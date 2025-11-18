@@ -2,6 +2,14 @@ import type {ClientSDK} from '@supergrowthai/plugin-dev-kit/client';
 import {useCallback, useEffect, useState} from '@supergrowthai/plugin-dev-kit/client';
 import {defineClient} from "@supergrowthai/plugin-dev-kit";
 
+interface MediaData {
+    mediaId: string;
+    url: string;
+    alt?: string;
+    width?: number;
+    height?: number;
+}
+
 interface SystemSettings {
     site: {
         name: string;
@@ -13,7 +21,7 @@ interface SystemSettings {
     organization: {
         name: string;
         url: string;
-        logoMediaId?: string;
+        logoMedia?: MediaData;
     };
 }
 
@@ -28,7 +36,7 @@ const DEFAULT_SETTINGS: SystemSettings = {
     organization: {
         name: '',
         url: '',
-        logoMediaId: undefined
+        logoMedia: undefined
     }
 };
 
@@ -56,11 +64,38 @@ function OrganizationSection({settings, onChange, sdk}: {
     onChange: (updates: Partial<SystemSettings>) => void;
     sdk: ClientSDK;
 }) {
-    const handleOrgChange = useCallback((field: keyof SystemSettings['organization'], value: string | undefined) => {
+    const handleOrgChange = useCallback((field: keyof SystemSettings['organization'], value: string | MediaData | undefined) => {
         onChange({
             organization: {...settings.organization, [field]: value}
         });
     }, [settings.organization, onChange]);
+
+    const selectLogo = useCallback(async () => {
+        try {
+            const response: any = await sdk.startIntent('select-media', {
+                options: {
+                    mediaType: 'image',
+                    mimeTypes: ['image/png', 'image/jpeg', 'image/svg+xml'],
+                    maxSize: 2 * 1024 * 1024,
+                    allowUpload: false
+                }
+            });
+
+            if (response && response.media) {
+                const logoData: MediaData = {
+                    mediaId: response.media._id,
+                    url: response.media.url,
+                    alt: response.media.alt || '',
+                    width: response.media.metadata?.width,
+                    height: response.media.metadata?.height
+                };
+
+                handleOrgChange('logoMedia', logoData);
+            }
+        } catch (error) {
+            sdk.notify('Failed to select logo', 'error');
+        }
+    }, [sdk, handleOrgChange]);
 
     return (
         <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
@@ -92,48 +127,55 @@ function OrganizationSection({settings, onChange, sdk}: {
 
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Organization Logo</label>
-                <div className="flex gap-2">
-                    <input
-                        type="text"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        value={settings.organization.logoMediaId || ''}
-                        onChange={e => handleOrgChange('logoMediaId', (e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement).value || undefined)}
-                        placeholder="Select or enter media ID"
-                        readOnly
-                    />
+                {settings.organization.logoMedia ? (
+                    <div className="inline-block p-3 bg-gray-50 rounded border border-gray-200">
+                        <div className="flex flex-col items-center space-y-3">
+                            <img
+                                src={settings.organization.logoMedia.url}
+                                alt={settings.organization.logoMedia.alt || 'Organization logo'}
+                                className="w-24 h-24 object-contain border border-gray-300 rounded bg-white p-2"
+                            />
+                            <input
+                                type="text"
+                                className="w-full text-sm border border-gray-300 rounded px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="Alt text"
+                                value={settings.organization.logoMedia.alt || ''}
+                                onChange={e => {
+                                    const updated = {
+                                        ...settings.organization.logoMedia!,
+                                        alt: e.target.value
+                                    };
+                                    handleOrgChange('logoMedia', updated);
+                                }}
+                            />
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    onClick={selectLogo}
+                                >
+                                    Change Logo
+                                </button>
+                                <button
+                                    type="button"
+                                    className="px-3 py-1.5 text-sm text-red-600 hover:text-red-700 focus:outline-none"
+                                    onClick={() => handleOrgChange('logoMedia', undefined)}
+                                >
+                                    Remove Logo
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
                     <button
                         type="button"
-                        className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        onClick={async () => {
-                            try {
-                                const response: any = await sdk.startIntent('select-media', {
-                                    options: {
-                                        mediaType: 'image',
-                                        mimeTypes: ['image/png', 'image/jpeg', 'image/svg+xml'],
-                                        maxSize: 2 * 1024 * 1024
-                                    }
-                                });
-                                if (response?.mediaId) {
-                                    handleOrgChange('logoMediaId', response.mediaId);
-                                }
-                            } catch (error) {
-                                sdk.notify('Failed to select logo', 'error');
-                            }
-                        }}
+                        className="w-full px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onClick={selectLogo}
                     >
-                        Select Logo
+                        Select Logo from Media Library
                     </button>
-                    {settings.organization.logoMediaId && (
-                        <button
-                            type="button"
-                            className="px-3 py-2 bg-gray-200 text-gray-700 text-sm rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                            onClick={() => handleOrgChange('logoMediaId', undefined)}
-                        >
-                            Clear
-                        </button>
-                    )}
-                </div>
-                <span className="block text-xs text-gray-500 mt-1">Organization logo image (optional)</span>
+                )}
+                <span className="block text-xs text-gray-500 mt-2">Organization logo image (optional)</span>
             </div>
         </div>
     );
