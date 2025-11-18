@@ -19,8 +19,8 @@ const renderSettingsPanel = (sdk: ClientSDK) => {
             sdk.callRPC('ai-generator:getRecentBlogs', {})
         ]);
 
-        setStatus(statusResponse.payload as PluginStatus);
-        setRecentBlogs(blogsResponse.payload.blogs);
+        setStatus(statusResponse as PluginStatus);
+        setRecentBlogs((blogsResponse as { blogs: RecentBlog[] }).blogs);
     };
 
     useEffect(() => {

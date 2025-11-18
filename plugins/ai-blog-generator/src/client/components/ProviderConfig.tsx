@@ -58,7 +58,7 @@ export function ProviderConfig({status, sdk, onUpdate}: ProviderConfigProps) {
         setUpdating(true);
         await sdk.callRPC('ai-generator:updateSettings', updates);
         const statusResponse = await sdk.callRPC('ai-generator:getStatus', {});
-        onUpdate(statusResponse.payload as PluginStatus);
+        onUpdate(statusResponse as PluginStatus);
         setUpdating(false);
     };
 
