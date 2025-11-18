@@ -1,76 +1,57 @@
-import type {RssItem} from '@supergrowthai/plugin-dev-kit';
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
-import type {RssData, SeoHookPayload, ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
-import {contentObjectToPlainText} from "@supergrowthai/plugin-dev-kit/content";
+import type {SeoHookPayload, ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
+import {DEFAULT_SETTINGS, generateRssFeed, type RssSettings} from './rss-generator.js';
+
+const SETTINGS_KEY = 'seo-rss:settings';
+
+async function getSettings(sdk: ServerSDK): Promise<RssSettings> {
+    const stored = await sdk.settings.get<RssSettings>(SETTINGS_KEY);
+    return {...DEFAULT_SETTINGS, ...stored};
+}
 
 export default defineServer({
     hooks: {
-        'seo:rss': async (sdk: ServerSDK, payload: SeoHookPayload): Promise<{ data: RssData }> => {
+        'seo:rss': async (sdk: ServerSDK, payload: SeoHookPayload) => {
             sdk.log.info('Generating RSS feed');
 
-            // Get site settings from cache or defaults
-            const siteTitle = await sdk.settings.get('seo-rss:site-title') || 'My Blog';
-            const siteDescription = await sdk.settings.get('seo-rss:site-description') || 'Latest posts from our blog';
+            let settings = await getSettings(sdk);
 
-            // Fetch recent published blogs
-            const blogs = await sdk.db.blogs.find(
-                {status: 'published'},
-                {sort: {createdAt: -1}, limit: 20}
-            );
-
-            // Create RSS items from blogs
-            const items: RssItem[] = [];
-
-            for (const blog of blogs) {
-                // Get author information
-                const author = await sdk.db.users.findById(blog.userId);
-
-                // Get category information
-                const category = await sdk.db.categories.findById(blog.categoryId);
-
-                // Strip HTML/Markdown from content for description
-                const cleanContent = contentObjectToPlainText(blog.content)
-                    .replace(/<[^>]*>/g, '')
-                    .replace(/[#*`]/g, '')
-                    .substring(0, 300);
-
-                items.push({
-                    title: blog.title,
-                    link: `${payload.siteUrl}/blog/${blog.slug}`,
-                    description: blog.excerpt || cleanContent,
-                    author: author?.email || author?.name || 'Anonymous',
-                    category: category?.name,
-                    pubDate: new Date(blog.createdAt).toUTCString(),
-                    guid: {
-                        '@_isPermaLink': true,
-                        '#text': `${payload.siteUrl}/blog/${blog.slug}`
+            // If using system defaults, fetch and merge them
+            if (settings.useJsonLdDefaults) {
+                try {
+                    const systemSettings = await sdk.callRPC('system:settings:get', {});
+                    if (systemSettings?.payload) {
+                        const {site, organization} = systemSettings.payload;
+                        settings = {
+                            ...settings,
+                            siteTitle: settings.siteTitle || site?.name || '',
+                            siteDescription: settings.siteDescription || site?.description || '',
+                            publicationName: settings.publicationName || organization?.name || ''
+                        };
                     }
-                });
+                } catch (error) {
+                    sdk.log.warn('Failed to fetch system settings');
+                }
             }
 
-            // Update last build time in settings
-            const lastBuildDate = new Date().toUTCString();
-            await sdk.settings.set('seo-rss:last-build', lastBuildDate);
+            const data = await generateRssFeed(sdk, payload.siteUrl, settings);
 
-            return {
-                data: {
-                    rss: {
-                        '@_version': '2.0',
-                        '@_xmlns:atom': 'http://www.w3.org/2005/Atom',
-                        channel: {
-                            title: siteTitle,
-                            link: payload.siteUrl,
-                            description: siteDescription,
-                            language: 'en-US',
-                            lastBuildDate,
-                            generator: 'Next-Blog RSS Plugin',
-                            docs: 'https://www.rssboard.org/rss-specification',
-                            ttl: 60,
-                            item: items
-                        }
-                    }
-                }
-            };
+            // Update last build time
+            await sdk.settings.set('seo-rss:last-build', new Date().toUTCString());
+
+            return {data};
         }
+    },
+    rpcs: {
+        'rss:settings:get': async (sdk) => {
+            const settings = await getSettings(sdk);
+            return {code: 0, message: 'ok', payload: settings};
+        },
+
+        'rss:settings:set': async (sdk, settings: RssSettings) => {
+            await sdk.settings.set(SETTINGS_KEY, settings);
+            return {code: 0, message: 'Settings saved'};
+        },
+
     }
 });

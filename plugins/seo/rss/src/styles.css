@@ -1,0 +1,120 @@
+/* RSS Plugin Styles - following sitemap plugin patterns */
+
+.rss-settings-panel {
+    padding: 1rem;
+    background: white;
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.rss-section {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.rss-section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.75rem;
+}
+
+.rss-field-group {
+    margin-bottom: 0.75rem;
+}
+
+.rss-field-label {
+    display: block;
+    font-size: 0.75rem;
+    color: #4b5563;
+    margin-bottom: 0.25rem;
+}
+
+.rss-field-hint {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+.rss-input {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.rss-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.rss-checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.rss-checkbox-label {
+    font-size: 0.875rem;
+    color: #374151;
+}
+
+.rss-info-box {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background-color: #eff6ff;
+    border-radius: 0.25rem;
+}
+
+.rss-info-text {
+    font-size: 0.75rem;
+    color: #1e40af;
+}
+
+.rss-save-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+}
+
+.rss-save-button:hover {
+    background-color: #1d4ed8;
+}
+
+.rss-save-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.rss-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 0.5rem;
+}
+
+.rss-cross-plugin-section {
+    border: 1px solid #fbbf24;
+    background-color: #fffbeb;
+}
+
+.rss-cross-plugin-content {
+    padding: 0.75rem;
+    background-color: #fef3c7;
+    border-radius: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.rss-cross-plugin-item {
+    font-size: 0.75rem;
+    color: #92400e;
+    margin-bottom: 0.25rem;
+}
