@@ -20,7 +20,7 @@ async function runExample() {
         }
     ]);
 
-    await messageQueue.consumeMessagesBatch("test-queue-mq", async (queueName, messages) => {
+    await messageQueue.consumeMessagesBatch("test-queue-mq", async (queueName: string, messages) => {
         console.log(`📨 Processing ${messages.length} messages from ${queueName}:`);
         for (const msg of messages) {
             console.log(`  - Message ID: ${msg.id}, Payload:`, msg.payload);
