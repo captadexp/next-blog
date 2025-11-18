@@ -49,11 +49,11 @@ export default defineServer({
         }
     },
     rpcs: {
-        'robots:settings:get': async (sdk) => {
+        'seo-robots:settings:get': async (sdk) => {
             const settings = await sdk.settings.get(SETTINGS_KEY) as RobotsSettings || DEFAULT_SETTINGS;
             return {code: 0, message: 'ok', payload: settings};
         },
-        'robots:settings:set': async (sdk, settings: RobotsSettings) => {
+        'seo-robots:settings:set': async (sdk, settings: RobotsSettings) => {
             await sdk.settings.set(SETTINGS_KEY, settings);
             return {code: 0, message: 'saved', payload: settings};
         }

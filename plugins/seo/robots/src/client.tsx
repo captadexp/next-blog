@@ -20,7 +20,7 @@ function SettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        sdk.callRPC('robots:settings:get', {}).then((resp: any) => {
+        sdk.callRPC('seo-robots:settings:get', {}).then((resp: any) => {
             if (resp?.payload) {
                 setSettings(resp.payload);
             }
@@ -31,7 +31,7 @@ function SettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
     const saveSettings = useCallback(async () => {
         setSaving(true);
         try {
-            await sdk.callRPC('robots:settings:set', settings);
+            await sdk.callRPC('seo-robots:settings:set', settings);
         } finally {
             setSaving(false);
         }

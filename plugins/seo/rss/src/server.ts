@@ -43,12 +43,12 @@ export default defineServer({
         }
     },
     rpcs: {
-        'rss:settings:get': async (sdk) => {
+        'seo-rss:settings:get': async (sdk) => {
             const settings = await getSettings(sdk);
             return {code: 0, message: 'ok', payload: settings};
         },
 
-        'rss:settings:set': async (sdk, settings: RssSettings) => {
+        'seo-rss:settings:set': async (sdk, settings: RssSettings) => {
             await sdk.settings.set(SETTINGS_KEY, settings);
             return {code: 0, message: 'Settings saved'};
         },

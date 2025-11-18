@@ -268,7 +268,7 @@ function SettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
 
     useEffect(() => {
         // Load RSS settings
-        sdk.callRPC('rss:settings:get', {})
+        sdk.callRPC('seo-rss:settings:get', {})
             .then((resp) => {
                 const payload = resp?.payload;
                 if (payload) {
@@ -312,7 +312,7 @@ function SettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
 
         setSaving(true);
         try {
-            await sdk.callRPC('rss:settings:set', settings);
+            await sdk.callRPC('seo-rss:settings:set', settings);
         } finally {
             setSaving(false);
         }

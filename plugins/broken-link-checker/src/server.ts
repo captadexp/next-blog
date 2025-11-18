@@ -118,10 +118,10 @@ const scanForBrokenLinks = async (sdk: ServerSDK): Promise<ScanResponse> => {
 
 export default defineServer({
     hooks: {
-        'scan-broken-links': scanForBrokenLinks,
+        'broken-link-checker:scan-broken-links': scanForBrokenLinks,
     },
     rpcs: {
-        'scan-broken-links': async (sdk: ServerSDK) => {
+        'broken-link-checker:scan-broken-links': async (sdk: ServerSDK) => {
             return await scanForBrokenLinks(sdk);
         }
     }

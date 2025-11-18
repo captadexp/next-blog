@@ -11,7 +11,8 @@
   "devDependencies": {
     "@supergrowthai/plugin-dev-kit": "workspace:*",
     "typescript": "^5.0.0",
-    "vite": "^5.0.0"
+    "vite": "^5.0.0",
+    "@types/bun": "^1.3.2"
   },
   "nextBlog": {
     "baseUrl": "http://localhost:3248/plugins/seo-rss",

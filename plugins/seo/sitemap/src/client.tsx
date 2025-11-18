@@ -204,7 +204,7 @@ function SettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        sdk.callRPC('sitemap:settings:get', {})
+        sdk.callRPC('seo-sitemap:settings:get', {})
             .then((resp) => {
                 //could declare type with type augmentation like in json-ld-structure-data plugin and handle cases better
                 const payload = resp?.payload;
@@ -237,7 +237,7 @@ function SettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
 
         setSaving(true);
         try {
-            await sdk.callRPC('sitemap:settings:set', settings);
+            await sdk.callRPC('seo-sitemap:settings:set', settings);
         } finally {
             setSaving(false);
         }

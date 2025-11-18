@@ -17,7 +17,7 @@ const renderPanel = (sdk: ClientSDK) => {
     useEffect(() => {
         const fetchInitialReport = async () => {
             try {
-                const response = await sdk.callRPC('scan-broken-links', {});
+                const response = await sdk.callRPC('broken-link-checker:scan-broken-links', {});
 
                 if (response.code === 0) {
                     const {code, message, payload}: ScanResponse = response.payload;
@@ -46,7 +46,7 @@ const renderPanel = (sdk: ClientSDK) => {
         setError(null);
 
         try {
-            const response = await sdk.callRPC('scan-broken-links', {
+            const response = await sdk.callRPC('broken-link-checker:scan-broken-links', {
                 start_scan: true
             });
 

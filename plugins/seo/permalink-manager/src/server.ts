@@ -23,7 +23,7 @@ function normalizeSettings(s: Settings = {}): NormalizedSettings {
 
 export default defineServer({
     rpcs: {
-        'permalink:get': async (sdk, payload) => {
+        'permalink-manager:get': async (sdk, payload) => {
             switch (payload.type) {
                 case 'posts': {
                     const blog = await sdk.db.blogs.findOne({_id: payload._id});
@@ -61,7 +61,7 @@ export default defineServer({
                     return {code: -1, message: 'failed, unknown type'};
             }
         },
-        'permalink:set': async (sdk, payload) => {
+        'permalink-manager:set': async (sdk, payload) => {
             switch (payload.type) {
                 case 'posts': {
                     const blog = await sdk.db.blogs.findOne({_id: payload._id});
@@ -124,12 +124,12 @@ export default defineServer({
             }
         },
 
-        'permalink:settings:get': async (sdk) => {
+        'permalink-manager:settings:get': async (sdk) => {
             const raw = (await sdk.settings.get(SETTINGS_KEY) as Settings | undefined) ?? {};
             const payload = normalizeSettings(raw);
             return {code: 0, message: 'ok', payload};
         },
-        'permalink:settings:set': async (sdk, incoming: { [K in ContentType]?: Partial<NormalizedSection> }) => {
+        'permalink-manager:settings:set': async (sdk, incoming: { [K in ContentType]?: Partial<NormalizedSection> }) => {
             try {
                 const current = (await sdk.settings.get(SETTINGS_KEY) as Settings | undefined) ?? {};
                 const updated = {...current, ...incoming};

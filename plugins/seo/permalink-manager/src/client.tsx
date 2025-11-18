@@ -131,8 +131,8 @@ function PermalinkWidget({sdk, context, type, _id}: {
 
         void (async () => {
             const [stored, settings] = await Promise.all([
-                sdk.callRPC('permalink:get', {type: type, _id: _id}),
-                sdk.callRPC('permalink:settings:get', {}),
+                sdk.callRPC('permalink-manager:get', {type: type, _id: _id}),
+                sdk.callRPC('permalink-manager:settings:get', {}),
             ]);
             const state = stored.payload?.state;
             const fmts = settings.payload?.[type]?.formats ?? [];
@@ -147,7 +147,7 @@ function PermalinkWidget({sdk, context, type, _id}: {
             if (!_id) return;
             setSaving(true);
             try {
-                await sdk.callRPC('permalink:set', {
+                await sdk.callRPC('permalink-manager:set', {
                     type: type,
                     _id: _id,
                     state: {permalink: permalink.trim(), pattern}
@@ -205,7 +205,7 @@ function SettingsPanel({sdk}: {
 
     useEffect(() => {
         void (async () => {
-            const rpcResponse = await sdk.callRPC('permalink:settings:get', {});
+            const rpcResponse = await sdk.callRPC('permalink-manager:settings:get', {});
             if (!rpcResponse || rpcResponse.code !== 0) return;
             const response = rpcResponse.payload!;
 
@@ -222,7 +222,7 @@ function SettingsPanel({sdk}: {
         if (!allSettings) return;
 
         const update = {[type]: {formats: nextFormats, activeFormat: nextActive ?? allSettings[type].activeFormat}};
-        const rpcResponse = await sdk.callRPC('permalink:settings:set', update);
+        const rpcResponse = await sdk.callRPC('permalink-manager:settings:set', update);
         if (!rpcResponse || rpcResponse.code !== 0) return;
         const response = rpcResponse.payload!;
 

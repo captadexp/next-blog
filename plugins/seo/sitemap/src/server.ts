@@ -107,25 +107,25 @@ export default defineServer({
         }
     },
     rpcs: {
-        'sitemap:settings:get': async (sdk) => {
+        'seo-sitemap:settings:get': async (sdk) => {
             const settings = await getSettings(sdk);
             return {code: 0, message: 'ok', payload: settings};
         },
-        'sitemap:settings:set': async (sdk, settings: SitemapSettings) => {
+        'seo-sitemap:settings:set': async (sdk, settings: SitemapSettings) => {
             await sdk.settings.set(SETTINGS_KEY, settings);
             return {code: 0, message: 'Settings saved'};
         },
 
         // Job RPCs for future implementation
-        'job:archive-sitemap-month': async (sdk, payload: { year: number, month: number }) => {
+        'seo-sitemap:job:archive-sitemap-month': async (sdk, payload: { year: number, month: number }) => {
             // Future: Archive a specific month's sitemap to S3
             return {code: 0, message: 'Job queued', jobId: `archive-${payload.year}-${payload.month}`};
         },
-        'job:rebuild-sitemap-month': async (sdk, payload: { year: number, month: number }) => {
+        'seo-sitemap:job:rebuild-sitemap-month': async (sdk, payload: { year: number, month: number }) => {
             // Future: Rebuild a specific month's sitemap after content update
             return {code: 0, message: 'Job queued', jobId: `rebuild-${payload.year}-${payload.month}`};
         },
-        'job:cleanup-old-sitemaps': async (sdk, payload: { olderThanDays: number }) => {
+        'seo-sitemap:job:cleanup-old-sitemaps': async (sdk, payload: { olderThanDays: number }) => {
             // Future: Clean up outdated sitemap versions
             return {code: 0, message: 'Job queued', jobId: `cleanup-${Date.now()}`};
         }
