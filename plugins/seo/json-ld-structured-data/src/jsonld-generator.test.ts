@@ -16,12 +16,12 @@ const createMockConfig = (overrides: Partial<JsonLdConfig> = {}): JsonLdConfig =
     organization: {
         name: 'Test Organization',
         url: 'https://example.com',
-        logo: 'https://example.com/logo.png',
+        logoMediaId: 'logo-123',
         sameAs: ['https://twitter.com/test', 'https://facebook.com/test'],
         logoMedia: {
-            _id: 'logo-123',
+            mediaId: 'logo-123',
             url: 'https://example.com/logo.png',
-            altText: 'Logo',
+            alt: 'Logo',
             width: 100,
             height: 100
         }
@@ -44,9 +44,9 @@ const createMockConfig = (overrides: Partial<JsonLdConfig> = {}): JsonLdConfig =
 });
 
 const createMockMedia = (overrides: Partial<MediaData> = {}): MediaData => ({
-    _id: 'media-123',
+    mediaId: 'media-123',
     url: 'https://example.com/image.jpg',
-    altText: 'Test image',
+    alt: 'Test image',
     width: 800,
     height: 600,
     ...overrides
@@ -433,7 +433,7 @@ describe('Edge Cases and Error Handling', () => {
     it('handles missing config gracefully', () => {
         const blog = createMockBlog();
         const config = createMockConfig({
-            organization: {name: '', url: '', logo: '', sameAs: []},
+            organization: {name: '', url: '', logoMediaId: '', sameAs: []},
             website: {name: '', url: '', searchAction: false}
         });
         const result = generateBlogJsonLd(blog, config);
@@ -514,9 +514,9 @@ describe('Edge Cases and Error Handling', () => {
     it('validates media URLs', () => {
         const blog = createMockBlog({
             featuredMedia: {
-                _id: 'img-1',
+                mediaId: 'img-1',
                 url: 'javascript:alert("img")',
-                altText: 'Safe alt'
+                alt: 'Safe alt'
             }
         });
         const config = createMockConfig();

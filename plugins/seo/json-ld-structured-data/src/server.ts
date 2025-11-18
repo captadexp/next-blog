@@ -1,7 +1,38 @@
 import {defineServer} from '@supergrowthai/plugin-dev-kit';
-import type {ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
+import type {HydratedBlog, Media, ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
 import {generateJsonLd} from './jsonld-generator.js';
+import type {EntityData, MediaData} from './types.js';
 import {handleRPC, ValidationError} from "./errors";
+
+// Helper function to convert Media to MediaData
+function convertMediaToMediaData(media: Media | undefined): MediaData | undefined {
+    if (!media) return undefined;
+    return {
+        mediaId: media._id,
+        url: media.url,
+        alt: media.altText,
+        width: media.width,
+        height: media.height
+    };
+}
+
+// Helper function to convert HydratedBlog to EntityData
+function convertBlogToEntityData(blog: HydratedBlog): EntityData {
+    return {
+        _id: blog._id,
+        slug: blog.slug,
+        createdAt: blog.createdAt,
+        updatedAt: blog.updatedAt,
+        metadata: blog.metadata,
+        title: blog.title,
+        content: blog.content,
+        excerpt: blog.excerpt,
+        featuredMedia: convertMediaToMediaData(blog.featuredMedia),
+        tags: blog.tags,
+        category: blog.category,
+        user: blog.user
+    };
+}
 
 // Type definitions
 interface OrganizationConfig {
@@ -26,6 +57,7 @@ interface ArticleConfig {
     authorType: 'Person' | 'Organization';
     useOrgAsPublisher: boolean;
     defaultImagePolicy: 'featured' | 'none';
+    includeDateModified: boolean;
 }
 
 interface JsonLdConfig {
@@ -33,14 +65,6 @@ interface JsonLdConfig {
     website: WebsiteConfig;
     article: ArticleConfig;
     language: string;
-}
-
-interface MediaData {
-    mediaId: string;
-    url: string;
-    alt?: string;
-    width?: number;
-    height?: number;
 }
 
 interface ReviewData {
@@ -160,7 +184,8 @@ const DEFAULT_CONFIG: JsonLdConfig = {
         defaultType: 'Article',
         authorType: 'Person',
         useOrgAsPublisher: true,
-        defaultImagePolicy: 'featured'
+        defaultImagePolicy: 'featured',
+        includeDateModified: true
     },
     language: 'en-US'
 };
@@ -229,7 +254,7 @@ export default defineServer({
             const config = {...DEFAULT_CONFIG, ...(storedConfig || {})};
             const mergedConfig = await mergeSystemSettings(sdk, config);
             const overrides = blog.metadata?.[METADATA_KEY] || {};
-            return generateJsonLd('blog', blog, mergedConfig, overrides);
+            return generateJsonLd('blog', convertBlogToEntityData(blog), mergedConfig, overrides);
         }),
 
         // Tag endpoints
