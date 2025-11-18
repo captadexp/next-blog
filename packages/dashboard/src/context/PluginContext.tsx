@@ -3,7 +3,7 @@ import {useCallback, useContext, useEffect, useMemo, useState} from 'preact/hook
 import {useUser} from "./UserContext.tsx";
 import {ClientHookFunction, Plugin} from '@supergrowthai/next-blog-types';
 import {pluginCache} from "../utils/pluginCache.ts";
-import {Logger, LogLevel} from "@supergrowthai/utils";
+import {Logger, LogLevel} from "@supergrowthai/utils/client";
 import {ClientPluginModule} from "@supergrowthai/next-blog-types/client";
 
 const logger = new Logger('PluginSystem', LogLevel.INFO);

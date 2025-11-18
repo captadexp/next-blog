@@ -5,14 +5,14 @@ import {
     ServerPluginModule,
     ServerSDK
 } from "@supergrowthai/next-blog-types/server";
-import Logger, {LogLevel} from "../utils/Logger.js";
+import {Logger, LogLevel, objectCacheForDev} from "@supergrowthai/utils";
 import pluginManager from "./pluginManager.js";
 import {ServerSDKFactory} from "./sdk-factory.server.js";
 import {initializeSettingsHelper} from "./settings-helper.server.js";
 import {VERSION_INFO} from "../version.js";
 import {getSystemPluginId} from "../utils/defaultSettings.js";
 import {PluginInitializationError, PluginNotFoundError, PluginRpcError, RpcHandlerNotFoundError} from "./errors.js";
-import {objectCacheForDev} from "@supergrowthai/utils";
+import {pluginOverrideManager} from "./local-plugin-loader.js";
 
 /**
  * Matches hook names against patterns
@@ -231,7 +231,6 @@ export class PluginExecutor {
                 throw new PluginInitializationError('Database or SDK factory not initialized', 'rpc');
             }
 
-            //this could be cached
             const pluginEntry = await this.db.plugins.findById(mapping.pluginId);
             if (!pluginEntry) {
                 throw new PluginNotFoundError(mapping.pluginId, 'rpc');
@@ -259,12 +258,17 @@ export class PluginExecutor {
         this.logger.info('Loading plugins...');
         try {
             const allPlugins = await this.db.plugins.find({});
-            await Promise.all(allPlugins.map(p => this.loadPlugin(p)));
+
+            const patchedPlugins = pluginOverrideManager.patchPlugins(allPlugins);
+
+            await Promise.all(patchedPlugins.map(p => this.loadPlugin(p)));
 
             const allMappings = await this.db.pluginHookMappings.find({});
 
+            const patchedMappings = pluginOverrideManager.patchHooks(allMappings);
+
             // Build indexes for O(1) lookups
-            for (const mapping of allMappings) {
+            for (const mapping of patchedMappings) {
                 const index = mapping.type === 'rpc' ? this.rpcIndex : this.hookIndex;
 
                 if (mapping.hookName.includes('*')) {

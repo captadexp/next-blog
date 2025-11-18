@@ -2,7 +2,7 @@ import {Fragment, FunctionComponent, h} from "preact";
 import {usePlugins} from "../../../context/PluginContext.tsx";
 import {useCallback, useContext, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState} from "preact/hooks";
 import {useUser} from "../../../context/UserContext.tsx";
-import {Logger, LogLevel} from "@supergrowthai/utils";
+import {Logger, LogLevel} from "@supergrowthai/utils/client";
 import {createRenderer} from "@supergrowthai/jsx-runtime/preact";
 import {createClientSDK} from "../../../sdk/sdk-factory.client";
 import {ClientSDK, Plugin} from "@supergrowthai/next-blog-types/client";

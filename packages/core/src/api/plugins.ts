@@ -6,6 +6,7 @@ import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
 import pluginExecutor from "../plugins/plugin-executor.server.js";
 import pluginManager from "../plugins/pluginManager.js";
+import {pluginOverrideManager} from "../plugins/local-plugin-loader.js";
 import {Logger, LogLevel} from "@supergrowthai/utils";
 
 const logger = new Logger('plugins-api', LogLevel.ERROR);
@@ -27,8 +28,10 @@ export const getPlugins = secure(async (session: SessionData, request: MinimumRe
         projection: {description: 0}
     });
 
+    const patchedPlugins = pluginOverrideManager.patchPlugins(plugins);
+
     const paginatedResponse: PaginatedResponse<Plugin> = {
-        data: plugins,
+        data: patchedPlugins,
         page,
         limit
     };
@@ -59,12 +62,16 @@ export const getPluginById = secure(async (session: SessionData, request: Minimu
         throw new NotFound(`Plugin with id ${pluginId} not found`);
     }
 
+    // Apply plugin overrides using the override manager
+    const patchedPlugins = pluginOverrideManager.patchPlugins([plugin]);
+    const patchedPlugin = patchedPlugins[0];
+
     logger.info(`Plugin ${pluginId} retrieved successfully`);
 
     return {
         code: 0,
         message: "Plugin retrieved successfully",
-        payload: plugin
+        payload: patchedPlugin
     };
 }, {requirePermission: 'plugins:read'});
 

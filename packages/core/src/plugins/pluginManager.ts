@@ -1,6 +1,6 @@
 import {createId, DatabaseAdapter, PluginManifest, ServerPluginModule} from "@supergrowthai/next-blog-types/server";
 import {ValidationError} from "../utils/errors.js";
-import Logger from "../utils/Logger.js";
+import {Logger} from "@supergrowthai/utils";
 import {readInternalPluginFile} from "../utils/dashboardAssets.js";
 import {INTERNAL_PLUGINS} from "./internalPlugins.js";
 

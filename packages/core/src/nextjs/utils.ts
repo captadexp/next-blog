@@ -1,7 +1,7 @@
 import {Configuration} from "@supergrowthai/next-blog-types";
 import {getSystemPluginId} from "../utils/defaultSettings.js";
 import {ServerSDKFactory} from "../plugins/sdk-factory.server.js";
-import Logger, {LogLevel} from "../utils/Logger.js";
+import {Logger, LogLevel} from "@supergrowthai/utils/client";
 import pluginExecutor from "../plugins/plugin-executor.server.js";
 
 export async function createServerSDK(configuration: Configuration) {

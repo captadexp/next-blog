@@ -1,6 +1,5 @@
 import {beforeEach, describe, expect, it, mock} from 'bun:test';
 import {DEFAULT_SETTINGS, generateRssFeed, type RssSettings} from './rss-generator';
-import type {ServerSDK} from '@supergrowthai/plugin-dev-kit/server';
 
 // Test file using Bun's built-in test runner
 // Run with: bun test
@@ -27,7 +26,7 @@ describe('RSS Generator', () => {
             error: mock(() => {
             }),
         },
-    } as unknown as ServerSDK;
+    };
 
     const siteUrl = 'https://example.com';
 
