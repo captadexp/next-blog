@@ -1,5 +1,6 @@
 import {messageQueue} from './lib/mq.js';
 import {taskHandler} from "./lib/tq.js";
+import {BaseMessage} from "@supergrowthai/mq";
 
 async function runExample() {
     console.log('🚀 Starting memory-based TQ/MQ example...');
@@ -20,7 +21,7 @@ async function runExample() {
         }
     ]);
 
-    await messageQueue.consumeMessagesBatch("test-queue-mq", async (queueName: string, messages) => {
+    await messageQueue.consumeMessagesBatch("test-queue-mq", async (queueName: string, messages: BaseMessage<string>[]) => {
         console.log(`📨 Processing ${messages.length} messages from ${queueName}:`);
         for (const msg of messages) {
             console.log(`  - Message ID: ${msg.id}, Payload:`, msg.payload);

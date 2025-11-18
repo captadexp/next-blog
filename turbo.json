@@ -5,16 +5,6 @@
   ],
   "envMode": "loose",
   "tasks": {
-    "@supergrowthai/next-blog-dashboard#build": {
-      "dependsOn": [
-        "@plugins/system-update-manager#build",
-        "@plugins/system#build",
-        "^build"
-      ],
-      "outputs": [
-        "dist/**"
-      ]
-    },
     "build": {
       "dependsOn": [
         "^build"
@@ -22,6 +12,12 @@
       "outputs": [
         "dist/**"
       ]
+    },
+    "typecheck": {
+      "dependsOn": [
+        "^build"
+      ],
+      "cache": false
     },
     "dev": {
       "cache": false,
@@ -34,12 +30,6 @@
       "cache": false,
       "persistent": true
     },
-    "typecheck": {
-      "dependsOn": [
-        "^build"
-      ],
-      "cache": false
-    },
     "publint": {
       "dependsOn": [
         "build",
@@ -49,6 +39,43 @@
     },
     "clean": {
       "cache": false
+    },
+    "@supergrowthai/next-blog-dashboard#build": {
+      "dependsOn": [
+        "@plugins/system-update-manager#build",
+        "@plugins/system#build",
+        "^build"
+      ],
+      "outputs": [
+        "dist/**"
+      ]
+    },
+    "@supergrowthai/next-blog#build": {
+      "dependsOn": [
+        "@supergrowthai/oneapi#build",
+        "@supergrowthai/mq#build",
+        "@supergrowthai/tq#build",
+        "@supergrowthai/next-blog-dashboard#build",
+        "^build"
+      ]
+    },
+    "@supergrowthai/next-blog#typecheck": {
+      "dependsOn": [
+        "^build"
+      ]
+    },
+    "@supergrowthai/tq#typecheck": {
+      "dependsOn": [
+        "@supergrowthai/mq#build",
+        "^build"
+      ]
+    },
+    "@plugins/*#build": {
+      "dependsOn": [
+        "@supergrowthai/plugin-dev-kit#build",
+        "@supergrowthai/next-blog#build",
+        "^build"
+      ]
     },
     "test-app#build": {
       "dependsOn": [
@@ -62,42 +89,6 @@
       "env": [
         "MONGO_DB_URL",
         "VERCEL"
-      ]
-    },
-    "@plugins/*#build": {
-      "dependsOn": [
-        "@supergrowthai/plugin-dev-kit#build",
-        "^build"
-      ]
-    },
-    "@internal/*#build": {
-      "dependsOn": [
-        "@supergrowthai/plugin-dev-kit#build",
-        "^build"
-      ]
-    },
-    "@supergrowthai/next-blog#build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "dist/**"
-      ]
-    },
-    "@supergrowthai/tq#typecheck": {
-      "dependsOn": [
-        "@supergrowthai/mq#build",
-        "^build"
-      ]
-    },
-    "@supergrowthai/mq#build": {
-      "dependsOn": [
-        "^build"
-      ]
-    },
-    "@supergrowthai/oneapi#build": {
-      "dependsOn": [
-        "^build"
       ]
     }
   }
