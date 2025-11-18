@@ -8,9 +8,8 @@ import {fileURLToPath} from "url";
  */
 export function getDashboardAssetsPath(): string {
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    // Navigate to dashboard package dist directory
-    // From core/src/utils -> core -> packages -> dashboard/dist
-    return path.join(__dirname, '..', '..', '..', 'dashboard', 'dist');
+    // Path to this package - matches staticFileHandler.ts logic
+    return path.join(__dirname, 'assets', '@supergrowthai', 'next-blog-dashboard');
 }
 
 /**
@@ -46,14 +45,14 @@ export function getStaticFilePath(relativePath: string): string | null {
  * @param relativePath Path relative to dashboard/dist/static
  * @returns File contents or null if not found or security check fails
  */
-export function readStaticFile(relativePath: string): string | null {
+export function readStaticFile(relativePath: string) {
     const fullPath = getStaticFilePath(relativePath);
 
     if (!fullPath || !fs.existsSync(fullPath)) {
         return null;
     }
 
-    return fs.readFileSync(fullPath, 'utf-8');
+    return fs.readFileSync(fullPath);
 }
 
 /**
@@ -74,5 +73,6 @@ export function readInternalPluginFile(internalUrl: string): string | null {
         return null;
     }
 
-    return readStaticFile(relativePath);
+    const content = readStaticFile(relativePath);
+    return content ? content.toString('utf-8') : null;
 }

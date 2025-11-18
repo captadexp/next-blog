@@ -1,6 +1,5 @@
 import {BrandedId, createId, DatabaseAdapter, Plugin, User} from "@supergrowthai/next-blog-types/server";
 import {StorageFactory} from "../storage/storage-factory.ts";
-import {INTERNAL_PLUGINS} from "../plugins/internalPlugins.js";
 import pluginManager from "../plugins/pluginManager.ts";
 
 // Cache for system IDs
