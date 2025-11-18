@@ -75,7 +75,7 @@ const PATH_MAPPINGS: Record<string, string> = {
     'plugins/seo/analyzer': 'seo-analyzer',
     'plugins/seo/json-ld-structured-data': 'json-ld-structured-data',
     'plugins/seo/llms': 'seo-llms',
-    'plugins/seo/permalink-manager': 'seo-permalinks',
+    'plugins/seo/permalink-manager': 'permalink-manager',
     'plugins/seo/robots': 'seo-robots',
     'plugins/seo/rss': 'seo-rss',
     'plugins/seo/sitemap': 'seo-sitemap',
