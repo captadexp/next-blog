@@ -20,7 +20,7 @@
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "bundler",
     "types": [
-      "bun-types"
+      "@types/bun"
     ]
   },
   "include": [

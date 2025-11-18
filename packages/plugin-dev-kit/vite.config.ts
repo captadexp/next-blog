@@ -8,7 +8,9 @@ export default defineConfig({
             entry: {
                 index: path.resolve(__dirname, 'src/index.ts'),
                 'client/index': path.resolve(__dirname, 'src/client/index.ts'),
+                'client/test': path.resolve(__dirname, 'src/client/test.ts'),
                 'server/index': path.resolve(__dirname, 'src/server/index.ts'),
+                'server/test': path.resolve(__dirname, 'src/server/test.ts'),
                 'build/index': path.resolve(__dirname, 'src/build/index.ts'),
                 'content/index': path.resolve(__dirname, 'src/content/index.ts'),
                 'content/types': path.resolve(__dirname, 'src/content/types.ts'),
@@ -47,7 +49,10 @@ export default defineConfig({
                 'crypto',
 
                 // Node.js specific imports
-                /^node:.*/
+                /^node:.*/,
+
+                // Bun test framework
+                'bun:test'
             ],
         },
         outDir: 'dist',

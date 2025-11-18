@@ -32,11 +32,11 @@
         "react-dom": "^19.1.1",
       },
       "devDependencies": {
+        "@types/bun": "^1.3.2",
         "@types/mongodb": "^4.0.7",
         "@types/node": "^24.5.2",
         "@types/react": "^19.1.8",
         "@types/react-dom": "^19.1.6",
-        "bun-types": "^1.2.22",
       },
     },
     "lib/mq": {
@@ -211,8 +211,8 @@
       },
       "devDependencies": {
         "@tailwindcss/vite": "^4.1.11",
+        "@types/bun": "^1.3.2",
         "@types/node": "^24.5.2",
-        "bun-types": "^1.2.22",
         "postcss": "^8.4.49",
         "rimraf": "^6.0.1",
         "tailwindcss": "^4.1.11",

@@ -1,8 +1,5 @@
 export type * from "@supergrowthai/next-blog-types/client"
 
-export {createMockClientSDK} from './mock-sdk';
-export {testClientPlugin} from './test-harness';
-
 // Re-export JSX runtime types for client-side only
 export {
     jsx,

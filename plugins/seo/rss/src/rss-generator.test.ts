@@ -1,31 +1,16 @@
-import {beforeEach, describe, expect, it, mock} from 'bun:test';
+import {beforeEach, describe, expect, it} from 'bun:test';
 import {DEFAULT_SETTINGS, generateRssFeed, type RssSettings} from './rss-generator';
-import {createMockServerSDK} from '@supergrowthai/plugin-dev-kit/server';
-
-// Test file using Bun's built-in test runner
-// Run with: bun test
+import {createMockServerSDK} from '@supergrowthai/plugin-dev-kit/server/test';
 
 describe('RSS Generator', () => {
     const mockSdk = createMockServerSDK();
-
-    // Create spies for the database methods we want to track
-    const findSpy = mock((_filter?: any, _options?: any) => Promise.resolve([] as any[]));
-    const findByIdSpy = mock((_id: string) => Promise.resolve(null as any));
-    const tagsFindSpy = mock((_filter?: any, _options?: any) => Promise.resolve([] as any[]));
-
-    // Replace the methods with our spies
-    mockSdk.db.blogs.find = findSpy as any;
-    mockSdk.db.users.findById = findByIdSpy as any;
-    mockSdk.db.categories.findById = findByIdSpy as any;
-    mockSdk.db.tags.find = tagsFindSpy as any;
-
     const siteUrl = 'https://example.com';
 
     beforeEach(() => {
-        // Reset all mocks
-        findSpy.mockClear();
-        findByIdSpy.mockClear();
-        tagsFindSpy.mockClear();
+        mockSdk.db.blogs.find.mockClear();
+        mockSdk.db.users.findById.mockClear();
+        mockSdk.db.categories.findById.mockClear();
+        mockSdk.db.tags.find.mockClear();
     });
 
     it('should generate RSS feed with default settings', async () => {
@@ -62,12 +47,12 @@ describe('RSS Generator', () => {
             }
         ];
 
-        findSpy.mockResolvedValueOnce(mockBlogs);
-        findByIdSpy.mockResolvedValueOnce({
+        mockSdk.db.blogs.find.mockResolvedValueOnce(mockBlogs);
+        mockSdk.db.users.findById.mockResolvedValueOnce({
             name: 'John Doe',
             email: 'john@example.com'
         });
-        findByIdSpy.mockResolvedValueOnce({
+        mockSdk.db.categories.findById.mockResolvedValueOnce({
             name: 'Technology'
         });
 
@@ -89,7 +74,7 @@ describe('RSS Generator', () => {
         const oldDate = Date.now() - (10 * 24 * 60 * 60 * 1000); // 10 days ago
         const recentDate = Date.now() - (5 * 24 * 60 * 60 * 1000); // 5 days ago
 
-        findSpy.mockImplementationOnce((query: any) => {
+        mockSdk.db.blogs.find.mockImplementationOnce((query: any) => {
             // Verify the query includes cutoff filter
             expect(query.createdAt).toBeDefined();
             expect(query.createdAt.$gte).toBeLessThanOrEqual(Date.now());
@@ -98,7 +83,7 @@ describe('RSS Generator', () => {
 
         await generateRssFeed(mockSdk, siteUrl, cutoffSettings);
 
-        expect(findSpy).toHaveBeenCalledWith(
+        expect(mockSdk.db.blogs.find).toHaveBeenCalledWith(
             expect.objectContaining({
                 status: 'published',
                 createdAt: expect.objectContaining({
@@ -141,7 +126,7 @@ describe('RSS Generator', () => {
             }
         ];
 
-        findSpy.mockResolvedValueOnce(mockBlogs);
+        mockSdk.db.blogs.find.mockResolvedValueOnce(mockBlogs);
 
         const result = await generateRssFeed(mockSdk, siteUrl, fullContentSettings);
 
@@ -175,7 +160,7 @@ describe('RSS Generator', () => {
             }
         ];
 
-        findSpy.mockResolvedValueOnce(mockBlogs);
+        mockSdk.db.blogs.find.mockResolvedValueOnce(mockBlogs);
 
         const result = await generateRssFeed(mockSdk, siteUrl, DEFAULT_SETTINGS);
 

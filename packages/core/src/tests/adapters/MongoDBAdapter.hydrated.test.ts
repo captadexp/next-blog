@@ -463,8 +463,6 @@ describe('MongoDBAdapter - Hydrated Queries', () => {
 
             const result = await adapter.generated.getCategoryWithBlogs(categoryId1);
 
-            console.log(JSON.stringify(result));
-
             expect(result.category).toBeDefined();
             expect(result.category?.name).toBe('Technology');
             expect(result.blogs).toHaveLength(2);
