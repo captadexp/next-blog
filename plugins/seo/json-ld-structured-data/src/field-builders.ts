@@ -125,7 +125,7 @@ export function addPublisherFields(
             };
         }
     } else if (config.article?.useOrgAsPublisher && config.organization?.name) {
-        const logoUrl = sanitizeUrl(config.organization.logoMedia?.url || config.organization.logo);
+        const logoUrl = sanitizeUrl(config.organization.logoMedia?.url);
 
         jsonLd.publisher = {
             '@type': 'Organization',

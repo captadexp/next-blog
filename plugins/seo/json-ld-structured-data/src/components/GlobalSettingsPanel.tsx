@@ -80,29 +80,7 @@ export function GlobalSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
         });
     }, []);
 
-    const selectLogo = useCallback(async () => {
-        try {
-            const response: any = await sdk.startIntent('select-media', {
-                options: {
-                    mediaType: 'image',
-                    mimeTypes: ['image/png', 'image/jpeg', 'image/svg+xml'],
-                    maxSize: 2 * 1024 * 1024,
-                    allowUpload: true
-                }
-            });
-
-            if (response && response.media) {
-                updateField('organization.logoMedia', {
-                    mediaId: response.media._id,
-                    url: response.media.url,
-                    alt: response.media.alt || config.organization?.name || 'Organization Logo'
-                });
-            }
-        } catch (error) {
-            const clientError = new ClientError('Failed to select logo', 'logo-selection');
-            sdk.notify(clientError.message, 'error');
-        }
-    }, [sdk, config, updateField]);
+    // Logo selection removed - now handled in System settings
 
     return (
         <div className="bg-white rounded-lg shadow-sm">
@@ -140,67 +118,17 @@ export function GlobalSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
                         <div className="space-y-4">
                             <h4 className="text-sm font-semibold text-gray-900">Organization Details</h4>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
-                                    <input
-                                        type="text"
-                                        className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500"
-                                        placeholder="Your Organization"
-                                        value={config.organization?.name || ''}
-                                        onChange={e => updateField('organization.name', e.target.value)}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">URL</label>
-                                    <input
-                                        type="url"
-                                        className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500"
-                                        placeholder="https://example.com"
-                                        value={config.organization?.url || ''}
-                                        onChange={e => updateField('organization.url', e.target.value)}
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Logo</label>
-                                {config.organization?.logoMedia ? (
-                                    <div className="inline-block p-2 bg-gray-50 rounded border border-gray-200">
-                                        <div className="flex flex-col items-center space-y-2">
-                                            <img
-                                                src={config.organization.logoMedia.url}
-                                                alt={config.organization.logoMedia.alt}
-                                                className="w-20 h-20 object-contain border border-gray-300 rounded bg-white p-1"
-                                            />
-                                            <input
-                                                type="text"
-                                                className="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500"
-                                                placeholder="Alt text"
-                                                value={config.organization.logoMedia.alt || ''}
-                                                onChange={e => {
-                                                    const updated = {
-                                                        ...config.organization.logoMedia,
-                                                        alt: e.target.value
-                                                    };
-                                                    updateField('organization.logoMedia', updated);
-                                                }}
-                                            />
-                                            <button
-                                                className="text-xs text-red-600 hover:text-red-700"
-                                                onClick={() => updateField('organization.logoMedia', null)}
-                                            >
-                                                Remove Logo
-                                            </button>
-                                        </div>
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                <p className="text-sm text-blue-800">
+                                    <strong>Note:</strong> Organization name, URL, and logo are configured in System
+                                    settings.
+                                </p>
+                                {config.organization?.name && (
+                                    <div className="mt-2 text-xs text-blue-700">
+                                        <div>Current Name: {config.organization.name}</div>
+                                        <div>Current URL: {config.organization.url}</div>
+                                        {config.organization.logoMediaId && <div>Logo: Configured</div>}
                                     </div>
-                                ) : (
-                                    <button
-                                        className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-50"
-                                        onClick={selectLogo}
-                                    >
-                                        Select Logo from Media Library
-                                    </button>
                                 )}
                             </div>
 
@@ -233,28 +161,16 @@ export function GlobalSettingsPanel({sdk}: { sdk: ClientSDK; context: any }) {
                         <div className="space-y-4">
                             <h4 className="text-sm font-semibold text-gray-900">Website Settings</h4>
 
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Website Name</label>
-                                <input
-                                    type="text"
-                                    className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500"
-                                    placeholder="My Blog"
-                                    value={config.website?.name || ''}
-                                    onChange={e => updateField('website.name', e.target.value)}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">Website URL</label>
-                                <input
-                                    type="url"
-                                    className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:ring-1 focus:ring-blue-500"
-                                    placeholder="https://blog.example.com"
-                                    value={config.website?.url || ''}
-                                    onChange={e => updateField('website.url', e.target.value)}
-                                />
-                                <p className="text-xs text-gray-500 mt-1">Base URL for generating absolute URLs in
-                                    JSON-LD</p>
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                <p className="text-sm text-blue-800">
+                                    <strong>Note:</strong> Website name and URL are configured in System settings.
+                                </p>
+                                {config.website?.name && (
+                                    <div className="mt-2 text-xs text-blue-700">
+                                        <div>Current Name: {config.website.name}</div>
+                                        <div>Current URL: {config.website.url}</div>
+                                    </div>
+                                )}
                             </div>
 
                             <div>

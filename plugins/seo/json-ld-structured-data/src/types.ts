@@ -6,9 +6,9 @@ import {ContentObject} from "@supergrowthai/plugin-dev-kit";
 export interface OrganizationConfig {
     name: string;
     url: string;
-    logo: string;
-    sameAs: string[];
+    logoMediaId: string;
     logoMedia?: MediaData;
+    sameAs: string[];
     email?: string;
 }
 
@@ -35,14 +35,11 @@ export interface JsonLdConfig {
 }
 
 export interface MediaData {
-    _id: string;
+    mediaId: string;
     url: string;
-    altText?: string;
-    caption?: string;
+    alt?: string;
     width?: number;
     height?: number;
-    thumbnailUrl?: string;
-    mimeType?: string;
 }
 
 export interface JsonLdOverrides {

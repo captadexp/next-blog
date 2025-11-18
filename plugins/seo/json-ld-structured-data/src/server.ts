@@ -5,17 +5,20 @@ import {handleRPC, ValidationError} from "./errors";
 
 // Type definitions
 interface OrganizationConfig {
+    // name, url, and logo now come from system settings
     name: string;
     url: string;
-    logo: string;
-    sameAs: string[];
+    logoMediaId: string;
     logoMedia?: MediaData;
+    sameAs: string[];
 }
 
 interface WebsiteConfig {
+    // name and url now come from system settings
     name: string;
     url: string;
     searchAction: boolean;
+    searchUrlTemplate?: string;
 }
 
 interface ArticleConfig {
@@ -108,11 +111,44 @@ interface JsonLdOverrides {
 const SETTINGS_KEY = 'json-ld-structured-data:config';
 const METADATA_KEY = 'json-ld-structured-data:overrides';
 
+// Helper function to merge system settings with plugin config
+async function mergeSystemSettings(sdk: ServerSDK, config: JsonLdConfig): Promise<JsonLdConfig> {
+    const systemSettings = await sdk.callRPC('system:settings:get', {});
+
+    let logoMedia = null;
+    if (systemSettings.payload?.organization?.logoMediaId) {
+        logoMedia = await sdk.db.media.findOne({_id: systemSettings.payload.organization.logoMediaId});
+    }
+
+    return {
+        ...config,
+        organization: {
+            ...config.organization,
+            name: systemSettings.payload?.site?.name || systemSettings.payload?.organization?.name || '',
+            url: systemSettings.payload?.site?.url || systemSettings.payload?.organization?.url || '',
+            logoMediaId: systemSettings.payload?.organization?.logoMediaId || '',
+            logoMedia: logoMedia ? {
+                mediaId: logoMedia._id,
+                url: logoMedia.url,
+                alt: logoMedia.altText || systemSettings.payload?.organization?.name || 'Organization Logo',
+                width: logoMedia.width,
+                height: logoMedia.height
+            } : undefined
+        },
+        website: {
+            ...config.website,
+            name: systemSettings.payload?.site?.name || '',
+            url: systemSettings.payload?.site?.url || ''
+        },
+        language: systemSettings.payload?.site?.language || config.language
+    };
+}
+
 const DEFAULT_CONFIG: JsonLdConfig = {
     organization: {
         name: '',
         url: '',
-        logo: '',
+        logoMediaId: '',
         sameAs: []
     },
     website: {
@@ -132,12 +168,31 @@ const DEFAULT_CONFIG: JsonLdConfig = {
 export default defineServer({
     rpcs: {
         'json-ld-structured-data:config:get': handleRPC(async (sdk: ServerSDK) => {
-            return await sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG;
+            const storedConfig = await sdk.settings.get(SETTINGS_KEY);
+            const config = {...DEFAULT_CONFIG, ...(storedConfig || {})};
+            return mergeSystemSettings(sdk, config);
         }),
 
-        'json-ld-structured-data:config:set': handleRPC(async (sdk: ServerSDK, {config}: { config: JsonLdConfig }) => {
-            await sdk.settings.set(SETTINGS_KEY, config);
-            return config;
+        'json-ld-structured-data:config:set': handleRPC(async (sdk: ServerSDK, {config}: { config: any }) => {
+            // Strip out system-managed fields, keep only plugin-specific settings
+            const cleanConfig = {
+                ...config,
+                organization: {
+                    name: '', // Will be overridden by system settings
+                    url: '', // Will be overridden by system settings
+                    logoMediaId: '', // Will be overridden by system settings
+                    sameAs: config.organization?.sameAs || []
+                },
+                website: {
+                    name: '', // Will be overridden by system settings
+                    url: '', // Will be overridden by system settings
+                    searchAction: config.website?.searchAction || false,
+                    searchUrlTemplate: config.website?.searchUrlTemplate
+                }
+            };
+
+            await sdk.settings.set(SETTINGS_KEY, cleanConfig);
+            return mergeSystemSettings(sdk, cleanConfig);
         }),
 
         'json-ld-structured-data:blog:get': handleRPC(async (sdk: ServerSDK, {blogId}: { blogId: string }) => {
@@ -164,16 +219,17 @@ export default defineServer({
         }),
 
         'json-ld-structured-data:generate': handleRPC(async (sdk: ServerSDK, {blogId}: { blogId: string }) => {
-            const [blog, config] = await Promise.all([
+            const [blog, storedConfig] = await Promise.all([
                 sdk.db.generated.getHydratedBlog({_id: blogId}),
-                sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG
+                sdk.settings.get(SETTINGS_KEY)
             ]);
 
-            if (!blog)
-                throw new ValidationError('Blog not found', 404);
+            if (!blog) throw new ValidationError('Blog not found', 404);
 
+            const config = {...DEFAULT_CONFIG, ...(storedConfig || {})};
+            const mergedConfig = await mergeSystemSettings(sdk, config);
             const overrides = blog.metadata?.[METADATA_KEY] || {};
-            return generateJsonLd('blog', blog, config as any, overrides);
+            return generateJsonLd('blog', blog, mergedConfig, overrides);
         }),
 
         // Tag endpoints
@@ -201,15 +257,17 @@ export default defineServer({
         }),
 
         'json-ld-structured-data:tag:generate': handleRPC(async (sdk: ServerSDK, {tagId}: { tagId: string }) => {
-            const [tag, config] = await Promise.all([
+            const [tag, storedConfig] = await Promise.all([
                 sdk.db.tags.findOne({_id: tagId}),
-                sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG
+                sdk.settings.get(SETTINGS_KEY)
             ]);
 
             if (!tag) throw new ValidationError('Tag not found', 404);
 
+            const config = {...DEFAULT_CONFIG, ...(storedConfig || {})};
+            const mergedConfig = await mergeSystemSettings(sdk, config);
             const overrides = tag.metadata?.[METADATA_KEY] || {};
-            return generateJsonLd('tag', tag, config as any, overrides);
+            return generateJsonLd('tag', tag, mergedConfig, overrides);
         }),
 
         // Category endpoints
@@ -241,15 +299,17 @@ export default defineServer({
         'json-ld-structured-data:category:generate': handleRPC(async (sdk: ServerSDK, {categoryId}: {
             categoryId: string
         }) => {
-            const [category, config] = await Promise.all([
+            const [category, storedConfig] = await Promise.all([
                 sdk.db.categories.findOne({_id: categoryId}),
-                sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG
+                sdk.settings.get(SETTINGS_KEY)
             ]);
 
             if (!category) throw new ValidationError('Category not found', 404);
 
+            const config = {...DEFAULT_CONFIG, ...(storedConfig || {})};
+            const mergedConfig = await mergeSystemSettings(sdk, config);
             const overrides = category.metadata?.[METADATA_KEY] || {};
-            return generateJsonLd('category', category, config as any, overrides);
+            return generateJsonLd('category', category, mergedConfig, overrides);
         }),
 
         // User endpoints
@@ -277,15 +337,17 @@ export default defineServer({
         }),
 
         'json-ld-structured-data:user:generate': handleRPC(async (sdk: ServerSDK, {userId}: { userId: string }) => {
-            const [user, config] = await Promise.all([
+            const [user, storedConfig] = await Promise.all([
                 sdk.db.users.findOne({_id: userId}),
-                sdk.settings.get(SETTINGS_KEY) || DEFAULT_CONFIG
+                sdk.settings.get(SETTINGS_KEY)
             ]);
 
             if (!user) throw new ValidationError('User not found', 404);
 
+            const config = {...DEFAULT_CONFIG, ...(storedConfig || {})};
+            const mergedConfig = await mergeSystemSettings(sdk, config);
             const overrides = user.metadata?.[METADATA_KEY] || {};
-            return generateJsonLd('user', user, config as any, overrides);
+            return generateJsonLd('user', user, mergedConfig, overrides);
         }),
 
         // Generic generateJsonLd RPC - automatically fetches config and overrides
