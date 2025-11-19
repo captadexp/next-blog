@@ -38,6 +38,11 @@
       "types": "./dist/utility-classes/ShutdownManager.d.ts",
       "import": "./dist/utility-classes/ShutdownManager.mjs",
       "require": "./dist/utility-classes/ShutdownManager.js"
+    },
+    "./content-transformers": {
+      "types": "./dist/content-transformers/index.d.ts",
+      "import": "./dist/content-transformers/index.mjs",
+      "require": "./dist/content-transformers/index.js"
     }
   },
   "scripts": {
@@ -54,9 +59,14 @@
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "MIT",
   "dependencies": {
-    "memoose-js": "2.0.0-canary.7fa17b2"
+    "memoose-js": "2.0.0-canary.7fa17b2",
+    "@supergrowthai/next-blog-types": "workspace:*",
+    "htmlparser2": "^9.1.0",
+    "domhandler": "^5.0.3",
+    "dom-serializer": "^2.0.0"
   },
   "devDependencies": {
+    "@editorjs/editorjs": "^2.30.7",
     "@smithy/types": "^4.2.0",
     "@types/bun": "^1.2.11",
     "@types/node": "^24.5.2",

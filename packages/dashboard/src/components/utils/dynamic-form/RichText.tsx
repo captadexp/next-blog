@@ -2,9 +2,14 @@ import {h} from 'preact';
 import {useEffect, useRef, useState} from 'preact/hooks';
 import {RichTextDynamicFormField} from './types';
 import {memo} from "preact/compat"
-import contentObjectToEditorJS from './htmlToJson/contentobject-to-editorjs';
-import editorJSToContentObject from './htmlToJson/editorjs-to-contentobject';
+import {
+    contentObjectToHTML,
+    editorJSToHTML,
+    htmlToContentObject,
+    htmlToEditorJS
+} from "@supergrowthai/utils/content-transformers";
 import ImageSelectorTool from './editorjs-tools/ImageSelectorTool.ts';
+
 
 interface RichTextProps {
     field: RichTextDynamicFormField;
@@ -38,10 +43,15 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                 // Prepare initial data
                 let initialData;
                 try {
-                    initialData = value ? contentObjectToEditorJS(value) : {
-                        time: new Date().getTime(),
-                        blocks: []
-                    };
+                    if (value) {
+                        const html = contentObjectToHTML(value);
+                        initialData = htmlToEditorJS(html);
+                    } else {
+                        initialData = {
+                            time: new Date().getTime(),
+                            blocks: []
+                        };
+                    }
                 } catch (err) {
                     console.log('Error converting data:', err);
                     initialData = {
@@ -119,7 +129,10 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                     onChange: async () => {
                         try {
                             const outputData = await editor.saver.save();
-                            const contentObject = editorJSToContentObject(outputData);
+
+                            const html = editorJSToHTML(outputData);
+                            const contentObject = htmlToContentObject(html);
+
                             onChange(key, contentObject);
                         } catch (error) {
                             console.error('Error saving:', error);

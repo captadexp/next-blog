@@ -1,5 +1,5 @@
-import {defineConfig} from 'vite';
-import {resolve} from 'path';
+import { defineConfig } from 'vite';
+import { resolve } from 'path';
 import dts from 'vite-plugin-dts';
 
 export default defineConfig({
@@ -9,6 +9,7 @@ export default defineConfig({
                 index: resolve(__dirname, 'src/index.ts'),
                 server: resolve(__dirname, 'src/server.ts'),
                 client: resolve(__dirname, 'src/client.ts'),
+                "content-transformers/index": resolve(__dirname, 'src/content-transformers/index.ts')
             },
             name: 'SupergrowthAIUtils',
             formats: ['es', 'cjs'],
@@ -38,6 +39,12 @@ export default defineConfig({
                 '@getbrevo/brevo',
                 'memoose-js',
 
+                // Content transformer dependencies
+                '@supergrowthai/next-blog-types',
+                'htmlparser2',
+                'domhandler',
+                'dom-serializer',
+                '@editorjs/editorjs',
 
                 // Node.js builtin modules
                 'fs',

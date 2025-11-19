@@ -4,26 +4,16 @@
  */
 
 import type {ContentObject, InlineNode, ParagraphLayout} from './types';
+import {contentObjectToHTML as contentObjectToHtmlFromUtils} from '@supergrowthai/utils/content-transformers';
 
 /**
- * Convert inline nodes to HTML
+ * Convert ContentObject to HTML
+ * Now uses the shared implementation from utils package
  */
-function inlineNodeToHtml(node: InlineNode): string {
-    switch (node.name) {
-        case 'Text':
-            return escapeHtml(node.data);
-        case 'Italic':
-            return `<i>${node.data.map(inlineNodeToHtml).join('')}</i>`;
-        case 'Highlight':
-            return `<b>${node.data.map(inlineNodeToHtml).join('')}</b>`;
-        case 'Link':
-            const linkContent = node.data.content.map(inlineNodeToHtml).join('');
-            return `<a href="${escapeHtml(node.data.url)}">${linkContent}</a>`;
-        case 'InlineCode':
-            return `<code class="inline-code">${escapeHtml(node.data)}</code>`;
-        default:
-            return '';
-    }
+export function contentObjectToHtml(content: ContentObject | string): string {
+    return contentObjectToHtmlFromUtils(
+        typeof content === 'string' ? JSON.parse(content) : content
+    );
 }
 
 /**
@@ -54,104 +44,6 @@ function escapeHtml(text: string): string {
 
     // Restore the preserved entities
     return escapedText.replace(/__ENTITY_\d+__/g, placeholder => entityMap[placeholder] || placeholder);
-}
-
-/**
- * Convert ContentObject to HTML
- */
-export function contentObjectToHtml(content: ContentObject | string): string {
-    // Handle string content (might be JSON string)
-    if (typeof content === 'string') {
-        try {
-            content = JSON.parse(content) as ContentObject;
-        } catch {
-            return escapeHtml(typeof content === 'string' ? content : ''); // Return as-is if not JSON
-        }
-    }
-
-    const htmlParts: string[] = [];
-
-    for (const block of content.content) {
-        switch (block.name) {
-            case 'Paragraph':
-                const paragraphHtml = block.data.map((node, index) => {
-                    const nodeHtml = inlineNodeToHtml(node);
-                    // Add <br/> between consecutive Text elements (but not at the end)
-                    if (node.name === 'Text' && index < block.data.length - 1 && block.data[index + 1]?.name === 'Text') {
-                        return nodeHtml + '<br/>';
-                    }
-                    return nodeHtml;
-                }).join('');
-                if (paragraphHtml) {
-                    htmlParts.push(`<p>${paragraphHtml}</p>`);
-                }
-                break;
-            case 'Subheading':
-                const level = block.data.level || 2;
-                htmlParts.push(`<h${level}>${escapeHtml(block.data.subheading)}</h${level}>`);
-                break;
-            case 'List':
-                const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
-                const items = block.data.items.map(item => `<li>${escapeHtml(item.data)}</li>`).join('');
-                htmlParts.push(`<${tag}>${items}</${tag}>`);
-                break;
-            case 'Table':
-                let tableHtml = '<table>';
-                if (block.data.withHeadings && block.data.content.length > 0) {
-                    tableHtml += '<thead><tr>';
-                    tableHtml += block.data.content[0].map(cell => `<th>${escapeHtml(cell)}</th>`).join('');
-                    tableHtml += '</tr></thead>';
-                    tableHtml += '<tbody>';
-                    for (let i = 1; i < block.data.content.length; i++) {
-                        tableHtml += '<tr>';
-                        tableHtml += block.data.content[i].map(cell => `<td>${escapeHtml(cell)}</td>`).join('');
-                        tableHtml += '</tr>';
-                    }
-                    tableHtml += '</tbody>';
-                } else {
-                    tableHtml += '<tbody>';
-                    for (const row of block.data.content) {
-                        tableHtml += '<tr>';
-                        tableHtml += row.map(cell => `<td>${escapeHtml(cell)}</td>`).join('');
-                        tableHtml += '</tr>';
-                    }
-                    tableHtml += '</tbody>';
-                }
-                tableHtml += '</table>';
-                htmlParts.push(tableHtml);
-                break;
-            case 'Image':
-                const alt = block.data.alt ? ` alt="${escapeHtml(block.data.alt)}"` : '';
-                htmlParts.push(`<img src="${escapeHtml(block.data.src)}"${alt}>`);
-                break;
-            case 'Quote':
-                let quoteHtml = `<blockquote>${escapeHtml(block.data.text)}`;
-                if (block.data.caption) {
-                    quoteHtml += `<cite>${escapeHtml(block.data.caption)}</cite>`;
-                }
-                quoteHtml += '</blockquote>';
-                htmlParts.push(quoteHtml);
-                break;
-            case 'Code':
-                htmlParts.push(`<pre><code>${escapeHtml(block.data.code)}</code></pre>`);
-                break;
-            case 'Internal Embed':
-                // For embeds, just create a placeholder div with data attributes
-                htmlParts.push(`<div data-embed-type="${block.data.name}" data-embed-url="${escapeHtml(block.data.data.url)}"></div>`);
-                break;
-            case 'Text':
-                // Handle direct text blocks
-                htmlParts.push(`<p>${escapeHtml(block.data)}</p>`);
-                break;
-            case 'Link':
-                // Handle direct link blocks
-                const linkText = block.data.content.map(inlineNodeToHtml).join('');
-                htmlParts.push(`<p><a href="${escapeHtml(block.data.url)}">${linkText}</a></p>`);
-                break;
-        }
-    }
-
-    return htmlParts.join('\n');
 }
 
 /**
