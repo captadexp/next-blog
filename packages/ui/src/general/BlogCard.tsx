@@ -139,67 +139,76 @@ export const BlogCard: React.FC<BlogCardProps> = ({
         blog.metadata?.['json-ld-structured-data:overrides']?.featuredImageMedia?.url;
 
     return (
-        <PermalinkWrapper
-            entity={blog}
-            fallbackElement="article"
+        <article
             style={containerStyles}
             className={className}
             {...rest}
         >
-            {showImage && hasFeaturedMedia && (
-                <FeaturedMedia
-                    blog={blog}
-                    style={{marginBottom: 0}}
-                    imageStyle={defaultImageStyles}
-                    videoStyle={defaultImageStyles}
-                />
-            )}
-            {showImage && !hasFeaturedMedia && (
-                <div style={{...defaultImageStyles, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                    <span style={{fontSize: '48px', color: '#d1d5db'}}>📄</span>
-                </div>
-            )}
-
-            <div style={defaultContentStyles}>
-                <span style={defaultTitleStyles}>
-                    {blog.title}
-                </span>
-
-                {showExcerpt && (
-                    <p style={defaultExcerptStyles}>
-                        {getExcerpt()}
-                    </p>
+            <PermalinkWrapper
+                entity={blog}
+                fallbackElement="div"
+                style={{display: 'block', textDecoration: 'none', color: 'inherit'}}
+            >
+                {showImage && hasFeaturedMedia && (
+                    <FeaturedMedia
+                        blog={blog}
+                        style={{marginBottom: 0}}
+                        imageStyle={defaultImageStyles}
+                        videoStyle={defaultImageStyles}
+                    />
+                )}
+                {showImage && !hasFeaturedMedia && (
+                    <div style={{
+                        ...defaultImageStyles,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <span style={{fontSize: '48px', color: '#d1d5db'}}>📄</span>
+                    </div>
                 )}
 
-                <div style={defaultMetaStyles}>
-                    {showDate && <span>{formatDate(blog.createdAt)}</span>}
-                    {showDate && showAuthor && <span>•</span>}
-                    {showAuthor && (
-                        <PermalinkText
-                            entity={blog.user}
-                            style={{fontSize: 'inherit', color: 'inherit'}}
-                        >
-                            By {blog.user.name}
-                        </PermalinkText>
+                <div style={defaultContentStyles}>
+                    <span style={defaultTitleStyles}>
+                        {blog.title}
+                    </span>
+
+                    {showExcerpt && (
+                        <p style={defaultExcerptStyles}>
+                            {getExcerpt()}
+                        </p>
                     )}
-                    {(showDate || showAuthor) && showCategory && <span>•</span>}
-                    {showCategory && blog.category && <span>{blog.category.name}</span>}
-                    {showTags && blog.tags && blog.tags.length > 0 && (
-                        <>
-                            <span>•</span>
-                            <span>
-                {blog.tags.slice(0, 2).map(tag => `#${tag.name}`).join(', ')}
-              </span>
-                        </>
+
+                    {showReadMore && (
+                        <span style={defaultReadMoreStyles}>
+                            Read More →
+                        </span>
                     )}
                 </div>
+            </PermalinkWrapper>
 
-                {showReadMore && (
-                    <span style={defaultReadMoreStyles}>
-                        Read More →
-                    </span>
+            <div style={{...defaultMetaStyles, padding: '0 20px 20px 20px', marginBottom: '0'}}>
+                {showDate && <span>{formatDate(blog.createdAt)}</span>}
+                {showDate && showAuthor && <span>•</span>}
+                {showAuthor && (
+                    <PermalinkText
+                        entity={blog.user}
+                        style={{fontSize: 'inherit', color: 'inherit'}}
+                    >
+                        By {blog.user.name}
+                    </PermalinkText>
+                )}
+                {(showDate || showAuthor) && showCategory && <span>•</span>}
+                {showCategory && blog.category && <span>{blog.category.name}</span>}
+                {showTags && blog.tags && blog.tags.length > 0 && (
+                    <>
+                        <span>•</span>
+                        <span>
+            {blog.tags.slice(0, 2).map(tag => `#${tag.name}`).join(', ')}
+          </span>
+                    </>
                 )}
             </div>
-        </PermalinkWrapper>
+        </article>
     );
 };

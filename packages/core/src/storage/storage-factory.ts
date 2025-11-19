@@ -79,7 +79,7 @@ export class StorageFactory {
     static async initializeDefaultSettings(db: DatabaseAdapter): Promise<void> {
         try {
             // Get system plugin ID for global settings
-            const systemPlugin = await db.plugins.findOne({name: 'system'});
+            const systemPlugin = await db.plugins.findOne({id: 'system'});
             if (!systemPlugin) {
                 console.warn('System plugin not found, skipping storage settings initialization');
                 return;
