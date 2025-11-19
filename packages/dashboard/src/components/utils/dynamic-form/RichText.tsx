@@ -4,7 +4,6 @@ import {RichTextDynamicFormField} from './types';
 import {memo} from "preact/compat"
 import contentObjectToEditorJS from './htmlToJson/contentobject-to-editorjs';
 import editorJSToContentObject from './htmlToJson/editorjs-to-contentobject';
-import type {OutputBlockData} from '@editorjs/editorjs';
 import ImageSelectorTool from './editorjs-tools/ImageSelectorTool.ts';
 
 interface RichTextProps {
@@ -30,7 +29,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
 
                 // Get available tools
                 const Header = (window as any).Header;
-                const List = (window as any).List;
+                const List = (window as any).EditorjsList;
                 const Quote = (window as any).Quote;
                 const Table = (window as any).Table;
                 const InlineCode = (window as any).InlineCode;
@@ -65,7 +64,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                 }
 
                 if (List) {
-                    tools.list = {
+                    tools.List = {
                         class: List,
                         inlineToolbar: true,
                         config: {
@@ -115,18 +114,11 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                     holder: editorRef.current,
                     data: initialData,
                     readOnly: !!disabled,
-                    minHeight: 30,
+                    minHeight: 20,
                     placeholder: 'Let\'s write an awesome story!',
                     onChange: async () => {
                         try {
                             const outputData = await editor.saver.save();
-                            // Ensure all paragraphs have text field
-                            outputData.blocks = outputData.blocks.map((block: OutputBlockData) => {
-                                if (block.type === 'paragraph' && !block.data.text) {
-                                    block.data.text = '';
-                                }
-                                return block;
-                            });
                             const contentObject = editorJSToContentObject(outputData);
                             onChange(key, contentObject);
                         } catch (error) {
