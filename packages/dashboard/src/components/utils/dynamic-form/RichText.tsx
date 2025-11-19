@@ -34,6 +34,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                 const Quote = (window as any).Quote;
                 const Table = (window as any).Table;
                 const InlineCode = (window as any).InlineCode;
+                const CodeTool = (window as any).CodeTool;
 
                 // Prepare initial data
                 let initialData;
@@ -98,6 +99,15 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
 
                 if (InlineCode) {
                     tools.inlineCode = InlineCode;
+                }
+
+                if (CodeTool) {
+                    tools.code = {
+                        class: CodeTool,
+                        config: {
+                            placeholder: 'Enter your code here...'
+                        }
+                    };
                 }
 
                 // Create editor instance
@@ -218,6 +228,19 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                         script.onload = resolve;
                         script.onerror = () => {
                             console.warn('Failed to load InlineCode tool');
+                            resolve(null);
+                        };
+                        document.head.appendChild(script);
+                    }));
+                }
+
+                if (!(window as any).CodeTool) {
+                    toolPromises.push(new Promise((resolve) => {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/@editorjs/code@latest';
+                        script.onload = resolve;
+                        script.onerror = () => {
+                            console.warn('Failed to load Code tool');
                             resolve(null);
                         };
                         document.head.appendChild(script);

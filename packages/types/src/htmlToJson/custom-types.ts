@@ -13,9 +13,10 @@ export type TextItem = ContentObjectBase<"Text", string>;
 export type ItalicItem = ContentObjectBase<"Italic", InlineNode[]>;
 export type HighlightItem = ContentObjectBase<"Highlight", InlineNode[]>;
 export type LinkItem = ContentObjectBase<"Link", { content: InlineNode[]; url: string; }>;
+export type InlineCodeItem = ContentObjectBase<"InlineCode", string>;
 
 // Inline union
-export type InlineNode = TextItem | ItalicItem | HighlightItem | LinkItem;
+export type InlineNode = TextItem | ItalicItem | HighlightItem | LinkItem | InlineCodeItem;
 
 // Blocks
 export type ParagraphLayout = ContentObjectBase<"Paragraph", InlineNode[]>;

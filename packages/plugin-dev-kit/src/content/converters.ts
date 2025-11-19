@@ -19,6 +19,8 @@ function inlineNodeToHtml(node: InlineNode): string {
         case 'Link':
             const linkContent = node.data.content.map(inlineNodeToHtml).join('');
             return `<a href="${escapeHtml(node.data.url)}">${linkContent}</a>`;
+        case 'InlineCode':
+            return `<code class="inline-code">${escapeHtml(node.data)}</code>`;
         default:
             return '';
     }
@@ -72,7 +74,14 @@ export function contentObjectToHtml(content: ContentObject | string): string {
     for (const block of content.content) {
         switch (block.name) {
             case 'Paragraph':
-                const paragraphHtml = block.data.map(inlineNodeToHtml).join('');
+                const paragraphHtml = block.data.map((node, index) => {
+                    const nodeHtml = inlineNodeToHtml(node);
+                    // Add <br/> between consecutive Text elements (but not at the end)
+                    if (node.name === 'Text' && index < block.data.length - 1 && block.data[index + 1]?.name === 'Text') {
+                        return nodeHtml + '<br/>';
+                    }
+                    return nodeHtml;
+                }).join('');
                 if (paragraphHtml) {
                     htmlParts.push(`<p>${paragraphHtml}</p>`);
                 }
@@ -209,6 +218,8 @@ function extractTextFromInlineNode(node: InlineNode): string {
             return node.data.map(extractTextFromInlineNode).join('');
         case 'Link':
             return node.data.content.map(extractTextFromInlineNode).join('');
+        case 'InlineCode':
+            return node.data;
         default:
             return '';
     }

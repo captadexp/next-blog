@@ -10,11 +10,17 @@ export function htmlToContentObject(html: string): ContentObject {
     return resp
 }
 
-function getText(element: AnyNode): string {
+function getText(element: AnyNode, preserveFormatting = false): string {
     switch (element.type) {
         case ElementType.Text:
             return element.data
         case ElementType.Tag:
+            if (element.name === 'br') {
+                return preserveFormatting ? '\n' : ' '
+            }
+            if (preserveFormatting) {
+                return element.children.map(child => getText(child, true)).join('')
+            }
             return element.children.map(child => getText(child)).join(' ')
         default:
             console.log('Unknown element type')
@@ -38,7 +44,7 @@ function flattenParagraph1Level(node: ParagraphLayout): ParagraphLayout {
     return node
 }
 
-function recursiveMagic(element: AnyNode): any {
+function recursiveMagic(element: AnyNode, inlineContext = false): any {
     switch (element.type) {
         case ElementType.Text:
             return createTextItem(element.data)
@@ -46,7 +52,7 @@ function recursiveMagic(element: AnyNode): any {
             const contentObject: ContentObject = {version: 1, content: []}
             contentObject.content = element.children.map(child => recursiveMagic(child))
                 .filter(a => !!a)
-                .filter(item => item.name === 'Text' ? item.data !== '\n' : true)
+                .filter(item => item.name === 'Text' ? item.data.trim() !== '' : true)
             return contentObject
         }
         case ElementType.Tag: {
@@ -58,7 +64,7 @@ function recursiveMagic(element: AnyNode): any {
                         version: 1,
                         data: []
                     }
-                    paragraphObject.data = element.children.map(child => recursiveMagic(child))
+                    paragraphObject.data = element.children.map(child => recursiveMagic(child, true))
 
                     return flattenParagraph1Level(paragraphObject)
                 }
@@ -68,7 +74,7 @@ function recursiveMagic(element: AnyNode): any {
                         version: 1,
                         data: []
                     }
-                    paragraphObject.data = element.children.map(child => recursiveMagic(child))
+                    paragraphObject.data = element.children.map(child => recursiveMagic(child, true))
                     return paragraphObject
                 }
                     break
@@ -81,7 +87,7 @@ function recursiveMagic(element: AnyNode): any {
                             url: element.attribs.href
                         }
                     }
-                    paragraphObject.data.content = element.children.map(child => recursiveMagic(child))
+                    paragraphObject.data.content = element.children.map(child => recursiveMagic(child, true))
                     return paragraphObject
                 }
                 case 'h1':
@@ -108,14 +114,14 @@ function recursiveMagic(element: AnyNode): any {
                     return {
                         name: 'Italic',
                         version: 1,
-                        data: element.children.map(child => recursiveMagic(child))
+                        data: element.children.map(child => recursiveMagic(child, true))
                     }
                 case 'b':
                 case 'strong':
                     return {
                         name: 'Highlight',
                         version: 1,
-                        data: element.children.map(child => recursiveMagic(child))
+                        data: element.children.map(child => recursiveMagic(child, true))
                     }
                 case 'ul':
                 case 'ol': {
@@ -136,7 +142,7 @@ function recursiveMagic(element: AnyNode): any {
                         data: getText(element)
                     }
                 case 'br':
-                    return {name: 'Ignore', version: 1, data: []}
+                    return {name: 'Text', version: 1, data: '\n'}
                 case 'table': {
                     const object = {
                         name: 'Table',
@@ -163,6 +169,64 @@ function recursiveMagic(element: AnyNode): any {
                         name: 'FigureCaption',
                         version: 1,
                         data: getText(element)
+                    }
+                }
+                case 'blockquote': {
+                    const content = element.children.map(child => recursiveMagic(child))
+                    return {
+                        name: 'Quote',
+                        version: 1,
+                        data: {
+                            text: content.map((c: any) => c.data || '').join(' '),
+                            caption: ''
+                        }
+                    }
+                }
+                case 'code': {
+                    const codeText = getText(element, true)
+                    const hasInlineCodeClass = element.attribs?.class?.includes('inline-code')
+                    if (inlineContext || hasInlineCodeClass) {
+                        return {
+                            name: 'InlineCode',
+                            version: 1,
+                            data: codeText
+                        }
+                    } else {
+                        return {
+                            name: 'Code',
+                            version: 1,
+                            data: {
+                                code: codeText,
+                                language: element.attribs?.['data-language'] || (element.attribs?.class?.includes('language-') ? element.attribs.class.replace(/.*language-(\w+).*/, '$1') : undefined)
+                            }
+                        }
+                    }
+                }
+                case 'pre': {
+                    const codeText = getText(element, true)
+                    // Check for language in pre element or first code child
+                    let language = element.attribs?.['data-language']
+                    if (!language && element.attribs?.class?.includes('language-')) {
+                        language = element.attribs.class.replace(/.*language-(\w+).*/, '$1')
+                    }
+                    // Check first code child for language
+                    if (!language && element.children.length > 0) {
+                        const firstChild = element.children[0]
+                        if (isTag(firstChild) && firstChild.name === 'code') {
+                            if (firstChild.attribs?.['data-language']) {
+                                language = firstChild.attribs['data-language']
+                            } else if (firstChild.attribs?.class?.includes('language-')) {
+                                language = firstChild.attribs.class.replace(/.*language-(\w+).*/, '$1')
+                            }
+                        }
+                    }
+                    return {
+                        name: 'Code',
+                        version: 1,
+                        data: {
+                            code: codeText,
+                            language
+                        }
                     }
                 }
                 default:

@@ -5,7 +5,7 @@ import {ContentObject, ContentObjectLayout} from './custom-types'
 function processItem(item: any): string {
     switch (item.name) {
         case 'Text':
-            return item.data
+            return item.data.replace(/\n/g, '<br>')
         case 'Link':
             return `<a href=${item.data.url}>${item.data.content?.map(processItem).join('')}</a>`
         case 'Highlight':
@@ -16,6 +16,8 @@ function processItem(item: any): string {
             return `<u>${item.data}</u>`
         case 'Italic':
             return `<i>${item.data.map(processItem).join('')}</i>`
+        case 'InlineCode':
+            return `<code class="inline-code">${item.data.replace(/\n/g, '<br>')}</code>`
         default:
             return ''
     }
@@ -59,7 +61,16 @@ export default function contentObjectToEditorJS(contentObject: ContentObject | s
                 editorJSContent.blocks.push({
                     id: (Math.random() * 1e32).toString(36),
                     type: 'paragraph',
-                    data: {text: item.data.map(processItem).join('')}
+                    data: {
+                        text: item.data.map((subItem: any, index: number) => {
+                            const processed = processItem(subItem)
+                            // Add <br> between consecutive Text elements (but not at the end)
+                            if (subItem.name === 'Text' && index < item.data.length - 1 && item.data[index + 1]?.name === 'Text') {
+                                return processed + '<br>'
+                            }
+                            return processed
+                        }).join('')
+                    }
                 })
                 break
             case 'Internal Embed':

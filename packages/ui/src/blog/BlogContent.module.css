@@ -183,8 +183,8 @@
 }
 
 .blogContent pre {
-    background-color: #111827;
-    color: #f3f4f6;
+    color: #111827;
+    background-color: #f3f4f6;
     padding: 1rem;
     border-radius: 0.5rem;
     overflow-x: auto;
