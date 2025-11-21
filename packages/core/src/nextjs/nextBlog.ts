@@ -1,7 +1,7 @@
 import {Configuration} from "@supergrowthai/next-blog-types/server";
 import {wrapPathObject} from "../utils/withExtras.ts";
 import cmsPaths from "../cmsPaths.ts";
-import {createNextJSRouter, IAuthHandler} from "@supergrowthai/oneapi/nextjs";
+import {createNextJSRouter, IAuthHandler, NextJSHandlers} from "@supergrowthai/oneapi/nextjs";
 import pluginExecutor from "../plugins/plugin-executor.server.ts";
 import {initializeSystem} from "../utils/defaultSettings.ts";
 import {SessionAuthHandler} from "../auth/SessionAuthHandler.ts";
@@ -12,7 +12,7 @@ import {BasicAuthHandler} from "../auth/basic-auth-handler.ts";
 /**
  * Main CMS function that creates the API route handlers
  */
-const nextBlog = function (configuration: Configuration) {
+const nextBlog = function (configuration: Configuration): NextJSHandlers {
     const {pathPrefix, sessionStore} = configuration;
 
     configuration.cacheProvider = configuration.cacheProvider || (async () => new DisabledCacheProvider())

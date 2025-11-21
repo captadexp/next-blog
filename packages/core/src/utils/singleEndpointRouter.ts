@@ -1,4 +1,4 @@
-import {createNextJSRouter, IAuthHandler} from "@supergrowthai/oneapi/nextjs";
+import {createNextJSRouter, IAuthHandler, NextJSHandlers} from "@supergrowthai/oneapi/nextjs";
 import {initializeSystem} from "./defaultSettings.js";
 import pluginExecutor from "../plugins/plugin-executor.server.js";
 import {Configuration} from "@supergrowthai/next-blog-types/server";
@@ -13,7 +13,7 @@ import {DisabledCacheProvider} from "memoose-js";
  * Creates a Next.js router for a single API endpoint
  * Useful for creating standalone route handlers that need full Next-Blog infrastructure
  */
-export function createSingleEndpointNextJSRouter(apiFunction: OneApiFunction, {pathPrefix = ""} = {}) {
+export function createSingleEndpointNextJSRouter(apiFunction: OneApiFunction, {pathPrefix = ""} = {}): (configuration: Configuration) => NextJSHandlers {
     return (configuration: Configuration) => {
         const {db: dbProvider, sessionStore} = configuration;
         // Create a simple path object with just the root endpoint

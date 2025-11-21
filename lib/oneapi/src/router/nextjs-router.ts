@@ -1,8 +1,19 @@
 import {CommonRequest, CommonResponse, PathObject} from '../types.js';
-import {NextRequest} from "next/server";
 import {GenericRouter, GenericRouterConfig} from './generic-router.js';
 
 export interface NextJSRouterConfig<CREDENTIALS = unknown, USER = unknown, SESSION = unknown> extends GenericRouterConfig<CREDENTIALS, USER, SESSION> {
+}
+
+export type NextJSMethodRoute = (request: CommonRequest) => Promise<CommonResponse>;
+
+export type NextJSHandlers = {
+    GET: NextJSMethodRoute,
+    HEAD: NextJSMethodRoute,
+    POST: NextJSMethodRoute,
+    PUT: NextJSMethodRoute,
+    DELETE: NextJSMethodRoute,
+    PATCH: NextJSMethodRoute,
+    OPTIONS: NextJSMethodRoute
 }
 
 export class NextJSRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unknown> {
@@ -12,8 +23,8 @@ export class NextJSRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkno
         this.genericRouter = new GenericRouter(pathObject, config);
     }
 
-    handlers() {
-        const processRequest = (request: NextRequest): Promise<CommonResponse> => this.genericRouter.handle(request as Request as CommonRequest);
+    handlers(): NextJSHandlers {
+        const processRequest: NextJSMethodRoute = (request) => this.genericRouter.handle(request as Request as CommonRequest);
 
         return {
             GET: processRequest,
@@ -30,3 +41,5 @@ export class NextJSRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkno
 export function createNextJSRouter<CREDENTIALS = any, USER = any, SESSION = any>(pathObject: PathObject, config?: NextJSRouterConfig<CREDENTIALS, USER, SESSION>) {
     return new NextJSRouter<CREDENTIALS, USER, SESSION>(pathObject, config);
 }
+
+export default {}
