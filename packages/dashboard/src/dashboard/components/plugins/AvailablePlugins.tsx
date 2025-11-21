@@ -18,8 +18,6 @@ interface AvailablePlugin {
     description: string;
 }
 
-const AVAILABLE_PLUGINS_BASE_URL = !!process.env.BUILT_ON_VERCEL ? process.env.VERCEL_URL : "next-blog-test-app.vercel.app";
-
 export const AvailablePlugins = () => {
     const {apis: api} = useUser();
     const {route} = useLocation();
@@ -28,6 +26,7 @@ export const AvailablePlugins = () => {
     const [availablePlugins, setAvailablePlugins] = useState<AvailablePlugin[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const availablePluginsBaseUrl = !!process.env.NEXT_PUBLIC_BUILT_ON_VERCEL ? (process.env.NEXT_PUBLIC_VERCEL_URL || "next-blog-test-app.vercel.app") : "next-blog-test-app.vercel.app";
 
     // Create a map of installed plugin IDs for quick lookup
     const installedPluginIds = useMemo(() => new Set(installedPlugins.map(p => p.id)), [installedPlugins]);
@@ -35,7 +34,7 @@ export const AvailablePlugins = () => {
     useEffect(() => {
         const fetchAvailablePlugins = async () => {
             try {
-                const response = await fetch(`https://${AVAILABLE_PLUGINS_BASE_URL}/plugins/available.json`);
+                const response = await fetch(`https://${availablePluginsBaseUrl}/plugins/available.json`);
                 if (response.ok) {
                     const data = await response.json();
                     setAvailablePlugins(data.plugins || []);
