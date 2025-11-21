@@ -9,6 +9,10 @@ const logger = new Logger('plugins-manager');
 async function loadPluginFromUrl<T>(url: string): Promise<T> {
     if (!url) throw new ValidationError("Plugin url is required");
 
+    if (process.env.BUILT_ON_VERCEL && url.startsWith('internal://')) {
+        url = `https://${process.env.VERCEL_URL}/api/next-blog/dashboard/static/${url.substring("internal://".length)}`
+    }
+
     let code: string;
 
     if (url.startsWith('internal://')) {
@@ -93,9 +97,6 @@ async function deletePluginAndMappings(db: DatabaseAdapter, pluginId: string): P
 }
 
 async function installPlugin(db: DatabaseAdapter, url: string): Promise<any> {
-    if (process.env.BUILT_ON_VERCEL) {
-        url = `https://${process.env.VERCEL_URL}/api/next-blog/dashboard/static/` + url.substring("internal://".length)
-    }
     const manifest = await loadPluginManifest(url);
 
     // Check for existing plugin with same manifest ID
