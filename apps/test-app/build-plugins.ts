@@ -29,7 +29,7 @@ interface ManifestEntry {
 
 // Check for required environment variable
 const PLUGIN_HOST_URL = process.env.PLUGIN_HOST_URL ||
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined);
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
 
 if (!PLUGIN_HOST_URL) {
     console.error('❌ Error: PLUGIN_HOST_URL or VERCEL_PROJECT_PRODUCTION_URL environment variable must be set');

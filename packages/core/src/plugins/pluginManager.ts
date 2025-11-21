@@ -93,6 +93,9 @@ async function deletePluginAndMappings(db: DatabaseAdapter, pluginId: string): P
 }
 
 async function installPlugin(db: DatabaseAdapter, url: string): Promise<any> {
+    if (process.env.BUILT_ON_VERCEL) {
+        url = `https://${process.env.VERCEL_URL}/api/next-blog/dashboard/static/` + url.substring("internal://".length)
+    }
     const manifest = await loadPluginManifest(url);
 
     // Check for existing plugin with same manifest ID
