@@ -18,8 +18,6 @@ interface AvailablePlugin {
     description: string;
 }
 
-const availablePluginsBaseUrl = !!process.env.NEXT_PUBLIC_BUILT_ON_VERCEL ? (process.env.NEXT_PUBLIC_VERCEL_URL || "next-blog-test-app.vercel.app") : "next-blog-test-app.vercel.app";
-
 export const AvailablePlugins = () => {
     const {apis: api} = useUser();
     const {route} = useLocation();
@@ -35,7 +33,7 @@ export const AvailablePlugins = () => {
     useEffect(() => {
         const fetchAvailablePlugins = async () => {
             try {
-                const response = await fetch(`https://${availablePluginsBaseUrl}/plugins/available.json`);
+                const response = await fetch(`https://next-blog-test-app.vercel.app/plugins/available.json`);
                 if (response.ok) {
                     const data = await response.json();
                     setAvailablePlugins(data.plugins || []);
