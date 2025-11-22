@@ -1,5 +1,5 @@
 import dts from "vite-plugin-dts";
-import {defineConfig, PluginOption} from "vite";
+import {defineConfig, normalizePath, PluginOption} from "vite";
 
 import * as path from "path";
 import tailwindcss from "@tailwindcss/vite";
@@ -113,7 +113,7 @@ export default defineConfig(({mode}) => {
             viteStaticCopy({
                 targets: [
                     {
-                        src: path.resolve(__dirname, './../dashboard/dist/static/'),
+                        src: normalizePath(path.resolve(__dirname, './../dashboard/dist/static/')),
                         dest: 'nextjs/assets/@supergrowthai/next-blog-dashboard',
                     }
                 ],
