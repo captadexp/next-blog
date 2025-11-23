@@ -5,7 +5,8 @@ import tailwindcss from "@tailwindcss/vite";
 import cssInjectedByJs from 'vite-plugin-css-injected-by-js';
 import {Target, viteStaticCopy} from 'vite-plugin-static-copy';
 import * as fs from 'fs';
-
+import { normalizePath } from 'vite'
+import path from 'node:path'
 
 function generateInternalPluginSourcePaths() {
     const internalPluginsDir = resolve(__dirname, '../../plugins/internal');
@@ -19,8 +20,8 @@ function generateInternalPluginSourcePaths() {
             const distPath = resolve(internalPluginsDir, plugin.name, 'dist');
             if (fs.existsSync(distPath)) {
                 targets.push({
-                    src: `${distPath}/**/*`,
-                    dest: `static/internal-plugins/${plugin.name}`
+                    src: normalizePath(path.resolve(`${distPath}/**/*`)),
+                    dest: normalizePath(path.resolve(`static/internal-plugins/${plugin.name}`))
                 });
             }
         }
@@ -66,7 +67,7 @@ export default defineConfig({
         viteStaticCopy({
             targets: [
                 {
-                    src: resolve(__dirname, '../jsx-runtime/dist/runtime.umd.js'),
+                    src: normalizePath(path.resolve(__dirname, '../jsx-runtime/dist/runtime.umd.js')),
                     dest: 'static',
                     rename: 'plugin-runtime.js'
                 },
@@ -79,6 +80,6 @@ export default defineConfig({
             'react': 'preact/compat',
             'react-dom': 'preact/compat',
             'react/jsx-runtime': 'preact/jsx-runtime',
-        },
+    },
     },
 });
