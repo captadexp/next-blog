@@ -4,7 +4,7 @@ import FormField from './FormField';
 import {DynamicFormFieldType} from './types';
 import Loader from '../../Loader';
 import toast from 'react-hot-toast';
-
+import { checkSlug } from '../../../_utils/checkValidity';
 interface DynamicFormProps {
     id: string;
     fields: DynamicFormFieldType[];
@@ -37,17 +37,7 @@ function DynamicForm(props: DynamicFormProps) {
         setFormData(initialData);
     }, [fields]);
     
-    const checkSlug = (value : string)=>{
-            const currentChar = value.charCodeAt(0); 
-            if(!(
-                (currentChar > 47 && currentChar < 58) || // 0-9
-                (currentChar > 64 && currentChar < 91) || // A-Z    
-                (currentChar >96 && currentChar < 123) || // a-z
-                (currentChar == 45) )){ //hypen
-                    return false;
-            }
-            return true;
-    }
+    
     const handleFieldChange = (key: string, value: any) => {
         setFormData(prevData => {
             // Process specific field types
