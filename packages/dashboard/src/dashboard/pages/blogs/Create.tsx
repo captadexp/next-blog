@@ -5,6 +5,7 @@ import {useUser} from '../../../context/UserContext';
 import DynamicForm, {DynamicFormFieldType} from '../../../components/utils/dynamic-form';
 import {Category, Tag} from '@supergrowthai/next-blog-types';
 import {ExtensionPoint, ExtensionZone} from '../../components/ExtensionZone';
+import toast from 'react-hot-toast';
 
 const uniqById = <T extends { _id: string }>(arr: T[]) => {
     const map = new Map<string, T>();
@@ -153,12 +154,27 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
             featuredMediaId: data.featuredMediaId || null,
         };
 
-        const result = await apis.createBlog(blogData);
+        const slugContent = data.slug;
+        let error = true;
+        for(let i =0; i < slugContent.length;i++){
+            const currentChar = slugContent.charCodeAt(i); 
+            if(!(
+                (currentChar > 47 && currentChar < 58) || // 0-9
+                (currentChar > 64 && currentChar < 91) || // A-Z    
+                (currentChar >96 && currentChar < 123) || // a-z
+                (currentChar == 45) )){ //hypen
+                toast.error("Please avoid special characters except hypens in the slug");
+                error=false;
+                break;
+            }
+        }
+        if(error === true){
+            const result = await apis.createBlog(blogData);
+            // Navigate to list page after successful creation
+            location.route('/api/next-blog/dashboard/blogs');        
+            return result;
+        }
 
-        // Navigate to list page after successful creation
-        location.route('/api/next-blog/dashboard/blogs');
-
-        return result;
     };
 
     if (userLoading) {
