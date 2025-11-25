@@ -9,11 +9,18 @@ interface BaseDynamicFormField {
     required?: boolean;
 }
 
+export interface ValidatorResult<T = any> {
+    isValid: boolean;
+    message?: string;
+    value?: T;
+}
+
 // Text field
 export interface TextDynamicFormField extends BaseDynamicFormField {
     type: "text";
     value?: string;
     placeholder?: string;
+    validator?: (value: string) => ValidatorResult<string> | Promise<ValidatorResult<string>>;
 }
 
 // Textarea field

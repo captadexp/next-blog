@@ -206,7 +206,21 @@ const UpdateBlog: FunctionComponent<{ id: string }> = ({id}) => {
         if (!formData) return [];
         return [
             {key: 'title', label: 'Title', type: 'text', value: formData.title, required: true},
-            {key: 'slug', label: 'Slug', type: 'text', value: formData.slug, required: true},
+            {
+                key: 'slug', label: 'Slug', type: 'text', value: formData.slug, required: true,
+                validator: (value: string) => {
+                    const cleanedValue = value.toLowerCase().replace(/[^a-z0-9\-]/g, '');
+                    if (cleanedValue !== value)
+                        return {isValid: false, message: "Cannot contain special characters"}
+
+                    if (cleanedValue === value)
+                        return {isValid: true}
+                    return {
+                        isValid: true,
+                        value: cleanedValue
+                    };
+                }
+            },
             {key: 'excerpt', label: 'Excerpt', type: 'textarea', value: formData.excerpt},
             {
                 key: 'featuredMediaId',

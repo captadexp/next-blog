@@ -19,6 +19,7 @@ function DynamicForm(props: DynamicFormProps) {
         submitLabel,
         apiMethod
     } = props;
+    //IMPORTANT only used to track local formdata for apiMethod call and nothing else. we could maybe ditch it later
     const [formData, setFormData] = useState<Record<string, any>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -83,6 +84,7 @@ function DynamicForm(props: DynamicFormProps) {
         };
 
         try {
+            //usecase: when we have a create form we dont track the data on the page. if we start handling it everywhere then we can remove this apiMethod system the problem is the richtext field data
             await apiMethod(submitData);
         } catch (error) {
             console.error('Error:', error);
@@ -116,7 +118,8 @@ function DynamicForm(props: DynamicFormProps) {
                     disabled={isSubmitting}
                     className={`px-4 py-2 text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 mt-4 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                 >
-                    {isSubmitting ? <div className="flex items-center gap-2"><Loader size="sm" text="" />Submitting...</div> : submitLabel}
+                    {isSubmitting ? <div className="flex items-center gap-2"><Loader size="sm" text=""/>Submitting...
+                    </div> : submitLabel}
                 </button>
             </div>
         </form>

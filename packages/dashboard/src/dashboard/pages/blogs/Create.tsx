@@ -99,7 +99,24 @@ const CreateBlog: FunctionComponent<CreateBlogProps> = () => {
     // Define form fields
     const fields: DynamicFormFieldType[] = [
         {key: 'title', label: 'Title', type: 'text', required: true},
-        {key: 'slug', label: 'Slug', type: 'text', required: true},
+        {
+            key: 'slug', label: 'Slug', type: 'text', required: true,
+            validator: (value: string) => {
+                const cleanedValue = value.toLowerCase().replace(/[^a-z0-9\-]/g, '');
+
+                //multiple ways of handling the validation issues, (inform user/clean it)
+                if (cleanedValue !== value)
+                    return {isValid: false, message: "Cannot contain special characters"}
+
+                if (cleanedValue === value)
+                    return {isValid: true}
+
+                return {
+                    isValid: true,
+                    value: cleanedValue
+                };
+            }
+        },
         {key: 'excerpt', label: 'Excerpt', type: 'textarea'},
         {
             key: 'featuredMediaId',
