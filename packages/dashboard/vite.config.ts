@@ -1,11 +1,10 @@
-import {defineConfig} from 'vite';
+import {defineConfig, normalizePath} from 'vite';
 import {resolve} from 'path';
 import dts from 'vite-plugin-dts';
 import tailwindcss from "@tailwindcss/vite";
 import cssInjectedByJs from 'vite-plugin-css-injected-by-js';
 import {Target, viteStaticCopy} from 'vite-plugin-static-copy';
 import * as fs from 'fs';
-import { normalizePath } from 'vite'
 import path from 'node:path'
 
 function generateInternalPluginSourcePaths() {
@@ -21,7 +20,7 @@ function generateInternalPluginSourcePaths() {
             if (fs.existsSync(distPath)) {
                 targets.push({
                     src: normalizePath(path.resolve(`${distPath}/**/*`)),
-                    dest: normalizePath(path.resolve(`static/internal-plugins/${plugin.name}`))
+                    dest: normalizePath(path.resolve(`dist/static/internal-plugins/${plugin.name}`))
                 });
             }
         }
@@ -80,6 +79,6 @@ export default defineConfig({
             'react': 'preact/compat',
             'react-dom': 'preact/compat',
             'react/jsx-runtime': 'preact/jsx-runtime',
-    },
+        },
     },
 });
