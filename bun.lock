@@ -6,11 +6,11 @@
       "name": "@supergrowthai/next-blog-workspace",
       "dependencies": {
         "moment": "^2.30.1",
-        "rimraf": "^6.1.0",
-        "vite": "^7.2.2",
+        "rimraf": "^6.1.2",
+        "vite": "^7.2.4",
       },
       "devDependencies": {
-        "@typescript/native-preview": "^7.0.0-dev.20251112.1",
+        "@typescript/native-preview": "^7.0.0-dev.20251123.1",
         "jsdom": "^27.2.0",
         "turbo": "^2.6.1",
         "typescript": "^5.9.3",
@@ -41,7 +41,7 @@
     },
     "lib/mq": {
       "name": "@supergrowthai/mq",
-      "version": "1.0.1",
+      "version": "1.0.2-beta.0",
       "dependencies": {
         "@aws-sdk/client-kinesis": "^3.797.0",
         "bson": "^6.10.3",
@@ -63,7 +63,7 @@
     },
     "lib/oneapi": {
       "name": "@supergrowthai/oneapi",
-      "version": "2.0.1-beta.1",
+      "version": "2.0.1-beta.2",
       "dependencies": {
         "iron-session": "^8.0.4",
       },
@@ -91,7 +91,7 @@
     },
     "lib/tq": {
       "name": "@supergrowthai/tq",
-      "version": "1.0.1",
+      "version": "1.0.2-beta.0",
       "dependencies": {
         "@supergrowthai/mq": "workspace:*",
         "lodash": "^4.17.21",
@@ -114,7 +114,7 @@
     },
     "packages/core": {
       "name": "@supergrowthai/next-blog",
-      "version": "3.0.1-beta.1",
+      "version": "3.0.1-beta.2",
       "dependencies": {
         "memoose-js": "2.0.0-canary.7fa17b2",
       },
@@ -232,7 +232,7 @@
     },
     "packages/types": {
       "name": "@supergrowthai/next-blog-types",
-      "version": "1.0.1-beta.1",
+      "version": "1.0.1-beta.2",
       "devDependencies": {
         "@types/node": "^24.5.2",
         "memoose-js": "2.0.0-canary.7fa17b2",
@@ -244,7 +244,7 @@
     },
     "packages/ui": {
       "name": "@supergrowthai/next-blog-ui",
-      "version": "2.0.1-beta.1",
+      "version": "2.0.1-beta.2",
       "devDependencies": {
         "@supergrowthai/next-blog": "workspace:*",
         "@supergrowthai/plugin-dev-kit": "workspace:*",
