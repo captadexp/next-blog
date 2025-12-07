@@ -1,6 +1,6 @@
 {
   "name": "@supergrowthai/oneapi",
-  "version": "2.0.1-beta.2",
+  "version": "2.0.2",
   "publishConfig": {
     "access": "public"
   },

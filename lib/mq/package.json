@@ -1,6 +1,6 @@
 {
   "name": "@supergrowthai/mq",
-  "version": "1.0.2-beta.0",
+  "version": "1.0.3",
   "description": "Message queue library with multiple provider backends (Kinesis, MongoDB, Memory, Immediate)",
   "repository": "git+https://github.com/captadexp/next-blog.git",
   "homepage": "https://github.com/captadexp/next-blog/tree/main#readme",
