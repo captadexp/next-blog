@@ -59,9 +59,9 @@
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "MIT",
   "dependencies": {
-    "memoose-js": "2.0.0-canary.7fa17b2",
+    "memoose-js": "2.0.2",
     "@supergrowthai/next-blog-types": "workspace:*",
-    "htmlparser2": "^9.1.0",
+    "htmlparser2": "^10.0.0",
     "domhandler": "^5.0.3",
     "dom-serializer": "^2.0.0"
   },

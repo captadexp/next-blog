@@ -11,7 +11,7 @@
   "devDependencies": {
     "@supergrowthai/plugin-dev-kit": "workspace:*",
     "typescript": "^5.0.0",
-    "vite": "^5.0.0"
+    "vite": "^7.2.6"
   },
   "nextBlog": {
     "baseUrl": "http://localhost:3248/plugins/seo-llms",

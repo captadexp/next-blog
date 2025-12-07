@@ -126,7 +126,7 @@
     "typescript": "^5.9.2",
     "vite": "^7.1.5",
     "vite-plugin-dts": "^4.5.4",
-    "memoose-js": "2.0.0-canary.7fa17b2"
+    "memoose-js": "2.0.2"
   },
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "MIT",

@@ -11,9 +11,9 @@
   "devDependencies": {
     "@supergrowthai/plugin-dev-kit": "workspace:*",
     "typescript": "^5.0.0",
-    "@tailwindcss/vite": "^4.1.14",
-    "tailwindcss": "^4.1.14",
-    "vite": "^5.0.0"
+    "@tailwindcss/vite": "^4.1.17",
+    "tailwindcss": "^4.1.17",
+    "vite": "^7.2.6"
   },
   "nextBlog": {
     "baseUrl": "http://localhost:3248/plugins/ai-blog-generator",
@@ -21,6 +21,6 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "openai": "^6.2.0"
+    "openai": "^6.10.0"
   }
 }
