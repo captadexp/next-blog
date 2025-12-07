@@ -12,7 +12,7 @@ export class ExpressRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkn
         this.genericRouter = new GenericRouter(pathObject, config);
     }
 
-    middleware() {
+    middleware(): (req: ExpressRequest, res: ExpressResponse, next: NextFunction) => Promise<void> {
         return async (req: ExpressRequest, res: ExpressResponse, next: NextFunction) => {
             try {
                 const request = this.convertExpressToWebRequest(req);

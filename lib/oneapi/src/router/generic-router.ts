@@ -14,6 +14,18 @@ import {
 export interface GenericRouterConfig<CREDENTIALS = unknown, USER = unknown, SESSION = unknown> extends IRouterConfig<CREDENTIALS, USER, SESSION> {
 }
 
+function headersToEntries(headers: Record<string, string | string[]>): [string, string][] {
+    const entries: [string, string][] = [];
+    for (const [key, value] of Object.entries(headers)) {
+        if (Array.isArray(value)) {
+            value.forEach(v => entries.push([key, v]));
+        } else {
+            entries.push([key, value]);
+        }
+    }
+    return entries;
+}
+
 export class GenericRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unknown> {
     private routeCache = new Map<string, PathMatchResult>();
 
@@ -133,26 +145,10 @@ export class GenericRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkn
                 return response;
             }
 
-            if ('code' in response && 'message' in response) {
-                const httpStatus = this.getHttpStatus(response.code);
-                return Response.json(response, {
-                    status: httpStatus,
-                    headers: headersForResponse as any
-                });
-            }
-
-            return Response.json(response, {headers: headersForResponse as any});
-
+            return Response.json(response, {headers: headersToEntries(headersForResponse)});
         } catch (e) {
             return this.handleError(e);
         }
-    }
-
-    private getHttpStatus(code: number): number {
-        if (code === 0) return 200;
-        if (code >= 100 && code < 600) return code;
-        if (code < 0) return 200;
-        return 500;
     }
 
     private handleError(e: any): CommonResponse {
@@ -167,8 +163,7 @@ export class GenericRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkn
         } else if (e instanceof Success) {
             return Response.json({code: e.code, message: e.message, payload: e.payload}, {status: 200});
         } else if (e instanceof Exception) {
-            const httpCode = this.getHttpStatus(e.code);
-            return Response.json({code: e.code, message: e.message}, {status: httpCode});
+            return Response.json({code: e.code, message: e.message}, {status: 503});
         } else {
             console.error("Unhandled error:", e);
             return Response.json({
