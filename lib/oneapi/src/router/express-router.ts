@@ -83,7 +83,7 @@ export class ExpressRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkn
         res.status(response.status);
 
         response.headers.forEach((value, key) => {
-            res.setHeader(key, value);
+            res.append(key, value);
         });
 
         if (response.body) {
