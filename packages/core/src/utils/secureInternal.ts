@@ -1,4 +1,5 @@
 import type {MinimumRequest, OneApiFunction} from "@supergrowthai/oneapi";
+import {Forbidden, UnAuthorised} from "@supergrowthai/oneapi";
 import type {Permission} from "@supergrowthai/next-blog-types/server";
 import {hasAllPermissions, hasAnyPermission, hasPermission} from "./permissions.js";
 import {Session} from "../auth/sessions.ts";
@@ -27,37 +28,25 @@ export function secure(
     const wrappedFn: OneApiFunction = async (session, request, extra) => {
         // Check if user is authenticated
         if (!session.user) {
-            return {
-                code: 401,
-                message: "Authentication required"
-            };
+            throw new UnAuthorised("Authentication required");
         }
 
         // Check permissions if required
         if (options?.requirePermission) {
             if (!hasPermission(session.user, options.requirePermission)) {
-                return {
-                    code: 403,
-                    message: `Insufficient permissions. Required: ${options.requirePermission}`
-                };
+                throw new Forbidden(`Insufficient permissions. Required: ${options.requirePermission}`);
             }
         }
 
         if (options?.requireAnyPermission && options.requireAnyPermission.length > 0) {
             if (!hasAnyPermission(session.user, options.requireAnyPermission)) {
-                return {
-                    code: 403,
-                    message: `Insufficient permissions. Required any of: ${options.requireAnyPermission.join(', ')}`
-                };
+                throw new Forbidden(`Insufficient permissions. Required any of: ${options.requireAnyPermission.join(', ')}`);
             }
         }
 
         if (options?.requireAllPermissions && options.requireAllPermissions.length > 0) {
             if (!hasAllPermissions(session.user, options.requireAllPermissions)) {
-                return {
-                    code: 403,
-                    message: `Insufficient permissions. Required all of: ${options.requireAllPermissions.join(', ')}`
-                };
+                throw new Forbidden(`Insufficient permissions. Required all of: ${options.requireAllPermissions.join(', ')}`);
             }
         }
 
@@ -92,7 +81,7 @@ export function securePlus(
     const wrapped: OneApiFunction = async (session, request, extra) => {
         // 1) Auth required
         if (!session.user) {
-            return {code: 401, message: "Authentication required"};
+            throw new UnAuthorised("Authentication required");
         }
 
         // 2) CSRF for unsafe methods (double-submit: header must equal cookie)
@@ -102,35 +91,29 @@ export function securePlus(
             const sessionToken = (session.session as Session).csrf
 
             if (!headerToken || !cookieToken || !sessionToken) {
-                return {code: 403, message: "Missing CSRF token"};
+                throw new Forbidden("Missing CSRF token");
             }
             if (headerToken !== cookieToken || headerToken !== sessionToken) {
-                return {code: 403, message: "Invalid CSRF token"};
+                throw new Forbidden("Invalid CSRF token");
             }
         }
 
         // 3) Permission checks (same semantics as your original)
         if (options?.requirePermission) {
             if (!hasPermission(session.user, options.requirePermission)) {
-                return {code: 403, message: `Insufficient permissions. Required: ${options.requirePermission}`};
+                throw new Forbidden(`Insufficient permissions. Required: ${options.requirePermission}`);
             }
         }
 
         if (options?.requireAnyPermission?.length) {
             if (!hasAnyPermission(session.user, options.requireAnyPermission)) {
-                return {
-                    code: 403,
-                    message: `Insufficient permissions. Required any of: ${options.requireAnyPermission.join(", ")}`
-                };
+                throw new Forbidden(`Insufficient permissions. Required any of: ${options.requireAnyPermission.join(", ")}`);
             }
         }
 
         if (options?.requireAllPermissions?.length) {
             if (!hasAllPermissions(session.user, options.requireAllPermissions)) {
-                return {
-                    code: 403,
-                    message: `Insufficient permissions. Required all of: ${options.requireAllPermissions.join(", ")}`
-                };
+                throw new Forbidden(`Insufficient permissions. Required all of: ${options.requireAllPermissions.join(", ")}`);
             }
         }
 

@@ -44,6 +44,13 @@ export class NotFound extends Exception {
     }
 }
 
+export class MethodNotAllowed extends Exception {
+    constructor(message: string = 'Method Not Allowed') {
+        super(405, message);
+        this.name = 'MethodNotAllowed';
+    }
+}
+
 export class InternalServerError extends Exception {
     constructor(message: string = 'Internal Server Error') {
         super(500, message);

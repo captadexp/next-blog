@@ -1,4 +1,5 @@
 import type {MinimumRequest, OneApiFunctionResponse, SessionData} from "@supergrowthai/oneapi";
+import {BadRequest, Forbidden, InternalServerError, NotFound} from "@supergrowthai/oneapi";
 import type {ApiExtra} from "../types/api.js";
 import path from "path";
 import {NextResponse} from "next/server";
@@ -55,10 +56,7 @@ export async function handleStaticFileRequest(session: SessionData, request: Min
         }
 
         if (!filePath) {
-            return {
-                code: 400,
-                message: "No file path specified"
-            };
+            throw new BadRequest("No file path specified");
         }
 
         // Get the file extension
@@ -66,10 +64,7 @@ export async function handleStaticFileRequest(session: SessionData, request: Min
 
         // Check if the file extension is allowed
         if (!Object.keys(ALLOWED_EXTENSIONS).includes(ext)) {
-            return {
-                code: 403,
-                message: `File type not allowed: ${ext}`
-            };
+            throw new Forbidden(`File type not allowed: ${ext}`);
         }
 
         // Get the MIME type for this extension
@@ -79,10 +74,7 @@ export async function handleStaticFileRequest(session: SessionData, request: Min
         const content = readStaticFile(filePath);
 
         if (!content) {
-            return {
-                code: 404,
-                message: `File not found: ${filePath}`
-            };
+            throw new NotFound(`File not found: ${filePath}`);
         }
 
         // Return as a proper Response with appropriate headers
@@ -99,10 +91,7 @@ export async function handleStaticFileRequest(session: SessionData, request: Min
         });
     } catch (error) {
         console.error('Error serving static file:', error);
-        return {
-            code: 500,
-            message: `Error serving static file: ${error instanceof Error ? error.message : String(error)}`
-        };
+        throw new InternalServerError(`Error serving static file: ${error instanceof Error ? error.message : String(error)}`);
     }
 }
 

@@ -1,4 +1,5 @@
 import type {MinimumRequest, OneApiFunction, PathObject, SessionData} from "@supergrowthai/oneapi";
+import {MethodNotAllowed} from "@supergrowthai/oneapi";
 import {DashboardPage} from "@supergrowthai/next-blog-dashboard";
 import {
     createBlog,
@@ -66,7 +67,7 @@ function methodHandler(handlers: {
     return async (session, request, extra) => {
         const handler = handlers[request.method as keyof typeof handlers];
         if (!handler) {
-            return {code: 405, message: 'Method not allowed'};
+            throw new MethodNotAllowed('Method not allowed');
         }
         return handler(session, request, extra);
     };

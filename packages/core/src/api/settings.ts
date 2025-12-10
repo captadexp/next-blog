@@ -254,7 +254,7 @@ export const updateSetting = secure(async (session: SessionData, request: Minimu
     // Re-fetch the updated doc to return the actual record
     let setting: ExtendedSettingsEntry | null = await db.settings.findOne({_id: settingId});
 
-    if (!setting) return {code: 404, message: "Setting not found."};
+    if (!setting) throw new NotFound("Setting not found.");
 
     let isOrphaned = undefined;
     if (setting.ownerType === 'plugin') {

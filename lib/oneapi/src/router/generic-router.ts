@@ -1,5 +1,14 @@
 import {getCachedMatch} from '../parse-path.js';
-import {BadRequest, Exception, Forbidden, NotFound, Success, UnAuthorised} from '../errors.js';
+import {
+    BadRequest,
+    Exception,
+    Forbidden,
+    InternalServerError,
+    MethodNotAllowed,
+    NotFound,
+    Success,
+    UnAuthorised
+} from '../errors.js';
 import {
     CommonRequest,
     CommonResponse,
@@ -36,6 +45,8 @@ export class GenericRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkn
     }
 
     async handle(request: CommonRequest): Promise<CommonResponse> {
+        const headersForResponse: Record<string, string | string[]> = {};
+
         try {
             const url = new URL(request.url);
             const pathname = this.config.pathPrefix && url.pathname.startsWith(this.config.pathPrefix)
@@ -50,7 +61,6 @@ export class GenericRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkn
                 throw new NotFound();
             }
 
-            const headersForResponse: Record<string, string | string[]> = {};
             const patchedResponse: OneApiResponse = new Response() as any;
             patchedResponse.setHeader = (k: string, v: string | string[]) => {
                 headersForResponse[k] = v;
@@ -147,29 +157,37 @@ export class GenericRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkn
 
             return Response.json(response, {headers: headersToEntries(headersForResponse)});
         } catch (e) {
-            return this.handleError(e);
+            return this.handleError(e, {headers: headersToEntries(headersForResponse)});
         }
     }
 
-    private handleError(e: any): CommonResponse {
+    private handleError(e: any, responseInitLike: any): CommonResponse {
         if (e instanceof UnAuthorised) {
-            return Response.json({code: e.code, message: e.message}, {status: 401});
+            return Response.json({code: e.code, message: e.message}, {status: 401, ...responseInitLike});
         } else if (e instanceof Forbidden) {
-            return Response.json({code: e.code, message: e.message}, {status: 403});
+            return Response.json({code: e.code, message: e.message}, {status: 403, ...responseInitLike});
         } else if (e instanceof NotFound) {
-            return Response.json({code: e.code, message: e.message}, {status: 404});
+            return Response.json({code: e.code, message: e.message}, {status: 404, ...responseInitLike});
+        } else if (e instanceof MethodNotAllowed) {
+            return Response.json({code: e.code, message: e.message}, {status: 405, ...responseInitLike});
         } else if (e instanceof BadRequest) {
-            return Response.json({code: e.code, message: e.message}, {status: 400});
+            return Response.json({code: e.code, message: e.message}, {status: 400, ...responseInitLike});
+        } else if (e instanceof InternalServerError) {
+            return Response.json({code: e.code, message: e.message}, {status: 500, ...responseInitLike});
         } else if (e instanceof Success) {
-            return Response.json({code: e.code, message: e.message, payload: e.payload}, {status: 200});
+            return Response.json({
+                code: e.code,
+                message: e.message,
+                payload: e.payload
+            }, {status: 200, ...responseInitLike});
         } else if (e instanceof Exception) {
-            return Response.json({code: e.code, message: e.message}, {status: 503});
+            return Response.json({code: e.code, message: e.message}, {status: 503, ...responseInitLike});
         } else {
             console.error("Unhandled error:", e);
             return Response.json({
                 code: 500,
                 message: `Internal Server Error: ${e instanceof Error ? e.message : String(e)}`
-            }, {status: 500});
+            }, {status: 500, ...responseInitLike});
         }
     }
 }
