@@ -1,6 +1,6 @@
 {
   "name": "@supergrowthai/next-blog-types",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Shared TypeScript types for SupergrowthAI Next Blog platform",
   "repository": "git+https://github.com/captadexp/next-blog.git",
   "homepage": "https://github.com/captadexp/next-blog/tree/main#readme",
