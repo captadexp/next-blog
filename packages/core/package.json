@@ -1,6 +1,6 @@
 {
   "name": "@supergrowthai/next-blog",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "description": "Add blogging to your nextjs project in a jiffy",
   "repository": "git+https://github.com/captadexp/next-blog.git",
   "homepage": "https://github.com/captadexp/next-blog/tree/main#readme",
