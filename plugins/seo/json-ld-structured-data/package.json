@@ -11,15 +11,15 @@
   "devDependencies": {
     "@supergrowthai/plugin-dev-kit": "workspace:*",
     "typescript": "^5.9.3",
-    "@types/bun": "^1.3.2",
-    "vite": "^7.2.7"
+    "@types/bun": "^1.3.5",
+    "vite": "^7.3.1"
   },
   "nextBlog": {
     "baseUrl": "http://localhost:3248/plugins/json-ld-structured-data",
     "devBaseUrl": "http://localhost:3001"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.1.17",
-    "tailwindcss": "^4.1.17"
+    "@tailwindcss/vite": "^4.1.18",
+    "tailwindcss": "^4.1.18"
   }
 }

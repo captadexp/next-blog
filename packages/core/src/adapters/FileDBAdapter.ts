@@ -1051,9 +1051,13 @@ export class FileDBAdapter implements DatabaseAdapter {
         try {
             const data = await fs.readFile(this.dataPath + fileName, {encoding: 'utf8'});
             return JSON.parse(data);
-        } catch (error) {
-            console.error('Error reading file:', error);
-            return [];
+        } catch (error: any) {
+            // File not found is expected on first run before ensureFilesExist completes
+            if (error?.code === 'ENOENT') {
+                return [];
+            }
+            // All other errors should fail fast
+            throw new Error(`Failed to read ${fileName}: ${error?.message || error}`);
         }
     }
 

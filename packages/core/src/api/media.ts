@@ -34,7 +34,6 @@ export const getMedia = secure(async (session, request, extra) => {
     }
 
     if (!!search) {
-        console.log("search", typeof search, search)
         filter = {
             ...filter,
             $or: [

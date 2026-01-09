@@ -58,7 +58,7 @@ export const getCategories = secure(async (session: SessionData, request: Minimu
         console.error("Error fetching categories:", error);
         throw new DatabaseError("Failed to retrieve categories: " + (error instanceof Error ? error.message : String(error)));
     }
-});
+}, {requirePermission: 'categories:list'});
 
 // Get a single category by ID
 export const getCategoryById = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
@@ -90,7 +90,7 @@ export const getCategoryById = secure(async (session: SessionData, request: Mini
         console.error(`Error fetching category ${categoryId}:`, error);
         throw new DatabaseError("Failed to retrieve category: " + (error instanceof Error ? error.message : String(error)));
     }
-});
+}, {requirePermission: 'categories:read'});
 
 // Create a new category
 export const createCategory = secure(async (session: SessionData, request: MinimumRequest<any, Partial<CategoryData>>, extra: ApiExtra) => {
@@ -236,4 +236,4 @@ export const deleteCategory = secure(async (session: SessionData, request: Minim
         console.error(`Error deleting category ${categoryId}:`, error);
         throw new DatabaseError("Failed to delete category: " + (error instanceof Error ? error.message : String(error)));
     }
-});
+}, {requirePermission: 'categories:delete'});

@@ -41,15 +41,15 @@
   "dependencies": {
     "moment": "^2.30.1",
     "rimraf": "^6.1.2",
-    "vite": "^7.2.7"
+    "vite": "^7.3.1"
   },
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "MIT",
   "packageManager": "bun@1.3.2",
   "devDependencies": {
-    "@typescript/native-preview": "^7.0.0-dev.20251210.1",
-    "jsdom": "^27.3.0",
-    "turbo": "^2.6.3",
+    "@typescript/native-preview": "^7.0.0-dev.20260109.1",
+    "jsdom": "^27.4.0",
+    "turbo": "^2.7.3",
     "typescript": "^5.9.3"
   },
   "trustedDependencies": [
