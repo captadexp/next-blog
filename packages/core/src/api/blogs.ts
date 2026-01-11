@@ -18,7 +18,7 @@ export const getBlogs = secure(async (session: SessionData, request: MinimumRequ
         let blogs = await db.blogs.find({}, {
             skip,
             limit,
-            sort: {_id: -1},
+            sort: {createdAt: -1},
             projection: {content: 0, metadata: 0}
         });
 
@@ -99,10 +99,14 @@ export const createBlog = secure(async (session: SessionData, request: MinimumRe
             data = filterKeys<BlogData>(beforeResult.data, BLOG_CREATE_FIELDS);
         }
 
-        const extras = {
+        const extras: any = {
             createdAt: Date.now(),
             updatedAt: Date.now()
         };
+
+        if (data.status === 'published') {
+            extras.publishedAt = Date.now();
+        }
 
         const cleanedBody = {
             ...data,
@@ -138,12 +142,16 @@ export const updateBlog = secure(async (session: SessionData, request: MinimumRe
         // Filter to only allowed fields
         let body = filterKeys<BlogData>(rawBody, BLOG_UPDATE_FIELDS);
 
-        const extras = {updatedAt: Date.now()};
-
         // Check if blog exists first
         const existingBlog = await db.blogs.findOne({_id: blogId});
         if (!existingBlog) {
             throw new NotFound(`Blog with id ${blogId} not found`);
+        }
+
+        const extras: any = {updatedAt: Date.now()};
+
+        if (body.status === 'published' && !existingBlog.publishedAt) {
+            extras.publishedAt = Date.now();
         }
 
         // Check if user is trying to update someone else's blog

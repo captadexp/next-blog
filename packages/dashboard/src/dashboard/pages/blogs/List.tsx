@@ -70,6 +70,7 @@ const BlogsList: FunctionComponent<BlogsListProps> = () => {
                                     <th className="p-3 text-left border-b border-gray-200">Title</th>
                                     <th className="p-3 text-left border-b border-gray-200">Created</th>
                                     <th className="p-3 text-left border-b border-gray-200">Updated</th>
+                                    <th className="p-3 text-left border-b border-gray-200">Published</th>
                                     <th className="p-3 text-left border-b border-gray-200">Actions</th>
                                 </tr>
                                 </thead>
@@ -85,6 +86,7 @@ const BlogsList: FunctionComponent<BlogsListProps> = () => {
                                             </td>
                                             <td className="p-3">{formatDate(blog.createdAt)}</td>
                                             <td className="p-3">{formatDate(blog.updatedAt)}</td>
+                                            <td className="p-3">{blog.publishedAt ? formatDate(blog.publishedAt) : '-'}</td>
                                             <td className="p-3">
                                                 {hasPermission('blogs:update') && (
                                                     <a
