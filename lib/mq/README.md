@@ -346,6 +346,95 @@ const messageQueue = new KinesisQueue({
 });
 ```
 
+## Queue Lifecycle Callbacks
+
+Monitor queue events for health checks, metrics collection, and observability:
+
+```typescript
+import {IQueueLifecycleProvider, QueueInfo, ConsumerInfo} from '@supergrowthai/mq';
+
+const lifecycleProvider: IQueueLifecycleProvider = {
+    onMessagePublished(info: QueueInfo & { message_type: string; message_id?: string }) {
+        console.log(`Message published: ${info.message_id} to ${info.queue_id}`);
+    },
+
+    onMessageConsumed(info: QueueInfo & { message_type: string; message_id?: string; age_ms: number }) {
+        console.log(`Message consumed: ${info.message_id}, age: ${info.age_ms}ms`);
+    },
+
+    onConsumerConnected(info: ConsumerInfo) {
+        console.log(`Consumer connected: ${info.consumer_id} (${info.consumer_type})`);
+    },
+
+    onConsumerDisconnected(info: ConsumerInfo & { reason: string }) {
+        console.log(`Consumer disconnected: ${info.consumer_id}, reason: ${info.reason}`);
+    },
+
+    // Kinesis-specific: checkpoint events
+    onConsumerCheckpoint(info: { consumer_id: string; shard_id: string; sequence_number: string }) {
+        console.log(`Checkpoint: shard ${info.shard_id} at ${info.sequence_number}`);
+    }
+};
+
+// Set lifecycle config on queue
+const messageQueue = new InMemoryQueue();
+messageQueue.setLifecycleConfig({
+    lifecycleProvider,
+    mode: 'async'  // 'sync' or 'async' (default: async)
+});
+```
+
+### Unified Consumer Model
+
+For Kinesis queues, individual shards are treated as sub-consumers:
+
+```typescript
+// Worker consumer
+{
+    consumer_id: 'memory-12345-1704067200',
+        consumer_type
+:
+    'worker',
+        queue_id
+:
+    'my-queue'
+}
+
+// Kinesis shard consumer
+{
+    consumer_id: 'shard-shardId-001',
+        consumer_type
+:
+    'shard',
+        queue_id
+:
+    'my-kinesis-stream',
+        shard_id
+:
+    'shardId-001',
+        parent_consumer_id
+:
+    'kinesis-worker-12345'
+}
+```
+
+### QueueInfo Properties
+
+| Property | Type   | Description                                          |
+|----------|--------|------------------------------------------------------|
+| queue_id | string | Queue identifier                                     |
+| provider | string | Queue provider name ('memory', 'mongodb', 'kinesis') |
+
+### ConsumerInfo Properties
+
+| Property           | Type                | Description                            |
+|--------------------|---------------------|----------------------------------------|
+| consumer_id        | string              | Unique consumer identifier             |
+| consumer_type      | 'worker' \| 'shard' | Type of consumer                       |
+| queue_id           | string              | Queue being consumed                   |
+| shard_id           | string?             | Kinesis shard ID (for shard consumers) |
+| parent_consumer_id | string?             | Parent worker ID (for shard consumers) |
+
 ## TypeScript Support
 
 Full TypeScript definitions are included:

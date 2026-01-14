@@ -16,6 +16,15 @@ import {
     TaskErrorInfo,
     TaskQueueStats
 } from "./ITaskNotificationProvider.js";
+import type {
+    ITaskLifecycleProvider,
+    IWorkerLifecycleProvider,
+    TaskContext,
+    TaskHandlerConfig,
+    WorkerInfo,
+    WorkerStats
+} from "./lifecycle.js";
+import * as os from "os";
 
 const METRICS_KEY_PREFIX = 'task_metrics:';
 const DISCARDED_TASKS_KEY = `${METRICS_KEY_PREFIX}discarded_tasks`;
@@ -29,6 +38,24 @@ export class TaskHandler<ID> {
     private taskRunner: TaskRunner<ID>;
     private readonly taskStore: TaskStore<ID>;
     private matureTaskTimer: NodeJS.Timeout | null = null;
+    private heartbeatTimer: NodeJS.Timeout | null = null;
+    private readonly config: TaskHandlerConfig;
+
+    // Worker info
+    private readonly workerId: string;
+    private readonly workerStartedAt: Date;
+    private enabledQueues: string[] = [];
+    private workerStarted = false;
+
+    // Worker stats
+    private workerStats: WorkerStats = {
+        tasks_processed: 0,
+        tasks_succeeded: 0,
+        tasks_failed: 0,
+        avg_processing_ms: 0,
+        current_task: undefined
+    };
+    private totalProcessingMs = 0;
 
     private readonly queueStats = new Map<QueueName, {
         success: number;
@@ -43,12 +70,36 @@ export class TaskHandler<ID> {
         private databaseAdapter: ITaskStorageAdapter<ID>,
         private cacheAdapter: CacheProvider<any>,
         private asyncTaskManager?: IAsyncTaskManager<ID>,
-        private notificationProvider?: ITaskNotificationProvider
+        private notificationProvider?: ITaskNotificationProvider,
+        config?: TaskHandlerConfig
     ) {
         this.logger = new Logger('TaskHandler', LogLevel.INFO);
+        this.config = config || {};
+
+        // Initialize worker identity
+        this.workerId = `${os.hostname()}-${process.pid}-${Date.now()}`;
+        this.workerStartedAt = new Date();
 
         this.taskStore = new TaskStore<ID>(databaseAdapter);
-        this.taskRunner = new TaskRunner<ID>(messageQueue, taskQueuesManager, this.taskStore, this.cacheAdapter, databaseAdapter.generateId.bind(databaseAdapter));
+        this.taskRunner = new TaskRunner<ID>(
+            messageQueue,
+            taskQueuesManager,
+            this.taskStore,
+            this.cacheAdapter,
+            databaseAdapter.generateId.bind(databaseAdapter),
+            this.config.lifecycleProvider,
+            this.config.lifecycle
+        );
+    }
+
+    // ============ Lifecycle Event Helpers ============
+
+    private get lifecycleProvider(): ITaskLifecycleProvider | undefined {
+        return this.config.lifecycleProvider;
+    }
+
+    private get workerProvider(): IWorkerLifecycleProvider | undefined {
+        return this.config.workerProvider;
     }
 
     async addTasks(tasks: CronTask<ID>[]) {
@@ -78,7 +129,7 @@ export class TaskHandler<ID> {
         const iQueues = Object.keys(diffedItems.immediate) as unknown as QueueName[];
         for (let i = 0; i < iQueues.length; i++) {
             const queue = iQueues[i];
-            const tasks: CronTask<ID>[] = diffedItems.immediate[queue]
+            const queueTasks: CronTask<ID>[] = diffedItems.immediate[queue]
                 .map((task) => {
                     const executor = this.taskQueuesManager.getExecutor(task.queue_id, task.type);
                     const shouldStoreOnFailure = executor?.store_on_failure ?? false;
@@ -86,20 +137,40 @@ export class TaskHandler<ID> {
                     return ({...id, ...task});
                 });
 
-            await this.messageQueue.addMessages(queue, tasks as unknown as CronTask<ID>[]);
+            await this.messageQueue.addMessages(queue, queueTasks as unknown as CronTask<ID>[]);
+
+            // Emit onTaskScheduled for each task
+            if (this.lifecycleProvider?.onTaskScheduled) {
+                for (const task of queueTasks) {
+                    this.emitLifecycleEvent(
+                        this.lifecycleProvider.onTaskScheduled,
+                        this.buildTaskContext(task)
+                    );
+                }
+            }
         }
 
         const fQueues = Object.keys(diffedItems.future) as unknown as QueueName[];
         for (let i = 0; i < fQueues.length; i++) {
             const queue = fQueues[i];
-            const tasks: CronTask<ID>[] = diffedItems.future[queue]
+            const queueTasks: CronTask<ID>[] = diffedItems.future[queue]
                 .map((task) => {
                     const executor = this.taskQueuesManager.getExecutor(task.queue_id, task.type);
                     const shouldStoreOnFailure = executor?.store_on_failure ?? false;
                     const id = shouldStoreOnFailure ? {id: this.databaseAdapter.generateId(),} : {}
                     return ({...id, ...task});
                 });
-            await this.taskStore.addTasksToScheduled(tasks);
+            await this.taskStore.addTasksToScheduled(queueTasks);
+
+            // Emit onTaskScheduled for each task
+            if (this.lifecycleProvider?.onTaskScheduled) {
+                for (const task of queueTasks) {
+                    this.emitLifecycleEvent(
+                        this.lifecycleProvider.onTaskScheduled,
+                        this.buildTaskContext(task)
+                    );
+                }
+            }
         }
     }
 
@@ -158,6 +229,25 @@ export class TaskHandler<ID> {
             } else {
                 discardedTasksCount++;
                 this.logger.info(`Discarding task of type ${task.type} after ${taskRetryCount} retries`);
+
+                // Emit onTaskExhausted for discarded tasks
+                if (this.lifecycleProvider?.onTaskExhausted) {
+                    const ctx = this.buildTaskContext(task);
+                    const errorMessage = task.execution_stats?.last_error as string || 'Task exhausted all retries';
+                    this.emitLifecycleEvent(
+                        this.lifecycleProvider.onTaskExhausted,
+                        {
+                            ...ctx,
+                            timing: {
+                                queued_duration_ms: 0,
+                                processing_duration_ms: 0,
+                                total_duration_ms: Date.now() - (task.created_at?.getTime() || Date.now())
+                            },
+                            error: new Error(errorMessage),
+                            total_attempts: taskRetryCount + 1
+                        }
+                    );
+                }
             }
         }
 
@@ -187,6 +277,21 @@ export class TaskHandler<ID> {
             if (abortSignal?.aborted) {
                 this.logger.info(`AbortSignal detected, skipping processing of ${tasks.length} tasks for stream ${streamName}`);
                 return {failedTasks: [], newTasks: [], successTasks: [], asyncTasks: [], ignoredTasks: []};
+            }
+
+            const batchStartTime = Date.now();
+            const taskTypes = [...new Set(tasks.map(t => t.type))];
+
+            // Emit batch started
+            if (this.workerProvider?.onBatchStarted) {
+                this.emitLifecycleEvent(
+                    this.workerProvider.onBatchStarted,
+                    {
+                        ...this.buildWorkerInfo(),
+                        batch_size: tasks.length,
+                        task_types: taskTypes
+                    }
+                );
             }
 
             this.logger.debug(`Processing ${tasks.length} tasks for stream ${streamName}`);
@@ -248,9 +353,142 @@ export class TaskHandler<ID> {
 
             await this.reportQueueStats(streamName);
 
+            // Update worker stats
+            const batchDuration = Date.now() - batchStartTime;
+            this.updateWorkerStats(successTasks.length, failedTasks.length, batchDuration);
+
+            // Emit batch completed
+            if (this.workerProvider?.onBatchCompleted) {
+                this.emitLifecycleEvent(
+                    this.workerProvider.onBatchCompleted,
+                    {
+                        ...this.buildWorkerInfo(),
+                        batch_size: tasks.length,
+                        succeeded: successTasks.length,
+                        failed: failedTasks.length,
+                        duration_ms: batchDuration
+                    }
+                );
+            }
+
             this.logger.debug(`Completed processing for stream ${streamName}: ${successTasks.length} succeeded, ${failedTasks.length} failed, ${newTasks.length} new tasks, ${ignoredTasks.length} ignored`);
             return {failedTasks, newTasks, successTasks, asyncTasks, ignoredTasks};
         }, abortSignal);
+    }
+
+    taskProcessServer(abortSignal?: AbortSignal) {
+        const queues = getEnabledQueues();
+        this.enabledQueues = queues;
+
+        // Emit worker started event
+        if (!this.workerStarted) {
+            this.workerStarted = true;
+            this.emitWorkerStarted();
+            this.startHeartbeat();
+        }
+
+        for (let i = 0; i < queues.length; i++) {
+            this.logger.info(`Starting consumer for queue: ${queues[i]}`);
+            this.startConsumingTasks(queues[i], abortSignal);
+        }
+        this.logger.info('Starting mature tasks processor');
+        this.processMatureTasks(abortSignal);
+
+        // Handle worker shutdown
+        abortSignal?.addEventListener('abort', () => {
+            this.stopHeartbeat();
+            this.emitWorkerStopped('shutdown');
+        });
+    }
+
+    private buildWorkerInfo(): WorkerInfo {
+        return {
+            worker_id: this.workerId,
+            hostname: os.hostname(),
+            pid: process.pid,
+            started_at: this.workerStartedAt,
+            enabled_queues: this.enabledQueues
+        };
+    }
+
+    private emitWorkerStarted(): void {
+        if (!this.workerProvider?.onWorkerStarted) return;
+        this.emitLifecycleEvent(this.workerProvider.onWorkerStarted, this.buildWorkerInfo());
+    }
+
+    private emitWorkerStopped(reason: 'shutdown' | 'error' | 'idle_timeout'): void {
+        if (!this.workerProvider?.onWorkerStopped) return;
+        this.emitLifecycleEvent(
+            this.workerProvider.onWorkerStopped,
+            {
+                ...this.buildWorkerInfo(),
+                reason,
+                final_stats: {...this.workerStats}
+            }
+        );
+    }
+
+    private emitWorkerHeartbeat(): void {
+        if (!this.workerProvider?.onWorkerHeartbeat) return;
+
+        const memUsage = process.memoryUsage();
+        this.emitLifecycleEvent(
+            this.workerProvider.onWorkerHeartbeat,
+            {
+                ...this.buildWorkerInfo(),
+                stats: {...this.workerStats},
+                memory_usage_mb: memUsage.heapUsed / 1024 / 1024
+            }
+        );
+    }
+
+    private startHeartbeat(): void {
+        if (this.heartbeatTimer) return;
+
+        const intervalMs = this.config.lifecycle?.heartbeat_interval_ms || 5000;
+        this.heartbeatTimer = setInterval(() => {
+            this.emitWorkerHeartbeat();
+        }, intervalMs);
+    }
+
+    private stopHeartbeat(): void {
+        if (this.heartbeatTimer) {
+            clearInterval(this.heartbeatTimer);
+            this.heartbeatTimer = null;
+        }
+    }
+
+    private updateWorkerStats(succeeded: number, failed: number, processingMs: number): void {
+        this.workerStats.tasks_processed += succeeded + failed;
+        this.workerStats.tasks_succeeded += succeeded;
+        this.workerStats.tasks_failed += failed;
+        this.totalProcessingMs += processingMs;
+
+        if (this.workerStats.tasks_processed > 0) {
+            this.workerStats.avg_processing_ms = this.totalProcessingMs / this.workerStats.tasks_processed;
+        }
+    }
+
+    private emitLifecycleEvent<T>(
+        callback: ((ctx: T) => void | Promise<void>) | undefined,
+        ctx: T
+    ): void {
+        if (!callback) return;
+
+        try {
+            const result = callback(ctx);
+            if (this.config.lifecycle?.mode === 'sync' && result instanceof Promise) {
+                result.catch(err => {
+                    this.logger.error(`[TQ] Lifecycle callback error: ${err}`);
+                });
+            } else if (result instanceof Promise) {
+                result.catch(err => {
+                    this.logger.error(`[TQ] Lifecycle callback error: ${err}`);
+                });
+            }
+        } catch (err) {
+            this.logger.error(`[TQ] Lifecycle callback error: ${err}`);
+        }
     }
 
     processMatureTasks(abortSignal?: AbortSignal) {
@@ -308,14 +546,23 @@ export class TaskHandler<ID> {
         });
     }
 
-    taskProcessServer(abortSignal?: AbortSignal) {
-        const queues = getEnabledQueues();
-        for (let i = 0; i < queues.length; i++) {
-            this.logger.info(`Starting consumer for queue: ${queues[i]}`);
-            this.startConsumingTasks(queues[i], abortSignal);
-        }
-        this.logger.info('Starting mature tasks processor');
-        this.processMatureTasks(abortSignal);
+    private buildTaskContext(task: CronTask<ID>): TaskContext {
+        const maxRetries = this.getRetryCount(task);
+        const retryCount = (task.execution_stats && typeof task.execution_stats.retry_count === 'number')
+            ? task.execution_stats.retry_count
+            : 0;
+        const payload = task.payload as Record<string, unknown>;
+
+        return {
+            task_id: task.id?.toString() || '',
+            task_hash: payload?.task_hash as string | undefined,
+            task_type: task.type,
+            queue_id: task.queue_id,
+            payload: this.config.lifecycle?.include_payload ? payload : {},
+            attempt: retryCount + 1,
+            max_retries: maxRetries,
+            scheduled_at: task.created_at || new Date()
+        };
     }
 
     processBatch(queueId: QueueName, processor: MessageConsumer<ID>, limit?: number, abortSignal?: AbortSignal): Promise<void> {

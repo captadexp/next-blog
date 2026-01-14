@@ -130,6 +130,21 @@ export class Actions<ID = any> implements ExecutorActions<ID> {
     }
 
     /**
+     * Check the result status for a specific task
+     * Returns 'success', 'fail', or 'pending' (no action recorded yet)
+     */
+    getTaskResultStatus(taskId: string): 'success' | 'fail' | 'pending' {
+        const context = this.taskContexts.get(taskId);
+        if (!context) return 'pending';
+
+        for (const action of context.actions) {
+            if (action.type === 'success') return 'success';
+            if (action.type === 'fail') return 'fail';
+        }
+        return 'pending';
+    }
+
+    /**
      * Extract actions for a single task (used by async tasks)
      */
     extractTaskActions(taskId: string): ActionResults<ID> {

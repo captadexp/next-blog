@@ -285,6 +285,144 @@ const taskHandler = new TaskHandler(
 );
 ```
 
+## Lifecycle Callbacks
+
+Monitor task and worker lifecycle events for health checks, metrics collection, and observability:
+
+### Task Lifecycle Provider
+
+Track individual task events:
+
+```typescript
+import {ITaskLifecycleProvider, TaskContext, TaskTiming} from '@supergrowthai/tq';
+
+const taskLifecycleProvider: ITaskLifecycleProvider = {
+    onTaskScheduled(ctx: TaskContext) {
+        console.log(`Task scheduled: ${ctx.task_type} (${ctx.task_id})`);
+    },
+
+    onTaskStarted(ctx: TaskContext & { started_at: Date; queued_duration_ms: number }) {
+        console.log(`Task started: ${ctx.task_id}, queued for ${ctx.queued_duration_ms}ms`);
+    },
+
+    onTaskCompleted(ctx: TaskContext & { timing: TaskTiming; result?: unknown }) {
+        console.log(`Task completed: ${ctx.task_id} in ${ctx.timing.processing_duration_ms}ms`);
+    },
+
+    onTaskFailed(ctx: TaskContext & { timing: TaskTiming; error: Error; will_retry: boolean }) {
+        console.error(`Task failed: ${ctx.task_id}, will_retry: ${ctx.will_retry}`);
+    },
+
+    onTaskExhausted(ctx: TaskContext & { timing: TaskTiming; error: Error; total_attempts: number }) {
+        console.error(`Task exhausted: ${ctx.task_id} after ${ctx.total_attempts} attempts`);
+    },
+
+    onTaskCancelled(ctx: TaskContext & { reason: string }) {
+        console.log(`Task cancelled: ${ctx.task_id}, reason: ${ctx.reason}`);
+    }
+};
+```
+
+### Worker Lifecycle Provider
+
+Track worker and batch events:
+
+```typescript
+import {IWorkerLifecycleProvider, WorkerInfo, WorkerStats} from '@supergrowthai/tq';
+
+const workerLifecycleProvider: IWorkerLifecycleProvider = {
+    onWorkerStarted(info: WorkerInfo) {
+        console.log(`Worker started: ${info.worker_id} on ${info.hostname}`);
+    },
+
+    onWorkerHeartbeat(info: WorkerInfo & { stats: WorkerStats; memory_usage_mb: number }) {
+        console.log(`Heartbeat: ${info.worker_id}, processed: ${info.stats.tasks_processed}`);
+    },
+
+    onWorkerStopped(info: WorkerInfo & { reason: string; final_stats: WorkerStats }) {
+        console.log(`Worker stopped: ${info.worker_id}, reason: ${info.reason}`);
+    },
+
+    onBatchStarted(info: WorkerInfo & { batch_size: number; task_types: string[] }) {
+        console.log(`Batch started: ${info.batch_size} tasks`);
+    },
+
+    onBatchCompleted(info: WorkerInfo & { batch_size: number; succeeded: number; failed: number }) {
+        console.log(`Batch completed: ${info.succeeded}/${info.batch_size} succeeded`);
+    }
+};
+```
+
+### Using Lifecycle Providers
+
+Pass lifecycle providers when creating TaskHandler:
+
+```typescript
+import {TaskHandler, ConsoleHealthProvider} from '@supergrowthai/tq';
+
+// Option 1: Use built-in ConsoleHealthProvider
+const healthProvider = new ConsoleHealthProvider();
+
+const taskHandler = new TaskHandler(
+    messageQueue,
+    taskQueue,
+    databaseAdapter,
+    cacheAdapter,
+    asyncTaskManager,
+    notificationProvider,
+    {
+        lifecycleProvider: healthProvider,
+        workerProvider: healthProvider,
+        lifecycle: {
+            mode: 'async',           // 'sync' or 'async' (default: async)
+            heartbeat_interval_ms: 5000,  // Worker heartbeat interval
+            include_payload: false   // Include task payload in callbacks
+        }
+    }
+);
+
+// Option 2: Custom providers
+const taskHandler = new TaskHandler(
+    messageQueue,
+    taskQueue,
+    databaseAdapter,
+    cacheAdapter,
+    asyncTaskManager,
+    notificationProvider,
+    {
+        lifecycleProvider: myTaskLifecycleProvider,
+        workerProvider: myWorkerLifecycleProvider,
+        lifecycle: {
+            mode: 'sync'  // Callbacks block task processing
+        }
+    }
+);
+```
+
+### TaskContext Properties
+
+| Property     | Type                    | Description                      |
+|--------------|-------------------------|----------------------------------|
+| task_id      | string                  | Unique task identifier           |
+| task_hash    | string?                 | Optional deduplication hash      |
+| task_type    | string                  | Type of the task                 |
+| queue_id     | string                  | Queue the task belongs to        |
+| payload      | Record<string, unknown> | Task payload                     |
+| attempt      | number                  | Current attempt number           |
+| max_retries  | number                  | Maximum retry attempts           |
+| scheduled_at | Date                    | When task was scheduled          |
+| worker_id    | string?                 | ID of worker processing the task |
+
+### WorkerInfo Properties
+
+| Property       | Type     | Description              |
+|----------------|----------|--------------------------|
+| worker_id      | string   | Unique worker identifier |
+| hostname       | string   | Machine hostname         |
+| pid            | number   | Process ID               |
+| started_at     | Date     | When worker started      |
+| enabled_queues | string[] | Queues being processed   |
+
 ## Error Handling and Retries
 
 ```typescript

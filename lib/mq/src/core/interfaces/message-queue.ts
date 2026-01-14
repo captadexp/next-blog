@@ -1,5 +1,6 @@
 import type {QueueName} from "../types.js";
 import type {BaseMessage, MessageConsumer} from "./base.js";
+import type {QueueLifecycleConfig} from "./lifecycle.js";
 
 export interface IMessageQueue<ID> {
     /**
@@ -40,4 +41,10 @@ export interface IMessageQueue<ID> {
      * @param queueId The queue to register
      */
     register(queueId: QueueName): void;
+
+    /**
+     * Optional: Set lifecycle provider for queue events
+     * @param config Lifecycle configuration
+     */
+    setLifecycleConfig?(config: QueueLifecycleConfig): void;
 }

@@ -11,6 +11,7 @@ import {LockManager} from "@supergrowthai/utils";
 import {TaskQueuesManager} from "./TaskQueuesManager";
 import {TaskStore} from "./TaskStore";
 import {IAsyncTaskManager} from "./async/async-task-manager";
+import type {ITaskLifecycleProvider, TaskContext, TaskHandlerLifecycleConfig, TaskTiming} from "./lifecycle.js";
 
 export interface AsyncTask<ID> {
     task: CronTask<ID>;
@@ -22,13 +23,16 @@ export interface AsyncTask<ID> {
 export class TaskRunner<ID> {
     private readonly logger: Logger;
     private lockManager: LockManager;
+    private readonly taskStartTimes = new Map<string, number>();
 
     constructor(
         private messageQueue: IMessageQueue<ID>,
         private taskQueue: TaskQueuesManager<ID>,
         private taskStore: TaskStore<ID>,
         cacheProvider: CacheProvider<any>,
-        private generateId: () => ID
+        private generateId: () => ID,
+        private lifecycleProvider?: ITaskLifecycleProvider,
+        private lifecycleConfig?: TaskHandlerLifecycleConfig
     ) {
         this.logger = new Logger('TaskRunner', LogLevel.INFO);
         this.lockManager = new LockManager(cacheProvider, {
@@ -36,6 +40,8 @@ export class TaskRunner<ID> {
             defaultTimeout: 30 * 60
         });
     }
+
+    // ============ Lifecycle Helpers ============
 
     async run(
         taskRunnerId: string,
@@ -125,13 +131,31 @@ export class TaskRunner<ID> {
                 if (executor.parallel) {
                     const chunks = chunk(taskGroup.tasks, executor.chunkSize) as CronTask<ID>[][];
                     this.logger.info(`[${taskRunnerId}] Processing in parallel chunks of ${executor.chunkSize}`);
-                    for (const chunk of chunks) {
-                        const chunkTasks: Promise<void>[] = []
-                        for (let j = 0; j < chunk.length; j++) {
-                            const taskActions = actions.forkForTask(chunk[j]);
-                            chunkTasks.push(executor.onTask(chunk[j], taskActions).catch(err => this.logger.error(`[${taskRunnerId}] executor.onTask failed: ${err}`)))
+                    for (const taskChunk of chunks) {
+                        // Emit onTaskStarted for all tasks in chunk
+                        for (const task of taskChunk) {
+                            this.emitTaskStarted(task, taskRunnerId);
                         }
-                        await Promise.all(chunkTasks)
+
+                        const chunkPromises: Promise<void>[] = [];
+                        for (let j = 0; j < taskChunk.length; j++) {
+                            const taskActions = actions.forkForTask(taskChunk[j]);
+                            chunkPromises.push(executor.onTask(taskChunk[j], taskActions).catch(err => this.logger.error(`[${taskRunnerId}] executor.onTask failed: ${err}`)));
+                        }
+                        await Promise.all(chunkPromises);
+
+                        // Emit completion events for all tasks in chunk
+                        for (const task of taskChunk) {
+                            const resultStatus = actions.getTaskResultStatus(tId(task));
+                            if (resultStatus === 'success') {
+                                this.emitTaskCompleted(task, taskRunnerId);
+                            } else if (resultStatus === 'fail') {
+                                const retryCount = (task.execution_stats?.retry_count as number) || 0;
+                                const maxRetries = task.retries ?? executor.default_retries ?? 0;
+                                const willRetry = retryCount < maxRetries;
+                                this.emitTaskFailed(task, taskRunnerId, new Error('Task failed'), willRetry);
+                            }
+                        }
                     }
                 } else {
                     const timeoutMs = executor.asyncConfig?.handoffTimeout;
@@ -140,9 +164,26 @@ export class TaskRunner<ID> {
                         const task = taskGroup.tasks[j];
 
                         if (!timeoutMs) {
+                            // Emit onTaskStarted
+                            this.emitTaskStarted(task, taskRunnerId);
+
                             const taskActions = actions.forkForTask(task);
-                            await executor.onTask(task, taskActions).catch(err => this.logger.error(`[${taskRunnerId}] executor.onTask failed: ${err}`))
+                            await executor.onTask(task, taskActions).catch(err => this.logger.error(`[${taskRunnerId}] executor.onTask failed: ${err}`));
+
+                            // Emit completion event based on result
+                            const resultStatus = actions.getTaskResultStatus(tId(task));
+                            if (resultStatus === 'success') {
+                                this.emitTaskCompleted(task, taskRunnerId);
+                            } else if (resultStatus === 'fail') {
+                                const retryCount = (task.execution_stats?.retry_count as number) || 0;
+                                const maxRetries = task.retries ?? executor.default_retries ?? 0;
+                                const willRetry = retryCount < maxRetries;
+                                this.emitTaskFailed(task, taskRunnerId, new Error('Task failed'), willRetry);
+                            }
                         } else {
+                            // Emit onTaskStarted for async-capable tasks
+                            this.emitTaskStarted(task, taskRunnerId);
+
                             const startTime = Date.now();
                             let isTimedOut = false;
 
@@ -169,6 +210,19 @@ export class TaskRunner<ID> {
                             // Clear the timeout to prevent memory leak
                             if (timeoutId) {
                                 clearTimeout(timeoutId);
+                            }
+
+                            if (result !== '~~~timeout') {
+                                // Task completed before timeout - emit lifecycle event
+                                const resultStatus = actions.getTaskResultStatus(tId(task));
+                                if (resultStatus === 'success') {
+                                    this.emitTaskCompleted(task, taskRunnerId);
+                                } else if (resultStatus === 'fail') {
+                                    const retryCount = (task.execution_stats?.retry_count as number) || 0;
+                                    const maxRetries = task.retries ?? executor.default_retries ?? 0;
+                                    const willRetry = retryCount < maxRetries;
+                                    this.emitTaskFailed(task, taskRunnerId, new Error('Task failed'), willRetry);
+                                }
                             }
 
                             if (result === '~~~timeout') {
@@ -219,5 +273,100 @@ export class TaskRunner<ID> {
         await Promise.all(tasks.filter(t => processedTaskIds.has(tId(t))).map((t) => this.lockManager!.release(tId(t))));
 
         return {...results, asyncTasks};
+    }
+
+    private emitLifecycleEvent<T>(
+        callback: ((ctx: T) => void | Promise<void>) | undefined,
+        ctx: T
+    ): void {
+        if (!callback) return;
+
+        try {
+            const result = callback(ctx);
+            if (result instanceof Promise) {
+                result.catch(err => {
+                    this.logger.error(`[TQ] Lifecycle callback error: ${err}`);
+                });
+            }
+        } catch (err) {
+            this.logger.error(`[TQ] Lifecycle callback error: ${err}`);
+        }
+    }
+
+    private buildTaskContext(task: CronTask<ID>, workerId?: string): TaskContext {
+        const retryCount = (task.execution_stats && typeof task.execution_stats.retry_count === 'number')
+            ? task.execution_stats.retry_count
+            : 0;
+        const executor = this.taskQueue.getExecutor(task.queue_id, task.type);
+        const maxRetries = task.retries ?? executor?.default_retries ?? 0;
+        const payload = task.payload as Record<string, unknown>;
+
+        return {
+            task_id: task.id?.toString() || tId(task),
+            task_hash: payload?.task_hash as string | undefined,
+            task_type: task.type,
+            queue_id: task.queue_id,
+            payload: this.lifecycleConfig?.include_payload ? payload : {},
+            attempt: retryCount + 1,
+            max_retries: maxRetries,
+            scheduled_at: task.created_at || new Date(),
+            worker_id: workerId
+        };
+    }
+
+    private emitTaskStarted(task: CronTask<ID>, workerId: string): void {
+        const startedAt = Date.now();
+        this.taskStartTimes.set(tId(task), startedAt);
+
+        if (this.lifecycleProvider?.onTaskStarted) {
+            const ctx = this.buildTaskContext(task, workerId);
+            const queuedDuration = startedAt - (task.created_at?.getTime() || startedAt);
+            this.emitLifecycleEvent(
+                this.lifecycleProvider.onTaskStarted,
+                {
+                    ...ctx,
+                    started_at: new Date(startedAt),
+                    queued_duration_ms: queuedDuration
+                }
+            );
+        }
+    }
+
+    private emitTaskCompleted(task: CronTask<ID>, workerId: string, result?: unknown): void {
+        const completedAt = Date.now();
+        const startedAt = this.taskStartTimes.get(tId(task)) || completedAt;
+        this.taskStartTimes.delete(tId(task));
+
+        if (this.lifecycleProvider?.onTaskCompleted) {
+            const ctx = this.buildTaskContext(task, workerId);
+            const timing: TaskTiming = {
+                queued_duration_ms: startedAt - (task.created_at?.getTime() || startedAt),
+                processing_duration_ms: completedAt - startedAt,
+                total_duration_ms: completedAt - (task.created_at?.getTime() || completedAt)
+            };
+            this.emitLifecycleEvent(
+                this.lifecycleProvider.onTaskCompleted,
+                {...ctx, timing, result}
+            );
+        }
+    }
+
+    private emitTaskFailed(task: CronTask<ID>, workerId: string, error: Error, willRetry: boolean, nextAttemptAt?: Date): void {
+        const completedAt = Date.now();
+        const startedAt = this.taskStartTimes.get(tId(task)) || completedAt;
+        this.taskStartTimes.delete(tId(task));
+
+        if (this.lifecycleProvider?.onTaskFailed) {
+            const ctx = this.buildTaskContext(task, workerId);
+            const timing: TaskTiming = {
+                queued_duration_ms: startedAt - (task.created_at?.getTime() || startedAt),
+                processing_duration_ms: completedAt - startedAt,
+                total_duration_ms: completedAt - (task.created_at?.getTime() || completedAt)
+            };
+            this.emitLifecycleEvent(
+                this.lifecycleProvider.onTaskFailed,
+                {...ctx, timing, error, will_retry: willRetry, next_attempt_at: nextAttemptAt}
+            );
+        }
     }
 }

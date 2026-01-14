@@ -24,8 +24,14 @@ export * from "./core/base/interfaces.js";
 // Notification interfaces
 export * from "./core/ITaskNotificationProvider.js";
 
+// Lifecycle interfaces
+export * from "./core/lifecycle.js";
+
 // Task processor types
 export * from "./core/task-processor-types.js";
 
 // Utilities
 export * from "./utils/task-id-gen.js";
+
+// Reference providers
+export * from "./providers/index.js";

@@ -1,4 +1,11 @@
-import type {BaseMessage, IMessageQueue, MessageConsumer, QueueName} from "../../core";
+import type {
+    BaseMessage,
+    IMessageQueue,
+    IQueueLifecycleProvider,
+    MessageConsumer,
+    QueueLifecycleConfig,
+    QueueName
+} from "../../core";
 import {getEnvironmentQueueName} from "../../core";
 import {Logger, LogLevel} from "@supergrowthai/utils";
 
@@ -13,15 +20,20 @@ export class InMemoryQueue implements IMessageQueue<string> {
     private isRunning: boolean = false;
     private processingIntervals: Map<QueueName, NodeJS.Timeout> = new Map();
     private registeredQueues: Set<QueueName> = new Set();
+    private lifecycleProvider?: IQueueLifecycleProvider;
+    private lifecycleMode: 'sync' | 'async' = 'async';
+    private consumerId: string;
 
     constructor() {
+        this.consumerId = `memory-${process.pid}-${Date.now()}`;
     }
 
     /**
-     * Returns the name of this queue implementation
+     * Set lifecycle configuration for queue events
      */
-    name(): string {
-        return "memory";
+    setLifecycleConfig(config: QueueLifecycleConfig): void {
+        this.lifecycleProvider = config.lifecycleProvider;
+        this.lifecycleMode = config.mode || 'async';
     }
 
     /**
@@ -46,7 +58,29 @@ export class InMemoryQueue implements IMessageQueue<string> {
         const queue = this.queues.get(queueId)!;
         queue.push(...messages);
 
+        // Emit onMessagePublished for each message
+        if (this.lifecycleProvider?.onMessagePublished) {
+            for (const msg of messages) {
+                this.emitLifecycleEvent(
+                    this.lifecycleProvider.onMessagePublished,
+                    {
+                        queue_id: queueId,
+                        provider: 'memory' as const,
+                        message_type: msg.type,
+                        message_id: msg.id
+                    }
+                );
+            }
+        }
+
         logger.info(`Added ${messages.length} messages to in-memory queue ${queueId}`);
+    }
+
+    /**
+     * Returns the name of this queue implementation
+     */
+    name(): string {
+        return "memory";
     }
 
     /**
@@ -76,6 +110,18 @@ export class InMemoryQueue implements IMessageQueue<string> {
         if (this.processingIntervals.has(queueId)) {
             logger.warn(`Queue ${queueId} already has a consumer registered. Multiple consumers for the same queue may cause unexpected behavior.`);
         } else {
+            // Emit consumer connected
+            if (this.lifecycleProvider?.onConsumerConnected) {
+                this.emitLifecycleEvent(
+                    this.lifecycleProvider.onConsumerConnected,
+                    {
+                        consumer_id: this.consumerId,
+                        consumer_type: 'worker' as const,
+                        queue_id: queueId
+                    }
+                );
+            }
+
             const interval = setInterval(async () => {
                 if (this.isRunning && (!signal || !signal.aborted)) {
                     await this.consumeMessagesBatch(queueId, processor);
@@ -88,6 +134,19 @@ export class InMemoryQueue implements IMessageQueue<string> {
                 signal.addEventListener('abort', () => {
                     clearInterval(interval);
                     this.processingIntervals.delete(queueId);
+
+                    // Emit consumer disconnected
+                    if (this.lifecycleProvider?.onConsumerDisconnected) {
+                        this.emitLifecycleEvent(
+                            this.lifecycleProvider.onConsumerDisconnected,
+                            {
+                                consumer_id: this.consumerId,
+                                consumer_type: 'worker' as const,
+                                queue_id: queueId,
+                                reason: 'shutdown' as const
+                            }
+                        );
+                    }
                 });
             }
         }
@@ -126,6 +185,24 @@ export class InMemoryQueue implements IMessageQueue<string> {
         const batch = queue.splice(0, Math.min(limit, queue.length));
 
         if (batch.length > 0) {
+            // Emit onMessageConsumed for each message
+            if (this.lifecycleProvider?.onMessageConsumed) {
+                const now = Date.now();
+                for (const msg of batch) {
+                    const age = now - (msg.created_at?.getTime() || now);
+                    this.emitLifecycleEvent(
+                        this.lifecycleProvider.onMessageConsumed,
+                        {
+                            queue_id: queueId,
+                            provider: 'memory' as const,
+                            message_type: msg.type,
+                            message_id: msg.id,
+                            age_ms: age
+                        }
+                    );
+                }
+            }
+
             try {
                 // Process the batch and return result
                 const result = await processor(`memory:${queueId}`, batch);
@@ -139,6 +216,21 @@ export class InMemoryQueue implements IMessageQueue<string> {
             }
         }
         return undefined as T;
+    }
+
+    private emitLifecycleEvent<T>(
+        callback: ((ctx: T) => void | Promise<void>) | undefined,
+        ctx: T
+    ): void {
+        if (!callback) return;
+        try {
+            const result = callback(ctx);
+            if (result instanceof Promise) {
+                result.catch(err => logger.error(`[MQ] Lifecycle callback error: ${err}`));
+            }
+        } catch (err) {
+            logger.error(`[MQ] Lifecycle callback error: ${err}`);
+        }
     }
 
     /**
