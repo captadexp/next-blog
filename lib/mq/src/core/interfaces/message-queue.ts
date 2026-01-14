@@ -43,8 +43,8 @@ export interface IMessageQueue<ID> {
     register(queueId: QueueName): void;
 
     /**
-     * Optional: Set lifecycle provider for queue events
+     * Set lifecycle provider for queue events
      * @param config Lifecycle configuration
      */
-    setLifecycleConfig?(config: QueueLifecycleConfig): void;
+    setLifecycleConfig(config: QueueLifecycleConfig): void;
 }

@@ -1,4 +1,12 @@
-import {BaseMessage, getEnvironmentQueueName, IMessageQueue, MessageConsumer, QueueName} from "../../core";
+import {
+    BaseMessage,
+    getEnvironmentQueueName,
+    IMessageQueue,
+    IQueueLifecycleProvider,
+    MessageConsumer,
+    QueueLifecycleConfig,
+    QueueName
+} from "../../core";
 import {Logger, LogLevel} from "@supergrowthai/utils";
 
 const logger = new Logger('ImmediateQueue', LogLevel.INFO);
@@ -11,13 +19,21 @@ export class ImmediateQueue<ID> implements IMessageQueue<ID> {
     private isRunning: boolean = false;
     private processors: Map<QueueName, MessageConsumer<ID, unknown>> = new Map();
     private registeredQueues: Set<QueueName> = new Set();
+    private lifecycleProvider?: IQueueLifecycleProvider;
+    private lifecycleMode: 'sync' | 'async' = 'async';
+    private consumerId: string;
 
     constructor() {
         this.isRunning = true;
+        this.consumerId = `immediate-${process.pid}-${Date.now()}`;
     }
 
-    name(): string {
-        return "immediate";
+    /**
+     * Set lifecycle configuration for queue events
+     */
+    setLifecycleConfig(config: QueueLifecycleConfig): void {
+        this.lifecycleProvider = config.lifecycleProvider;
+        this.lifecycleMode = config.mode || 'async';
     }
 
     /**
@@ -33,6 +49,21 @@ export class ImmediateQueue<ID> implements IMessageQueue<ID> {
             throw new Error(`Queue ${queueId} is not registered`);
         }
 
+        // Emit onMessagePublished for each message
+        if (this.lifecycleProvider?.onMessagePublished) {
+            for (const msg of messages) {
+                this.emitLifecycleEvent(
+                    this.lifecycleProvider.onMessagePublished,
+                    {
+                        queue_id: queueId,
+                        provider: 'immediate' as const,
+                        message_type: msg.type,
+                        message_id: msg.id as string | undefined
+                    }
+                );
+            }
+        }
+
         logger.info(`Added ${messages.length} messages to immediate queue ${queueId}`);
 
         if (this.processors.has(queueId)) {
@@ -41,6 +72,10 @@ export class ImmediateQueue<ID> implements IMessageQueue<ID> {
         } else {
             logger.warn(`No processor registered for queue ${queueId}, messages discarded in immediate mode`);
         }
+    }
+
+    name(): string {
+        return "immediate";
     }
 
     /**
@@ -61,6 +96,18 @@ export class ImmediateQueue<ID> implements IMessageQueue<ID> {
             throw new Error(`Queue ${queueId} is not registered`);
         }
 
+        // Emit consumer connected
+        if (this.lifecycleProvider?.onConsumerConnected) {
+            this.emitLifecycleEvent(
+                this.lifecycleProvider.onConsumerConnected,
+                {
+                    consumer_id: this.consumerId,
+                    consumer_type: 'worker' as const,
+                    queue_id: queueId
+                }
+            );
+        }
+
         // Store the processor for this queue
         this.processors.set(queueId, processor);
         logger.info(`Registered processor for immediate queue ${queueId}`);
@@ -69,6 +116,19 @@ export class ImmediateQueue<ID> implements IMessageQueue<ID> {
         if (signal) {
             signal.addEventListener('abort', () => {
                 this.processors.delete(queueId);
+
+                // Emit consumer disconnected
+                if (this.lifecycleProvider?.onConsumerDisconnected) {
+                    this.emitLifecycleEvent(
+                        this.lifecycleProvider.onConsumerDisconnected,
+                        {
+                            consumer_id: this.consumerId,
+                            consumer_type: 'worker' as const,
+                            queue_id: queueId,
+                            reason: 'shutdown' as const
+                        }
+                    );
+                }
             });
         }
 
@@ -99,6 +159,24 @@ export class ImmediateQueue<ID> implements IMessageQueue<ID> {
             const messages = messagesOverride || [];
             if (messages.length === 0) return undefined as T;
 
+            // Emit onMessageConsumed for each message
+            if (this.lifecycleProvider?.onMessageConsumed) {
+                const now = Date.now();
+                for (const msg of messages) {
+                    const age = now - (msg.created_at?.getTime() || now);
+                    this.emitLifecycleEvent(
+                        this.lifecycleProvider.onMessageConsumed,
+                        {
+                            queue_id: queueId,
+                            provider: 'immediate' as const,
+                            message_type: msg.type,
+                            message_id: msg.id as string | undefined,
+                            age_ms: age
+                        }
+                    );
+                }
+            }
+
             const result = await processor(`immediate:${queueId}`, messages);
 
             logger.info(`Processed ${messages.length} messages from immediate queue ${queueId}`);
@@ -106,6 +184,21 @@ export class ImmediateQueue<ID> implements IMessageQueue<ID> {
         } catch (error) {
             logger.error(`Error processing messages from immediate queue ${queueId}:`, error);
             throw error;
+        }
+    }
+
+    private emitLifecycleEvent<T>(
+        callback: ((ctx: T) => void | Promise<void>) | undefined,
+        ctx: T
+    ): void {
+        if (!callback) return;
+        try {
+            const result = callback(ctx);
+            if (result instanceof Promise) {
+                result.catch(err => logger.error(`[MQ] Lifecycle callback error: ${err}`));
+            }
+        } catch (err) {
+            logger.error(`[MQ] Lifecycle callback error: ${err}`);
         }
     }
 

@@ -1,4 +1,10 @@
-import type {BaseMessage, IMessageQueue, MessageConsumer} from "../../core";
+import type {
+    BaseMessage,
+    IMessageQueue,
+    IQueueLifecycleProvider,
+    MessageConsumer,
+    QueueLifecycleConfig
+} from "../../core";
 import {getEnvironmentQueueName, QueueName} from "../../core";
 import {CacheProvider} from "memoose-js";
 import {LockManager, Logger, LogLevel} from "@supergrowthai/utils";
@@ -15,24 +21,24 @@ export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
     private processingIntervals: Map<QueueName, NodeJS.Timeout> = new Map();
     private lockManager: LockManager;
     private registeredQueues: Set<QueueName> = new Set();
+    private lifecycleProvider?: IQueueLifecycleProvider;
+    private lifecycleMode: 'sync' | 'async' = 'async';
+    private consumerId: string;
 
     protected constructor(private cacheAdapter: CacheProvider<string>) {
         this.lockManager = new LockManager(cacheAdapter, {
             prefix: 'mq-lock:',
             defaultTimeout: 300 // 5 minutes lock by default
         });
+        this.consumerId = `mongodb-${process.pid}-${Date.now()}`;
     }
 
-    abstract get collection(): Promise<Collection<Omit<BaseMessage<ObjectId>, 'id'> & { _id?: ObjectId }>>;
-
-    register(queueId: QueueName): void {
-        const normalizedQueueId = getEnvironmentQueueName(queueId);
-        this.registeredQueues.add(normalizedQueueId);
-        logger.info(`Registered queue ${normalizedQueueId}`);
-    }
-
-    name(): string {
-        return "mongodb";
+    /**
+     * Set lifecycle configuration for queue events
+     */
+    setLifecycleConfig(config: QueueLifecycleConfig): void {
+        this.lifecycleProvider = config.lifecycleProvider;
+        this.lifecycleMode = config.mode || 'async';
     }
 
     async addMessages(queueId: QueueName, messages: BaseMessage<ObjectId>[]): Promise<void> {
@@ -59,11 +65,39 @@ export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
                 });
 
             await collection.insertMany(messagesToInsert);
+
+            // Emit onMessagePublished for each message
+            if (this.lifecycleProvider?.onMessagePublished) {
+                for (const msg of messages) {
+                    this.emitLifecycleEvent(
+                        this.lifecycleProvider.onMessagePublished,
+                        {
+                            queue_id: queueId,
+                            provider: 'mongodb' as const,
+                            message_type: msg.type,
+                            message_id: msg.id?.toString()
+                        }
+                    );
+                }
+            }
+
             logger.info(`Added ${messages.length} messages to MongoDB queue ${queueId}`);
         } catch (error) {
             logger.error(`Error adding messages to MongoDB queue ${queueId}:`, error);
             throw error;
         }
+    }
+
+    abstract get collection(): Promise<Collection<Omit<BaseMessage<ObjectId>, 'id'> & { _id?: ObjectId }>>;
+
+    register(queueId: QueueName): void {
+        const normalizedQueueId = getEnvironmentQueueName(queueId);
+        this.registeredQueues.add(normalizedQueueId);
+        logger.info(`Registered queue ${normalizedQueueId}`);
+    }
+
+    name(): string {
+        return "mongodb";
     }
 
     async consumeMessagesStream<T = void>(queueId: QueueName, processor: MessageConsumer<ObjectId, T>, signal?: AbortSignal): Promise<T> {
@@ -80,6 +114,18 @@ export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
         this.isRunning = true;
 
         if (!this.processingIntervals.has(queueId)) {
+            // Emit consumer connected
+            if (this.lifecycleProvider?.onConsumerConnected) {
+                this.emitLifecycleEvent(
+                    this.lifecycleProvider.onConsumerConnected,
+                    {
+                        consumer_id: this.consumerId,
+                        consumer_type: 'worker' as const,
+                        queue_id: queueId
+                    }
+                );
+            }
+
             const interval = setInterval(async () => {
                 if (this.isRunning && (!signal || !signal.aborted)) {
                     await this.consumeMessagesBatch(queueId, processor);
@@ -93,6 +139,19 @@ export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
                 signal.addEventListener('abort', () => {
                     clearInterval(interval);
                     this.processingIntervals.delete(queueId);
+
+                    // Emit consumer disconnected
+                    if (this.lifecycleProvider?.onConsumerDisconnected) {
+                        this.emitLifecycleEvent(
+                            this.lifecycleProvider.onConsumerDisconnected,
+                            {
+                                consumer_id: this.consumerId,
+                                consumer_type: 'worker' as const,
+                                queue_id: queueId,
+                                reason: 'shutdown' as const
+                            }
+                        );
+                    }
                 });
             }
         }
@@ -149,6 +208,24 @@ export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
                         };
                     });
 
+                // Emit onMessageConsumed for each message
+                if (this.lifecycleProvider?.onMessageConsumed) {
+                    const now = Date.now();
+                    for (const msg of messagesForProcessor) {
+                        const age = now - (msg.created_at?.getTime() || now);
+                        this.emitLifecycleEvent(
+                            this.lifecycleProvider.onMessageConsumed,
+                            {
+                                queue_id: queueId,
+                                provider: 'mongodb' as const,
+                                message_type: msg.type,
+                                message_id: msg.id?.toString(),
+                                age_ms: age
+                            }
+                        );
+                    }
+                }
+
                 const result = await processor(`mongodb:${queueId}`, messagesForProcessor);
 
                 await collection.updateMany(
@@ -174,6 +251,21 @@ export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
             throw error;
         } finally {
             await this.lockManager.release(lockKey);
+        }
+    }
+
+    private emitLifecycleEvent<T>(
+        callback: ((ctx: T) => void | Promise<void>) | undefined,
+        ctx: T
+    ): void {
+        if (!callback) return;
+        try {
+            const result = callback(ctx);
+            if (result instanceof Promise) {
+                result.catch(err => logger.error(`[MQ] Lifecycle callback error: ${err}`));
+            }
+        } catch (err) {
+            logger.error(`[MQ] Lifecycle callback error: ${err}`);
         }
     }
 

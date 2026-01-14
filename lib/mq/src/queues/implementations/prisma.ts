@@ -1,5 +1,13 @@
 import {CacheProvider} from "memoose-js";
-import {BaseMessage, getEnvironmentQueueName, IMessageQueue, MessageConsumer, QueueName} from "../../core/index.js";
+import {
+    BaseMessage,
+    getEnvironmentQueueName,
+    IMessageQueue,
+    IQueueLifecycleProvider,
+    MessageConsumer,
+    QueueLifecycleConfig,
+    QueueName
+} from "../../core/index.js";
 import {LockManager, Logger, LogLevel} from "@supergrowthai/utils";
 import {PrismaClient} from "@prisma/client/extension";
 
@@ -39,6 +47,9 @@ export class PrismaQueue<
     private processingIntervals = new Map<QueueName, NodeJS.Timeout>();
     private lockManager: LockManager;
     private registeredQueues = new Set<QueueName>();
+    private lifecycleProvider?: IQueueLifecycleProvider;
+    private lifecycleMode: 'sync' | 'async' = 'async';
+    private consumerId: string;
 
     constructor(private config: {
         prismaClient: ClientWithModel<K>;
@@ -56,6 +67,57 @@ export class PrismaQueue<
         } ? unknown : never);
     }) {
         this.lockManager = new LockManager(config.cacheAdapter, {prefix: 'prisma-mq-lock:', defaultTimeout: 300});
+        this.consumerId = `prisma-${process.pid}-${Date.now()}`;
+    }
+
+    /**
+     * Set lifecycle configuration for queue events
+     */
+    setLifecycleConfig(config: QueueLifecycleConfig): void {
+        this.lifecycleProvider = config.lifecycleProvider;
+        this.lifecycleMode = config.mode || 'async';
+    }
+
+    async addMessages(queueId: QueueName, messages: Msg[]): Promise<void> {
+        queueId = getEnvironmentQueueName(queueId);
+        if (!messages.length) return;
+
+        if (!this.registeredQueues.has(queueId)) {
+            throw new Error(`Queue ${queueId} is not registered`);
+        }
+
+        try {
+            await this.delegate.createMany({
+                data: messages.map(message => ({
+                    ...message,
+                    _id: (message as any)._id || this.generateId(),
+                    queue_id: queueId,
+                    created_at: (message as any).created_at || new Date(),
+                    status: 'scheduled'
+                })),
+                skipDuplicates: true
+            });
+
+            // Emit onMessagePublished for each message
+            if (this.lifecycleProvider?.onMessagePublished) {
+                for (const msg of messages) {
+                    this.emitLifecycleEvent(
+                        this.lifecycleProvider.onMessagePublished,
+                        {
+                            queue_id: queueId,
+                            provider: 'prisma' as const,
+                            message_type: msg.type,
+                            message_id: String(msg.id)
+                        }
+                    );
+                }
+            }
+
+            logger.info(`Added ${messages.length} messages to Prisma queue ${queueId}`);
+        } catch (error) {
+            logger.error(`Error adding messages to Prisma queue ${queueId}:`, error);
+            throw error;
+        }
     }
 
     get prismaClient(): PrismaClient {
@@ -82,33 +144,6 @@ export class PrismaQueue<
         logger.info(`Registered queue ${normalizedQueueId}`);
     }
 
-    async addMessages(queueId: QueueName, messages: Msg[]): Promise<void> {
-        queueId = getEnvironmentQueueName(queueId);
-        if (!messages.length) return;
-
-        if (!this.registeredQueues.has(queueId)) {
-            throw new Error(`Queue ${queueId} is not registered`);
-        }
-
-        try {
-            await this.delegate.createMany({
-                data: messages.map(message => ({
-                    ...message,
-                    _id: (message as any)._id || this.generateId(),
-                    queue_id: queueId,
-                    created_at: (message as any).created_at || new Date(),
-                    status: 'scheduled'
-                })),
-                skipDuplicates: true
-            });
-
-            logger.info(`Added ${messages.length} messages to Prisma queue ${queueId}`);
-        } catch (error) {
-            logger.error(`Error adding messages to Prisma queue ${queueId}:`, error);
-            throw error;
-        }
-    }
-
     async consumeMessagesStream<T = void>(
         queueId: QueueName,
         processor: MessageConsumer<TId, T>,
@@ -124,6 +159,18 @@ export class PrismaQueue<
         this.isRunning = true;
 
         if (!this.processingIntervals.has(queueId)) {
+            // Emit consumer connected
+            if (this.lifecycleProvider?.onConsumerConnected) {
+                this.emitLifecycleEvent(
+                    this.lifecycleProvider.onConsumerConnected,
+                    {
+                        consumer_id: this.consumerId,
+                        consumer_type: 'worker' as const,
+                        queue_id: queueId
+                    }
+                );
+            }
+
             const interval = setInterval(async () => {
                 if (this.isRunning && (!signal || !signal.aborted)) {
                     await this.consumeMessagesBatch(queueId, processor);
@@ -136,6 +183,19 @@ export class PrismaQueue<
                 signal.addEventListener('abort', () => {
                     clearInterval(interval);
                     this.processingIntervals.delete(queueId);
+
+                    // Emit consumer disconnected
+                    if (this.lifecycleProvider?.onConsumerDisconnected) {
+                        this.emitLifecycleEvent(
+                            this.lifecycleProvider.onConsumerDisconnected,
+                            {
+                                consumer_id: this.consumerId,
+                                consumer_type: 'worker' as const,
+                                queue_id: queueId,
+                                reason: 'shutdown' as const
+                            }
+                        );
+                    }
                 });
             }
         }
@@ -183,6 +243,24 @@ export class PrismaQueue<
             });
 
             try {
+                // Emit onMessageConsumed for each message
+                if (this.lifecycleProvider?.onMessageConsumed) {
+                    const now = Date.now();
+                    for (const msg of messages) {
+                        const age = now - ((msg as any).created_at?.getTime() || now);
+                        this.emitLifecycleEvent(
+                            this.lifecycleProvider.onMessageConsumed,
+                            {
+                                queue_id: queueId,
+                                provider: 'prisma' as const,
+                                message_type: msg.type,
+                                message_id: String(msg.id),
+                                age_ms: age
+                            }
+                        );
+                    }
+                }
+
                 const result = await processor(`prisma:${queueId}`, messages);
 
                 await this.delegate.updateMany({
@@ -206,6 +284,21 @@ export class PrismaQueue<
             throw error;
         } finally {
             await this.lockManager.release(lockKey);
+        }
+    }
+
+    private emitLifecycleEvent<T>(
+        callback: ((ctx: T) => void | Promise<void>) | undefined,
+        ctx: T
+    ): void {
+        if (!callback) return;
+        try {
+            const result = callback(ctx);
+            if (result instanceof Promise) {
+                result.catch(err => logger.error(`[MQ] Lifecycle callback error: ${err}`));
+            }
+        } catch (err) {
+            logger.error(`[MQ] Lifecycle callback error: ${err}`);
         }
     }
 

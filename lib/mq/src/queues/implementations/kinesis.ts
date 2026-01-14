@@ -12,7 +12,9 @@ import {
     BaseMessage,
     getEnvironmentQueueName,
     IMessageQueue,
+    IQueueLifecycleProvider,
     MessageConsumer as Processor,
+    QueueLifecycleConfig,
     QueueName,
     QueueNotifier
 } from '../../core';
@@ -44,6 +46,8 @@ export class KinesisQueue<ID> implements IMessageQueue<ID> {
     private isRunning = false;
     private heldShardsByStream: Map<QueueName, Set<string>> = new Map();
     private registeredQueues: Set<QueueName> = new Set();
+    private lifecycleProvider?: IQueueLifecycleProvider;
+    private lifecycleMode: 'sync' | 'async' = 'async';
 
     // Utility instances
     private shardManager: KinesisShardManager;
@@ -98,19 +102,13 @@ export class KinesisQueue<ID> implements IMessageQueue<ID> {
         logger.info(`[${this.instanceId}] KinesisQueue initialized.`);
     }
 
-    register(queueId: QueueName): void {
-        const normalizedQueueId = getEnvironmentQueueName(queueId);
-        this.registeredQueues.add(normalizedQueueId);
-        logger.info(`Registered queue ${normalizedQueueId}`);
-    }
-
     /**
-     * Returns the name of this queue implementation
+     * Set lifecycle configuration for queue events
      */
-    name(): string {
-        return "kinesis";
+    setLifecycleConfig(config: QueueLifecycleConfig): void {
+        this.lifecycleProvider = config.lifecycleProvider;
+        this.lifecycleMode = config.mode || 'async';
     }
-
 
     /**
      * Adds a batch of messages to the Kinesis stream
@@ -143,6 +141,21 @@ export class KinesisQueue<ID> implements IMessageQueue<ID> {
             const result = await this.kinesis.send(new PutRecordsCommand(params));
             logger.info(`[${this.instanceId}] [${envStreamId}] Produced ${messages.length} messages. Shards involved: ${result.Records?.map(record => record.ShardId).join(', ')}`);
 
+            // Emit onMessagePublished for each message
+            if (this.lifecycleProvider?.onMessagePublished) {
+                for (const msg of messages) {
+                    this.emitLifecycleEvent(
+                        this.lifecycleProvider.onMessagePublished,
+                        {
+                            queue_id: envStreamId,
+                            provider: 'kinesis' as const,
+                            message_type: msg.type,
+                            message_id: msg.id as string | undefined
+                        }
+                    );
+                }
+            }
+
             // Track produced messages
             if (!this.queueStats.has(envStreamId)) {
                 this.queueStats.set(envStreamId, {processed: 0, produced: 0});
@@ -162,6 +175,19 @@ export class KinesisQueue<ID> implements IMessageQueue<ID> {
             logger.error(`[${this.instanceId}] [${envStreamId}] Error producing tasks:`, error);
             throw error;
         }
+    }
+
+    register(queueId: QueueName): void {
+        const normalizedQueueId = getEnvironmentQueueName(queueId);
+        this.registeredQueues.add(normalizedQueueId);
+        logger.info(`Registered queue ${normalizedQueueId}`);
+    }
+
+    /**
+     * Returns the name of this queue implementation
+     */
+    name(): string {
+        return "kinesis";
     }
 
     /**
@@ -198,85 +224,23 @@ export class KinesisQueue<ID> implements IMessageQueue<ID> {
 
         this.isRunning = true;
 
+        // Emit consumer connected for the main worker
+        if (this.lifecycleProvider?.onConsumerConnected) {
+            this.emitLifecycleEvent(
+                this.lifecycleProvider.onConsumerConnected,
+                {
+                    consumer_id: this.instanceId,
+                    consumer_type: 'worker' as const,
+                    queue_id: envStreamId
+                }
+            );
+        }
+
         // Start the rebalancing process using the new utility
         this.shardRebalancer.startRebalancing(envStreamId, shardLeaser, processor, this.heldShardsByStream)
             .catch(err => {
                 logger.error(`[${this.instanceId}] [${envStreamId}] CRITICAL: Rebalancing loop failed unexpectedly:`, err);
             });
-        return undefined as T;
-    }
-
-    /**
-     * Process a batch of messages from the queue and returns - good for cron based usage
-     * @param streamId The stream to process from
-     * @param processor Function to process tasks
-     * @param limit Maximum number of messages to process
-     * @returns void
-     */
-    async consumeMessagesBatch<T = void>(streamId: QueueName, processor: Processor<ID, T>, limit: number = 10): Promise<T> {
-        streamId = getEnvironmentQueueName(streamId);
-        try {
-            // List all shards using the utility
-            const availableShards = await this.shardManager.listShards(streamId);
-            if (!availableShards.length) {
-                return undefined as T;
-            }
-
-            // Process up to 'limit' records across all shards (max per constant)
-            let processedCount = 0;
-            for (const shardId of availableShards.slice(0, MAX_SHARDS_PER_BATCH)) {
-                if (processedCount >= limit) break;
-
-                // Create a shardLeaser if it doesn't exist
-                if (!this.shardLeasers.has(streamId)) {
-                    this.shardLeasers.set(
-                        streamId,
-                        new ShardLeaser(this.shardLockProvider, streamId, this.instanceId)
-                    );
-                }
-
-                const shardLeaser = this.shardLeasers.get(streamId)!;
-                const checkpoint = await shardLeaser.getCheckpoint(shardId);
-
-                // Get iterator for batch processing
-                const shardIterator = await this.getBatchProcessingIterator(
-                    streamId,
-                    shardId,
-                    checkpoint
-                );
-
-                if (!shardIterator) continue;
-
-                // Get records from this shard
-                const recordsResponse = await this.kinesis.send(
-                    new GetRecordsCommand({
-                        ShardIterator: shardIterator,
-                        Limit: limit - processedCount
-                    })
-                );
-
-                if (!recordsResponse.Records?.length) continue;
-
-                // Process batch using utility
-                await this.taskProcessor.processBatch(
-                    recordsResponse.Records,
-                    processor,
-                    `kinesis:${streamId}:${shardId}`
-                );
-
-                // Track processed count
-                processedCount += recordsResponse.Records.length;
-
-                // Update checkpoint with last sequence number
-                const lastSequence = recordsResponse.Records[recordsResponse.Records.length - 1].SequenceNumber;
-                if (lastSequence) {
-                    await shardLeaser.setCheckpoint(shardId, lastSequence);
-                }
-            }
-        } catch (error) {
-            logger.error(`Error processing batch from Kinesis stream ${streamId}:`, error);
-            throw error;
-        }
         return undefined as T;
     }
 
@@ -375,7 +339,111 @@ export class KinesisQueue<ID> implements IMessageQueue<ID> {
         this.shardLeasers.clear();
         this.heldShardsByStream.clear();
 
+        // Emit consumer disconnected for all queues this worker was consuming
+        if (this.lifecycleProvider?.onConsumerDisconnected) {
+            for (const queueId of this.registeredQueues) {
+                this.emitLifecycleEvent(
+                    this.lifecycleProvider.onConsumerDisconnected,
+                    {
+                        consumer_id: this.instanceId,
+                        consumer_type: 'worker' as const,
+                        queue_id: queueId,
+                        reason: 'shutdown' as const
+                    }
+                );
+            }
+        }
+
         logger.info(`[${this.instanceId}] Shutdown complete`);
+    }
+
+    /**
+     * Process a batch of messages from the queue and returns - good for cron based usage
+     * @param streamId The stream to process from
+     * @param processor Function to process tasks
+     * @param limit Maximum number of messages to process
+     * @returns void
+     */
+    async consumeMessagesBatch<T = void>(streamId: QueueName, processor: Processor<ID, T>, limit: number = 10): Promise<T> {
+        streamId = getEnvironmentQueueName(streamId);
+        try {
+            // List all shards using the utility
+            const availableShards = await this.shardManager.listShards(streamId);
+            if (!availableShards.length) {
+                return undefined as T;
+            }
+
+            // Process up to 'limit' records across all shards (max per constant)
+            let processedCount = 0;
+            for (const shardId of availableShards.slice(0, MAX_SHARDS_PER_BATCH)) {
+                if (processedCount >= limit) break;
+
+                // Create a shardLeaser if it doesn't exist
+                if (!this.shardLeasers.has(streamId)) {
+                    this.shardLeasers.set(
+                        streamId,
+                        new ShardLeaser(this.shardLockProvider, streamId, this.instanceId)
+                    );
+                }
+
+                const shardLeaser = this.shardLeasers.get(streamId)!;
+                const checkpoint = await shardLeaser.getCheckpoint(shardId);
+
+                // Get iterator for batch processing
+                const shardIterator = await this.getBatchProcessingIterator(
+                    streamId,
+                    shardId,
+                    checkpoint
+                );
+
+                if (!shardIterator) continue;
+
+                // Get records from this shard
+                const recordsResponse = await this.kinesis.send(
+                    new GetRecordsCommand({
+                        ShardIterator: shardIterator,
+                        Limit: limit - processedCount
+                    })
+                );
+
+                if (!recordsResponse.Records?.length) continue;
+
+                // Process batch using utility
+                await this.taskProcessor.processBatch(
+                    recordsResponse.Records,
+                    processor,
+                    `kinesis:${streamId}:${shardId}`
+                );
+
+                // Track processed count
+                processedCount += recordsResponse.Records.length;
+
+                // Update checkpoint with last sequence number
+                const lastSequence = recordsResponse.Records[recordsResponse.Records.length - 1].SequenceNumber;
+                if (lastSequence) {
+                    await shardLeaser.setCheckpoint(shardId, lastSequence);
+                }
+            }
+        } catch (error) {
+            logger.error(`Error processing batch from Kinesis stream ${streamId}:`, error);
+            throw error;
+        }
+        return undefined as T;
+    }
+
+    private emitLifecycleEvent<T>(
+        callback: ((ctx: T) => void | Promise<void>) | undefined,
+        ctx: T
+    ): void {
+        if (!callback) return;
+        try {
+            const result = callback(ctx);
+            if (result instanceof Promise) {
+                result.catch(err => logger.error(`[MQ] Lifecycle callback error: ${err}`));
+            }
+        } catch (err) {
+            logger.error(`[MQ] Lifecycle callback error: ${err}`);
+        }
     }
 
     /**

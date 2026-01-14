@@ -1,7 +1,8 @@
-import {ITaskStorageAdapter} from "./ITaskStorageAdapter.js";
+import {ITaskStorageAdapter, TaskStorageLifecycleConfig} from "./ITaskStorageAdapter.js";
 import {CronTask} from "./types.js";
 import {Logger, LogLevel} from "@supergrowthai/utils";
 import {PrismaClient} from "@prisma/client/extension";
+import type {ITaskLifecycleProvider} from "../core/lifecycle.js";
 
 const logger = new Logger('PrismaAdapter', LogLevel.INFO);
 const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
@@ -30,6 +31,9 @@ export class PrismaAdapter<
     K extends keyof PrismaClient = never,
     Msg extends CronTask<TId> = CronTask<TId>
 > implements ITaskStorageAdapter<TId> {
+    private lifecycleProvider?: ITaskLifecycleProvider;
+    private lifecycleMode: 'sync' | 'async' = 'async';
+
     constructor(
         private config: {
             prismaClient: ClientWithModel<K>;
@@ -45,6 +49,26 @@ export class PrismaAdapter<
             } ? unknown : never);
         }
     ) {
+    }
+
+    setLifecycleConfig(config: TaskStorageLifecycleConfig): void {
+        this.lifecycleProvider = config.lifecycleProvider;
+        this.lifecycleMode = config.mode || 'async';
+    }
+
+    private emitLifecycleEvent<T>(
+        callback: ((ctx: T) => void | Promise<void>) | undefined,
+        ctx: T
+    ): void {
+        if (!callback) return;
+        try {
+            const result = callback(ctx);
+            if (result instanceof Promise) {
+                result.catch(err => logger.error(`[TQ] Lifecycle callback error: ${err}`));
+            }
+        } catch (err) {
+            logger.error(`[TQ] Lifecycle callback error: ${err}`);
+        }
     }
 
     get prismaClient(): PrismaClient {

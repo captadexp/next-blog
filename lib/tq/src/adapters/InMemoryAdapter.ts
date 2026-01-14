@@ -1,8 +1,31 @@
-import {ITaskStorageAdapter} from "./ITaskStorageAdapter";
+import {ITaskStorageAdapter, TaskStorageLifecycleConfig} from "./ITaskStorageAdapter";
 import {CronTask} from "./types";
+import type {ITaskLifecycleProvider} from "../core/lifecycle.js";
 
 class InMemoryAdapter implements ITaskStorageAdapter<string> {
     private scheduledTasks: Map<string, CronTask<string>> = new Map();
+    private lifecycleProvider?: ITaskLifecycleProvider;
+    private lifecycleMode: 'sync' | 'async' = 'async';
+
+    setLifecycleConfig(config: TaskStorageLifecycleConfig): void {
+        this.lifecycleProvider = config.lifecycleProvider;
+        this.lifecycleMode = config.mode || 'async';
+    }
+
+    private emitLifecycleEvent<T>(
+        callback: ((ctx: T) => void | Promise<void>) | undefined,
+        ctx: T
+    ): void {
+        if (!callback) return;
+        try {
+            const result = callback(ctx);
+            if (result instanceof Promise) {
+                result.catch(err => console.error(`[TQ] Lifecycle callback error: ${err}`));
+            }
+        } catch (err) {
+            console.error(`[TQ] Lifecycle callback error: ${err}`);
+        }
+    }
 
     async addTasksToScheduled(tasks: CronTask<string>[]): Promise<CronTask<string>[]> {
         const addedTasks = tasks.map(task => {

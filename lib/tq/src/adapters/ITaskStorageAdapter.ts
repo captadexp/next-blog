@@ -1,10 +1,24 @@
 import {CronTask} from "./types.js";
+import type {ITaskLifecycleProvider} from "../core/lifecycle.js";
+
+/**
+ * Lifecycle configuration for task storage adapters
+ */
+export interface TaskStorageLifecycleConfig {
+    lifecycleProvider?: ITaskLifecycleProvider;
+    mode?: 'sync' | 'async';
+}
 
 /**
  * Database adapter interface for task storage operations
  * @template ID - The type of the ID used for tasks (e.g., ObjectId, string, number)
  */
 export interface ITaskStorageAdapter<ID = any> {
+    /**
+     * Set lifecycle provider for task events
+     */
+    setLifecycleConfig(config: TaskStorageLifecycleConfig): void;
+
     /**
      * Add tasks to the scheduled collection
      */

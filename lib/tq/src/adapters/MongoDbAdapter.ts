@@ -1,7 +1,8 @@
 import {Collection, ObjectId} from "mongodb";
-import {ITaskStorageAdapter} from "./ITaskStorageAdapter.js";
+import {ITaskStorageAdapter, TaskStorageLifecycleConfig} from "./ITaskStorageAdapter.js";
 import {CronTask} from "./types.js";
 import {Logger, LogLevel} from "@supergrowthai/utils";
+import type {ITaskLifecycleProvider} from "../core/lifecycle.js";
 
 const logger = new Logger('MongoDbAdapter', LogLevel.INFO);
 
@@ -18,8 +19,30 @@ function toPublicTask<T>({_id, ...rest}: Omit<CronTask<T>, 'id'> & { _id: T }): 
  * MongoDB implementation of IDatabaseAdapter
  */
 export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
+    private lifecycleProvider?: ITaskLifecycleProvider;
+    private lifecycleMode: 'sync' | 'async' = 'async';
 
     protected constructor() {
+    }
+
+    setLifecycleConfig(config: TaskStorageLifecycleConfig): void {
+        this.lifecycleProvider = config.lifecycleProvider;
+        this.lifecycleMode = config.mode || 'async';
+    }
+
+    private emitLifecycleEvent<T>(
+        callback: ((ctx: T) => void | Promise<void>) | undefined,
+        ctx: T
+    ): void {
+        if (!callback) return;
+        try {
+            const result = callback(ctx);
+            if (result instanceof Promise) {
+                result.catch(err => logger.error(`[TQ] Lifecycle callback error: ${err}`));
+            }
+        } catch (err) {
+            logger.error(`[TQ] Lifecycle callback error: ${err}`);
+        }
     }
 
     abstract get collection(): Promise<Collection<Omit<CronTask<ObjectId>, 'id'> & { _id?: ObjectId; }>> ;
