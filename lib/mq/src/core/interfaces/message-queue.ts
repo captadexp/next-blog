@@ -16,10 +16,27 @@ export interface IMessageQueue<ID> {
     addMessages(queueId: QueueName, messages: BaseMessage<ID>[]): Promise<void>;
 
     /**
-     * Consumes messages from the queue and processes them with the provided function
+     * Starts consuming messages from the queue in a background polling loop.
+     *
+     * **IMPORTANT:** This method returns immediately after starting the consumer.
+     * The return value is always `undefined as T`. Processing happens in the background.
+     *
+     * To stop consumption, either:
+     * - Pass an AbortSignal and call `abort()` on the controller
+     * - Call `shutdown()` on the queue instance
+     *
      * @param queueId - The identifier for the queue
-     * @param processor - Function to process the messages
+     * @param processor - Function to process the messages (called repeatedly)
      * @param signal - Optional AbortSignal to stop consumption
+     * @returns Promise that resolves immediately to undefined (does NOT wait for processing)
+     *
+     * @example
+     * ```typescript
+     * const controller = new AbortController();
+     * await queue.consumeMessagesStream('my-queue', processor, controller.signal);
+     * // Consumer is now running in background
+     * // To stop: controller.abort() or queue.shutdown()
+     * ```
      */
     consumeMessagesStream<T = void>(queueId: QueueName, processor: MessageConsumer<ID, T>, signal?: AbortSignal): Promise<T>;
 

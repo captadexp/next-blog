@@ -12,8 +12,26 @@ import {Logger, LogLevel} from "@supergrowthai/utils";
 const logger = new Logger('ImmediateQueue', LogLevel.INFO);
 
 /**
- * Immediate implementation of a message queue that processes messages synchronously
- * when they are added without waiting for polling intervals
+ * Immediate/synchronous message queue implementation.
+ *
+ * @description Processes messages immediately when added, without polling.
+ * Messages are processed synchronously in the addMessages call.
+ *
+ * @use-case Development, testing, and scenarios requiring immediate processing
+ * @multi-instance NOT SAFE - processors stored in process memory
+ * @persistence None - messages processed immediately, never stored
+ * @requires No external dependencies
+ *
+ * @important A processor MUST be registered via consumeMessagesStream BEFORE
+ * calling addMessages, otherwise an error will be thrown.
+ *
+ * @example
+ * ```typescript
+ * const queue = new ImmediateQueue();
+ * queue.register('my-queue');
+ * await queue.consumeMessagesStream('my-queue', async (id, msgs) => { ... });
+ * await queue.addMessages('my-queue', [message]); // Processed immediately
+ * ```
  */
 export class ImmediateQueue<ID> implements IMessageQueue<ID> {
     private isRunning: boolean = false;
@@ -70,7 +88,10 @@ export class ImmediateQueue<ID> implements IMessageQueue<ID> {
             const processor = this.processors.get(queueId)!;
             await this.consumeMessagesBatch(queueId, processor, messages.length, messages);
         } else {
-            logger.warn(`No processor registered for queue ${queueId}, messages discarded in immediate mode`);
+            throw new Error(
+                `No processor registered for queue ${queueId}. ` +
+                `In ImmediateQueue, you must call consumeMessagesStream() before addMessages().`
+            );
         }
     }
 

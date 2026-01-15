@@ -124,8 +124,7 @@ export class KinesisShardConsumer {
         }
 
         this.renewalTimer = setInterval(async () => {
-            // FIXME: Optimize race condition handling - isRenewing flag is not atomic
-            // TODO: Consider using proper mutex/semaphore for lock renewal synchronization
+            // Note: isRenewing check is safe - JS event loop ensures check+set are atomic (no await between them)
             if (this.isShuttingDown || !isRunningCheck() || !isShardHeldCheck(streamId, shardId) || this.isRenewing) {
                 if (this.isShuttingDown) {
                     logger.debug(`${logPrefix} Consumer shutting down, skipping renewal`);
@@ -143,9 +142,14 @@ export class KinesisShardConsumer {
             try {
                 logger.debug(`${logPrefix} Renewing lock...`);
 
-                await shardLeaser.renewLock(shardId);
+                const renewed = await shardLeaser.renewLock(shardId);
 
-                logger.debug(`${logPrefix} Lock renewed successfully`);
+                if (renewed) {
+                    logger.debug(`${logPrefix} Lock renewed successfully`);
+                } else {
+                    logger.error(`${logPrefix} CRITICAL: Lock renewal failed - lock lost to another instance!`);
+                    this.handleLockRenewalFailure();
+                }
             } catch (error) {
                 logger.error(`${logPrefix} CRITICAL: Failed to renew lock!`, error);
                 this.handleLockRenewalFailure();
@@ -452,8 +456,6 @@ export class KinesisShardConsumer {
 
         logger.info(`${logPrefix} Entering cleanup`);
 
-        // FIXME: Optimize shutdown sequence to prevent race conditions
-        // TODO: Consider implementing a proper state machine for consumer lifecycle
         this.isShuttingDown = true;
 
         // Wait for any ongoing renewal to complete

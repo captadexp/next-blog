@@ -35,7 +35,34 @@ interface KinesisConfig {
 }
 
 /**
- * Kinesis implementation of the message queue
+ * AWS Kinesis-based distributed message queue.
+ *
+ * @description High-throughput, distributed message queue using AWS Kinesis streams.
+ * Supports multiple consumers via shard-based distribution with distributed locking.
+ *
+ * @use-case Multi-server production deployments requiring horizontal scaling
+ * @multi-instance SAFE - uses shard-based distribution with distributed locking
+ * @persistence Kinesis stream retention (configurable, default 24h-7d)
+ * @requires AWS Kinesis stream, distributed lock provider (Redis recommended)
+ *
+ * @features
+ * - Shard-based parallel processing
+ * - Automatic shard rebalancing across instances
+ * - Checkpoint-based recovery after failures
+ * - Lock renewal with ownership verification
+ * - Graceful shutdown with lock release
+ *
+ * @typeParam ID - The message ID type
+ *
+ * @example
+ * ```typescript
+ * const lockProvider = new RedisClusterShardLockProvider(redis);
+ * const queue = new KinesisQueue({
+ *   streamName: 'my-stream',
+ *   lockProvider,
+ *   instanceId: 'worker-1'
+ * });
+ * ```
  */
 export class KinesisQueue<ID> implements IMessageQueue<ID> {
     private readonly kinesis: KinesisClient;

@@ -33,8 +33,8 @@ export class ShardLeaser {
         return this.client.acquireLock(`${this.streamId}-${shardId}`, this.instanceId, this.lockTTLMs);
     }
 
-    async renewLock(shardId: string): Promise<void> {
-        await this.client.renewLock(`${this.streamId}-${shardId}`, this.lockTTLMs);
+    async renewLock(shardId: string): Promise<boolean> {
+        return this.client.renewLock(`${this.streamId}-${shardId}`, this.instanceId, this.lockTTLMs);
     }
 
     async getCheckpoint(shardId: string): Promise<string | null> {

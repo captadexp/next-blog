@@ -13,6 +13,10 @@ import {PrismaClient} from "@prisma/client/extension";
 
 const logger = new Logger('PrismaQueue', LogLevel.INFO);
 
+// Retry configuration
+const DEFAULT_MAX_RETRIES = 3;
+const DEFAULT_RETRY_AFTER_MS = 30000; // 30 seconds
+
 // ---- Type utilities ----
 
 /** A Prisma client that is guaranteed to have model delegate K. */
@@ -33,9 +37,34 @@ type EnsureModelShape<Delegate, Needed> =
 // ---- Queue ----
 
 /**
- * PrismaQueue
- * - K: model key on Prisma client (e.g. 'messageQueue', 'jobs', etc.)
- * - Msg: the minimal row shape your lib expects (must extend BaseMessage<TId>)
+ * Prisma-backed message queue implementation.
+ *
+ * @description Persists messages to any Prisma model with status tracking.
+ * Uses application-level locking for single-instance deployments.
+ *
+ * @use-case Single-instance production deployments with Prisma ORM
+ * @multi-instance NOT SAFE - uses application-level lock, not distributed lock.
+ *   For multi-instance, use KinesisQueue with Redis lock provider.
+ * @persistence Full - messages stored in database until processed/expired
+ * @requires Prisma client with a model matching BaseMessage structure
+ *
+ * @features
+ * - execute_at scheduling: messages only consumed when execute_at <= now
+ * - expires_at expiration: messages marked 'expired' if past expiry
+ * - Retry logic: 3 attempts with 30s backoff on failure
+ *
+ * @typeParam TId - The ID type (string, number, etc.)
+ * @typeParam K - The Prisma model key (e.g. 'messageQueue')
+ * @typeParam Msg - The message type extending BaseMessage<TId>
+ *
+ * @example
+ * ```typescript
+ * const queue = new PrismaQueue({
+ *   prismaClient: prisma,
+ *   messageModel: 'messageQueue',
+ *   cacheAdapter: redisAdapter
+ * });
+ * ```
  */
 export class PrismaQueue<
     TId = any,
@@ -223,8 +252,29 @@ export class PrismaQueue<
         if (!lockAcquired) return undefined as T;
 
         try {
+            const now = new Date();
+
+            // Mark expired messages before fetching
+            await this.delegate.updateMany({
+                where: {
+                    queue_id: queueId,
+                    status: 'scheduled',
+                    expires_at: {lt: now, not: null}
+                },
+                data: {status: 'expired', updated_at: now}
+            });
+
+            // Fetch messages that are ready to execute (execute_at <= now) and not expired
             const messages = await this.delegate.findMany({
-                where: {queue_id: queueId, status: 'scheduled'},
+                where: {
+                    queue_id: queueId,
+                    status: 'scheduled',
+                    execute_at: {lte: now},
+                    OR: [
+                        {expires_at: null},
+                        {expires_at: {gt: now}}
+                    ]
+                },
                 take: limit,
                 orderBy: {created_at: 'asc'}
             }) as Msg[];
@@ -245,9 +295,9 @@ export class PrismaQueue<
             try {
                 // Emit onMessageConsumed for each message
                 if (this.lifecycleProvider?.onMessageConsumed) {
-                    const now = Date.now();
+                    const nowMs = Date.now();
                     for (const msg of messages) {
-                        const age = now - ((msg as any).created_at?.getTime() || now);
+                        const age = nowMs - ((msg as any).created_at?.getTime() || nowMs);
                         this.emitLifecycleEvent(
                             this.lifecycleProvider.onMessageConsumed,
                             {
@@ -273,10 +323,31 @@ export class PrismaQueue<
             } catch (error) {
                 logger.error(`Error processing messages from Prisma queue ${queueId}:`, error);
 
-                await this.delegate.updateMany({
-                    where: {_id: {in: messageIds}},
-                    data: {status: 'failed', updated_at: new Date()}
-                });
+                // Implement retry logic for failed messages
+                for (const message of messages) {
+                    const currentRetries = (message as any).retries || 0;
+                    const msgId = (message as any)._id;
+
+                    if (currentRetries < DEFAULT_MAX_RETRIES) {
+                        const retryAfter = (message as any).retry_after || DEFAULT_RETRY_AFTER_MS;
+                        await this.delegate.update({
+                            where: {_id: msgId},
+                            data: {
+                                status: 'scheduled',
+                                execute_at: new Date(Date.now() + retryAfter),
+                                updated_at: new Date(),
+                                retries: currentRetries + 1
+                            }
+                        });
+                        logger.info(`Message ${msgId} scheduled for retry ${currentRetries + 1}/${DEFAULT_MAX_RETRIES}`);
+                    } else {
+                        await this.delegate.update({
+                            where: {_id: msgId},
+                            data: {status: 'failed', updated_at: new Date()}
+                        });
+                        logger.warn(`Message ${msgId} exceeded max retries, marked as failed`);
+                    }
+                }
                 throw error;
             }
         } catch (error) {

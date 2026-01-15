@@ -11,9 +11,27 @@ import {Logger, LogLevel} from "@supergrowthai/utils";
 
 const logger = new Logger('InMemoryQueue', LogLevel.INFO);
 
+// Retry configuration
+const DEFAULT_MAX_RETRIES = 3;
+const DEFAULT_RETRY_AFTER_MS = 30000; // 30 seconds
+
 /**
- * In-memory implementation of the message queue.
- * This is primarily for development, testing, and environments where external message queues are not available.
+ * In-memory message queue implementation.
+ *
+ * @description Stores messages in process memory. Suitable for development,
+ * testing, and single-process applications where persistence is not required.
+ *
+ * @use-case Development and testing only
+ * @multi-instance NOT SAFE - messages stored in process memory, not shared between instances
+ * @persistence None - all messages lost on process restart
+ * @requires No external dependencies
+ *
+ * @example
+ * ```typescript
+ * const queue = new InMemoryQueue();
+ * queue.register('my-queue');
+ * await queue.addMessages('my-queue', [message]);
+ * ```
  */
 export class InMemoryQueue implements IMessageQueue<string> {
     private queues: Map<QueueName, BaseMessage<string>[]> = new Map();
@@ -181,41 +199,83 @@ export class InMemoryQueue implements IMessageQueue<string> {
         const queue = this.queues.get(queueId)!;
         if (queue.length === 0) return undefined as T;
 
-        // Take a batch of messages (up to limit)
-        const batch = queue.splice(0, Math.min(limit, queue.length));
+        const now = new Date();
 
-        if (batch.length > 0) {
-            // Emit onMessageConsumed for each message
-            if (this.lifecycleProvider?.onMessageConsumed) {
-                const now = Date.now();
-                for (const msg of batch) {
-                    const age = now - (msg.created_at?.getTime() || now);
-                    this.emitLifecycleEvent(
-                        this.lifecycleProvider.onMessageConsumed,
-                        {
-                            queue_id: queueId,
-                            provider: 'memory' as const,
-                            message_type: msg.type,
-                            message_id: msg.id,
-                            age_ms: age
-                        }
-                    );
-                }
-            }
-
-            try {
-                // Process the batch and return result
-                const result = await processor(`memory:${queueId}`, batch);
-                logger.info(`Processed ${batch.length} messages from in-memory queue ${queueId}`);
-                return result;
-            } catch (error) {
-                logger.error(`Error processing messages from in-memory queue ${queueId}:`, error);
-                // Put the failed messages back in the queue
-                queue.unshift(...batch);
-                throw error;
+        // Mark expired messages
+        for (let i = queue.length - 1; i >= 0; i--) {
+            const msg = queue[i];
+            if (msg.expires_at && msg.expires_at < now && msg.status === 'scheduled') {
+                msg.status = 'expired';
+                msg.updated_at = now;
+                queue.splice(i, 1); // Remove expired messages from queue
+                logger.debug(`Message ${msg.id} expired and removed from queue`);
             }
         }
-        return undefined as T;
+
+        // Filter messages that are ready to execute (execute_at <= now)
+        const readyMessages = queue.filter(m =>
+            m.status === 'scheduled' &&
+            m.execute_at <= now &&
+            (!m.expires_at || m.expires_at > now)
+        );
+
+        // Take up to limit messages
+        const batch = readyMessages.slice(0, limit);
+
+        if (batch.length === 0) return undefined as T;
+
+        // Remove batch from original queue
+        for (const msg of batch) {
+            const idx = queue.indexOf(msg);
+            if (idx !== -1) queue.splice(idx, 1);
+        }
+
+        // Emit onMessageConsumed for each message
+        if (this.lifecycleProvider?.onMessageConsumed) {
+            const nowMs = Date.now();
+            for (const msg of batch) {
+                const age = nowMs - (msg.created_at?.getTime() || nowMs);
+                this.emitLifecycleEvent(
+                    this.lifecycleProvider.onMessageConsumed,
+                    {
+                        queue_id: queueId,
+                        provider: 'memory' as const,
+                        message_type: msg.type,
+                        message_id: msg.id,
+                        age_ms: age
+                    }
+                );
+            }
+        }
+
+        try {
+            // Process the batch and return result
+            const result = await processor(`memory:${queueId}`, batch);
+            logger.info(`Processed ${batch.length} messages from in-memory queue ${queueId}`);
+            return result;
+        } catch (error) {
+            logger.error(`Error processing messages from in-memory queue ${queueId}:`, error);
+
+            // Implement retry logic for failed messages
+            for (const message of batch) {
+                const currentRetries = message.retries || 0;
+
+                if (currentRetries < DEFAULT_MAX_RETRIES) {
+                    const retryAfter = message.retry_after || DEFAULT_RETRY_AFTER_MS;
+                    message.retries = currentRetries + 1;
+                    message.execute_at = new Date(Date.now() + retryAfter);
+                    message.updated_at = new Date();
+                    message.status = 'scheduled';
+                    queue.push(message); // Re-add to queue for retry
+                    logger.info(`Message ${message.id} scheduled for retry ${currentRetries + 1}/${DEFAULT_MAX_RETRIES}`);
+                } else {
+                    message.status = 'failed';
+                    message.updated_at = new Date();
+                    logger.warn(`Message ${message.id} exceeded max retries, marked as failed`);
+                }
+            }
+            throw error;
+        }
     }
 
     private emitLifecycleEvent<T>(

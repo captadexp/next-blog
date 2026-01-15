@@ -1,6 +1,29 @@
 import {Cluster, Redis} from 'ioredis';
 import {IShardLockProvider} from './IShardLockProvider.js';
 
+/**
+ * Redis-based distributed shard lock provider.
+ *
+ * @description Production-ready lock provider using Redis for distributed locking.
+ * Uses Lua scripts for atomic operations to prevent race conditions.
+ *
+ * @use-case Multi-server Kinesis production deployments
+ * @multi-instance SAFE - designed for distributed environments
+ * @requires Redis (standalone or cluster)
+ *
+ * @features
+ * - Atomic lock acquisition with SET NX PX
+ * - Ownership-verified lock renewal via Lua script
+ * - Atomic lock release via Lua script
+ * - Checkpoint persistence in Redis
+ * - Instance heartbeat tracking
+ *
+ * @example
+ * ```typescript
+ * const redis = new Redis({ host: 'localhost', port: 6379 });
+ * const lockProvider = new RedisClusterShardLockProvider(redis);
+ * ```
+ */
 export class RedisClusterShardLockProvider implements IShardLockProvider {
     constructor(private readonly client: Cluster | Redis) {
     }
@@ -25,8 +48,23 @@ export class RedisClusterShardLockProvider implements IShardLockProvider {
         return this.client.get(`kinesis:checkpoint:${shardId}`);
     }
 
-    async renewLock(shardId: string, lockTTLMs: number) {
-        await this.client.expire(`kinesis:lock:${shardId}`, lockTTLMs / 1000);
+    async renewLock(shardId: string, instanceId: string, lockTTLMs: number): Promise<boolean> {
+        // Use Lua script to atomically verify ownership before extending TTL
+        const lua = `
+            if redis.call("GET", KEYS[1]) == ARGV[1] then
+                return redis.call("PEXPIRE", KEYS[1], ARGV[2])
+            else
+                return 0
+            end
+        `;
+        const result = await this.client.eval(
+            lua,
+            1,
+            `kinesis:lock:${shardId}`,
+            instanceId,
+            lockTTLMs.toString()
+        );
+        return result === 1;
     }
 
     async releaseLock(key: string, instanceId: string): Promise<void> {

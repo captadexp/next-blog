@@ -6,6 +6,25 @@ interface HeartbeatData {
     [instanceId: string]: number;
 }
 
+/**
+ * File-based shard lock provider for development and testing.
+ *
+ * @description Uses the local filesystem for locking. NOT suitable for
+ * distributed environments as locks are not shared across machines.
+ *
+ * @use-case Development and single-machine testing only
+ * @multi-instance NOT SAFE - locks stored on local filesystem
+ * @persistence File-based - survives process restart but not machine restart
+ * @requires Write access to baseDir (default: /tmp/kinesis-locks)
+ *
+ * @warning Do NOT use in production multi-server deployments.
+ * Use {@link RedisClusterShardLockProvider} instead.
+ *
+ * @example
+ * ```typescript
+ * const lockProvider = new FileShardLockProvider('/tmp/my-locks');
+ * ```
+ */
 export class FileShardLockProvider implements IShardLockProvider {
     private readonly baseDir: string;
     private readonly lockDir: string;
@@ -85,15 +104,20 @@ export class FileShardLockProvider implements IShardLockProvider {
         }
     }
 
-    async renewLock(shardId: string, lockTTLMs: number): Promise<void> {
+    async renewLock(shardId: string, instanceId: string, lockTTLMs: number): Promise<boolean> {
         const lockPath = this.getLockPath(shardId);
         try {
             const lockData = JSON.parse(await fs.readFile(lockPath, 'utf8'));
+            // Verify ownership before renewing
+            if (lockData.instanceId !== instanceId) {
+                return false; // Lock owned by another instance
+            }
             lockData.expiresAt = Date.now() + lockTTLMs;
             await fs.writeFile(lockPath, JSON.stringify(lockData));
+            return true;
         } catch (error: any) {
             if (error.code === 'ENOENT') {
-                throw new Error(`Lock does not exist for shard ${shardId}`);
+                return false; // Lock doesn't exist
             }
             throw error;
         }

@@ -13,8 +13,34 @@ import {Collection} from "mongodb";
 
 const logger = new Logger('MongoDBQueue', LogLevel.INFO);
 
+// Retry configuration
+const DEFAULT_MAX_RETRIES = 3;
+const DEFAULT_RETRY_AFTER_MS = 30000; // 30 seconds
+
 /**
- * MongoDB implementation of message queue that manages its own database operations
+ * MongoDB-backed message queue implementation.
+ *
+ * @description Persists messages to MongoDB collection with status tracking.
+ * Uses application-level locking for single-instance deployments.
+ *
+ * @use-case Single-instance production deployments
+ * @multi-instance NOT SAFE - uses application-level lock, not distributed lock.
+ *   For multi-instance, use KinesisQueue with Redis lock provider.
+ * @persistence Full - messages stored in MongoDB until processed/expired
+ * @requires MongoDB connection via abstract `collection` getter
+ *
+ * @features
+ * - execute_at scheduling: messages only consumed when execute_at <= now
+ * - expires_at expiration: messages marked 'expired' if past expiry
+ * - Retry logic: 3 attempts with 30s backoff on failure
+ *
+ * @example
+ * ```typescript
+ * class MyMongoQueue extends MongoDBQueue {
+ *   get collection() { return db.collection('messages'); }
+ * }
+ * const queue = new MyMongoQueue(cacheAdapter);
+ * ```
  */
 export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
     private isRunning: boolean = false;
@@ -183,10 +209,28 @@ export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
         if (!lockAcquired) return undefined as T;
 
         try {
+            const now = new Date();
+
+            // Mark expired messages before fetching
+            await collection.updateMany(
+                {
+                    queue_id: queueId,
+                    status: 'scheduled',
+                    expires_at: {$lt: now, $exists: true}
+                } as any,
+                {$set: {status: 'expired', updated_at: now}}
+            );
+
+            // Fetch messages that are ready to execute (execute_at <= now) and not expired
             const messages = await collection.find({
                 queue_id: queueId,
                 status: 'scheduled',
-            }).limit(limit).toArray();
+                execute_at: {$lte: now},
+                $or: [
+                    {expires_at: {$exists: false}},
+                    {expires_at: {$gt: now}}
+                ]
+            } as any).limit(limit).toArray();
 
             if (messages.length === 0) {
                 return undefined as T;
@@ -210,9 +254,9 @@ export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
 
                 // Emit onMessageConsumed for each message
                 if (this.lifecycleProvider?.onMessageConsumed) {
-                    const now = Date.now();
+                    const nowMs = Date.now();
                     for (const msg of messagesForProcessor) {
-                        const age = now - (msg.created_at?.getTime() || now);
+                        const age = nowMs - (msg.created_at?.getTime() || nowMs);
                         this.emitLifecycleEvent(
                             this.lifecycleProvider.onMessageConsumed,
                             {
@@ -238,12 +282,32 @@ export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
             } catch (error) {
                 logger.error(`Error processing messages from MongoDB queue ${queueId}:`, error);
 
-                await collection.updateMany(
-                    {_id: {$in: messageIds}},
-                    {
-                        $set: {status: 'failed', updated_at: new Date()}
+                // Implement retry logic for failed messages
+                for (const message of messages) {
+                    const currentRetries = (message as any).retries || 0;
+
+                    if (currentRetries < DEFAULT_MAX_RETRIES) {
+                        const retryAfter = (message as any).retry_after || DEFAULT_RETRY_AFTER_MS;
+                        await collection.updateOne(
+                            {_id: message._id},
+                            {
+                                $set: {
+                                    status: 'scheduled',
+                                    execute_at: new Date(Date.now() + retryAfter),
+                                    updated_at: new Date()
+                                },
+                                $inc: {retries: 1}
+                            }
+                        );
+                        logger.info(`Message ${message._id} scheduled for retry ${currentRetries + 1}/${DEFAULT_MAX_RETRIES}`);
+                    } else {
+                        await collection.updateOne(
+                            {_id: message._id},
+                            {$set: {status: 'failed', updated_at: new Date()}}
+                        );
+                        logger.warn(`Message ${message._id} exceeded max retries, marked as failed`);
                     }
-                );
+                }
                 throw error;
             }
         } catch (error) {

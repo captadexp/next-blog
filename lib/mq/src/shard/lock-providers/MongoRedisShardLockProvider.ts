@@ -1,6 +1,23 @@
 import {Cluster, Redis} from 'ioredis';
 import {IShardLockProvider} from './IShardLockProvider.js';
 
+/**
+ * Abstract Redis-based shard lock provider with MongoDB checkpoint storage.
+ *
+ * @description Base class for lock providers that use Redis for locking
+ * but store checkpoints in MongoDB. Extend this class and implement
+ * setCheckpoint/getCheckpoint for your MongoDB schema.
+ *
+ * @use-case Multi-server Kinesis deployments with MongoDB checkpoint storage
+ * @multi-instance SAFE - uses Redis for distributed locking
+ * @requires Redis for locks, MongoDB for checkpoints (via abstract methods)
+ *
+ * @features
+ * - Atomic lock acquisition with SET NX PX
+ * - Ownership-verified lock renewal via Lua script
+ * - Atomic lock release via Lua script
+ * - Abstract checkpoint methods for MongoDB implementation
+ */
 export abstract class MongoRedisShardLockProvider implements IShardLockProvider {
     private readonly redisClient: Cluster | Redis;
 
@@ -24,8 +41,23 @@ export abstract class MongoRedisShardLockProvider implements IShardLockProvider 
 
     abstract getCheckpoint(shardId: string): Promise<string | null>;
 
-    async renewLock(shardId: string, lockTTLMs: number) {
-        await this.redisClient.expire(`kinesis:lock:${shardId}`, lockTTLMs / 1000);
+    async renewLock(shardId: string, instanceId: string, lockTTLMs: number): Promise<boolean> {
+        // Use Lua script to atomically verify ownership before extending TTL
+        const lua = `
+            if redis.call("GET", KEYS[1]) == ARGV[1] then
+                return redis.call("PEXPIRE", KEYS[1], ARGV[2])
+            else
+                return 0
+            end
+        `;
+        const result = await this.redisClient.eval(
+            lua,
+            1,
+            `kinesis:lock:${shardId}`,
+            instanceId,
+            lockTTLMs.toString()
+        );
+        return result === 1;
     }
 
     async releaseLock(key: string, instanceId: string): Promise<void> {
