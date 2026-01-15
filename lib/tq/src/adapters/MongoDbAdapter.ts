@@ -16,7 +16,30 @@ function toPublicTask<T>({_id, ...rest}: Omit<CronTask<T>, 'id'> & { _id: T }): 
 }
 
 /**
- * MongoDB implementation of IDatabaseAdapter
+ * MongoDB task storage adapter for @supergrowthai/tq.
+ *
+ * @description Persists scheduled tasks to MongoDB collection with status tracking.
+ * Uses application-level locking designed for single-instance deployments.
+ *
+ * @use-case Single-instance production deployments
+ * @multi-instance NOT SAFE - designed for single-instance use.
+ *   For multi-instance deployments, implement a distributed locking strategy
+ *   or use a Kinesis-based solution with Redis lock provider.
+ * @persistence Full - tasks stored in MongoDB until processed/expired
+ * @requires MongoDB connection via abstract `collection` getter
+ *
+ * @features
+ * - Stale task recovery: tasks stuck in 'processing' for >2 days are reset
+ * - Bulk operations for efficiency
+ * - Task expiration cleanup
+ *
+ * @example
+ * ```typescript
+ * class MyTaskStorage extends MongoDbAdapter {
+ *   get collection() { return db.collection('scheduled_tasks'); }
+ * }
+ * const adapter = new MyTaskStorage();
+ * ```
  */
 export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
     private lifecycleProvider?: ITaskLifecycleProvider;

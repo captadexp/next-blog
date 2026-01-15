@@ -5,7 +5,7 @@ import fs from "fs";
 
 export default defineConfig({
     build: {
-        target: 'node18',
+        target: 'node22', // Required for await using (Explicit Resource Management)
         lib: {
             entry: {
                 index: resolve(__dirname, 'src/index.ts'),

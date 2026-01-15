@@ -183,10 +183,14 @@ export class TaskHandler<ID> {
         const finalFailedTasks: CronTask<ID>[] = [];
         let discardedTasksCount = 0;
 
+        // Maximum retry delay cap to prevent unbounded delays
+        const MAX_RETRY_DELAY_MS = 5 * 60 * 1000; // 5 minutes
+
         for (const task of failedTasksRaw) {
             const taskRetryCount = (task.execution_stats && typeof task.execution_stats.retry_count === 'number') ? task.execution_stats.retry_count : 0;
             const taskRetryAfter = task.retry_after || 2000;
-            const retryAfter = taskRetryAfter * Math.pow(taskRetryCount + 1, 2);
+            const calculatedDelay = taskRetryAfter * Math.pow(taskRetryCount + 1, 2);
+            const retryAfter = Math.min(calculatedDelay, MAX_RETRY_DELAY_MS);
             const executeAt = Date.now() + retryAfter;
             const maxRetries = this.getRetryCount(task);
 

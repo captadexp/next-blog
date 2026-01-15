@@ -1,5 +1,8 @@
 import {getEnvironmentQueueName, IMessageQueue, MessageType, QueueName} from "@supergrowthai/mq";
 import {TaskExecutor} from "./base/interfaces";
+import {Logger, LogLevel} from "@supergrowthai/utils";
+
+const logger = new Logger('TaskQueuesManager', LogLevel.INFO);
 
 class TaskQueuesManager<ID> {
     queueTaskExecutorMap: Map<QueueName, Map<MessageType, TaskExecutor<ID>>> = new Map();
@@ -27,7 +30,7 @@ class TaskQueuesManager<ID> {
         const queueMap = this.queueTaskExecutorMap.get(queueName)!;
         queueMap.set(taskType, executor);
 
-        console.log(`Registered task executor for ${taskType} on queue ${queueName}`);
+        logger.info(`Registered task executor for ${taskType} on queue ${queueName}`);
     }
 
     /**

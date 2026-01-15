@@ -2,6 +2,27 @@ import {ITaskStorageAdapter, TaskStorageLifecycleConfig} from "./ITaskStorageAda
 import {CronTask} from "./types";
 import type {ITaskLifecycleProvider} from "../core/lifecycle.js";
 
+/**
+ * In-memory task storage adapter for @supergrowthai/tq.
+ *
+ * @description Stores scheduled tasks in memory using a Map.
+ * Data is lost on process restart - use for development and testing only.
+ *
+ * @use-case Development, testing, and prototyping
+ * @multi-instance NOT SAFE - data is not shared between processes
+ * @persistence NONE - all tasks lost on restart
+ *
+ * @features
+ * - Fast in-memory operations
+ * - Simple cleanup implementation
+ * - Auto-generated string IDs
+ *
+ * @example
+ * ```typescript
+ * const adapter = new InMemoryAdapter();
+ * const taskHandler = new TaskHandler(queue, taskQueue, adapter, cache);
+ * ```
+ */
 class InMemoryAdapter implements ITaskStorageAdapter<string> {
     private scheduledTasks: Map<string, CronTask<string>> = new Map();
     private lifecycleProvider?: ITaskLifecycleProvider;
@@ -30,7 +51,7 @@ class InMemoryAdapter implements ITaskStorageAdapter<string> {
     async addTasksToScheduled(tasks: CronTask<string>[]): Promise<CronTask<string>[]> {
         const addedTasks = tasks.map(task => {
             const id = task.id || this.generateId();
-            const taskWithId = {...task};
+            const taskWithId = {...task, id};
             this.scheduledTasks.set(id, taskWithId);
             return taskWithId;
         });

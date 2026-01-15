@@ -2,12 +2,14 @@ import {describe, expect, it} from "bun:test";
 import {TaskQueuesManager} from "../core/TaskQueuesManager.js";
 import {TaskStore} from "../core/TaskStore.js";
 import {TaskHandler} from "../core/TaskHandler.js";
+import {TaskRunner} from "../core/TaskRunner.js";
 import type {QueueName} from "@supergrowthai/mq";
 import {InMemoryQueue} from "@supergrowthai/mq";
 import {CronTask, InMemoryAdapter} from "../adapters";
 import type {ISingleTaskNonParallel} from "../core/base/interfaces.js";
 import {MemoryCacheProvider} from "memoose-js";
 import {AsyncTaskManager} from "../core/async/AsyncTaskManager.js";
+import {LockManager} from "@supergrowthai/utils";
 import type {
     ITaskLifecycleProvider,
     IWorkerLifecycleProvider,
@@ -296,4 +298,108 @@ describe("simple tq test", () => {
         console.log("✅ Test passed: Lifecycle callbacks triggered correctly");
         console.log("  Lifecycle events:", lifecycleEvents);
     });
-})
+});
+
+describe("production readiness fixes", () => {
+    it("CRIT-001: should release locks even when executor not found", async () => {
+        // Setup with no executor registered for the task type
+        const messageQueue = new InMemoryQueue();
+        const databaseAdapter = new InMemoryAdapter();
+        const cacheProvider = new MemoryCacheProvider<any>();
+        const taskQueue = new TaskQueuesManager<string>(messageQueue);
+        const taskStore = new TaskStore<string>(databaseAdapter);
+        const taskRunner = new TaskRunner<string>(
+            messageQueue,
+            taskQueue,
+            taskStore,
+            cacheProvider,
+            () => databaseAdapter.generateId()
+        );
+
+        // Create task for unregistered type (no executor will be found)
+        const task = {
+            id: 'test-lock-release-task',
+            type: 'unregistered-task-type',
+            queue_id: 'test-tq-queue' as QueueName,
+            payload: {message: 'test'}, // Use valid payload type
+            execute_at: new Date(),
+            status: 'scheduled' as const,
+            retries: 0,
+            created_at: new Date(),
+            updated_at: new Date(),
+            processing_started_at: new Date()
+        } as any as CronTask<string>;
+
+        // Run TaskRunner (will not find executor, task will be ignored)
+        const results = await taskRunner.run('test-runner', [task]);
+
+        // Task should be in ignoredTasks since no executor found
+        expect(results.ignoredTasks.length).toBe(1);
+
+        // Verify lock was released by trying to acquire it again
+        // If lock wasn't released, this would fail or timeout
+        const lockManager = new LockManager(cacheProvider, {prefix: 'task_lock_'});
+        const canAcquire = await lockManager.acquire('test-lock-release-task', 5);
+        expect(canAcquire).toBe(true);
+
+        // Cleanup
+        await lockManager.release('test-lock-release-task');
+        console.log("✅ CRIT-001: Lock properly released even when executor not found");
+    });
+
+    it("MED-002: should assign generated ID to tasks without ID", async () => {
+        const adapter = new InMemoryAdapter();
+
+        // Create task without an ID
+        const taskWithoutId = {
+            type: 'test-task' as any,
+            queue_id: 'test-tq-queue' as QueueName,
+            payload: {message: 'test'},
+            execute_at: new Date(),
+            status: 'scheduled' as const,
+            retries: 0,
+            created_at: new Date(),
+            updated_at: new Date(),
+            processing_started_at: new Date()
+        } as CronTask<string>;
+
+        const [addedTask] = await adapter.addTasksToScheduled([taskWithoutId]);
+
+        // Verify ID was assigned
+        expect(addedTask.id).toBeDefined();
+        expect(typeof addedTask.id).toBe('string');
+        expect(addedTask.id!.length).toBeGreaterThan(0);
+
+        // Verify we can retrieve the task by ID
+        const [retrievedTask] = await adapter.getTasksByIds([addedTask.id!]);
+        expect(retrievedTask).toBeDefined();
+        expect(retrievedTask.id).toBe(addedTask.id);
+
+        console.log("✅ MED-002: ID properly assigned to tasks without ID");
+    });
+
+    it("MED-002: should preserve existing ID when provided", async () => {
+        const adapter = new InMemoryAdapter();
+
+        const existingId = 'my-custom-id-12345';
+        const taskWithId: CronTask<string> = {
+            id: existingId,
+            type: 'test-task' as any,
+            queue_id: 'test-tq-queue' as QueueName,
+            payload: {message: 'test'},
+            execute_at: new Date(),
+            status: 'scheduled',
+            retries: 0,
+            created_at: new Date(),
+            updated_at: new Date(),
+            processing_started_at: new Date()
+        };
+
+        const [addedTask] = await adapter.addTasksToScheduled([taskWithId]);
+
+        // Verify original ID was preserved
+        expect(addedTask.id).toBe(existingId);
+
+        console.log("✅ MED-002: Existing ID preserved when provided");
+    });
+});

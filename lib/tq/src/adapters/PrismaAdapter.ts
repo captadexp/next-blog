@@ -21,11 +21,40 @@ type EntityOf<D> =
             D extends { findMany(args?: any): Promise<(infer U)[]> } ? U :
                 never;
 
-/** Compile-time guard: model’s entity must be compatible with the shape you require. */
+/** Compile-time guard: model's entity must be compatible with the shape you require. */
 type EnsureModelShape<Delegate, Needed> =
     EntityOf<Delegate> extends Needed ? unknown : never;
 
-
+/**
+ * Prisma task storage adapter for @supergrowthai/tq.
+ *
+ * @description Persists scheduled tasks to any Prisma model with status tracking.
+ * Uses application-level locking designed for single-instance deployments.
+ *
+ * @use-case Single-instance production deployments with Prisma ORM
+ * @multi-instance NOT SAFE - designed for single-instance use.
+ *   For multi-instance deployments, implement a distributed locking strategy
+ *   or use a Kinesis-based solution with Redis lock provider.
+ * @persistence Full - tasks stored in database until processed/expired
+ * @requires Prisma client with a model matching CronTask structure
+ *
+ * @features
+ * - Stale task recovery: tasks stuck in 'processing' for >2 days are reset
+ * - Transaction support for batch updates
+ * - Task expiration cleanup
+ *
+ * @typeParam TId - The ID type (string, number, etc.)
+ * @typeParam K - The Prisma model key (e.g. 'scheduledTask')
+ * @typeParam Msg - The task type extending CronTask<TId>
+ *
+ * @example
+ * ```typescript
+ * const adapter = new PrismaAdapter({
+ *   prismaClient: prisma,
+ *   messageModel: 'scheduledTask'
+ * });
+ * ```
+ */
 export class PrismaAdapter<
     TId = any,
     K extends keyof PrismaClient = never,

@@ -1,6 +1,7 @@
 import chunk from "lodash/chunk";
 import {Logger, LogLevel} from "@supergrowthai/utils/server";
 import {tId} from "../utils/task-id-gen.js";
+import {DisposableLockBatch} from "../utils/disposable-lock.js";
 import {TaskType} from "../types.js";
 import {ActionResults, Actions} from "./Actions.js";
 import {AsyncActions} from "./async/AsyncActions.js";
@@ -60,7 +61,17 @@ export class TaskRunner<ID> {
         const tasks = await this.lockManager.filterLocked(tasksRaw, tId);
 
         this.logger.info(`[${taskRunnerId}] Found ${tasks.length} not locked tasks to process`);
-        await Promise.all(tasks.map((t) => this.lockManager!.acquire(tId(t))));
+
+        // Use DisposableLockBatch with await using for automatic lock cleanup
+        // This ensures locks are ALWAYS released, even on exceptions or early returns
+            await using locks = new DisposableLockBatch(
+                this.lockManager,
+                (lockId, err) => this.logger.error(`[${taskRunnerId}] Failed to release lock ${lockId}:`, err)
+            );
+
+        for (const task of tasks) {
+            await locks.acquire(tId(task));
+        }
 
         const groupedTasksObject = tasks
             .reduce((acc: Record<TaskType, CronTask<ID>[]>, task) => {
@@ -265,13 +276,7 @@ export class TaskRunner<ID> {
 
         this.logger.info(`[${taskRunnerId}] Completing run - Success: ${results.successTasks.length}, Failed: ${results.failedTasks.length}, New: ${results.newTasks.length}, Async: ${asyncTasks.length}, Ignored: ${results.ignoredTasks.length}`);
 
-        // FIXME: Critical race condition - locks are acquired for ALL tasks at line 57
-        // but only released for processedTaskIds. If execution fails before adding to
-        // processedTaskIds (e.g., executor not found, async queue full), those locks
-        // remain held forever causing deadlocks. Need to track all acquired locks
-        // separately and ensure they're always released in a finally block.
-        await Promise.all(tasks.filter(t => processedTaskIds.has(tId(t))).map((t) => this.lockManager!.release(tId(t))));
-
+        // Locks are automatically released by DisposableLockBatch via await using
         return {...results, asyncTasks};
     }
 
