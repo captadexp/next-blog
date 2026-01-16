@@ -15,7 +15,6 @@ export function editorJSToHTML(data: OutputData): string {
                 return `<h${level}>${block.data.text}</h${level}>`;
 
             case 'list':
-            case 'List':
                 const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
                 const items = (block.data.items || []).map((item: any) => {
                     const content = typeof item === 'string' ? item : (item.content || '');

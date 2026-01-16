@@ -82,7 +82,6 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                         }
                     };
                     tools.list = listConfig;
-                    tools.List = listConfig;
                 }
 
                 if (Quote) {
