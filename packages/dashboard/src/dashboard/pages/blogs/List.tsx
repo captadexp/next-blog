@@ -86,7 +86,9 @@ const BlogsList: FunctionComponent<BlogsListProps> = () => {
                                             </td>
                                             <td className="p-3">{formatDate(blog.createdAt)}</td>
                                             <td className="p-3">{formatDate(blog.updatedAt)}</td>
-                                            <td className="p-3">{blog.publishedAt ? formatDate(blog.publishedAt) : '-'}</td>
+                                            <td className="p-3">
+                                                {blog.publishedAt ? formatDate(blog.publishedAt) : (blog.status === 'published' ? formatDate(blog.createdAt) : '-')}
+                                            </td>
                                             <td className="p-3">
                                                 {hasPermission('blogs:update') && (
                                                     <a

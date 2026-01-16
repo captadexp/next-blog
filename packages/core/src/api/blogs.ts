@@ -99,14 +99,11 @@ export const createBlog = secure(async (session: SessionData, request: MinimumRe
             data = filterKeys<BlogData>(beforeResult.data, BLOG_CREATE_FIELDS);
         }
 
-        const extras: any = {
+        const extras = {
             createdAt: Date.now(),
-            updatedAt: Date.now()
+            updatedAt: Date.now(),
+            ...(data.status === 'published' ? {publishedAt: Date.now()} : {})
         };
-
-        if (data.status === 'published') {
-            extras.publishedAt = Date.now();
-        }
 
         const cleanedBody = {
             ...data,
@@ -148,11 +145,17 @@ export const updateBlog = secure(async (session: SessionData, request: MinimumRe
             throw new NotFound(`Blog with id ${blogId} not found`);
         }
 
-        const extras: any = {updatedAt: Date.now()};
+        const currentStatus = body.status || existingBlog.status;
 
-        if (body.status === 'published' && !existingBlog.publishedAt) {
-            extras.publishedAt = Date.now();
-        }
+        // Set system timestamps. Using spread to keep the object type strict without needing 'any' or 'Partial'.
+        const extras = {
+            updatedAt: Date.now(),
+            // Only set publishedAt if the blog is being published (or already is) but lacks a date.
+            ...(currentStatus === 'published' && !existingBlog.publishedAt ? {
+                // FALLBACK: If it was already published, use its creation date. Otherwise, use now.
+                publishedAt: existingBlog.status === 'published' ? existingBlog.createdAt : Date.now()
+            } : {})
+        };
 
         // Check if user is trying to update someone else's blog
         // Users with 'all:all' or 'blogs:all' can update any blog
