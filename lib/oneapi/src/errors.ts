@@ -57,3 +57,18 @@ export class InternalServerError extends Exception {
         this.name = 'InternalServerError';
     }
 }
+
+/**
+ * HTTP Exception - use when you want the code to directly map to HTTP status.
+ * Unlike Exception (which always returns 503), HttpException uses the code as HTTP status.
+ *
+ * @example
+ * throw new HttpException(429, 'Too Many Requests');
+ * throw new HttpException(422, 'Unprocessable Entity', { errors: [...] });
+ */
+export class HttpException extends Exception {
+    constructor(code: number, message: string, payload?: any) {
+        super(code, message, payload);
+        this.name = 'HttpException';
+    }
+}

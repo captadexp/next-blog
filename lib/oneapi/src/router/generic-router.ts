@@ -3,6 +3,7 @@ import {
     BadRequest,
     Exception,
     Forbidden,
+    HttpException,
     InternalServerError,
     MethodNotAllowed,
     NotFound,
@@ -20,7 +21,43 @@ import {
     SessionData
 } from '../types.js';
 
+/**
+ * Logger interface for OneAPI router.
+ * Implement this to integrate with your logging framework.
+ * If not provided, defaults to console methods.
+ */
+export interface OneApiLogger {
+    debug?(message: string, ...args: any[]): void;
+
+    info?(message: string, ...args: any[]): void;
+
+    warn?(message: string, ...args: any[]): void;
+
+    error?(message: string, ...args: any[]): void;
+}
+
+/**
+ * Default logger using console methods.
+ */
+export const defaultLogger: OneApiLogger = {
+    debug: console.debug.bind(console),
+    info: console.info.bind(console),
+    warn: console.warn.bind(console),
+    error: console.error.bind(console),
+};
+
 export interface GenericRouterConfig<CREDENTIALS = unknown, USER = unknown, SESSION = unknown> extends IRouterConfig<CREDENTIALS, USER, SESSION> {
+    /**
+     * If true, throws BadRequest when body parsing fails instead of continuing with null body.
+     * @default false
+     */
+    strictBodyParsing?: boolean;
+
+    /**
+     * Logger for route execution logging.
+     * Defaults to console methods. Pass `null` to disable logging entirely.
+     */
+    logger?: OneApiLogger | null;
 }
 
 function headersToEntries(headers: Record<string, string | string[]>): [string, string][] {
@@ -37,11 +74,14 @@ function headersToEntries(headers: Record<string, string | string[]>): [string, 
 
 export class GenericRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unknown> {
     private routeCache = new Map<string, PathMatchResult>();
+    private logger: OneApiLogger | null;
 
     constructor(
         private pathObject: PathObject,
         private config: GenericRouterConfig<CREDENTIALS, USER, SESSION> = {}
     ) {
+        // Use provided logger, default to console, or null to disable
+        this.logger = config.logger === null ? null : (config.logger ?? defaultLogger);
     }
 
     async handle(request: CommonRequest): Promise<CommonResponse> {
@@ -55,7 +95,7 @@ export class GenericRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkn
 
             const {params, handler, templatePath} = getCachedMatch(this.routeCache, this.pathObject, pathname);
 
-            console.log("Generic =>", request.method, templatePath, params, "executing:", !!handler);
+            this.logger?.debug?.(`${request.method} ${templatePath || pathname}`, {params, matched: !!handler});
 
             if (!handler) {
                 throw new NotFound();
@@ -107,7 +147,10 @@ export class GenericRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkn
                         });
                         body = formData;
                     }
-                } catch {
+                } catch (e) {
+                    if (this.config.strictBodyParsing) {
+                        throw new BadRequest(`Failed to parse request body: ${e instanceof Error ? e.message : String(e)}`);
+                    }
                     // Continue with null body if parsing fails
                 }
             }
@@ -180,10 +223,22 @@ export class GenericRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkn
                 message: e.message,
                 payload: e.payload
             }, {status: 200, ...responseInitLike});
+        } else if (e instanceof HttpException) {
+            // HttpException uses code directly as HTTP status
+            return Response.json({
+                code: e.code,
+                message: e.message,
+                payload: e.payload
+            }, {status: e.code, ...responseInitLike});
         } else if (e instanceof Exception) {
-            return Response.json({code: e.code, message: e.message}, {status: 503, ...responseInitLike});
+            // Generic Exception returns 503 - use HttpException for custom HTTP status codes
+            return Response.json({
+                code: e.code,
+                message: e.message,
+                payload: e.payload
+            }, {status: 503, ...responseInitLike});
         } else {
-            console.error("Unhandled error:", e);
+            this.logger?.error?.("Unhandled error:", e);
             return Response.json({
                 code: 500,
                 message: `Internal Server Error: ${e instanceof Error ? e.message : String(e)}`

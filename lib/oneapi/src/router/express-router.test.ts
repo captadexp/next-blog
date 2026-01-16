@@ -3,12 +3,14 @@ import express from 'express';
 import request from 'supertest';
 import {createExpressRouter, ExpressRouterConfig} from './express-router.js';
 import {IAuthHandler, OneApiFunction, PathObject} from "../types.ts";
+import {Exception, HttpException, Success} from "../errors.ts";
 
 describe('ExpressRouter', () => {
     const createApp = (pathObject: PathObject, config: ExpressRouterConfig = {}, middleware: any[] = []) => {
         const app = express();
         middleware.forEach(mw => app.use(mw));
-        const router = createExpressRouter(pathObject, config);
+        // Disable logging in tests by default
+        const router = createExpressRouter(pathObject, {logger: null, ...config});
         app.use(router.middleware());
         return app;
     };
@@ -255,24 +257,38 @@ describe('ExpressRouter', () => {
             expect(response.body.message).toContain('Test error');
         });
 
-        it('handles Exception class responses', async () => {
+        it('handles HttpException class responses with custom HTTP status', async () => {
             const pathObject: PathObject = {
                 exception: async () => {
-                    const {Exception} = await import('../errors.js');
-                    throw new Exception(400, 'Custom error message');
+                    // HttpException maps code directly to HTTP status
+                    throw new HttpException(429, 'Too Many Requests', {retryAfter: 60});
                 }
             };
 
             const app = createApp(pathObject);
-            const response = await request(app).get('/exception').expect(400);
-            expect(response.body.code).toBe(400);
-            expect(response.body.message).toBe('Custom error message');
+            const response = await request(app).get('/exception').expect(429);
+            expect(response.body.code).toBe(429);
+            expect(response.body.message).toBe('Too Many Requests');
+            expect(response.body.payload).toEqual({retryAfter: 60});
+        });
+
+        it('handles generic Exception with 503 status', async () => {
+            const pathObject: PathObject = {
+                exception: async () => {
+                    // Generic Exception returns HTTP 503, code is application-level only
+                    throw new Exception(1001, 'Application error');
+                }
+            };
+
+            const app = createApp(pathObject);
+            const response = await request(app).get('/exception').expect(503);
+            expect(response.body.code).toBe(1001);
+            expect(response.body.message).toBe('Application error');
         });
 
         it('handles Success class responses', async () => {
             const pathObject: PathObject = {
                 success: async () => {
-                    const {Success} = await import('../errors.js');
                     throw new Success('Operation completed', {id: 123});
                 }
             };
@@ -284,7 +300,10 @@ describe('ExpressRouter', () => {
             expect(response.body.payload).toEqual({id: 123});
         });
 
-        it('handles response with code/message structure', async () => {
+        it('handles response with code/message structure (HTTP 200, code in body)', async () => {
+            // Returning {code, message} from handler always returns HTTP 200
+            // The code field is application-level, not HTTP status
+            // Use HttpException or native Response for custom HTTP status
             const pathObject: PathObject = {
                 structured: async () => ({
                     code: 202,
@@ -294,10 +313,25 @@ describe('ExpressRouter', () => {
             };
 
             const app = createApp(pathObject);
-            const response = await request(app).get('/structured').expect(202);
+            const response = await request(app).get('/structured').expect(200);
             expect(response.body.code).toBe(202);
             expect(response.body.message).toBe('Accepted for processing');
             expect(response.body.data).toEqual({taskId: 'abc123'});
+        });
+
+        it('handles custom HTTP status via native Response', async () => {
+            // For custom HTTP status codes, return a native Response
+            const pathObject: PathObject = {
+                accepted: async () => new Response(
+                    JSON.stringify({code: 202, message: 'Accepted', taskId: 'abc123'}),
+                    {status: 202, headers: {'Content-Type': 'application/json'}}
+                )
+            };
+
+            const app = createApp(pathObject);
+            const response = await request(app).get('/accepted').expect(202);
+            expect(response.body.code).toBe(202);
+            expect(response.body.taskId).toBe('abc123');
         });
     });
 

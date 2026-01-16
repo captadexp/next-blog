@@ -9,6 +9,9 @@ export class ExpressIronSessionHandler extends IronSessionAuthHandler {
     }
 
     async getIronSession(req: OneApiRequest, res?: OneApiResponse | null): Promise<IronSession<IronSessionData>> {
-        return getIronSession<IronSessionData>(req, res!, this.sessionOptions);
+        if (!res) {
+            throw new Error('ExpressIronSessionHandler requires a response object. Ensure the router is providing the response to auth handlers.');
+        }
+        return getIronSession<IronSessionData>(req, res, this.sessionOptions);
     }
 }
