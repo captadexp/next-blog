@@ -58,6 +58,22 @@ export interface GenericRouterConfig<CREDENTIALS = unknown, USER = unknown, SESS
      * Defaults to console methods. Pass `null` to disable logging entirely.
      */
     logger?: OneApiLogger | null;
+
+    /**
+     * If true, adds X-Matched-Route header to responses showing which template matched.
+     * Helpful for debugging when wildcard routes catch unexpected requests.
+     * @default true
+     */
+    includeMatchedRouteHeader?: boolean;
+
+    /**
+     * Log warnings when wildcard (*) or catch-all ([...]) routes match requests.
+     * - true: always warn
+     * - false: never warn
+     * - 'once-per-route': warn once per unique actual URL (useful for production to catch unregistered routes)
+     * @default false
+     */
+    wildcardWarning?: boolean | 'once-per-route';
 }
 
 function headersToEntries(headers: Record<string, string | string[]>): [string, string][] {
@@ -75,6 +91,8 @@ function headersToEntries(headers: Record<string, string | string[]>): [string, 
 export class GenericRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unknown> {
     private routeCache = new Map<string, PathMatchResult>();
     private logger: OneApiLogger | null;
+    /** Tracks URLs that have already been warned about for 'once-per-route' mode */
+    private wildcardWarnedUrls = new Set<string>();
 
     constructor(
         private pathObject: PathObject,
@@ -93,12 +111,45 @@ export class GenericRouter<CREDENTIALS = unknown, USER = unknown, SESSION = unkn
                 ? url.pathname.slice(this.config.pathPrefix.length)
                 : url.pathname;
 
-            const {params, handler, templatePath} = getCachedMatch(this.routeCache, this.pathObject, pathname);
+            const {
+                params,
+                handler,
+                templatePath,
+                isWildcardMatch
+            } = getCachedMatch(this.routeCache, this.pathObject, pathname);
 
-            this.logger?.debug?.(`${request.method} ${templatePath || pathname}`, {params, matched: !!handler});
+            this.logger?.debug?.(`${request.method} ${templatePath || pathname}`, {
+                params,
+                matched: !!handler,
+                isWildcardMatch
+            });
 
             if (!handler) {
                 throw new NotFound();
+            }
+
+            // Add X-Matched-Route header for debugging (default: true)
+            if (this.config.includeMatchedRouteHeader !== false) {
+                headersForResponse['X-Matched-Route'] = templatePath;
+                if (isWildcardMatch) {
+                    headersForResponse['X-Wildcard-Match'] = 'true';
+                }
+            }
+
+            // Log warning for wildcard matches if configured
+            if (isWildcardMatch && this.config.wildcardWarning) {
+                const shouldWarn = this.config.wildcardWarning === true ||
+                    (this.config.wildcardWarning === 'once-per-route' && !this.wildcardWarnedUrls.has(pathname));
+
+                if (shouldWarn) {
+                    this.logger?.warn?.(
+                        `[WILDCARD MATCH] ${request.method} ${pathname} matched via wildcard route "${templatePath}". ` +
+                        `If this route should exist explicitly, register it in pathObject.`
+                    );
+                    if (this.config.wildcardWarning === 'once-per-route') {
+                        this.wildcardWarnedUrls.add(pathname);
+                    }
+                }
             }
 
             const patchedResponse: OneApiResponse = new Response() as any;

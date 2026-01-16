@@ -98,10 +98,14 @@ export function matchPathToFunction(pathObject: PathObject, url: string): PathMa
     const params: Record<string, string> = {};
     const handler = traverse(pathObject, 0, pathAccumulator, params);
 
+    // Check if the matched path involves a wildcard (*) or catch-all ([...])
+    const isWildcardMatch = handler ? pathAccumulator.some(seg => seg === '*' || seg === '[...]') : false;
+
     return {
         handler,
         templatePath: handler ? pathAccumulator.join('/') : '',
         params: handler ? params : {},
+        isWildcardMatch,
     };
 }
 

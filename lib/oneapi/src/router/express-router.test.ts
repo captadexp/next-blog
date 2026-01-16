@@ -550,4 +550,186 @@ describe('ExpressRouter', () => {
             expect(response.body.paramCount).toBe(50);
         });
     });
+
+    describe('Wildcard match detection', () => {
+        it('includes X-Matched-Route header by default', async () => {
+            const pathObject: PathObject = {
+                users: {
+                    ':id': async () => ({code: 0, message: 'user'})
+                }
+            };
+
+            const app = createApp(pathObject);
+            const response = await request(app).get('/users/123').expect(200);
+            expect(response.headers['x-matched-route']).toBe('users/:id');
+        });
+
+        it('includes X-Wildcard-Match header when wildcard matches', async () => {
+            const pathObject: PathObject = {
+                api: {
+                    '*': async () => ({code: 0, message: 'wildcard'})
+                }
+            };
+
+            const app = createApp(pathObject);
+            const response = await request(app).get('/api/anything').expect(200);
+            expect(response.headers['x-matched-route']).toBe('api/*');
+            expect(response.headers['x-wildcard-match']).toBe('true');
+        });
+
+        it('includes X-Wildcard-Match header for catch-all routes', async () => {
+            const pathObject: PathObject = {
+                files: {
+                    '[...]': async () => ({code: 0, message: 'catchall'})
+                }
+            };
+
+            const app = createApp(pathObject);
+            const response = await request(app).get('/files/docs/readme.txt').expect(200);
+            expect(response.headers['x-matched-route']).toBe('files/[...]');
+            expect(response.headers['x-wildcard-match']).toBe('true');
+        });
+
+        it('does not include X-Wildcard-Match header for static routes', async () => {
+            const pathObject: PathObject = {
+                users: {
+                    list: async () => ({code: 0, message: 'list'})
+                }
+            };
+
+            const app = createApp(pathObject);
+            const response = await request(app).get('/users/list').expect(200);
+            expect(response.headers['x-matched-route']).toBe('users/list');
+            expect(response.headers['x-wildcard-match']).toBeUndefined();
+        });
+
+        it('can disable X-Matched-Route header via config', async () => {
+            const pathObject: PathObject = {
+                test: async () => ({code: 0, message: 'test'})
+            };
+
+            const app = createApp(pathObject, {includeMatchedRouteHeader: false});
+            const response = await request(app).get('/test').expect(200);
+            expect(response.headers['x-matched-route']).toBeUndefined();
+        });
+
+        it('logs warning when wildcardWarning is true', async () => {
+            const warnings: string[] = [];
+            const mockLogger = {
+                debug: () => {
+                },
+                warn: (msg: string) => warnings.push(msg),
+                error: () => {
+                }
+            };
+
+            const pathObject: PathObject = {
+                api: {
+                    '*': async () => ({code: 0, message: 'wildcard'})
+                }
+            };
+
+            const app = createApp(pathObject, {wildcardWarning: true, logger: mockLogger});
+            await request(app).get('/api/unregistered').expect(200);
+
+            expect(warnings.length).toBe(1);
+            expect(warnings[0]).toContain('[WILDCARD MATCH]');
+            expect(warnings[0]).toContain('/api/unregistered');
+            expect(warnings[0]).toContain('api/*');
+        });
+
+        it('logs warning only once per route with once-per-route mode', async () => {
+            const warnings: string[] = [];
+            const mockLogger = {
+                debug: () => {
+                },
+                warn: (msg: string) => warnings.push(msg),
+                error: () => {
+                }
+            };
+
+            const pathObject: PathObject = {
+                api: {
+                    '*': async () => ({code: 0, message: 'wildcard'})
+                }
+            };
+
+            const app = createApp(pathObject, {wildcardWarning: 'once-per-route', logger: mockLogger});
+
+            // Call same route multiple times
+            await request(app).get('/api/unregistered').expect(200);
+            await request(app).get('/api/unregistered').expect(200);
+            await request(app).get('/api/unregistered').expect(200);
+
+            // Should only warn once for this URL
+            expect(warnings.length).toBe(1);
+
+            // Call different route
+            await request(app).get('/api/another-unregistered').expect(200);
+            expect(warnings.length).toBe(2);
+        });
+
+        it('does not log warning when wildcardWarning is false', async () => {
+            const warnings: string[] = [];
+            const mockLogger = {
+                debug: () => {
+                },
+                warn: (msg: string) => warnings.push(msg),
+                error: () => {
+                }
+            };
+
+            const pathObject: PathObject = {
+                api: {
+                    '*': async () => ({code: 0, message: 'wildcard'})
+                }
+            };
+
+            const app = createApp(pathObject, {wildcardWarning: false, logger: mockLogger});
+            await request(app).get('/api/unregistered').expect(200);
+
+            expect(warnings.length).toBe(0);
+        });
+
+        it('returns 404 when path has extra segments beyond terminal handler', async () => {
+            // This tests the scenario: {abc: {*: fn, xyz: fn}} with /abc/xyz/123
+            // xyz is terminal (function), so /abc/xyz/123 should 404
+            const pathObject: PathObject = {
+                abc: {
+                    '*': async () => ({code: 0, message: 'wildcard at abc level'}),
+                    xyz: async () => ({code: 0, message: 'xyz handler'})
+                }
+            };
+
+            const app = createApp(pathObject);
+
+            // /abc/xyz should match xyz handler
+            const response1 = await request(app).get('/abc/xyz').expect(200);
+            expect(response1.body.message).toBe('xyz handler');
+            expect(response1.headers['x-wildcard-match']).toBeUndefined();
+
+            // /abc/xyz/123 should 404 because xyz is terminal
+            await request(app).get('/abc/xyz/123').expect(404);
+        });
+
+        it('matches nested wildcard when path continues', async () => {
+            // This tests: {abc: {*: fn, xyz: {*: fn}}} with /abc/xyz/123
+            const pathObject: PathObject = {
+                abc: {
+                    '*': async () => ({code: 0, message: 'wildcard at abc level'}),
+                    xyz: {
+                        '*': async () => ({code: 0, message: 'wildcard at xyz level'})
+                    }
+                }
+            };
+
+            const app = createApp(pathObject);
+
+            // /abc/xyz/123 should match xyz's wildcard
+            const response = await request(app).get('/abc/xyz/123').expect(200);
+            expect(response.body.message).toBe('wildcard at xyz level');
+            expect(response.headers['x-matched-route']).toBe('abc/xyz/*');
+            expect(response.headers['x-wildcard-match']).toBe('true');
+        });
+    });
 });

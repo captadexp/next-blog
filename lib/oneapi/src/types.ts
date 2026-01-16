@@ -76,6 +76,11 @@ export type PathMatchResult = {
     handler: OneApiFunction | null;
     templatePath: string;
     params: Record<string, string>;
+    /**
+     * True if route matched via wildcard (*) or catch-all ([...]).
+     * Useful for debugging when requests unexpectedly match wildcard routes.
+     */
+    isWildcardMatch: boolean;
 };
 
 export type PathObject = { [key: string]: PathObject | OneApiFunction };
