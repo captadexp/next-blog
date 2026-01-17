@@ -121,10 +121,10 @@
     "dist"
   ],
   "devDependencies": {
-    "@types/node": "^25.0.0",
+    "@types/node": "^25.0.3",
     "publint": "^0.3.16",
     "typescript": "^5.9.2",
-    "vite": "^7.2.7",
+    "vite": "^7.3.1",
     "vite-plugin-dts": "^4.5.4",
     "memoose-js": "2.0.2"
   },

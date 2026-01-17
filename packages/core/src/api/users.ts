@@ -4,7 +4,7 @@ import {PaginatedResponse, PaginationParams,} from "@supergrowthai/next-blog-typ
 import crypto from "../utils/crypto.js";
 import secure from "../utils/secureInternal.js";
 import type {ApiExtra} from "../types/api.js";
-import {BadRequest, DatabaseError, NotFound, Success, ValidationError} from "../utils/errors.js";
+import {BadRequest, DatabaseError, NotFound, Success, Unauthorized, ValidationError} from "../utils/errors.js";
 import {BasicAuthHandler} from "../auth/basic-auth-handler.ts";
 import {filterKeys, USER_CREATE_FIELDS, USER_UPDATE_FIELDS} from "../utils/validation.js";
 
@@ -32,17 +32,16 @@ export const login = async (session: SessionData, request: MinimumRequest, extra
         password
     }, request._request!, request._response!);
 
-
-    if (result.success)
-        return {code: 0, message: "Success", payload: result.user}
-    else
-        return {code: -1, message: "Failed to login"}
+    if (result.success) {
+        throw new Success("Login successful", result.user);
+    }
+    throw new Unauthorized("Invalid credentials");
 }
 
 export const logout = secure(async (session: SessionData, request: MinimumRequest, extra: ApiExtra) => {
     await (session.authHandler as BasicAuthHandler)?.logout(request._request!, request._response!);
 
-    return {code: 0, message: "Success"}
+    throw new Success("Logout successful");
 })
 
 // List all users
