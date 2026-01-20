@@ -41,7 +41,7 @@
     },
     "lib/mq": {
       "name": "@supergrowthai/mq",
-      "version": "1.0.5",
+      "version": "1.0.6",
       "dependencies": {
         "@aws-sdk/client-kinesis": "^3.965.0",
         "bson": "^7.0.0",
@@ -63,7 +63,7 @@
     },
     "lib/oneapi": {
       "name": "@supergrowthai/oneapi",
-      "version": "2.0.4",
+      "version": "2.0.5",
       "dependencies": {
         "iron-session": "^8.0.4",
       },
@@ -97,7 +97,7 @@
     },
     "lib/tq": {
       "name": "@supergrowthai/tq",
-      "version": "1.0.5",
+      "version": "1.0.6",
       "dependencies": {
         "@supergrowthai/mq": "workspace:*",
         "lodash": "^4.17.21",
@@ -120,7 +120,7 @@
     },
     "packages/core": {
       "name": "@supergrowthai/next-blog",
-      "version": "3.0.4",
+      "version": "3.0.5",
       "dependencies": {
         "memoose-js": "2.0.2",
       },
@@ -238,7 +238,7 @@
     },
     "packages/types": {
       "name": "@supergrowthai/next-blog-types",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "devDependencies": {
         "@types/node": "^25.0.3",
         "memoose-js": "2.0.2",
@@ -250,7 +250,7 @@
     },
     "packages/ui": {
       "name": "@supergrowthai/next-blog-ui",
-      "version": "2.0.4",
+      "version": "2.0.5",
       "devDependencies": {
         "@supergrowthai/next-blog": "workspace:*",
         "@supergrowthai/plugin-dev-kit": "workspace:*",
