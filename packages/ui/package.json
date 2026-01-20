@@ -47,8 +47,8 @@
   "devDependencies": {
     "@supergrowthai/next-blog": "workspace:*",
     "@supergrowthai/plugin-dev-kit": "workspace:*",
-    "@types/node": "^25.0.3",
-    "@types/react": "^19.1.8",
+    "@types/node": "^25.0.9",
+    "@types/react": "^19.2.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^5.1.2",
     "publint": "^0.3.16",
