@@ -1,15 +1,25 @@
 # @supergrowthai/oneapi
 
-Universal TypeScript API router for Express.js and Next.js - Write once, deploy anywhere. Build type-safe APIs that
-seamlessly work across different Node.js frameworks with a single codebase.
+Universal TypeScript API router for Express.js, Next.js, Hono, and Bun - Write once, deploy anywhere. Build type-safe
+APIs that
+seamlessly work across different runtimes with a single codebase.
 
 ## Why OneAPI?
 
 **Write your API endpoints once, use them everywhere.** Whether you're building a standalone Express server, Next.js API
 routes, or migrating between frameworks, OneAPI ensures your business logic remains portable and framework-independent.
 
+> **Our thesis:** APIs are hierarchical resources. Your code should reflect that structure—not as scattered route
+> registrations, but as a single, readable object that mirrors your URL hierarchy.
+>
+> OneAPI isn't an Express or Hono replacement. Those are excellent, flexible tools. We're for teams who want
+> **portable, declarative API definitions** that work across frameworks without lock-in.
+
 ### Key Benefits
 
+- **🗂️ Declarative Route Maps**: Define your entire API as a nested object structure - no method chaining, no
+  decorators,
+  just plain objects that mirror your URL structure. Routes like `/api/users/[id]/posts` become intuitive nested keys.
 - **🚀 Framework Portability**: Declare endpoints once and use them in standalone Express servers, Next.js API routes, or
   any Web-standard Request/Response environment
 - **🔄 Zero Migration Cost**: Switch between Express and Next.js without rewriting your API logic
@@ -34,9 +44,10 @@ yarn add @supergrowthai/oneapi
 ## Features
 
 - **Framework Agnostic Core**: Generic router implementation that works with standard Web APIs
-- **Multi-Framework Support**: Built-in adapters for Express.js (v5+) and Next.js (v15+)
+- **Multi-Framework Support**: Built-in adapters for Express.js (v5+), Next.js (v15+), and Hono (v4+)
+- **Direct Bun.serve Support**: Use GenericRouter directly with Bun's native server for zero-overhead performance
 - **Type Safety**: Full TypeScript support with comprehensive type definitions and inference
-- **Session Management**: Built-in Iron Session authentication handler with type-safe session data
+- **Session Management**: Built-in Iron Session and Better Auth handlers with type-safe session data
 - **Dynamic Routing**: Support for dynamic path segments (`[id]`) and catch-all routes (`[...]`)
 - **Error Handling**: Standardized error classes with proper HTTP status codes
 - **Request Parsing**: Automatic body parsing for JSON, FormData, and URL-encoded data
@@ -178,6 +189,68 @@ app.route('/', router);
 **Note:** With `BetterAuthHandler`, login/logout/user updates are handled by Better Auth's own routes (
 `/api/auth/sign-in`, `/api/auth/sign-out`, etc.), not through the `IAuthHandler` interface. The handler only provides
 session retrieval for protected routes.
+
+### 2D. Use with Hono.js
+
+```typescript
+// server.ts
+import {Hono} from 'hono';
+import {createHonoRouter, GenericIronSessionHandler} from '@supergrowthai/oneapi/hono';
+import {apiEndpoints} from './api/endpoints';
+
+const app = new Hono();
+
+const router = createHonoRouter(apiEndpoints, {
+    pathPrefix: '/api',
+    authHandler: new GenericIronSessionHandler({
+        password: process.env.SESSION_SECRET!,
+        cookieName: 'app-session'
+    })
+});
+
+// Mount as middleware
+app.use('/api/*', router.middleware());
+
+// Works with any runtime: Node.js, Bun, Deno, Cloudflare Workers
+export default app;
+```
+
+### 2E. Use with Bun.serve (Direct)
+
+For maximum performance with zero framework overhead, use `GenericRouter` directly with Bun's native server:
+
+```typescript
+// server.ts
+import {GenericRouter, GenericIronSessionHandler} from '@supergrowthai/oneapi';
+import {apiEndpoints} from './api/endpoints';
+
+const router = new GenericRouter(apiEndpoints, {
+    pathPrefix: '/api',
+    authHandler: new GenericIronSessionHandler({
+        password: process.env.SESSION_SECRET!,
+        cookieName: 'app-session'
+    })
+});
+
+Bun.serve({
+    port: 3000,
+    fetch: (request) => router.handle(request),
+});
+
+console.log('Bun server running on port 3000');
+```
+
+**Why this works:** `GenericRouter` is built on Web-standard `Request`/`Response`, which Bun.serve uses natively. No
+adapter needed.
+
+**When to use Hono vs direct Bun.serve:**
+
+| Use Case                          | Recommendation   |
+|-----------------------------------|------------------|
+| Need middleware ecosystem         | Hono             |
+| Need additional routing           | Hono             |
+| Maximum performance, minimal deps | Direct Bun.serve |
+| Simple API server                 | Either works     |
 
 ## Real-World Example: Building a Multi-Platform API
 
@@ -427,16 +500,35 @@ OneAPI is perfect for:
 
 ## Comparison with Alternatives
 
-| Feature            | OneAPI | Express Router | Next.js API Routes |
-|--------------------|--------|----------------|--------------------|
-| Framework Agnostic | ✅      | ❌              | ❌                  |
-| TypeScript First   | ✅      | ⚠️             | ✅                  |
-| Built-in Auth      | ✅      | ❌              | ❌                  |
-| Route Caching      | ✅      | ❌              | ❌                  |
-| Express Support    | ✅      | ✅              | ❌                  |
-| Next.js Support    | ✅      | ❌              | ✅                  |
-| Bundle Size        | Small  | Large          | N/A                |
-| Web Standards      | ✅      | ❌              | ✅                  |
+| Feature            | OneAPI | Express Router | Next.js API Routes | Hono  |
+|--------------------|--------|----------------|--------------------|-------|
+| Declarative Routes | ✅      | ❌              | ⚠️                 | ❌     |
+| Framework Agnostic | ✅      | ❌              | ❌                  | ✅     |
+| TypeScript First   | ✅      | ⚠️             | ✅                  | ✅     |
+| Built-in Auth      | ✅      | ❌              | ❌                  | ❌     |
+| Route Caching      | ✅      | ❌              | ❌                  | ❌     |
+| Express Support    | ✅      | ✅              | ❌                  | ❌     |
+| Next.js Support    | ✅      | ❌              | ✅                  | ⚠️    |
+| Hono Support       | ✅      | ❌              | ❌                  | ✅     |
+| Bun.serve (Direct) | ✅      | ❌              | ❌                  | ✅     |
+| Bundle Size        | Small  | Large          | N/A                | Small |
+| Web Standards      | ✅      | ❌              | ✅                  | ✅     |
+
+**Declarative Routes** - OneAPI uses nested objects that mirror your URL structure. Compare:
+
+```typescript
+// OneAPI: Declarative object structure
+const api = {
+    users: {
+        '[id]': {
+            posts: handler  // → /users/:id/posts
+        }
+    }
+};
+
+// Hono/Express: Imperative method chaining
+app.get('/users/:id/posts', handler);
+```
 
 ## Contributing
 
@@ -450,4 +542,5 @@ See LICENSE file in the repository root.
 
 **Keywords**: typescript api router, express nextjs router, universal api framework, nodejs api router, framework
 agnostic router, typescript rest api, express middleware, nextjs api routes, web standard api, portable api framework,
-multi-framework api, api route handler, typescript http router, iron session, authentication middleware
+multi-framework api, api route handler, typescript http router, iron session, authentication middleware, hono router,
+bun serve, bun api server, deno api, cloudflare workers api
