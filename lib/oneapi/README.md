@@ -142,6 +142,43 @@ export const PUT = router.handle;
 export const DELETE = router.handle;
 ```
 
+### 2C. Use with Better Auth
+
+For applications using [Better Auth](https://better-auth.com/), use `BetterAuthHandler`:
+
+```typescript
+import {betterAuth} from 'better-auth';
+import {Hono} from 'hono';
+import {createHonoRouter, BetterAuthHandler} from '@supergrowthai/oneapi/hono';
+import {apiEndpoints} from './api/endpoints';
+
+// Create Better Auth instance
+const auth = betterAuth({
+    database: yourAdapter,
+    emailAndPassword: {enabled: true},
+    socialProviders: {
+        google: {clientId: '...', clientSecret: '...'},
+        github: {clientId: '...', clientSecret: '...'}
+    }
+});
+
+const app = new Hono();
+
+// Mount Better Auth routes (handles /api/auth/*)
+app.on(['GET', 'POST'], '/api/auth/*', (c) => auth.handler(c.req.raw));
+
+// Create OneAPI router with Better Auth session handling
+const router = createHonoRouter(apiEndpoints, {
+    authHandler: new BetterAuthHandler(auth)
+});
+
+app.route('/', router);
+```
+
+**Note:** With `BetterAuthHandler`, login/logout/user updates are handled by Better Auth's own routes (
+`/api/auth/sign-in`, `/api/auth/sign-out`, etc.), not through the `IAuthHandler` interface. The handler only provides
+session retrieval for protected routes.
+
 ## Real-World Example: Building a Multi-Platform API
 
 Here's how OneAPI enables you to build once and deploy anywhere:
@@ -362,9 +399,11 @@ bun run clean
 ## Dependencies
 
 - `iron-session`: Session management
-- Peer dependencies:
-    - `express` >= 5.0.0 (optional)
-    - `next` >= 15.0.0 (optional)
+- Peer dependencies (all optional):
+    - `better-auth` >= 1.4.0 - For Better Auth integration
+    - `express` >= 5.0.0 - For Express.js adapter
+    - `hono` >= 4.0.0 - For Hono adapter
+    - `next` >= 15.0.0 - For Next.js adapter
 
 ## Performance
 

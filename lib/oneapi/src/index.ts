@@ -24,3 +24,7 @@ export {GenericIronSessionHandler} from './auth/generic-iron-session-handler.js'
 
 // Authentication base classes
 export * from './auth/iron-session-handler.js';
+
+// Better Auth integration
+export {BetterAuthHandler, WeakMapSessionCache} from './auth/better-auth-handler.js';
+export type {BetterAuthSession, SessionCache, BetterAuthHandlerOptions} from './auth/better-auth-handler.js';
