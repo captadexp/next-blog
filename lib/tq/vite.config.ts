@@ -45,6 +45,7 @@ export default defineConfig({
                 'url',
                 'events',
                 'process',
+                'os',
                 /^node:/
             ],
             output: {
