@@ -1,6 +1,6 @@
 {
   "name": "@supergrowthai/tq",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Task queue management library with multiple executor types and async task handling",
   "repository": "git+https://github.com/captadexp/next-blog.git",
   "homepage": "https://github.com/captadexp/next-blog/tree/main#readme",
