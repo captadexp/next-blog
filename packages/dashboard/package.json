@@ -50,7 +50,7 @@
     "@editorjs/editorjs": "^2.31.1",
     "@tailwindcss/typography": "^0.5.16",
     "@tailwindcss/vite": "^4.1.18",
-    "@types/react": "^19.2.8",
+    "@types/react": "^19.2.10",
     "@types/react-dom": "^19.1.6",
     "daisyui": "^5.5.14",
     "idb": "^8.0.3",

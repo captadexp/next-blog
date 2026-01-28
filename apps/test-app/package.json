@@ -14,18 +14,18 @@
     "@supergrowthai/next-blog": "workspace:*",
     "@supergrowthai/next-blog-ui": "workspace:*",
     "@supergrowthai/tq": "workspace:*",
-    "memoose-js": "2.0.2",
+    "memoose-js": "2.0.4",
     "mongodb": "^7.0.0",
-    "next": "^16.1.4",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
-    "@aws-sdk/client-kinesis": "^3.971.0"
+    "next": "^16.1.6",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "@aws-sdk/client-kinesis": "^3.975.0"
   },
   "devDependencies": {
     "@types/mongodb": "^4.0.7",
-    "@types/node": "^25.0.9",
-    "@types/react": "^19.2.8",
+    "@types/node": "^25.0.10",
+    "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
-    "@types/bun": "^1.3.6"
+    "@types/bun": "^1.3.7"
   }
 }
