@@ -164,9 +164,40 @@ export class KinesisQueue<ID> implements IMessageQueue<ID> {
                 })),
         };
 
+        const MAX_RETRIES = 3;
         try {
-            const result = await this.kinesis.send(new PutRecordsCommand(params));
-            logger.info(`[${this.instanceId}] [${envStreamId}] Produced ${messages.length} messages. Shards involved: ${result.Records?.map(record => record.ShardId).join(', ')}`);
+            let records = [...params.Records];
+            let lastResult;
+
+            for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+                lastResult = await this.kinesis.send(new PutRecordsCommand({...params, Records: records}));
+
+                if (!lastResult.FailedRecordCount || lastResult.FailedRecordCount === 0) {
+                    break; // all succeeded
+                }
+
+                // Collect only failed records for retry
+                const failedRecords = records.filter((_, i) => lastResult!.Records![i].ErrorCode);
+                logger.error(`[${this.instanceId}] [${envStreamId}] PutRecords attempt ${attempt + 1}: ${failedRecords.length} failed records`);
+                lastResult.Records?.forEach((record, index) => {
+                    if (record.ErrorCode) {
+                        logger.error(`[${this.instanceId}] [${envStreamId}] Record ${index} failed: ${record.ErrorCode} - ${record.ErrorMessage}`);
+                    }
+                });
+
+                records = failedRecords;
+
+                if (attempt < MAX_RETRIES - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 200 * Math.pow(2, attempt)));
+                }
+            }
+
+            // After retries, if still have failures, throw
+            if (lastResult?.FailedRecordCount && lastResult.FailedRecordCount > 0) {
+                throw new Error(`Failed to publish ${records.length} records to ${envStreamId} after ${MAX_RETRIES} attempts`);
+            }
+
+            logger.info(`[${this.instanceId}] [${envStreamId}] Produced ${messages.length} messages.`);
 
             // Emit onMessagePublished for each message
             if (this.lifecycleProvider?.onMessagePublished) {
@@ -188,16 +219,6 @@ export class KinesisQueue<ID> implements IMessageQueue<ID> {
                 this.queueStats.set(envStreamId, {processed: 0, produced: 0});
             }
             this.queueStats.get(envStreamId)!.produced += messages.length;
-
-            if (result.FailedRecordCount && result.FailedRecordCount > 0) {
-                logger.error(`[${this.instanceId}] [${envStreamId}] Failed to produce ${result.FailedRecordCount} records.`);
-                // Basic retry or logging - consider more robust handling
-                result.Records?.forEach((record, index) => {
-                    if (record.ErrorCode) {
-                        logger.error(`[${this.instanceId}] [${envStreamId}] Record ${index} failed: ${record.ErrorCode} - ${record.ErrorMessage}`);
-                    }
-                });
-            }
         } catch (error) {
             logger.error(`[${this.instanceId}] [${envStreamId}] Error producing tasks:`, error);
             throw error;

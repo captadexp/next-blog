@@ -339,6 +339,7 @@ export class TaskHandler<ID> {
             await this.postProcessTasks({failedTasks, newTasks, successTasks})
                 .catch(err => {
                     this.logger.error("Failed to postProcessTasks", err)
+                    throw err;
                 })
 
             if (!this.queueStats.has(streamName)) {
@@ -527,6 +528,33 @@ export class TaskHandler<ID> {
 
                 const matureTasks = await this.taskStore.getMatureTasks(Date.now());
                 this.logger.debug(`Found ${matureTasks.length} mature tasks to process`);
+
+                // Duplicate pick detection — batch check via mget, batch write via pipeline
+                if (matureTasks.length > 0) {
+                    try {
+                        const tasksWithIds = matureTasks.filter(t => t.id);
+                        const dedupKeys = tasksWithIds.map(t => `mature_dedup:${t.id}`);
+
+                        if (dedupKeys.length > 0) {
+                            const previousPickers = await this.cacheAdapter.mget(...dedupKeys);
+                            for (let i = 0; i < dedupKeys.length; i++) {
+                                if (previousPickers[i]) {
+                                    const task = tasksWithIds[i];
+                                    this.logger.warn(`DUPLICATE_MATURE_PICK: task ${task.id} (${task.type}) already picked by ${previousPickers[i]}`);
+                                }
+                            }
+
+                            const pipeline = this.cacheAdapter.pipeline();
+                            for (const key of dedupKeys) {
+                                pipeline.set(key, INSTANCE_ID, 120);
+                            }
+                            await pipeline.exec();
+                        }
+                    } catch (err) {
+                        this.logger.warn(`Duplicate pick detection failed (best-effort): ${err}`);
+                    }
+                }
+
                 await this.addTasks(matureTasks);
             } catch (error) {
                 this.logger.error(`Error processing tasks: ${error}`);

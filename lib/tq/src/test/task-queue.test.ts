@@ -491,4 +491,226 @@ describe("store_on_failure upsert fixes", () => {
         const tasks = await adapter.getTasksByIds([id]);
         expect(tasks.length).toBe(0);
     });
+
+    // --- DB-persisted tasks (future/mature origin) should UPDATE not CREATE ---
+
+    it("updateTasksForRetry updates existing DB task (future/mature origin)", async () => {
+        const adapter = new InMemoryAdapter();
+        const taskStore = new TaskStore<string>(adapter);
+        const id = adapter.generateId();
+        const originalPayload = {message: 'original'};
+
+        // Task already in DB (future task or mature task)
+        await adapter.addTasksToScheduled([makeTask(id, {payload: originalPayload})]);
+
+        const laterDate = new Date(Date.now() + 10000);
+        await taskStore.updateTasksForRetry([makeTask(id, {
+            execute_at: laterDate,
+            execution_stats: {retry_count: 1}
+        })]);
+
+        const [persisted] = await adapter.getTasksByIds([id]);
+        expect(persisted.execution_stats?.retry_count).toBe(1);
+        expect(persisted.execute_at).toBe(laterDate);
+        // Payload must not be overwritten by upsert's update path
+        expect((persisted.payload as any).message).toBe('original');
+    });
+
+    it("markTasksAsFailed updates existing DB task (future/mature origin)", async () => {
+        const adapter = new InMemoryAdapter();
+        const taskStore = new TaskStore<string>(adapter);
+        const id = adapter.generateId();
+        const originalPayload = {message: 'original'};
+
+        await adapter.addTasksToScheduled([makeTask(id, {payload: originalPayload})]);
+
+        await taskStore.markTasksAsFailed([makeTask(id, {
+            execution_stats: {retry_count: 3, last_error: 'db timeout'}
+        })]);
+
+        const [persisted] = await adapter.getTasksByIds([id]);
+        expect(persisted.status).toBe('failed');
+        expect(persisted.execution_stats?.failed_at).toBeDefined();
+        expect(persisted.execution_stats?.last_error).toBe('db timeout');
+        // Payload preserved
+        expect((persisted.payload as any).message).toBe('original');
+    });
+
+    it("markTasksAsSuccess updates existing DB task to executed", async () => {
+        const adapter = new InMemoryAdapter();
+        const taskStore = new TaskStore<string>(adapter);
+        const id = adapter.generateId();
+
+        await adapter.addTasksToScheduled([makeTask(id)]);
+
+        await taskStore.markTasksAsSuccess([makeTask(id)]);
+
+        const [persisted] = await adapter.getTasksByIds([id]);
+        expect(persisted.status).toBe('executed');
+    });
+
+    // --- Mixed batch: some tasks in DB, some not ---
+
+    it("upsertTasks handles mixed batch (some in DB, some not)", async () => {
+        const adapter = new InMemoryAdapter();
+        const taskStore = new TaskStore<string>(adapter);
+        const existingId = adapter.generateId();
+        const newId = adapter.generateId();
+
+        // Only one task in DB
+        await adapter.addTasksToScheduled([makeTask(existingId)]);
+
+        await taskStore.updateTasksForRetry([
+            makeTask(existingId, {execution_stats: {retry_count: 2}}),
+            makeTask(newId, {execution_stats: {retry_count: 1}})
+        ]);
+
+        const existing = await adapter.getTasksByIds([existingId]);
+        const created = await adapter.getTasksByIds([newId]);
+        expect(existing.length).toBe(1);
+        expect(existing[0].execution_stats?.retry_count).toBe(2);
+        expect(created.length).toBe(1);
+        expect(created[0].execution_stats?.retry_count).toBe(1);
+    });
+
+    // --- Retry count always increments (no infinite loop) ---
+
+    it("retry count increments on each upsert preventing infinite loops", async () => {
+        const adapter = new InMemoryAdapter();
+        const taskStore = new TaskStore<string>(adapter);
+        const id = adapter.generateId();
+
+        for (let i = 1; i <= 5; i++) {
+            await taskStore.updateTasksForRetry([makeTask(id, {
+                execution_stats: {retry_count: i}
+            })]);
+        }
+
+        const [persisted] = await adapter.getTasksByIds([id]);
+        expect(persisted.execution_stats?.retry_count).toBe(5);
+        // Only 1 record — upserts, not duplicates
+        const all = await adapter.getTasksByIds([id]);
+        expect(all.length).toBe(1);
+    });
+
+    // --- markTasksAsFailed preserves execution_stats from retries ---
+
+    it("markTasksAsIgnored persists never-persisted store_on_failure task", async () => {
+        const adapter = new InMemoryAdapter();
+        const taskStore = new TaskStore<string>(adapter);
+        const id = adapter.generateId();
+
+        // Task was never in DB (store_on_failure hot path)
+        const tasks = await adapter.getTasksByIds([id]);
+        expect(tasks.length).toBe(0);
+
+        await taskStore.markTasksAsIgnored([makeTask(id)]);
+
+        const [persisted] = await adapter.getTasksByIds([id]);
+        expect(persisted).toBeDefined();
+        expect(persisted.status).toBe('ignored');
+        expect(persisted.execution_stats?.ignored_reason).toBe('unknown_executor');
+        expect(persisted.execution_stats?.ignored_at).toBeDefined();
+    });
+
+    it("markTasksAsIgnored updates existing DB task", async () => {
+        const adapter = new InMemoryAdapter();
+        const taskStore = new TaskStore<string>(adapter);
+        const id = adapter.generateId();
+
+        // Task already in DB
+        await adapter.addTasksToScheduled([makeTask(id)]);
+
+        await taskStore.markTasksAsIgnored([makeTask(id)]);
+
+        const [persisted] = await adapter.getTasksByIds([id]);
+        expect(persisted).toBeDefined();
+        expect(persisted.status).toBe('ignored');
+        expect(persisted.execution_stats?.ignored_reason).toBe('unknown_executor');
+    });
+
+    it("upsertTasks is idempotent — duplicate calls produce single record with latest state", async () => {
+        const adapter = new InMemoryAdapter();
+        const taskStore = new TaskStore<string>(adapter);
+        const id = adapter.generateId();
+
+        // Upsert same task 3 times with increasing retry counts
+        for (let i = 1; i <= 3; i++) {
+            await taskStore.updateTasksForRetry([makeTask(id, {
+                execution_stats: {retry_count: i}
+            })]);
+        }
+
+        // Should have exactly 1 record
+        const all = await adapter.getTasksByIds([id]);
+        expect(all.length).toBe(1);
+        expect(all[0].execution_stats?.retry_count).toBe(3);
+    });
+
+    it("markTasksAsFailed preserves retry history in execution_stats", async () => {
+        const adapter = new InMemoryAdapter();
+        const taskStore = new TaskStore<string>(adapter);
+        const id = adapter.generateId();
+
+        // Simulate: task retried twice, then exhausted
+        await taskStore.updateTasksForRetry([makeTask(id, {
+            execution_stats: {retry_count: 1, last_error: 'first error'}
+        })]);
+        await taskStore.updateTasksForRetry([makeTask(id, {
+            execution_stats: {retry_count: 2, last_error: 'second error'}
+        })]);
+
+        // Now mark as failed
+        await taskStore.markTasksAsFailed([makeTask(id, {
+            execution_stats: {retry_count: 3, last_error: 'final error'}
+        })]);
+
+        const [persisted] = await adapter.getTasksByIds([id]);
+        expect(persisted.status).toBe('failed');
+        expect(persisted.execution_stats?.retry_count).toBe(3);
+        expect(persisted.execution_stats?.last_error).toBe('final error');
+        expect(persisted.execution_stats?.failed_at).toBeDefined();
+    });
+});
+
+describe("postProcessTasks error propagation", () => {
+    it("postProcessTasks error propagates to caller (not swallowed)", async () => {
+        const messageQueue = new InMemoryQueue();
+        const queueName: QueueName = "test-tq-queue";
+        const databaseAdapter = new InMemoryAdapter();
+        const cacheProvider = new MemoryCacheProvider();
+        const taskQueue = new TaskQueuesManager<string>(messageQueue);
+        const taskHandler = new TaskHandler<string>(messageQueue, taskQueue, databaseAdapter, cacheProvider);
+
+        // Monkey-patch upsertTasks to throw (simulates DB down)
+        const originalUpsert = databaseAdapter.upsertTasks.bind(databaseAdapter);
+        databaseAdapter.upsertTasks = async () => {
+            throw new Error("DB connection lost");
+        };
+
+        const task: CronTask<string> = {
+            id: databaseAdapter.generateId(),
+            type: 'test-task',
+            queue_id: queueName,
+            payload: {message: 'test'},
+            execute_at: new Date(),
+            status: 'scheduled',
+            retries: 0,
+            created_at: new Date(),
+            updated_at: new Date(),
+            processing_started_at: new Date(),
+        } as CronTask<string>;
+
+        // postProcessTasks with a failed task should propagate the DB error
+        await expect(
+            taskHandler.postProcessTasks({
+                failedTasks: [task],
+                newTasks: [],
+                successTasks: []
+            })
+        ).rejects.toThrow("DB connection lost");
+
+        // Restore
+        databaseAdapter.upsertTasks = originalUpsert;
+    });
 });
