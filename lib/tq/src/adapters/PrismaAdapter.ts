@@ -235,6 +235,34 @@ export class PrismaAdapter<
             });
     }
 
+    async upsertTasks(tasks: CronTask<TId>[]): Promise<void> {
+        if (!tasks.length) return;
+
+        const now = new Date();
+        const delegate = this.delegate;
+
+        // Each task may have different status/execute_at/execution_stats,
+        // so per-task upsert is unavoidable. Wrapped in a transaction for atomicity.
+        await this.prismaClient
+            .$transaction(
+                tasks.map(task => delegate.upsert({
+                    where: {id: task.id},
+                    create: {
+                        ...task,
+                        created_at: task.created_at || now,
+                        updated_at: now,
+                        processing_started_at: task.processing_started_at || now
+                    },
+                    update: {
+                        status: task.status,
+                        execute_at: task.execute_at,
+                        execution_stats: task.execution_stats,
+                        updated_at: now
+                    }
+                }))
+            );
+    }
+
     async getCleanupStats(): Promise<{ orphanedTasks: number; expiredTasks: number }> {
         const orphanedBefore = new Date(Date.now() - TWO_DAYS_MS);
 

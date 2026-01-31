@@ -259,6 +259,38 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
         }
     }
 
+    async upsertTasks(tasks: CronTask<ObjectId>[]): Promise<void> {
+        if (!tasks.length) return;
+        const collection = await this.collection;
+        const now = new Date();
+
+        const bulkOps = tasks.map(task => {
+            const id = task.id || this.generateId();
+            const {id: _id, ...rest} = task;
+            return {
+                updateOne: {
+                    filter: {_id: id},
+                    update: {
+                        $set: {
+                            status: task.status,
+                            execute_at: task.execute_at,
+                            execution_stats: task.execution_stats,
+                            updated_at: now
+                        },
+                        $setOnInsert: {
+                            ...rest,
+                            created_at: task.created_at || now,
+                            processing_started_at: task.processing_started_at || now
+                        }
+                    },
+                    upsert: true
+                }
+            };
+        });
+
+        await collection.bulkWrite(bulkOps);
+    }
+
     generateId() {
         return new ObjectId();
     }

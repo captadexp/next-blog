@@ -57,6 +57,12 @@ export interface ITaskStorageAdapter<ID = any> {
     updateTasks(updates: Array<{ id: ID; updates: Partial<CronTask<ID>> }>): Promise<void>;
 
     /**
+     * Upsert tasks - insert if not exists, update if exists.
+     * Used for store_on_failure tasks that may not have been persisted yet.
+     */
+    upsertTasks(tasks: CronTask<ID>[]): Promise<void>;
+
+    /**
      * Get stats for cleanup
      */
     getCleanupStats(): Promise<{

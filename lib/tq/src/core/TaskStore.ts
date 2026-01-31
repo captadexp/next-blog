@@ -59,10 +59,19 @@ class TaskStore<ID> {
     }
 
     /**
-     * Marks tasks as failed and increments retry count
+     * Marks tasks as failed — uses upsert to handle store_on_failure tasks
+     * that were never persisted to DB
      */
     async markTasksAsFailed(tasks: CronTask<ID>[]): Promise<void> {
-        await this.databaseAdapter.markTasksAsFailed(tasks);
+        const tasksWithStatus = tasks.map(task => ({
+            ...task,
+            status: 'failed' as const,
+            execution_stats: {
+                ...(task.execution_stats || {}),
+                failed_at: new Date()
+            }
+        }));
+        await this.databaseAdapter.upsertTasks(tasksWithStatus);
     }
 
     /**
@@ -121,20 +130,11 @@ class TaskStore<ID> {
     }
 
     /**
-     * Updates tasks for retry with new execution time and retry count
+     * Updates tasks for retry — uses upsert to handle store_on_failure tasks
+     * that were never persisted to DB
      */
     async updateTasksForRetry(tasks: CronTask<ID>[]): Promise<void> {
-        const updates = tasks.map(task => ({
-            id: task.id as ID,
-            updates: {
-                execute_at: task.execute_at,
-                status: task.status,
-                execution_stats: task.execution_stats,
-                updated_at: new Date()
-            }
-        }));
-
-        await this.databaseAdapter.updateTasks(updates);
+        await this.databaseAdapter.upsertTasks(tasks);
     }
 
 }

@@ -115,6 +115,23 @@ class InMemoryAdapter implements ITaskStorageAdapter<string> {
         }
     }
 
+    async upsertTasks(tasks: CronTask<string>[]): Promise<void> {
+        for (const task of tasks) {
+            const id = task.id || this.generateId();
+            const existing = this.scheduledTasks.get(id);
+            if (existing) {
+                Object.assign(existing, {
+                    status: task.status,
+                    execute_at: task.execute_at,
+                    execution_stats: task.execution_stats,
+                    updated_at: new Date()
+                });
+            } else {
+                this.scheduledTasks.set(id, {...task, id});
+            }
+        }
+    }
+
     async getCleanupStats(): Promise<{ orphanedTasks: number; expiredTasks: number }> {
         let orphanedTasks = 0;
         let expiredTasks = 0;

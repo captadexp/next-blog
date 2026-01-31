@@ -403,3 +403,92 @@ describe("production readiness fixes", () => {
         console.log("✅ MED-002: Existing ID preserved when provided");
     });
 });
+
+describe("store_on_failure upsert fixes", () => {
+    const makeTask = (id: string, overrides?: Partial<CronTask<string>>): CronTask<string> => ({
+        id,
+        type: 'test-task',
+        queue_id: 'test-tq-queue',
+        payload: {message: 'test'},
+        execute_at: new Date(),
+        status: 'scheduled',
+        retries: 3,
+        retry_after: 1000,
+        created_at: new Date(),
+        updated_at: new Date(),
+        processing_started_at: new Date(),
+        ...overrides
+    } as CronTask<string>);
+
+    it("upsertTasks creates record for never-persisted task", async () => {
+        const adapter = new InMemoryAdapter();
+        const taskStore = new TaskStore<string>(adapter);
+        const id = adapter.generateId();
+
+        // Task was never inserted into DB (store_on_failure hot path)
+        const tasks = await adapter.getTasksByIds([id]);
+        expect(tasks.length).toBe(0);
+
+        // Upsert via updateTasksForRetry — should INSERT
+        await taskStore.updateTasksForRetry([makeTask(id, {
+            status: 'scheduled',
+            execution_stats: {retry_count: 1}
+        })]);
+
+        const [persisted] = await adapter.getTasksByIds([id]);
+        expect(persisted).toBeDefined();
+        expect(persisted.id).toBe(id);
+        expect(persisted.execution_stats?.retry_count).toBe(1);
+    });
+
+    it("upsertTasks updates existing record on subsequent retry", async () => {
+        const adapter = new InMemoryAdapter();
+        const taskStore = new TaskStore<string>(adapter);
+        const id = adapter.generateId();
+
+        // First failure creates the record
+        await taskStore.updateTasksForRetry([makeTask(id, {
+            execution_stats: {retry_count: 1}
+        })]);
+
+        // Second failure updates it
+        const laterDate = new Date(Date.now() + 5000);
+        await taskStore.updateTasksForRetry([makeTask(id, {
+            execute_at: laterDate,
+            execution_stats: {retry_count: 2}
+        })]);
+
+        const [persisted] = await adapter.getTasksByIds([id]);
+        expect(persisted.execution_stats?.retry_count).toBe(2);
+        expect(persisted.execute_at).toBe(laterDate);
+    });
+
+    it("markTasksAsFailed upserts for never-persisted task", async () => {
+        const adapter = new InMemoryAdapter();
+        const taskStore = new TaskStore<string>(adapter);
+        const id = adapter.generateId();
+
+        // Task exhausted retries but was never in DB
+        await taskStore.markTasksAsFailed([makeTask(id, {
+            execution_stats: {retry_count: 3, last_error: 'timeout'}
+        })]);
+
+        const [persisted] = await adapter.getTasksByIds([id]);
+        expect(persisted).toBeDefined();
+        expect(persisted.status).toBe('failed');
+        expect(persisted.execution_stats?.failed_at).toBeDefined();
+    });
+
+    it("markTasksAsSuccess is no-op for never-persisted task", async () => {
+        const adapter = new InMemoryAdapter();
+        const taskStore = new TaskStore<string>(adapter);
+        const id = adapter.generateId();
+
+        // Success path — should NOT create a record (store_on_failure = don't persist successes)
+        await taskStore.markTasksAsSuccess([makeTask(id)]);
+
+        // markTasksAsSuccess calls markTasksAsExecuted which uses updateMany — skips missing
+        const tasks = await adapter.getTasksByIds([id]);
+        expect(tasks.length).toBe(0);
+    });
+});
