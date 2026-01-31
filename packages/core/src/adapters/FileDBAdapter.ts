@@ -47,10 +47,27 @@ export class FileDBAdapter implements DatabaseAdapter {
 
             find: async (filter: Filter<Blog>, options?: {
                 skip?: number,
-                limit?: number
+                limit?: number,
+                sort?: Record<string, 1 | -1>
             }): Promise<Blog[]> => {
                 const blogs = await this.readData<Blog>('blogs.json');
                 let filtered = blogs.filter(sift(filter));
+
+                // Apply sort if provided
+                if (options?.sort) {
+                    filtered.sort((a, b) => {
+                        for (const [key, direction] of Object.entries(options.sort!)) {
+                            const valA = (a as any)[key];
+                            const valB = (b as any)[key];
+                            
+                            if (valA === valB) continue;
+                            
+                            const comparison = valA > valB ? 1 : -1;
+                            return direction === 1 ? comparison : -comparison;
+                        }
+                        return 0;
+                    });
+                }
 
                 // Apply skip and limit if provided
                 if (options?.skip) {
