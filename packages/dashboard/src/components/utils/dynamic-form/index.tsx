@@ -3,7 +3,8 @@ import {useEffect, useState} from 'preact/hooks';
 import FormField from './FormField';
 import {DynamicFormFieldType} from './types';
 import Loader from '../../Loader';
-
+import toast from 'react-hot-toast';
+import { checkSlug } from '../../../_utils/checkValidity';
 interface DynamicFormProps {
     id: string;
     fields: DynamicFormFieldType[];
@@ -36,18 +37,23 @@ function DynamicForm(props: DynamicFormProps) {
         });
         setFormData(initialData);
     }, [fields]);
-
+    
+    
     const handleFieldChange = (key: string, value: any) => {
         setFormData(prevData => {
             // Process specific field types
             const processedValue = key === 'tags' && typeof value === 'string' ? value.split(',') : value;
-
             // Create updated data with the new value
             const updatedData = {
                 ...prevData,
                 [key]: processedValue
             };
-
+            if(key === 'slug'){
+                // ignores empty string and checks the recent letter typed
+                if(value !== "" && !checkSlug(value.charAt(value.length - 1))){
+                    toast.error("Please avoid special characters except hypens in the slug");
+                }
+            }
             // Call custom field change handler if provided
             if (props.onFieldChange) {
                 const additionalChanges = props.onFieldChange(key, value, updatedData);
