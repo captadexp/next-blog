@@ -61,7 +61,12 @@ export function htmlToEditorJS(html: string): OutputData {
                         type: 'list',
                         data: {
                             style: node.name === 'ol' ? 'ordered' : 'unordered',
-                            items: node.children.filter(isTag).map(child => getInlineContent(child))
+                            items: node.children
+                                .filter(child => isTag(child) && child.name === 'li')
+                                .map(child => ({
+                                    content: getInlineContent(child),
+                                    items: []
+                                }))
                         }
                     });
                     break;

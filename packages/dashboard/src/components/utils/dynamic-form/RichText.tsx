@@ -34,7 +34,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
 
                 // Get available tools
                 const Header = (window as any).Header;
-                const List = (window as any).EditorjsList;
+                const List = (window as any).List || (window as any).EditorjsList;
                 const Quote = (window as any).Quote;
                 const Table = (window as any).Table;
                 const InlineCode = (window as any).InlineCode;
@@ -74,13 +74,14 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                 }
 
                 if (List) {
-                    tools.List = {
+                    const listConfig = {
                         class: List,
                         inlineToolbar: true,
                         config: {
                             defaultStyle: 'unordered'
                         }
                     };
+                    tools.list = listConfig;
                 }
 
                 if (Quote) {
@@ -187,7 +188,7 @@ const RichText = memo(({field, onChange}: RichTextProps) => {
                     }));
                 }
 
-                if (!(window as any).List) {
+                if (!(window as any).List && !(window as any).EditorjsList) {
                     toolPromises.push(new Promise((resolve) => {
                         const script = document.createElement('script');
                         script.src = 'https://cdn.jsdelivr.net/npm/@editorjs/list@latest';
