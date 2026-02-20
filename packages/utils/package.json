@@ -59,17 +59,17 @@
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "MIT",
   "dependencies": {
-    "memoose-js": "2.0.4",
+    "memoose-js": "3.0.1",
     "@supergrowthai/next-blog-types": "workspace:*",
-    "htmlparser2": "^10.0.0",
+    "htmlparser2": "^10.1.0",
     "domhandler": "^5.0.3",
     "dom-serializer": "^2.0.0"
   },
   "devDependencies": {
-    "@editorjs/editorjs": "^2.31.1",
+    "@editorjs/editorjs": "^2.31.3",
     "@smithy/types": "^4.12.0",
-    "@types/bun": "^1.3.7",
-    "@types/node": "^25.0.10",
+    "@types/bun": "^1.3.9",
+    "@types/node": "^25.3.0",
     "typescript": "^5.9.2",
     "vite": "^7.3.1",
     "vite-plugin-dts": "^4.5.4"

@@ -39,26 +39,26 @@
     "dom-serializer": "^2.0.0",
     "domelementtype": "^2.3.0",
     "domhandler": "^5.0.3",
-    "htmlparser2": "^10.0.0",
-    "preact": "^10.28.2",
-    "preact-render-to-string": "^6.6.5",
+    "htmlparser2": "^10.1.0",
+    "preact": "^10.28.4",
+    "preact-render-to-string": "^6.6.6",
     "preact-iso": "^2.11.1"
   },
   "peerDependencies": {},
   "devDependencies": {
     "@supergrowthai/utils": "workspace:*",
-    "@editorjs/editorjs": "^2.31.1",
+    "@editorjs/editorjs": "^2.31.3",
     "@tailwindcss/typography": "^0.5.16",
-    "@tailwindcss/vite": "^4.1.18",
-    "@types/react": "^19.2.10",
+    "@tailwindcss/vite": "^4.2.0",
+    "@types/react": "^19.2.14",
     "@types/react-dom": "^19.1.6",
-    "daisyui": "^5.5.14",
+    "daisyui": "^5.5.18",
     "idb": "^8.0.3",
     "react-hot-toast": "^2.5.2",
-    "tailwindcss": "^4.1.18",
+    "tailwindcss": "^4.2.0",
     "vite": "^7.3.1",
     "vite-plugin-css-injected-by-js": "^3.5.2",
     "vite-plugin-dts": "^4.5.4",
-    "vite-plugin-static-copy": "^3.1.5"
+    "vite-plugin-static-copy": "^3.2.0"
   }
 }

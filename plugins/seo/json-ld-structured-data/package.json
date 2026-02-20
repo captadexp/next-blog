@@ -11,7 +11,7 @@
   "devDependencies": {
     "@supergrowthai/plugin-dev-kit": "workspace:*",
     "typescript": "^5.9.3",
-    "@types/bun": "^1.3.7",
+    "@types/bun": "^1.3.9",
     "vite": "^7.3.1"
   },
   "nextBlog": {
@@ -19,7 +19,7 @@
     "devBaseUrl": "http://localhost:3001"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.1.18",
-    "tailwindcss": "^4.1.18"
+    "@tailwindcss/vite": "^4.2.0",
+    "tailwindcss": "^4.2.0"
   }
 }

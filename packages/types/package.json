@@ -121,12 +121,12 @@
     "dist"
   ],
   "devDependencies": {
-    "@types/node": "^25.0.10",
+    "@types/node": "^25.3.0",
     "publint": "^0.3.17",
     "typescript": "^5.9.2",
     "vite": "^7.3.1",
     "vite-plugin-dts": "^4.5.4",
-    "memoose-js": "2.0.4"
+    "memoose-js": "3.0.1"
   },
   "author": "Capt ADExp <tech@developer.toys>",
   "license": "MIT",
