@@ -16,6 +16,9 @@ interface RebalancerConfig {
     isRunningCheck: () => boolean;
     isShardHeldCheck: (streamId: QueueName, shardId: string) => boolean;
     onShardLost: (streamId: QueueName, shardId: string) => void;
+    onShardConnected?: (streamId: QueueName, shardId: string) => void;
+    onShardDisconnected?: (streamId: QueueName, shardId: string, reason: 'rebalance' | 'error' | 'shutdown') => void;
+    onCheckpoint?: (streamId: QueueName, shardId: string, checkpoint: string, recordCount: number) => void;
 }
 
 /**
@@ -148,6 +151,7 @@ export class KinesisShardRebalancer {
 
         for (const shardId of shardsToRelease) {
             logger.info(`[${instanceId}] [${streamId}] [${shardId}] Releasing shard due to rebalance`);
+            this.config.onShardDisconnected?.(streamId, shardId, 'rebalance');
 
             // CRITICAL FIX: Properly stop and cleanup consumer
             await this.stopAndCleanupConsumer(streamId, shardId);
@@ -179,6 +183,7 @@ export class KinesisShardRebalancer {
 
                     if (hasLock) {
                         logger.info(`[${instanceId}] [${streamId}] [${shardId}] Lock acquired successfully`);
+                        this.config.onShardConnected?.(streamId, shardId);
 
                         // Update tracking
                         if (!heldShardsByStream.has(streamId)) {
@@ -239,13 +244,17 @@ export class KinesisShardRebalancer {
             textDecoder,
             onShardLost: () => {
                 logger.debug(`[${instanceId}] [${streamId}] [${shardId}] Shard lost callback triggered`);
+                this.config.onShardDisconnected?.(streamId, shardId, 'error');
                 currentShardIdsInLoop.delete(shardId);
                 this.removeFromHeldShards(streamId, shardId, heldShardsByStream);
                 // CRITICAL FIX: Remove from active consumers map
                 this.activeConsumers.delete(consumerKey);
             },
             isRunningCheck,
-            isShardHeldCheck
+            isShardHeldCheck,
+            onCheckpoint: this.config.onCheckpoint
+                ? (sid, checkpoint, recordCount) => this.config.onCheckpoint!(streamId, sid, checkpoint, recordCount)
+                : undefined,
         });
 
         this.activeConsumers.set(consumerKey, consumer);
@@ -286,6 +295,7 @@ export class KinesisShardRebalancer {
 
         for (const consumerKey of consumersToStop) {
             const [, shardId] = consumerKey.split('-', 2);
+            this.config.onShardDisconnected?.(streamId, shardId, 'shutdown');
             await this.stopAndCleanupConsumer(streamId, shardId);
         }
 

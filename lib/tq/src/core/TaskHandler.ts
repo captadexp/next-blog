@@ -110,10 +110,16 @@ export class TaskHandler<ID> {
                 const timeDifference = (executeTime.getTime() - currentTime.getTime()) / 1000 / 60;
 
                 const queue = task.queue_id;
-                if (timeDifference > 2 || force_store) {
+                if (timeDifference > 2) {
+                    // Future task — persist to DB, mature processor will pick it up later
                     acc.future[queue] = acc.future[queue] || [];
                     acc.future[queue].push(task);
+                } else if (force_store) {
+                    // Immediate but force_store — persist to DB AND send to MQ now
+                    acc.forceStoreImmediate[queue] = acc.forceStoreImmediate[queue] || [];
+                    acc.forceStoreImmediate[queue].push(task);
                 } else {
+                    // Immediate — send to MQ only
                     acc.immediate[queue] = acc.immediate[queue] || [];
                     acc.immediate[queue].push(task);
                 }
@@ -123,6 +129,7 @@ export class TaskHandler<ID> {
             {
                 future: {} as { [key in QueueName]: CronTask<ID>[] },
                 immediate: {} as { [key in QueueName]: CronTask<ID>[] },
+                forceStoreImmediate: {} as { [key in QueueName]: CronTask<ID>[] },
             }
         );
 
@@ -138,6 +145,46 @@ export class TaskHandler<ID> {
                 });
 
             await this.messageQueue.addMessages(queue, queueTasks as unknown as CronTask<ID>[]);
+
+            // Emit onTaskScheduled for each task
+            if (this.lifecycleProvider?.onTaskScheduled) {
+                for (const task of queueTasks) {
+                    this.emitLifecycleEvent(
+                        this.lifecycleProvider.onTaskScheduled,
+                        this.buildTaskContext(task)
+                    );
+                }
+            }
+        }
+
+        // force_store + immediate: persist to DB as 'processing', then send to MQ.
+        // Status is 'processing' so the mature task poller won't re-enqueue these.
+        const fsQueues = Object.keys(diffedItems.forceStoreImmediate) as unknown as QueueName[];
+        for (let i = 0; i < fsQueues.length; i++) {
+            const queue = fsQueues[i];
+            const queueTasks: CronTask<ID>[] = diffedItems.forceStoreImmediate[queue]
+                .map((task) => {
+                    const id = task.id ? {} : {id: this.databaseAdapter.generateId()};
+                    return ({...id, ...task, status: 'processing', processing_started_at: new Date()});
+                });
+
+            await this.taskStore.addTasksToScheduled(queueTasks);
+
+            try {
+                await this.messageQueue.addMessages(queue, queueTasks as unknown as CronTask<ID>[]);
+            } catch (mqError) {
+                // MQ failed after DB write - reset to 'scheduled' so mature poller can pick up
+                this.logger.error(`MQ write failed for forceStoreImmediate tasks, resetting to scheduled: ${mqError}`);
+                const taskIds = queueTasks.map(t => t.id).filter(Boolean) as ID[];
+                if (taskIds.length > 0) {
+                    await this.databaseAdapter.updateTasks(
+                        taskIds.map(id => ({id, updates: {status: 'scheduled' as const}}))
+                    ).catch(resetErr => {
+                        this.logger.error(`Failed to reset tasks to scheduled after MQ failure: ${resetErr}`);
+                    });
+                }
+                throw mqError;
+            }
 
             // Emit onTaskScheduled for each task
             if (this.lifecycleProvider?.onTaskScheduled) {

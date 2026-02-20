@@ -32,6 +32,7 @@ interface ConsumerConfig {
     onShardLost?: () => void;
     isRunningCheck: () => boolean;
     isShardHeldCheck: (streamId: QueueName, shardId: string) => boolean;
+    onCheckpoint?: (shardId: string, checkpoint: string, recordCount: number) => void;
 }
 
 /**
@@ -364,6 +365,7 @@ export class KinesisShardConsumer {
                 if (lastSequence) {
                     logger.debug(`${logPrefix} Setting checkpoint to ${lastSequence}`);
                     await shardLeaser.setCheckpoint(shardId, lastSequence);
+                    this.config.onCheckpoint?.(shardId, lastSequence, messages.length);
                 }
 
             } catch (processorError: any) {

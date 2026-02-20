@@ -108,31 +108,63 @@ export class PrismaAdapter<
         return String(this.config.messageModel);
     }
 
-    private get delegate(): PrismaClient[K] {
+    protected get delegate(): PrismaClient[K] {
         return this.config.prismaClient[this.config.messageModel];
     }
 
+    /**
+     * Persist tasks to the database as scheduled.
+     *
+     * **Default implementation:** Uses individual creates with duplicate detection
+     * for maximum database compatibility (SQLite, Postgres, MySQL, etc.).
+     *
+     * **Performance note:** This is O(n) database round-trips. For high-throughput
+     * scenarios (100+ tasks/batch), override this method with a batch implementation:
+     *
+     * @example PostgreSQL/MySQL optimization:
+     * ```typescript
+     * class OptimizedPrismaAdapter extends PrismaAdapter {
+     *   async addTasksToScheduled(tasks) {
+     *     if (!tasks.length) return [];
+     *     await this.delegate.createMany({
+     *       data: tasks.map(t => ({ ...t, id: t.id || this.generateId() })),
+     *       skipDuplicates: true
+     *     });
+     *     return tasks;
+     *   }
+     * }
+     * ```
+     */
     async addTasksToScheduled(tasks: CronTask<TId>[]): Promise<CronTask<TId>[]> {
         if (!tasks.length) return [];
 
-        try {
-            await this.delegate.createMany({
-                data: tasks.map(task => ({
-                    ...task,
-                    id: task.id || this.generateId(),
-                    status: task.status || 'scheduled',
-                    retries: task.retries || 0,
-                    created_at: task.created_at || new Date(),
-                    updated_at: new Date(),
-                    processing_started_at: task.processing_started_at || new Date()
-                })),
-                skipDuplicates: true
-            });
-            return tasks;
-        } catch (error: unknown) {
-            logger.warn(`Some tasks skipped due to duplicates: ${error}`);
-            return tasks;
+        // Performance hint for high-throughput scenarios
+        if (tasks.length > 50) {
+            logger.warn(`[PrismaAdapter] Processing ${tasks.length} tasks sequentially (O(n) round-trips). For Postgres/MySQL, override addTasksToScheduled with createMany for better performance.`);
         }
+
+        // Sequential creates for broad DB compatibility (SQLite, CockroachDB, etc.)
+        // Override this method for batch optimization on Postgres/MySQL
+        const results: CronTask<TId>[] = [];
+        for (const task of tasks) {
+            try {
+                await this.delegate.create({
+                    data: {
+                        ...task,
+                        id: task.id || this.generateId(),
+                        status: task.status || 'scheduled',
+                        retries: task.retries || 0,
+                        created_at: task.created_at || new Date(),
+                        updated_at: new Date(),
+                        processing_started_at: task.processing_started_at || new Date()
+                    }
+                });
+                results.push(task);
+            } catch (error: unknown) {
+                logger.warn(`Task skipped (likely duplicate): ${error}`);
+            }
+        }
+        return results;
     }
 
     async getMatureTasks(timestamp: number): Promise<CronTask<TId>[]> {

@@ -693,6 +693,39 @@ const mongoAdapter = new MongoDbAdapter(mongoCollection);
 const memoryAdapter = new InMemoryAdapter();
 ```
 
+### PrismaAdapter Performance Optimization
+
+The default `PrismaAdapter.addTasksToScheduled()` uses sequential creates for maximum database compatibility
+(SQLite, CockroachDB, etc.). For high-throughput Postgres/MySQL deployments, override with batch operations:
+
+```typescript
+import {PrismaAdapter} from '@supergrowthai/tq';
+
+class OptimizedPrismaAdapter extends PrismaAdapter {
+    async addTasksToScheduled(tasks) {
+        if (!tasks.length) return [];
+
+        // Batch insert with duplicate handling (Postgres/MySQL only)
+        await this.delegate.createMany({
+            data: tasks.map(task => ({
+                ...task,
+                id: task.id || this.generateId(),
+                status: task.status || 'scheduled',
+                retries: task.retries || 0,
+                created_at: task.created_at || new Date(),
+                updated_at: new Date(),
+                processing_started_at: task.processing_started_at || new Date()
+            })),
+            skipDuplicates: true
+        });
+        return tasks;
+    }
+}
+```
+
+**Note:** `createMany` with `skipDuplicates` is not supported on all databases (e.g., SQLite).
+The default implementation ensures compatibility at the cost of O(n) database round-trips.
+
 ### Custom Storage Adapter
 
 Implement the `ITaskStorageAdapter` interface for custom storage backends:

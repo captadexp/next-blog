@@ -113,7 +113,41 @@ export class KinesisQueue<ID> implements IMessageQueue<ID> {
             textDecoder: this.textDecoder,
             isRunningCheck: () => this.isRunning,
             isShardHeldCheck: (streamId, shardId) => this.heldShardsByStream.get(streamId)?.has(shardId) || false,
-            onShardLost: (streamId, shardId) => this.handleShardLost(streamId, shardId)
+            onShardLost: (streamId, shardId) => this.handleShardLost(streamId, shardId),
+            onShardConnected: (streamId, shardId) => {
+                if (this.lifecycleProvider?.onConsumerConnected) {
+                    this.emitLifecycleEvent(this.lifecycleProvider.onConsumerConnected, {
+                        consumer_id: `${this.instanceId}:${shardId}`,
+                        consumer_type: 'shard' as const,
+                        queue_id: streamId,
+                        shard_id: shardId,
+                        parent_consumer_id: this.instanceId,
+                    });
+                }
+            },
+            onShardDisconnected: (streamId, shardId, reason) => {
+                if (this.lifecycleProvider?.onConsumerDisconnected) {
+                    this.emitLifecycleEvent(this.lifecycleProvider.onConsumerDisconnected, {
+                        consumer_id: `${this.instanceId}:${shardId}`,
+                        consumer_type: 'shard' as const,
+                        queue_id: streamId,
+                        shard_id: shardId,
+                        parent_consumer_id: this.instanceId,
+                        reason,
+                    });
+                }
+            },
+            onCheckpoint: (streamId, shardId, checkpoint, recordCount) => {
+                if (this.lifecycleProvider?.onConsumerCheckpoint) {
+                    this.emitLifecycleEvent(this.lifecycleProvider.onConsumerCheckpoint, {
+                        queue_id: streamId,
+                        consumer_id: `${this.instanceId}:${shardId}`,
+                        shard_id: shardId,
+                        checkpoint,
+                        records_since_last: recordCount,
+                    });
+                }
+            },
         });
 
         // Listen for abort signal

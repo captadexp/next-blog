@@ -19,7 +19,7 @@ class TaskStore<ID> {
             payload: task.payload,
             execute_at: task.execute_at,
             expires_at: task.expires_at,
-            status: 'scheduled' as const,
+            status: task.status || 'scheduled' as const,
             task_group: task.task_group,
             task_hash: task.task_hash,
             retries: task.retries || 0,

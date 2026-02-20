@@ -255,7 +255,8 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
         }));
 
         if (bulkOps.length > 0) {
-            await collection.bulkWrite(bulkOps);
+            // ordered: false allows remaining ops to continue if one fails (e.g., duplicate key)
+            await collection.bulkWrite(bulkOps, {ordered: false});
         }
     }
 
@@ -266,7 +267,7 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
 
         const bulkOps = tasks.map(task => {
             const id = task.id || this.generateId();
-            const {id: _id, ...rest} = task;
+            const {id: _id, status, execute_at, execution_stats, updated_at, ...rest} = task;
             return {
                 updateOne: {
                     filter: {_id: id},
@@ -288,7 +289,8 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
             };
         });
 
-        await collection.bulkWrite(bulkOps);
+        // ordered: false allows remaining ops to continue if one fails
+        await collection.bulkWrite(bulkOps, {ordered: false});
     }
 
     generateId() {
