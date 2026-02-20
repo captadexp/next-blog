@@ -1,6 +1,7 @@
 import path from "path";
 import fs from "fs";
 import {fileURLToPath} from "url";
+import {INTERNAL_PLUGIN_ASSETS} from "../generated/internalPluginAssets.js";
 
 /**
  * Get the path to dashboard package assets
@@ -81,6 +82,12 @@ export function readInternalPluginFile(internalUrl: string): string | null {
         return null;
     }
 
+    // Check embedded assets first (bundled at build time, no filesystem needed)
+    if (relativePath in INTERNAL_PLUGIN_ASSETS) {
+        return INTERNAL_PLUGIN_ASSETS[relativePath];
+    }
+
+    // Fallback to filesystem for development or non-embedded files
     const content = readStaticFile(relativePath);
     return content ? content.toString('utf-8') : null;
 }
