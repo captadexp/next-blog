@@ -1,9 +1,8 @@
 import dts from "vite-plugin-dts";
-import {defineConfig, normalizePath, PluginOption} from "vite";
+import {defineConfig, PluginOption} from "vite";
 
 import * as path from "path";
 import tailwindcss from "@tailwindcss/vite";
-import {viteStaticCopy} from 'vite-plugin-static-copy';
 import {readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync} from 'fs';
 
 // Custom plugin to generate version file
@@ -42,42 +41,49 @@ export const VERSION_INFO = ${JSON.stringify(versionInfo, null, 2)} as const;
     };
 }
 
-// Custom plugin to embed internal plugin files as strings
-function internalPluginsEmbedPlugin(): PluginOption {
+// Embed all dashboard static assets as strings at build time.
+// This eliminates runtime filesystem reads — the same pattern next-auth uses
+// for CSS (import css from "./styles.js"). All JS/CSS/JSON/SVG files from
+// dashboard/dist/static/ are embedded; .map files are skipped (debug-only).
+const EMBEDDABLE_EXTENSIONS = new Set(['.js', '.css', '.json', '.svg']);
+
+function dashboardAssetsEmbedPlugin(): PluginOption {
     const generate = () => {
-        const pluginsDir = path.resolve(__dirname, '../dashboard/dist/static/internal-plugins');
-        const outputFile = path.resolve(__dirname, 'src/generated/internalPluginAssets.ts');
+        const staticDir = path.resolve(__dirname, '../dashboard/dist/static');
+        const outputFile = path.resolve(__dirname, 'src/generated/dashboardStaticAssets.ts');
         const entries: Record<string, string> = {};
 
-        if (existsSync(pluginsDir)) {
-            const pluginDirs = readdirSync(pluginsDir, {withFileTypes: true})
-                .filter(d => d.isDirectory());
+        if (existsSync(staticDir)) {
+            // Recursively walk the static directory
+            const walk = (dir: string, prefix: string) => {
+                for (const entry of readdirSync(dir, {withFileTypes: true})) {
+                    const fullPath = path.join(dir, entry.name);
+                    const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
 
-            for (const dir of pluginDirs) {
-                const pluginPath = path.join(pluginsDir, dir.name);
-                const files = readdirSync(pluginPath).filter(f => f.endsWith('.js'));
-
-                for (const file of files) {
-                    const key = `internal-plugins/${dir.name}/${file}`;
-                    const content = readFileSync(path.join(pluginPath, file), 'utf-8');
-                    entries[key] = content;
+                    if (entry.isDirectory()) {
+                        walk(fullPath, relativePath);
+                    } else if (EMBEDDABLE_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) {
+                        entries[relativePath] = readFileSync(fullPath, 'utf-8');
+                    }
                 }
-            }
+            };
+            walk(staticDir, '');
         }
 
-        const content = `// Auto-generated file - do not edit manually
-// Contains internal plugin files embedded as strings
-export const INTERNAL_PLUGIN_ASSETS: Record<string, string> = ${JSON.stringify(entries, null, 2)};
+        const content = `// Auto-generated — do not edit. Regenerated on every build.
+// All dashboard static assets embedded as strings (next-auth pattern).
+export const DASHBOARD_STATIC_ASSETS: Record<string, string> = ${JSON.stringify(entries, null, 2)};
 `;
-        mkdirSync(path.dirname(outputFile), { recursive: true });
+        mkdirSync(path.dirname(outputFile), {recursive: true});
         writeFileSync(outputFile, content);
-        console.log(`internal plugin assets embedded (${Object.keys(entries).length} files)`);
+        const totalKB = Math.round(Object.values(entries).reduce((sum, v) => sum + v.length, 0) / 1024);
+        console.log(`dashboard static assets embedded (${Object.keys(entries).length} files, ${totalKB}KB)`);
     };
 
     generate();
 
     return {
-        name: 'internal-plugins-embed',
+        name: 'dashboard-assets-embed',
         buildStart() {
             generate();
         }
@@ -87,7 +93,7 @@ export const INTERNAL_PLUGIN_ASSETS: Record<string, string> = ${JSON.stringify(e
 export default defineConfig(({mode}) => {
     const isWatchMode = process.argv.includes('--watch') || process.argv.includes('-w');
     const filesToIgnoreInWatch = isWatchMode ? {
-        watch: {exclude: ['src/version.ts', 'src/generated/internalPluginAssets.ts']}
+        watch: {exclude: ['src/version.ts', 'src/generated/dashboardStaticAssets.ts']}
     } : {};
 
     return {
@@ -145,21 +151,13 @@ export default defineConfig(({mode}) => {
         },
         plugins: [
             versionPlugin(),
-            internalPluginsEmbedPlugin(),
+            dashboardAssetsEmbedPlugin(),
             tailwindcss(),
             dts({
                 outDir: "dist",
                 include: ["src"],
                 bundledPackages: ["@supergrowthai/next-blog-types", "@supergrowthai/next-blog-dashboard"],
                 rollupTypes: false
-            }),
-            viteStaticCopy({
-                targets: [
-                    {
-                        src: normalizePath(path.resolve(__dirname, './../dashboard/dist/static/')),
-                        dest: 'nextjs/assets/@supergrowthai/next-blog-dashboard',
-                    }
-                ],
             }),
         ]
     }

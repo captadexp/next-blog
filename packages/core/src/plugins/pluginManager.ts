@@ -9,10 +9,6 @@ const logger = new Logger('plugins-manager');
 async function loadPluginFromUrl<T>(url: string): Promise<T> {
     if (!url) throw new ValidationError("Plugin url is required");
 
-    if (process.env.BUILT_ON_VERCEL && url.startsWith('internal://')) {
-        url = `https://${process.env.VERCEL_URL}/api/next-blog/dashboard/static/${url.substring("internal://".length)}`
-    }
-
     let code: string;
 
     if (url.startsWith('internal://')) {
