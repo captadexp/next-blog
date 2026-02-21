@@ -92,7 +92,7 @@ apps/test-app/public/plugins
 
 # Auto-generated files
 packages/core/src/version.ts
-packages/core/src/generated/internalPluginAssets.ts
+packages/core/src/generated/
 
 !packages/plugin-dev-kit/src/helpers/build-env.d.ts
 !packages/types/src/htmlToJson/custom-types.ts
