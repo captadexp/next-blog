@@ -2,14 +2,15 @@
 
 ## Kinesis Resilience (Production)
 
-| ID | Severity | Issue | File | Fix |
-|----|----------|-------|------|-----|
-| K2 | HIGH | Single lock renewal failure drops shard permanently | `KinesisShardConsumer.ts:146` | Add 1-2 retries with 2s backoff before `handleLockRenewalFailure`. Lua ownership check makes retry safe even past TTL expiry. |
-| K3 | HIGH | Kinesis throttle counts toward `MAX_CONSECUTIVE_ERRORS` | `KinesisShardConsumer.ts:422` | Don't increment `consecutiveErrorCount` for `ProvisionedThroughputExceededException`. 5 throttles (~2min) currently kills the consumer. |
-| K1 | HIGH | Poison pill on low-throughput shard = infinite crash loop | `KinesisShardConsumer.ts:371` | Track `(shardId, lastCheckpoint) → failure_count` in Redis. After N restarts from same checkpoint, advance past the batch. Emit lifecycle event. |
-| K4 | HIGH | Processor timeout doesn't cancel the processor | `KinesisShardConsumer.ts:351` | `Promise.race` abandons timeout but processor runs in background holding locks/connections. Pass `AbortSignal` to processor. Breaking change. |
+| ID | Severity | Issue | File | Status |
+|----|----------|-------|------|--------|
+| ~~K2~~ | HIGH | Single lock renewal failure drops shard permanently | `KinesisShardConsumer.ts` | **DONE** — 2 retries with 2s backoff before `handleLockRenewalFailure` |
+| ~~K3~~ | HIGH | Kinesis throttle counts toward `MAX_CONSECUTIVE_ERRORS` | `KinesisShardConsumer.ts` | **DONE** — `ProvisionedThroughputExceededException` no longer increments `consecutiveErrorCount` |
+| ~~K1~~ | HIGH | Poison pill on low-throughput shard = infinite crash loop | `KinesisShardConsumer.ts` | **DONE** — In-memory `(lastCheckpoint, failureCount)` tracking, advances past batch after 3 failures, emits `onPoisonPill` |
+| K4 | HIGH | Processor timeout doesn't cancel the processor | `KinesisShardConsumer.ts:438` | `Promise.race` abandons timeout but processor runs in background holding locks/connections. Pass `AbortSignal` to processor. Breaking change. |
+| ~~H4~~ | HIGH | `stopAndCleanupConsumer` doesn't signal consumer to stop | `KinesisShardRebalancer.ts` | **DONE** — `consumer.stop()` sets flag checked in processing loop, closes dual-processing window |
 | K8 | MEDIUM | Heartbeat failure is completely silent | `ShardLeaser.ts:70` | Add failure counter + lifecycle event when threshold exceeded. Instance has zero awareness when it's about to lose all shards. |
-| K7 | LOW | Consumer key parsing breaks with hyphens in stream name | `KinesisShardRebalancer.ts:297` | `split('-', 2)` gives wrong shardId. Use `consumerKey.substring(streamId.length + 1)` instead. |
+| ~~K7~~ | LOW | Consumer key parsing breaks with hyphens in stream name | `KinesisShardRebalancer.ts` | **DONE** — Uses `substring(streamId.length + 1)` instead of `split('-', 2)` |
 
 ## Existing Backlog
 
@@ -51,10 +52,10 @@ The gap is in hardening, observability, and operational tooling.
 - Add a secondary Kinesis stream or DB table for failed/poison messages.
 - Build replay tooling (CLI or API) to reprocess DLQ entries after root cause is fixed.
 
-**Backpressure**
-- No consumer-side rate limiting. If processor is slow, Kinesis records pile up.
-- Add adaptive fetch delay based on processor latency (slow processor → longer delay between fetches).
-- Consider token-bucket rate limiter on `processRecordBatch`.
+**Backpressure** *(partially addressed)*
+- AIMD adaptive strategy (`AIMDStrategy.ts`) now adjusts batch size and processing delay based on success/failure rates.
+- Throttle-aware backoff integrated into consumer loop.
+- Remaining: token-bucket rate limiter on `processRecordBatch` for hard ceiling.
 
 **Shard management**
 - No handling of shard splits or merges (Kinesis resharding).

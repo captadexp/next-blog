@@ -3,7 +3,7 @@
 ## Critical (data loss / duplicate execution)
 
 - [ ] **T1**: `TaskRunner.run()` failure silently loses entire batch — `.catch` returns empty arrays, tasks consumed from MQ are never retried. Fix: return tasks as `failedTasks` so `postProcessTasks` can retry. File: `TaskHandler.ts:356-359`
-- [ ] **T8**: Executor errors swallowed → tasks become "ignored" instead of retried — `.catch(err => logger.error(...))` doesn't call `fail()`. Fix: call `actions.fail(task)` in catch. Affects all 3 executor paths (multi, parallel, sequential). File: `TaskRunner.ts:140,154,182`
+- [x] **T8**: Executor errors swallowed → tasks become "ignored" instead of retried — **DONE**: all 3 `.catch` handlers (multi, parallel, sequential) now call `actions.fail(task)` with a `getTaskResultStatus('pending')` guard to prevent double-fail when executor calls `fail()` then throws. File: `TaskRunner.ts:143,164,197`
 
 ## High Priority
 
