@@ -159,8 +159,10 @@ export class TaskHandler<ID> {
             }
         }
 
-        // force_store + immediate: persist to DB as 'processing', then send to MQ.
-        // Status is 'processing' so the mature task poller won't re-enqueue these.
+        // force_store + immediate: persist to Task DB as 'processing', then send to MQ.
+        // DB status = 'processing': prevents the mature task poller from re-enqueuing.
+        // MQ status = 'scheduled':  DB-backed MQ adapters (MongoDB, Prisma) only consume
+        //   messages with status:'scheduled', so the MQ copy must use that status.
         // TODO(D1): Apply getPartitionKey here too (same as immediate path above).
         //   Currently forceStoreImmediate tasks skip partition key enrichment.
         const fsQueues = Object.keys(diffedItems.forceStoreImmediate) as unknown as QueueName[];
@@ -174,8 +176,12 @@ export class TaskHandler<ID> {
 
             await this.taskStore.addTasksToScheduled(queueTasks);
 
+            // Send to MQ with 'scheduled' status — DB-backed adapters (MongoDB, Prisma) filter
+            // by status:'scheduled', so the message must use that status for consumption.
+            // The Task DB retains status:'processing' to block the mature poller.
+            const mqTasks = queueTasks.map(t => ({...t, status: 'scheduled' as const}));
             try {
-                await this.messageQueue.addMessages(queue, queueTasks as unknown as CronTask<ID>[]);
+                await this.messageQueue.addMessages(queue, mqTasks as unknown as CronTask<ID>[]);
             } catch (mqError) {
                 // MQ failed after DB write - reset to 'scheduled' so mature poller can pick up
                 this.logger.error(`MQ write failed for forceStoreImmediate tasks, resetting to scheduled: ${mqError}`);

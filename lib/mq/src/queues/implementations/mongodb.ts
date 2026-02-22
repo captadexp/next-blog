@@ -57,6 +57,10 @@ export abstract class MongoDBQueue implements IMessageQueue<ObjectId> {
             defaultTimeout: 300 // 5 minutes lock by default
         });
         this.consumerId = `mongodb-${process.pid}-${Date.now()}`;
+        logger.warn(
+            `MongoDBQueue: when used with TQ force_store tasks, the MQ collection must be ` +
+            `separate from the Task DB collection to avoid duplicate _id conflicts.`
+        );
     }
 
     /**

@@ -12,6 +12,7 @@ import type {
     IMultiTaskExecutor,
 } from "../core/base/interfaces.js";
 import {MemoryCacheProvider} from "memoose-js";
+import type {ITaskLifecycleProvider, TaskContext} from "../core/lifecycle.js";
 
 declare module "@supergrowthai/mq" {
     interface QueueRegistry {
@@ -304,6 +305,352 @@ describe("executor getPartitionKey", () => {
         expect(enrichedTask).not.toHaveProperty('partition_key');
     });
 
+});
+
+// ============ force_store + immediate execution ============
+
+describe("force_store + immediate execution", () => {
+    it("resets tasks to 'scheduled' on MQ failure", async () => {
+        const databaseAdapter = new InMemoryAdapter();
+        const cacheProvider = new MemoryCacheProvider();
+
+        // Create a broken MQ that throws on addMessages
+        const brokenMQ = new InMemoryQueue();
+        const originalAdd = brokenMQ.addMessages.bind(brokenMQ);
+        let callCount = 0;
+        brokenMQ.addMessages = async (queueId: any, messages: any) => {
+            callCount++;
+            // Let the first call through (queue registration internal), fail on task publish
+            if (callCount >= 1) {
+                throw new Error("MQ is down");
+            }
+            return originalAdd(queueId, messages);
+        };
+
+        const taskQueue = new TaskQueuesManager<string>(brokenMQ);
+        const taskHandler = new TaskHandler<string>(brokenMQ, taskQueue, databaseAdapter, cacheProvider);
+
+        const executor: ISingleTaskNonParallel<string, "normal-task"> = {
+            multiple: false,
+            parallel: false,
+            store_on_failure: true,
+            onTask: async (task, actions) => actions.success(task),
+        };
+        taskQueue.register(queueName, "normal-task", executor);
+
+        const taskId = databaseAdapter.generateId();
+        const task = {
+            ...makeTask(taskId, 'normal-task'),
+            force_store: true,
+        } as any;
+
+        // addTasks should throw because MQ failed
+        await expect(taskHandler.addTasks([task])).rejects.toThrow("MQ is down");
+
+        // Task should have been reset to 'scheduled' in DB (not stuck in 'processing')
+        const [stored] = await databaseAdapter.getTasksByIds([taskId]);
+        expect(stored).toBeDefined();
+        expect(stored.status).toBe('scheduled');
+
+        await brokenMQ.shutdown();
+    });
+
+    it("mixed addTasks: force_store + regular immediate + future", async () => {
+        const messageQueue = new InMemoryQueue();
+        const databaseAdapter = new InMemoryAdapter();
+        const cacheProvider = new MemoryCacheProvider();
+        const taskQueue = new TaskQueuesManager<string>(messageQueue);
+        const taskHandler = new TaskHandler<string>(messageQueue, taskQueue, databaseAdapter, cacheProvider);
+
+        const executor: ISingleTaskNonParallel<string, "normal-task"> = {
+            multiple: false,
+            parallel: false,
+            store_on_failure: true,
+            onTask: async (task, actions) => actions.success(task),
+        };
+        taskQueue.register(queueName, "normal-task", executor);
+
+        const forceStoreId = databaseAdapter.generateId();
+        const immediateId = databaseAdapter.generateId();
+        const futureId = databaseAdapter.generateId();
+
+        const futureDate = new Date(Date.now() + 10 * 60 * 1000); // 10 min from now
+
+        await taskHandler.addTasks([
+            {...makeTask(forceStoreId, 'normal-task'), force_store: true} as any,
+            makeTask(immediateId, 'normal-task'),           // regular immediate (no force_store)
+            makeTask(futureId, 'normal-task', {execute_at: futureDate}), // future task
+        ]);
+
+        // force_store task: in DB as 'processing'
+        const [forceStored] = await databaseAdapter.getTasksByIds([forceStoreId]);
+        expect(forceStored).toBeDefined();
+        expect(forceStored.status).toBe('processing');
+
+        // regular immediate task: NOT in DB (MQ only)
+        const immediateStored = await databaseAdapter.getTasksByIds([immediateId]);
+        expect(immediateStored.length).toBe(0);
+
+        // future task: in DB as 'scheduled'
+        const [futureStored] = await databaseAdapter.getTasksByIds([futureId]);
+        expect(futureStored).toBeDefined();
+        expect(futureStored.status).toBe('scheduled');
+
+        await messageQueue.shutdown();
+    });
+
+    it("force_store=true but execute_at >2min routes to future path (DB only, no MQ)", async () => {
+        const messageQueue = new InMemoryQueue();
+        const databaseAdapter = new InMemoryAdapter();
+        const cacheProvider = new MemoryCacheProvider();
+        const taskQueue = new TaskQueuesManager<string>(messageQueue);
+        const taskHandler = new TaskHandler<string>(messageQueue, taskQueue, databaseAdapter, cacheProvider);
+
+        const executor: ISingleTaskNonParallel<string, "normal-task"> = {
+            multiple: false,
+            parallel: false,
+            store_on_failure: true,
+            onTask: async (task, actions) => actions.success(task),
+        };
+        taskQueue.register(queueName, "normal-task", executor);
+
+        const taskId = databaseAdapter.generateId();
+        const futureDate = new Date(Date.now() + 10 * 60 * 1000); // 10 min from now
+
+        // force_store is set but execute_at is in the future — should go to future path
+        await taskHandler.addTasks([{
+            ...makeTask(taskId, 'normal-task', {execute_at: futureDate}),
+            force_store: true,
+        } as any]);
+
+        // Task should be in DB as 'scheduled' (future path), NOT 'processing'
+        const [stored] = await databaseAdapter.getTasksByIds([taskId]);
+        expect(stored).toBeDefined();
+        expect(stored.status).toBe('scheduled');
+
+        await messageQueue.shutdown();
+    });
+
+    it("MQ failure + DB reset failure logs error and still throws mqError", async () => {
+        const databaseAdapter = new InMemoryAdapter();
+        const cacheProvider = new MemoryCacheProvider();
+
+        const brokenMQ = new InMemoryQueue();
+        brokenMQ.addMessages = async () => {
+            throw new Error("MQ is down");
+        };
+
+        // Also break updateTasks so the reset fails
+        const originalUpdateTasks = databaseAdapter.updateTasks.bind(databaseAdapter);
+        databaseAdapter.updateTasks = async () => {
+            throw new Error("DB reset failed too");
+        };
+
+        const taskQueue = new TaskQueuesManager<string>(brokenMQ);
+        const taskHandler = new TaskHandler<string>(brokenMQ, taskQueue, databaseAdapter, cacheProvider);
+
+        const executor: ISingleTaskNonParallel<string, "normal-task"> = {
+            multiple: false,
+            parallel: false,
+            store_on_failure: true,
+            onTask: async (task, actions) => actions.success(task),
+        };
+        taskQueue.register(queueName, "normal-task", executor);
+
+        const taskId = databaseAdapter.generateId();
+        const task = {
+            ...makeTask(taskId, 'normal-task'),
+            force_store: true,
+        } as any;
+
+        // Should still throw the MQ error (not the DB reset error)
+        await expect(taskHandler.addTasks([task])).rejects.toThrow("MQ is down");
+
+        // Task stuck in 'processing' since reset failed — this is the worst-case scenario
+        // (cleanup/orphan detection would eventually handle this)
+        const [stored] = await databaseAdapter.getTasksByIds([taskId]);
+        expect(stored).toBeDefined();
+        expect(stored.status).toBe('processing');
+
+        databaseAdapter.updateTasks = originalUpdateTasks;
+        await brokenMQ.shutdown();
+    });
+
+    it("DB write failure prevents MQ write (exception propagates)", async () => {
+        const messageQueue = new InMemoryQueue();
+        const databaseAdapter = new InMemoryAdapter();
+        const cacheProvider = new MemoryCacheProvider();
+        const taskQueue = new TaskQueuesManager<string>(messageQueue);
+
+        // Break addTasksToScheduled
+        databaseAdapter.addTasksToScheduled = async () => {
+            throw new Error("DB write failed");
+        };
+
+        const taskHandler = new TaskHandler<string>(messageQueue, taskQueue, databaseAdapter, cacheProvider);
+
+        const executor: ISingleTaskNonParallel<string, "normal-task"> = {
+            multiple: false,
+            parallel: false,
+            store_on_failure: true,
+            onTask: async (task, actions) => actions.success(task),
+        };
+        taskQueue.register(queueName, "normal-task", executor);
+
+        const taskId = databaseAdapter.generateId();
+        const task = {
+            ...makeTask(taskId, 'normal-task'),
+            force_store: true,
+        } as any;
+
+        await expect(taskHandler.addTasks([task])).rejects.toThrow("DB write failed");
+
+        await messageQueue.shutdown();
+    });
+
+    it("lifecycle onTaskScheduled emitted for force_store tasks", async () => {
+        const messageQueue = new InMemoryQueue();
+        const databaseAdapter = new InMemoryAdapter();
+        const cacheProvider = new MemoryCacheProvider();
+        const taskQueue = new TaskQueuesManager<string>(messageQueue);
+
+        const scheduledEvents: string[] = [];
+        const lifecycleProvider: ITaskLifecycleProvider = {
+            onTaskScheduled(ctx: TaskContext) {
+                scheduledEvents.push(ctx.task_id as string);
+            },
+        };
+
+        const taskHandler = new TaskHandler<string>(
+            messageQueue, taskQueue, databaseAdapter, cacheProvider,
+            undefined, undefined,
+            {lifecycleProvider, lifecycle: {mode: 'sync'}}
+        );
+
+        const executor: ISingleTaskNonParallel<string, "normal-task"> = {
+            multiple: false,
+            parallel: false,
+            store_on_failure: true,
+            onTask: async (task, actions) => actions.success(task),
+        };
+        taskQueue.register(queueName, "normal-task", executor);
+
+        const taskId = databaseAdapter.generateId();
+        const task = {
+            ...makeTask(taskId, 'normal-task'),
+            force_store: true,
+        } as any;
+
+        await taskHandler.addTasks([task]);
+
+        expect(scheduledEvents).toContain(taskId);
+
+        await messageQueue.shutdown();
+    });
+
+    it("no double-insert: Task DB and MQ are separate stores", async () => {
+        const messageQueue = new InMemoryQueue();
+        const databaseAdapter = new InMemoryAdapter();
+        const cacheProvider = new MemoryCacheProvider();
+        const taskQueue = new TaskQueuesManager<string>(messageQueue);
+        const taskHandler = new TaskHandler<string>(messageQueue, taskQueue, databaseAdapter, cacheProvider);
+
+        // Instrument: track all addTasksToScheduled calls
+        const dbInsertCalls: CronTask<string>[][] = [];
+        const originalAdd = databaseAdapter.addTasksToScheduled.bind(databaseAdapter);
+        databaseAdapter.addTasksToScheduled = async (tasks: CronTask<string>[]) => {
+            dbInsertCalls.push([...tasks]);
+            return originalAdd(tasks);
+        };
+
+        // Instrument: track all MQ addMessages calls
+        const mqInsertCalls: { queueId: string; count: number; statuses: string[] }[] = [];
+        const originalMQAdd = messageQueue.addMessages.bind(messageQueue);
+        messageQueue.addMessages = async (queueId: any, messages: any[]) => {
+            mqInsertCalls.push({
+                queueId,
+                count: messages.length,
+                statuses: messages.map((m: any) => m.status),
+            });
+            return originalMQAdd(queueId, messages);
+        };
+
+        const executor: ISingleTaskNonParallel<string, "normal-task"> = {
+            multiple: false,
+            parallel: false,
+            store_on_failure: true,
+            onTask: async (task, actions) => actions.success(task),
+        };
+        taskQueue.register(queueName, "normal-task", executor);
+
+        const taskId = databaseAdapter.generateId();
+        await taskHandler.addTasks([{
+            ...makeTask(taskId, 'normal-task'),
+            force_store: true,
+        } as any]);
+
+        // Task DB: exactly 1 insert call with status 'processing'
+        expect(dbInsertCalls.length).toBe(1);
+        expect(dbInsertCalls[0].length).toBe(1);
+        expect(dbInsertCalls[0][0].status).toBe('processing');
+
+        // MQ: exactly 1 addMessages call with status 'scheduled' (not 'processing')
+        expect(mqInsertCalls.length).toBe(1);
+        expect(mqInsertCalls[0].count).toBe(1);
+        expect(mqInsertCalls[0].statuses[0]).toBe('scheduled');
+
+        // Task DB has exactly 1 record for this ID
+        const stored = await databaseAdapter.getTasksByIds([taskId]);
+        expect(stored.length).toBe(1);
+        expect(stored[0].status).toBe('processing');
+
+        await messageQueue.shutdown();
+    });
+
+    it("force_store task is consumed and executed end-to-end", async () => {
+        const messageQueue = new InMemoryQueue();
+        const databaseAdapter = new InMemoryAdapter();
+        const cacheProvider = new MemoryCacheProvider();
+        const taskQueue = new TaskQueuesManager<string>(messageQueue);
+        const taskHandler = new TaskHandler<string>(messageQueue, taskQueue, databaseAdapter, cacheProvider);
+
+        const executed: string[] = [];
+        const executor: ISingleTaskNonParallel<string, "normal-task"> = {
+            multiple: false,
+            parallel: false,
+            store_on_failure: true,
+            onTask: async (task, actions) => {
+                executed.push(task.id as string);
+                actions.success(task);
+            },
+        };
+        taskQueue.register(queueName, "normal-task", executor);
+
+        const taskId = databaseAdapter.generateId();
+        const task = {
+            ...makeTask(taskId, 'normal-task'),
+            force_store: true,
+        } as any;
+
+        await taskHandler.addTasks([task]);
+
+        // Verify pre-conditions: in DB as 'processing', in MQ
+        const [beforeConsume] = await databaseAdapter.getTasksByIds([taskId]);
+        expect(beforeConsume.status).toBe('processing');
+
+        // Consume and execute
+        await taskHandler.startConsumingTasks(queueName);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        expect(executed).toContain(taskId);
+
+        // After execution, the task should be marked as 'executed' in DB
+        const [afterConsume] = await databaseAdapter.getTasksByIds([taskId]);
+        expect(afterConsume).toBeDefined();
+        expect(afterConsume.status).toBe('executed');
+
+        await messageQueue.shutdown();
+    });
 });
 
 // ============ Integration: T8 tasks enter retry pipeline ============
