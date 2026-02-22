@@ -218,13 +218,44 @@ export class PrismaAdapter<
     }
 
     async markTasksAsExecuted(tasks: CronTask<TId>[]): Promise<void> {
-        const taskIds = tasks.map(t => t.id).filter(Boolean);
-        if (!taskIds.length) return;
+        const now = new Date();
 
-        await this.delegate.updateMany({
-            where: {id: {in: taskIds}},
-            data: {status: 'executed', updated_at: new Date()}
-        });
+        // Split: tasks with results need per-task ops, rest use efficient batch updateMany
+        const withResults: CronTask<TId>[] = [];
+        const withoutResultIds: TId[] = [];
+
+        for (const t of tasks) {
+            if (!t.id) continue;
+            if (t.execution_result !== undefined) {
+                withResults.push(t);
+            } else {
+                withoutResultIds.push(t.id);
+            }
+        }
+
+        if (!withoutResultIds.length && !withResults.length) return;
+
+        // Fast path: single updateMany for all tasks without results
+        if (withoutResultIds.length > 0) {
+            await this.delegate.updateMany({
+                where: {id: {in: withoutResultIds}},
+                data: {status: 'executed', updated_at: now}
+            });
+        }
+
+        // Slow path: transaction only for tasks that carry a result
+        if (withResults.length > 0) {
+            await this.prismaClient.$transaction(
+                withResults.map(t => this.delegate.update({
+                    where: {id: t.id},
+                    data: {
+                        status: 'executed',
+                        updated_at: now,
+                        execution_result: t.execution_result
+                    }
+                }))
+            );
+        }
     }
 
     async markTasksAsFailed(tasks: CronTask<TId>[]): Promise<void> {

@@ -85,6 +85,9 @@ class InMemoryAdapter implements ITaskStorageAdapter<string> {
             if (existingTask) {
                 existingTask.status = 'executed';
                 existingTask.execute_at = new Date();
+                if (task.execution_result !== undefined) {
+                    existingTask.execution_result = task.execution_result;
+                }
                 this.scheduledTasks.set(task.id!, existingTask);
             }
         }

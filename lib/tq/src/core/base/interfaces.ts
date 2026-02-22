@@ -20,8 +20,8 @@ interface IBaseExecutor {
 
 export type ExecutorActions<ID = any> = {
     addTasks(task: CronTask<ID>[]): void;
-    fail(task: CronTask<ID>): void;
-    success(task: CronTask<ID>): void;
+    fail(task: CronTask<ID>, error?: Error | string, meta?: Record<string, unknown>): void;
+    success(task: CronTask<ID>, result?: unknown): void;
 }
 
 export interface IMultiTaskExecutor<ID = any, T extends MessageType = MessageType> extends IBaseExecutor {

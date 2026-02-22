@@ -141,7 +141,7 @@ export class TaskRunner<ID> {
                     this.logger.error(`[${taskRunnerId}] executor.onTasks failed: ${err}`);
                     for (const task of taskGroup.tasks) {
                         if (actions.getTaskResultStatus(tId(task)) === 'pending') {
-                            actions.fail(task);
+                            actions.fail(task, err instanceof Error ? err : new Error(String(err)));
                         }
                     }
                 });
@@ -162,7 +162,7 @@ export class TaskRunner<ID> {
                             chunkPromises.push(executor.onTask(task, taskActions).catch(err => {
                                 this.logger.error(`[${taskRunnerId}] executor.onTask failed: ${err}`);
                                 if (actions.getTaskResultStatus(tId(task)) === 'pending') {
-                                    actions.fail(task);
+                                    actions.fail(task, err instanceof Error ? err : new Error(String(err)));
                                 }
                             }));
                         }
@@ -172,7 +172,7 @@ export class TaskRunner<ID> {
                         for (const task of taskChunk) {
                             const resultStatus = actions.getTaskResultStatus(tId(task));
                             if (resultStatus === 'success') {
-                                this.emitTaskCompleted(task, taskRunnerId);
+                                this.emitTaskCompleted(task, taskRunnerId, actions.getTaskResult(tId(task)));
                             } else if (resultStatus === 'fail') {
                                 const retryCount = (task.execution_stats?.retry_count as number) || 0;
                                 const maxRetries = task.retries ?? executor.default_retries ?? 0;
@@ -195,14 +195,14 @@ export class TaskRunner<ID> {
                             await executor.onTask(task, taskActions).catch(err => {
                                 this.logger.error(`[${taskRunnerId}] executor.onTask failed: ${err}`);
                                 if (actions.getTaskResultStatus(tId(task)) === 'pending') {
-                                    actions.fail(task);
+                                    actions.fail(task, err instanceof Error ? err : new Error(String(err)));
                                 }
                             });
 
                             // Emit completion event based on result
                             const resultStatus = actions.getTaskResultStatus(tId(task));
                             if (resultStatus === 'success') {
-                                this.emitTaskCompleted(task, taskRunnerId);
+                                this.emitTaskCompleted(task, taskRunnerId, actions.getTaskResult(tId(task)));
                             } else if (resultStatus === 'fail') {
                                 const retryCount = (task.execution_stats?.retry_count as number) || 0;
                                 const maxRetries = task.retries ?? executor.default_retries ?? 0;
@@ -220,6 +220,9 @@ export class TaskRunner<ID> {
 
                             const taskPromise = executor.onTask(task, taskActions).catch(err => {
                                 this.logger.error(`[${taskRunnerId}] executor.onTask failed: ${err}`);
+                                if (actions.getTaskResultStatus(tId(task)) === 'pending') {
+                                    actions.fail(task, err instanceof Error ? err : new Error(String(err)));
+                                }
                             });
 
                             let timeoutId: NodeJS.Timeout | undefined;
@@ -245,7 +248,7 @@ export class TaskRunner<ID> {
                                 // Task completed before timeout - emit lifecycle event
                                 const resultStatus = actions.getTaskResultStatus(tId(task));
                                 if (resultStatus === 'success') {
-                                    this.emitTaskCompleted(task, taskRunnerId);
+                                    this.emitTaskCompleted(task, taskRunnerId, actions.getTaskResult(tId(task)));
                                 } else if (resultStatus === 'fail') {
                                     const retryCount = (task.execution_stats?.retry_count as number) || 0;
                                     const maxRetries = task.retries ?? executor.default_retries ?? 0;

@@ -10,6 +10,9 @@ interface ActionEntry<ID = any> {
     timestamp: number;
     task?: CronTask<ID>;  // The task passed to success/fail
     newTasks?: CronTask<ID>[];     // Tasks to add
+    result?: unknown;              // Result from success(task, result)
+    error?: Error | string;        // Error from fail(task, error)
+    meta?: Record<string, unknown>; // Meta from fail(task, error, meta)
 }
 
 interface TaskContext<ID = any> {
@@ -22,6 +25,50 @@ export interface ActionResults<ID = any> {
     successTasks: CronTask<ID>[];
     newTasks: CronTask<ID>[];
     ignoredTasks: CronTask<ID>[];
+}
+
+const MAX_RESULT_SIZE_BYTES = 256 * 1024; // 256KB
+
+function validateResultSize(result: unknown): boolean {
+    // Fast path: null and non-string primitives are always small
+    if (result === null || typeof result === 'number' || typeof result === 'boolean') return true;
+
+    try {
+        const json = JSON.stringify(result);
+        // json.length is always <= Buffer.byteLength (UTF-8 chars are 1-4 bytes)
+        // So if json string length exceeds limit, byte length definitely does too
+        if (json.length > MAX_RESULT_SIZE_BYTES) return false;
+        return Buffer.byteLength(json, 'utf8') <= MAX_RESULT_SIZE_BYTES;
+    } catch {
+        // Circular reference or other serialization error
+        return false;
+    }
+}
+
+function enrichTaskWithResult<ID>(task: CronTask<ID>, result: unknown): CronTask<ID> {
+    if (result === undefined || !validateResultSize(result)) return task;
+    return {...task, execution_result: result};
+}
+
+function enrichTaskWithError<ID>(task: CronTask<ID>, error?: Error | string, meta?: Record<string, unknown>): CronTask<ID> {
+    if (!error && !meta) return task;
+
+    const errorFields: Record<string, unknown> = {};
+    if (error instanceof Error) {
+        errorFields.last_error = error.message;
+        errorFields.last_error_stack = error.stack;
+    } else if (typeof error === 'string') {
+        errorFields.last_error = error;
+    }
+
+    return {
+        ...task,
+        execution_stats: {
+            ...(task.execution_stats || {}),
+            ...errorFields,
+            ...(meta || {})
+        }
+    };
 }
 
 export class Actions<ID = any> implements ExecutorActions<ID> {
@@ -44,20 +91,23 @@ export class Actions<ID = any> implements ExecutorActions<ID> {
 
         // Return a scoped actions object that tracks everything in this context
         return {
-            fail: (t: CronTask<ID>) => {
+            fail: (t: CronTask<ID>, error?: Error | string, meta?: Record<string, unknown>) => {
                 context.actions.push({
                     type: 'fail',
                     timestamp: Date.now(),
-                    task: t
+                    task: t,
+                    error,
+                    meta
                 });
                 logger.error(`[${this.taskRunnerId}] Task failed: ${tId(t)} (${t.type})`);
             },
 
-            success: (t: CronTask<ID>) => {
+            success: (t: CronTask<ID>, result?: unknown) => {
                 context.actions.push({
                     type: 'success',
                     timestamp: Date.now(),
-                    task: t
+                    task: t,
+                    result
                 });
                 logger.info(`[${this.taskRunnerId}] Task succeeded: ${tId(t)} (${t.type})`);
             },
@@ -74,7 +124,7 @@ export class Actions<ID = any> implements ExecutorActions<ID> {
     }
 
     // For multi-task executors - they use the root Actions directly (no forking)
-    fail(task: CronTask<ID>): void {
+    fail(task: CronTask<ID>, error?: Error | string, meta?: Record<string, unknown>): void {
         const taskId = tId(task);
         let context = this.taskContexts.get(taskId);
         if (!context) {
@@ -85,12 +135,14 @@ export class Actions<ID = any> implements ExecutorActions<ID> {
         context!.actions.push({
             type: 'fail',
             timestamp: Date.now(),
-            task
+            task,
+            error,
+            meta
         });
         logger.error(`[${this.taskRunnerId}] Task failed: ${taskId} (${task.type})`);
     }
 
-    success(task: CronTask<ID>): void {
+    success(task: CronTask<ID>, result?: unknown): void {
         const taskId = tId(task);
         let context = this.taskContexts.get(taskId);
         if (!context) {
@@ -101,7 +153,8 @@ export class Actions<ID = any> implements ExecutorActions<ID> {
         context.actions.push({
             type: 'success',
             timestamp: Date.now(),
-            task
+            task,
+            result
         });
         logger.info(`[${this.taskRunnerId}] Task succeeded: ${taskId} (${task.type})`);
     }
@@ -168,14 +221,14 @@ export class Actions<ID = any> implements ExecutorActions<ID> {
             // Process all actions
             for (const action of context.actions) {
                 if (action.type === 'success' && action.task) {
-                    results.successTasks.push(action.task);
+                    results.successTasks.push(enrichTaskWithResult(action.task, action.result));
                     // If marking a different task, remove its context
                     const targetTaskId = tId(action.task);
                     if (targetTaskId !== taskId) {
                         this.taskContexts.delete(targetTaskId);
                     }
                 } else if (action.type === 'fail' && action.task) {
-                    results.failedTasks.push(action.task);
+                    results.failedTasks.push(enrichTaskWithError(action.task, action.error, action.meta));
                     const targetTaskId = tId(action.task);
                     if (targetTaskId !== taskId) {
                         this.taskContexts.delete(targetTaskId);
@@ -222,9 +275,9 @@ export class Actions<ID = any> implements ExecutorActions<ID> {
                 } else {
                     for (const action of context.actions) {
                         if (action.type === 'success' && action.task) {
-                            results.successTasks.push(action.task);
+                            results.successTasks.push(enrichTaskWithResult(action.task, action.result));
                         } else if (action.type === 'fail' && action.task) {
-                            results.failedTasks.push(action.task);
+                            results.failedTasks.push(enrichTaskWithError(action.task, action.error, action.meta));
                         } else if (action.type === 'addTasks' && action.newTasks) {
                             results.newTasks.push(...action.newTasks);
                         }
@@ -248,5 +301,21 @@ export class Actions<ID = any> implements ExecutorActions<ID> {
      */
     getResults(): ActionResults<ID> {
         return this.extractSyncResults([]);
+    }
+
+    /**
+     * Get the result for a specific task (before extraction).
+     * Used by TaskRunner to pass results to lifecycle events.
+     */
+    getTaskResult(taskId: string): unknown | undefined {
+        const context = this.taskContexts.get(taskId);
+        if (!context) return undefined;
+
+        for (const action of context.actions) {
+            if (action.type === 'success' && action.result !== undefined) {
+                return action.result;
+            }
+        }
+        return undefined;
     }
 }

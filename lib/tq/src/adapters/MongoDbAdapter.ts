@@ -171,18 +171,45 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
 
     async markTasksAsExecuted(tasks: CronTask<ObjectId>[]): Promise<void> {
         const collection = await this.collection;
-        const taskIds = tasks.map(t => t.id).filter(Boolean) as ObjectId[];
+        const now = new Date();
 
+        // Split: tasks with results need per-task ops, rest use efficient batch updateMany
+        const withResults: CronTask<ObjectId>[] = [];
+        const withoutResultIds: ObjectId[] = [];
 
-        await collection.updateMany(
-            {_id: {$in: taskIds}},
-            {
-                $set: {
-                    status: 'executed',
-                    updated_at: new Date()
-                }
+        for (const t of tasks) {
+            if (!t.id) continue;
+            if (t.execution_result !== undefined) {
+                withResults.push(t);
+            } else {
+                withoutResultIds.push(t.id);
             }
-        );
+        }
+
+        // Fast path: single updateMany for all tasks without results
+        if (withoutResultIds.length > 0) {
+            await collection.updateMany(
+                {_id: {$in: withoutResultIds}},
+                {$set: {status: 'executed', updated_at: now}}
+            );
+        }
+
+        // Slow path: bulkWrite only for tasks that carry a result
+        if (withResults.length > 0) {
+            const bulkOps = withResults.map(t => ({
+                updateOne: {
+                    filter: {_id: t.id!},
+                    update: {
+                        $set: {
+                            status: 'executed' as const,
+                            updated_at: now,
+                            execution_result: t.execution_result
+                        }
+                    }
+                }
+            }));
+            await collection.bulkWrite(bulkOps, {ordered: false});
+        }
     }
 
     async markTasksAsFailed(tasks: CronTask<ObjectId>[]): Promise<void> {
