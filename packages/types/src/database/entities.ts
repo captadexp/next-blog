@@ -13,6 +13,7 @@ export interface Blog {
     userId: BrandedId<"User">;
     createdAt: number;
     updatedAt: number;
+    publishedAt?: number;
     metadata?: Record<string, any>;
     type?: 'post' | 'page' | string;
     status?: BlogStatus;
