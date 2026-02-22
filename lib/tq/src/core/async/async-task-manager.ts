@@ -4,6 +4,9 @@ import {CronTask} from "../../adapters";
  * Interface for managing async tasks that exceed timeout thresholds
  * Implementation should be in tq package to access executor configs
  */
+// TODO(P4): Add per-task timeout. A promise that never resolves occupies a slot
+//   forever, eventually blocking all async processing (default max: 100 slots).
+//   If promise doesn't resolve within 2x handoffTimeout, force-remove and mark failed.
 export interface IAsyncTaskManager<T = any, ID = any> {
     /**
      * Hand off a running task to async management

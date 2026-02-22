@@ -14,6 +14,8 @@ interface IBaseExecutor {
         handoffTimeout: number;  // ms before handoff to async (e.g., 5000 for 5 seconds)
         maxConcurrentAsync?: number;  // max concurrent async tasks of this type
     }
+    /** Optional static partition key for ordering guarantees (e.g., return payload.user_id) */
+    getPartitionKey?: (task: CronTask<any>) => string;
 }
 
 export type ExecutorActions<ID = any> = {

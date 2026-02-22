@@ -18,6 +18,7 @@ import {
     QueueName,
     QueueNotifier
 } from '../../core';
+import type {IAdaptiveStrategy} from '../../core/interfaces/adaptive-strategy.js';
 import {EJSON} from "bson";
 import {Logger, LogLevel} from "@supergrowthai/utils";
 import {KinesisShardManager} from './_kinesis/KinesisShardManager.ts';
@@ -32,6 +33,10 @@ interface KinesisConfig {
     shardLockProvider: IShardLockProvider;
     notifier?: QueueNotifier;
     signal?: AbortSignal;
+    /** Default partition key generator. Defaults to message.type. */
+    defaultPartitionKey?: (message: BaseMessage<any>) => string;
+    /** Consumer-side adaptive processing strategy */
+    adaptiveStrategy?: IAdaptiveStrategy;
 }
 
 /**
@@ -89,8 +94,10 @@ export class KinesisQueue<ID> implements IMessageQueue<ID> {
     }>();
     private readonly notifier?: QueueNotifier;
     private readonly signal?: AbortSignal;
+    private readonly config: KinesisConfig;
 
     constructor(config: KinesisConfig) {
+        this.config = config;
         this.shardLockProvider = config.shardLockProvider;
         this.notifier = config.notifier;
         this.signal = config.signal;
@@ -136,6 +143,10 @@ export class KinesisQueue<ID> implements IMessageQueue<ID> {
                         reason,
                     });
                 }
+            },
+            adaptiveStrategy: config.adaptiveStrategy,
+            onPoisonPill: (streamId, shardId, checkpoint, recordCount) => {
+                logger.warn(`[${this.instanceId}] [${streamId}] [${shardId}] Poison pill detected at checkpoint ${checkpoint}, skipped ${recordCount} records`);
             },
             onCheckpoint: (streamId, shardId, checkpoint, recordCount) => {
                 if (this.lifecycleProvider?.onConsumerCheckpoint) {
@@ -546,7 +557,9 @@ export class KinesisQueue<ID> implements IMessageQueue<ID> {
 
 
     private generatePartitionKey<ID>(message: BaseMessage<ID>): string {
-        return message.type;
+        return message.partition_key
+            ?? this.config.defaultPartitionKey?.(message)
+            ?? message.type;
     }
 
     /**

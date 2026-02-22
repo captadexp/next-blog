@@ -10,6 +10,7 @@ import {CronTask, ITaskStorageAdapter} from "../adapters";
 import type {CacheProvider} from "memoose-js";
 import {TaskQueuesManager} from "./TaskQueuesManager";
 import {IAsyncTaskManager} from "./async/async-task-manager";
+import type {AsyncTask} from "./TaskRunner.js";
 import {
     DiscardedTaskInfo,
     ITaskNotificationProvider,
@@ -141,7 +142,8 @@ export class TaskHandler<ID> {
                     const executor = this.taskQueuesManager.getExecutor(task.queue_id, task.type);
                     const shouldStoreOnFailure = executor?.store_on_failure ?? false;
                     const id = shouldStoreOnFailure ? {id: this.databaseAdapter.generateId(),} : {}
-                    return ({...id, ...task});
+                    const partitionKey = executor?.getPartitionKey?.(task);
+                    return ({...id, ...task, ...(partitionKey ? {partition_key: partitionKey} : {})});
                 });
 
             await this.messageQueue.addMessages(queue, queueTasks as unknown as CronTask<ID>[]);
@@ -159,6 +161,8 @@ export class TaskHandler<ID> {
 
         // force_store + immediate: persist to DB as 'processing', then send to MQ.
         // Status is 'processing' so the mature task poller won't re-enqueue these.
+        // TODO(D1): Apply getPartitionKey here too (same as immediate path above).
+        //   Currently forceStoreImmediate tasks skip partition key enrichment.
         const fsQueues = Object.keys(diffedItems.forceStoreImmediate) as unknown as QueueName[];
         for (let i = 0; i < fsQueues.length; i++) {
             const queue = fsQueues[i];
@@ -221,6 +225,9 @@ export class TaskHandler<ID> {
         }
     }
 
+    // TODO(P2): Wrap retry upsert → new tasks → mark failed → mark success in a
+    //   transaction. If an intermediate step fails, tasks can be lost or re-executed
+    //   after 2-day stale recovery. Reorder to mark success first as a quick win.
     async postProcessTasks({
                                failedTasks: failedTasksRaw,
                                newTasks,
@@ -235,7 +242,7 @@ export class TaskHandler<ID> {
 
         for (const task of failedTasksRaw) {
             const taskRetryCount = (task.execution_stats && typeof task.execution_stats.retry_count === 'number') ? task.execution_stats.retry_count : 0;
-            const taskRetryAfter = task.retry_after || 2000;
+            const taskRetryAfter = Math.max(task.retry_after || 2000, 0);
             const calculatedDelay = taskRetryAfter * Math.pow(taskRetryCount + 1, 2);
             const retryAfter = Math.min(calculatedDelay, MAX_RETRY_DELAY_MS);
             const executeAt = Date.now() + retryAfter;
@@ -354,8 +361,14 @@ export class TaskHandler<ID> {
                 ignoredTasks
             } = await this.taskRunner.run(id, tasks, this.asyncTaskManager, abortSignal)
                 .catch(err => {
-                    this.logger.error("Failed to execute tasks?", err);
-                    return {failedTasks: [], newTasks: [], successTasks: [], asyncTasks: [], ignoredTasks: []}
+                    this.logger.error("Failed to execute tasks, returning all as failed for retry:", err);
+                    return {
+                        failedTasks: tasks as CronTask<ID>[],
+                        newTasks: [] as CronTask<ID>[],
+                        successTasks: [] as CronTask<ID>[],
+                        asyncTasks: [] as AsyncTask<ID>[],
+                        ignoredTasks: [] as CronTask<ID>[]
+                    }
                 });
 
             if (asyncTasks.length > 0 && !this.asyncTaskManager) {

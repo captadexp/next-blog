@@ -167,6 +167,8 @@ export class PrismaAdapter<
         return results;
     }
 
+    // TODO(P3): Use UPDATE ... RETURNING for atomic claim instead of find() + update().
+    //   Multiple workers can pick up the same tasks. Dedup via cache is best-effort.
     async getMatureTasks(timestamp: number): Promise<CronTask<TId>[]> {
         const staleTimestamp = Date.now() - TWO_DAYS_MS;
 

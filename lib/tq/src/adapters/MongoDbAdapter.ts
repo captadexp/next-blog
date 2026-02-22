@@ -109,6 +109,8 @@ export abstract class MongoDbAdapter implements ITaskStorageAdapter<ObjectId> {
         }
     }
 
+    // TODO(P3): Use findOneAndUpdate for atomic claim instead of find() + update().
+    //   Multiple workers can pick up the same tasks. Dedup via cache is best-effort.
     async getMatureTasks(timestamp: number): Promise<CronTask<ObjectId>[]> {
         const collection = await this.collection;
 

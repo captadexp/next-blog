@@ -137,7 +137,14 @@ export class TaskRunner<ID> {
             this.logger.info(`[${taskRunnerId}] Processing ${taskGroup.tasks.length} tasks of type: ${taskGroup.type}`);
 
             if (executor.multiple) {
-                await executor.onTasks(taskGroup.tasks as any[], actions).catch(err => this.logger.error(`[${taskRunnerId}] executor.onTasks failed: ${err}`))
+                await executor.onTasks(taskGroup.tasks as any[], actions).catch(err => {
+                    this.logger.error(`[${taskRunnerId}] executor.onTasks failed: ${err}`);
+                    for (const task of taskGroup.tasks) {
+                        if (actions.getTaskResultStatus(tId(task)) === 'pending') {
+                            actions.fail(task);
+                        }
+                    }
+                });
             } else {
                 if (executor.parallel) {
                     const chunks = chunk(taskGroup.tasks, executor.chunkSize) as CronTask<ID>[][];
@@ -150,8 +157,14 @@ export class TaskRunner<ID> {
 
                         const chunkPromises: Promise<void>[] = [];
                         for (let j = 0; j < taskChunk.length; j++) {
-                            const taskActions = actions.forkForTask(taskChunk[j]);
-                            chunkPromises.push(executor.onTask(taskChunk[j], taskActions).catch(err => this.logger.error(`[${taskRunnerId}] executor.onTask failed: ${err}`)));
+                            const task = taskChunk[j];
+                            const taskActions = actions.forkForTask(task);
+                            chunkPromises.push(executor.onTask(task, taskActions).catch(err => {
+                                this.logger.error(`[${taskRunnerId}] executor.onTask failed: ${err}`);
+                                if (actions.getTaskResultStatus(tId(task)) === 'pending') {
+                                    actions.fail(task);
+                                }
+                            }));
                         }
                         await Promise.all(chunkPromises);
 
@@ -179,7 +192,12 @@ export class TaskRunner<ID> {
                             this.emitTaskStarted(task, taskRunnerId);
 
                             const taskActions = actions.forkForTask(task);
-                            await executor.onTask(task, taskActions).catch(err => this.logger.error(`[${taskRunnerId}] executor.onTask failed: ${err}`));
+                            await executor.onTask(task, taskActions).catch(err => {
+                                this.logger.error(`[${taskRunnerId}] executor.onTask failed: ${err}`);
+                                if (actions.getTaskResultStatus(tId(task)) === 'pending') {
+                                    actions.fail(task);
+                                }
+                            });
 
                             // Emit completion event based on result
                             const resultStatus = actions.getTaskResultStatus(tId(task));

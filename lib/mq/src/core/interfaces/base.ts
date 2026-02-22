@@ -18,6 +18,9 @@ export type BaseMessage<ID = any> = TypedMessage & {
     processing_started_at?: Date;
     force_store?: boolean;
     execution_stats?: Record<string, unknown>;
+
+    /** Executor-defined override for Kinesis partition key */
+    partition_key?: string;
 };
 
 /**

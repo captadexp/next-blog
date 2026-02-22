@@ -4,6 +4,7 @@ import {KinesisShardConsumer} from './KinesisShardConsumer.js';
 import {KinesisClient} from '@aws-sdk/client-kinesis';
 import {Logger, LogLevel} from "@supergrowthai/utils";
 import {MessageConsumer, QueueName} from '../../../core';
+import type {IAdaptiveStrategy} from '../../../core/interfaces/adaptive-strategy.js';
 import {REBALANCE_INTERVAL} from "./constants.js";
 import * as NodeUtils from 'node:util';
 
@@ -19,6 +20,8 @@ interface RebalancerConfig {
     onShardConnected?: (streamId: QueueName, shardId: string) => void;
     onShardDisconnected?: (streamId: QueueName, shardId: string, reason: 'rebalance' | 'error' | 'shutdown') => void;
     onCheckpoint?: (streamId: QueueName, shardId: string, checkpoint: string, recordCount: number) => void;
+    adaptiveStrategy?: IAdaptiveStrategy;
+    onPoisonPill?: (streamId: QueueName, shardId: string, checkpoint: string, recordCount: number) => void;
 }
 
 /**
@@ -80,9 +83,9 @@ export class KinesisShardRebalancer {
         if (consumerCount > 0) {
             logger.info(`[${instanceId}] Stopping ${consumerCount} active consumers`);
 
-            // Log all consumers being stopped for debugging
-            for (const [consumerKey] of this.activeConsumers) {
+            for (const [consumerKey, consumer] of this.activeConsumers) {
                 logger.debug(`[${instanceId}] Stopping consumer: ${consumerKey}`);
+                consumer.stop();
             }
         }
 
@@ -255,6 +258,10 @@ export class KinesisShardRebalancer {
             onCheckpoint: this.config.onCheckpoint
                 ? (sid, checkpoint, recordCount) => this.config.onCheckpoint!(streamId, sid, checkpoint, recordCount)
                 : undefined,
+            adaptiveStrategy: this.config.adaptiveStrategy,
+            onPoisonPill: this.config.onPoisonPill
+                ? (sid, checkpoint, recordCount) => this.config.onPoisonPill!(streamId, sid, checkpoint, recordCount)
+                : undefined,
         });
 
         this.activeConsumers.set(consumerKey, consumer);
@@ -294,7 +301,7 @@ export class KinesisShardRebalancer {
             .filter(key => key.startsWith(`${streamId}-`));
 
         for (const consumerKey of consumersToStop) {
-            const [, shardId] = consumerKey.split('-', 2);
+            const shardId = consumerKey.substring((streamId as string).length + 1);
             this.config.onShardDisconnected?.(streamId, shardId, 'shutdown');
             await this.stopAndCleanupConsumer(streamId, shardId);
         }
@@ -360,6 +367,7 @@ export class KinesisShardRebalancer {
 
         if (consumer) {
             logger.debug(`[${instanceId}] [${streamId}] [${shardId}] Stopping consumer`);
+            consumer.stop();
             this.activeConsumers.delete(consumerKey);
             logger.debug(`[${instanceId}] [${streamId}] [${shardId}] Consumer removed from map (remaining: ${this.activeConsumers.size})`);
         } else {

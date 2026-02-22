@@ -106,6 +106,9 @@ export class Actions<ID = any> implements ExecutorActions<ID> {
         logger.info(`[${this.taskRunnerId}] Task succeeded: ${taskId} (${task.type})`);
     }
 
+    // TODO(P1): Add configurable max child tasks per execution (e.g., 1000).
+    //   A buggy executor can call addTasks() with unbounded entries, all in memory.
+    //   Each child can spawn more children — unbounded amplification risk.
     addTasks(tasks: CronTask<ID>[]): void {
         // For multi-task mode, store in a batch-specific context
         logger.info(`[${this.taskRunnerId}] Adding ${tasks.length} new tasks`);

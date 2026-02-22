@@ -4,24 +4,33 @@ import {Logger, LogLevel} from "@supergrowthai/utils";
 
 const logger = new Logger('ShardLeaser', LogLevel.INFO);
 
+export interface ShardLeaserConfig {
+    onHeartbeatFailure?: (streamId: QueueName, instanceId: string, consecutiveFailures: number) => void;
+}
+
 export class ShardLeaser {
     private readonly client: IShardLockProvider;
     private readonly lockTTLMs: number;
     private readonly instanceId: string;
     private readonly streamId: QueueName;
     private heartbeatInterval: NodeJS.Timeout | null;
+    private consecutiveHeartbeatFailures = 0;
+    private static readonly HEARTBEAT_FAILURE_THRESHOLD = 3;
+    private readonly leaserConfig?: ShardLeaserConfig;
 
     constructor(
         client: IShardLockProvider,
         streamId: QueueName,
         instanceId: string,
-        lockTTLMs: number = 30000
+        lockTTLMs: number = 30000,
+        config?: ShardLeaserConfig
     ) {
         this.client = client;
         this.streamId = streamId;
         this.instanceId = instanceId;
         this.lockTTLMs = lockTTLMs;
         this.heartbeatInterval = null;
+        this.leaserConfig = config;
         this.startHeartbeat();
     }
 
@@ -70,8 +79,15 @@ export class ShardLeaser {
     private async sendHeartbeat() {
         try {
             await this.client.sendHeartbeat(this.streamId, this.instanceId, this.lockTTLMs);
+            this.consecutiveHeartbeatFailures = 0;
         } catch (error) {
-            logger.error('Failed to send heartbeat:', error);
+            this.consecutiveHeartbeatFailures++;
+            logger.error(`Failed to send heartbeat (consecutive failures: ${this.consecutiveHeartbeatFailures}):`, error);
+
+            if (this.consecutiveHeartbeatFailures >= ShardLeaser.HEARTBEAT_FAILURE_THRESHOLD) {
+                logger.error(`[${this.instanceId}] [${this.streamId}] Heartbeat failure threshold exceeded (${this.consecutiveHeartbeatFailures} failures)`);
+                this.leaserConfig?.onHeartbeatFailure?.(this.streamId, this.instanceId, this.consecutiveHeartbeatFailures);
+            }
         }
     }
 }

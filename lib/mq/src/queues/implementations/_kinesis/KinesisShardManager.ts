@@ -21,6 +21,10 @@ export class KinesisShardManager {
 
     /**
      * Lists all available shards for a stream
+     *
+     * TODO(P5): No handling of shard splits/merges (resharding). Returns current
+     *   shards but doesn't detect parent/child relationships after a split.
+     *   Add when resharding is needed in production.
      */
     async listShards(streamId: QueueName): Promise<string[]> {
         try {

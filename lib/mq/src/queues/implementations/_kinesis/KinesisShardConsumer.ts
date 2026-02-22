@@ -7,6 +7,7 @@ import {
 } from '@aws-sdk/client-kinesis';
 import {ShardLeaser} from '../../../shard';
 import {MessageConsumer, QueueName} from '../../../core';
+import type {IAdaptiveStrategy} from '../../../core';
 import {Logger, LogLevel} from "@supergrowthai/utils";
 import {EJSON} from "bson";
 import {
@@ -21,6 +22,9 @@ import * as NodeUtils from 'node:util';
 
 const logger = new Logger('ShardConsumer', LogLevel.INFO);
 
+/** Default number of failures from the same checkpoint before advancing past it */
+const POISON_PILL_THRESHOLD = 3;
+
 interface ConsumerConfig {
     instanceId: string;
     streamId: QueueName;
@@ -33,6 +37,8 @@ interface ConsumerConfig {
     isRunningCheck: () => boolean;
     isShardHeldCheck: (streamId: QueueName, shardId: string) => boolean;
     onCheckpoint?: (shardId: string, checkpoint: string, recordCount: number) => void;
+    adaptiveStrategy?: IAdaptiveStrategy;
+    onPoisonPill?: (shardId: string, checkpoint: string, recordCount: number) => void;
 }
 
 /**
@@ -45,10 +51,22 @@ export class KinesisShardConsumer {
     private processorTimedOut = false;
     private isRenewing = false;
     private isShuttingDown = false;
+    private stopped = false;
+
+    // Poison pill tracking (K1)
+    private lastCheckpoint: string | null = null;
+    private checkpointFailureCount = 0;
 
 
     constructor(private config: ConsumerConfig) {
         const {instanceId, streamId, shardId} = config;
+    }
+
+    /**
+     * Signal the consumer to stop its processing loop
+     */
+    stop(): void {
+        this.stopped = true;
     }
 
     /**
@@ -110,6 +128,9 @@ export class KinesisShardConsumer {
         this.shardIterator = response.ShardIterator;
     }
 
+    private static readonly LOCK_RENEWAL_MAX_RETRIES = 2;
+    private static readonly LOCK_RENEWAL_RETRY_DELAY_MS = 2000;
+
     /**
      * Start the lock renewal timer
      */
@@ -141,19 +162,36 @@ export class KinesisShardConsumer {
 
             this.isRenewing = true;
             try {
-                logger.debug(`${logPrefix} Renewing lock...`);
+                let renewed = false;
 
-                const renewed = await shardLeaser.renewLock(shardId);
+                for (let attempt = 0; attempt <= KinesisShardConsumer.LOCK_RENEWAL_MAX_RETRIES; attempt++) {
+                    try {
+                        logger.debug(`${logPrefix} Renewing lock (attempt ${attempt + 1})...`);
+                        renewed = await shardLeaser.renewLock(shardId);
 
-                if (renewed) {
-                    logger.debug(`${logPrefix} Lock renewed successfully`);
-                } else {
-                    logger.error(`${logPrefix} CRITICAL: Lock renewal failed - lock lost to another instance!`);
+                        if (renewed) {
+                            logger.debug(`${logPrefix} Lock renewed successfully`);
+                            break;
+                        }
+
+                        if (attempt < KinesisShardConsumer.LOCK_RENEWAL_MAX_RETRIES) {
+                            logger.warn(`${logPrefix} Lock renewal returned false, retrying in ${KinesisShardConsumer.LOCK_RENEWAL_RETRY_DELAY_MS}ms...`);
+                            await new Promise(resolve => setTimeout(resolve, KinesisShardConsumer.LOCK_RENEWAL_RETRY_DELAY_MS));
+                        }
+                    } catch (error) {
+                        if (attempt < KinesisShardConsumer.LOCK_RENEWAL_MAX_RETRIES) {
+                            logger.warn(`${logPrefix} Lock renewal threw error, retrying in ${KinesisShardConsumer.LOCK_RENEWAL_RETRY_DELAY_MS}ms...`, error);
+                            await new Promise(resolve => setTimeout(resolve, KinesisShardConsumer.LOCK_RENEWAL_RETRY_DELAY_MS));
+                        } else {
+                            logger.error(`${logPrefix} CRITICAL: Lock renewal failed after all retries!`, error);
+                        }
+                    }
+                }
+
+                if (!renewed) {
+                    logger.error(`${logPrefix} CRITICAL: Lock renewal failed after ${KinesisShardConsumer.LOCK_RENEWAL_MAX_RETRIES + 1} attempts - lock lost!`);
                     this.handleLockRenewalFailure();
                 }
-            } catch (error) {
-                logger.error(`${logPrefix} CRITICAL: Failed to renew lock!`, error);
-                this.handleLockRenewalFailure();
             } finally {
                 this.isRenewing = false;
             }
@@ -204,10 +242,19 @@ export class KinesisShardConsumer {
         const {instanceId, streamId, shardId, isRunningCheck, isShardHeldCheck, shardLeaser} = this.config;
         const logPrefix = `[${instanceId}] [${streamId}] [${shardId}]`;
 
-        while (isRunningCheck() && this.shardIterator && !this.processorTimedOut) {
+        const {adaptiveStrategy} = this.config;
+
+        while (isRunningCheck() && this.shardIterator && !this.processorTimedOut && !this.stopped) {
             if (!isShardHeldCheck(streamId, shardId)) {
                 logger.warn(`${logPrefix} Shard no longer tracked as held`);
                 break;
+            }
+
+            // Check adaptive backoff
+            if (adaptiveStrategy?.shouldBackoff(shardId)) {
+                logger.debug(`${logPrefix} Adaptive backoff active, delaying`);
+                await new Promise(resolve => setTimeout(resolve, adaptiveStrategy.getProcessingDelay(shardId)));
+                continue;
             }
 
             try {
@@ -221,8 +268,9 @@ export class KinesisShardConsumer {
                 if (recordsResponse.Records?.length) {
                     await this.processRecordBatch(recordsResponse);
                 } else {
-                    logger.debug(`${logPrefix} No records found, pausing`);
-                    await new Promise(resolve => setTimeout(resolve, PROCESSING_DELAY));
+                    const delay = adaptiveStrategy?.getProcessingDelay(shardId) ?? PROCESSING_DELAY;
+                    logger.debug(`${logPrefix} No records found, pausing ${delay}ms`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
                 }
 
                 // Move to next iterator
@@ -308,16 +356,16 @@ export class KinesisShardConsumer {
      * Fetch records from Kinesis
      */
     private async fetchRecords(): Promise<GetRecordsCommandOutput> {
-        const {kinesis} = this.config;
-        const logPrefix = `[${this.config.instanceId}] [${this.config.streamId}] [${this.config.shardId}]`;
+        const {kinesis, shardId, adaptiveStrategy} = this.config;
+        const logPrefix = `[${this.config.instanceId}] [${this.config.streamId}] [${shardId}]`;
 
-        logger.debug(`${logPrefix} Getting records with current iterator...`);
+        const limit = adaptiveStrategy?.getBatchSize(shardId) ?? BATCH_RECORD_LIMIT;
+        logger.debug(`${logPrefix} Getting records (limit: ${limit})...`);
 
-        // Get records from Kinesis
         return await kinesis.send(
             new GetRecordsCommand({
                 ShardIterator: this.shardIterator,
-                Limit: BATCH_RECORD_LIMIT
+                Limit: limit
             })
         );
     }
@@ -326,7 +374,7 @@ export class KinesisShardConsumer {
      * Process a batch of records
      */
     private async processRecordBatch(recordsResponse: GetRecordsCommandOutput): Promise<void> {
-        const {instanceId, streamId, shardId, processor, textDecoder, shardLeaser} = this.config;
+        const {instanceId, streamId, shardId, processor, textDecoder, shardLeaser, adaptiveStrategy} = this.config;
         const logPrefix = `[${instanceId}] [${streamId}] [${shardId}]`;
 
         this.consecutiveErrorCount = 0; // Reset on successful fetch
@@ -343,9 +391,56 @@ export class KinesisShardConsumer {
             .filter((task): task is NonNullable<typeof task> => task !== null);
 
         if (messages.length > 0) {
+            const taskTypes = [...new Set(messages.map(m => m.type))];
+            const batchStartTime = Date.now();
             logger.info(`${logPrefix} Processing ${messages.length} messages`);
 
+            // K1: Check poison pill — same checkpoint failing repeatedly
+            const currentCheckpoint = recordsResponse.Records![0].SequenceNumber ?? null;
+            if (currentCheckpoint && currentCheckpoint === this.lastCheckpoint) {
+                this.checkpointFailureCount++;
+            } else {
+                this.lastCheckpoint = currentCheckpoint;
+                this.checkpointFailureCount = 0;
+            }
+
+            if (this.checkpointFailureCount >= POISON_PILL_THRESHOLD) {
+                logger.error(`${logPrefix} POISON PILL DETECTED: checkpoint ${currentCheckpoint} failed ${this.checkpointFailureCount} times, advancing past batch`);
+
+                // Advance checkpoint past this batch
+                const lastSequence = recordsResponse.Records![recordsResponse.Records!.length - 1].SequenceNumber;
+                if (lastSequence) {
+                    await shardLeaser.setCheckpoint(shardId, lastSequence);
+                    this.config.onCheckpoint?.(shardId, lastSequence, messages.length);
+                    this.config.onPoisonPill?.(shardId, lastSequence, messages.length);
+                }
+
+                // Notify adaptive strategy
+                adaptiveStrategy?.recordBatchResult({
+                    shardId,
+                    recordCount: messages.length,
+                    successCount: 0,
+                    failureCount: messages.length,
+                    processingTimeMs: Date.now() - batchStartTime,
+                    taskTypes,
+                    failedTaskTypes: taskTypes,
+                    throttled: false,
+                    poisonPill: true,
+                });
+
+                // Reset tracking
+                this.checkpointFailureCount = 0;
+                this.lastCheckpoint = null;
+                return;
+            }
+
             try {
+                // TODO(K4): Pass AbortSignal to processor and abort it on timeout.
+                //   Currently Promise.race abandons the timeout but the processor keeps running
+                //   in background — holding DB connections, task locks (30min TTL in TaskRunner),
+                //   and potentially writing stale results. Create an AbortController, pass its
+                //   signal to the processor, and call .abort() on timeout.
+                //   Severity: HIGH. Requires processor contract change (breaking).
                 logger.debug(`${logPrefix} Calling processor function...`);
 
                 await Promise.race([
@@ -368,9 +463,39 @@ export class KinesisShardConsumer {
                     this.config.onCheckpoint?.(shardId, lastSequence, messages.length);
                 }
 
+                // Reset poison pill tracking on success
+                this.checkpointFailureCount = 0;
+                this.lastCheckpoint = null;
+
+                // Notify adaptive strategy of success
+                adaptiveStrategy?.recordBatchResult({
+                    shardId,
+                    recordCount: messages.length,
+                    successCount: messages.length,
+                    failureCount: 0,
+                    processingTimeMs: Date.now() - batchStartTime,
+                    taskTypes,
+                    failedTaskTypes: [],
+                    throttled: false,
+                    poisonPill: false,
+                });
+
             } catch (processorError: any) {
                 logger.error(`${logPrefix} Error during task processing:`, processorError);
                 this.consecutiveErrorCount++;
+
+                // Notify adaptive strategy of failure
+                adaptiveStrategy?.recordBatchResult({
+                    shardId,
+                    recordCount: messages.length,
+                    successCount: 0,
+                    failureCount: messages.length,
+                    processingTimeMs: Date.now() - batchStartTime,
+                    taskTypes,
+                    failedTaskTypes: taskTypes,
+                    throttled: false,
+                    poisonPill: false,
+                });
 
                 if (processorError.message?.includes('timed out')) {
                     logger.error(`${logPrefix} PROCESSOR TIMED OUT`);
@@ -384,11 +509,29 @@ export class KinesisShardConsumer {
      * Handle processing errors
      */
     private async handleProcessingError(error: any): Promise<void> {
-        const {instanceId, streamId, shardId, kinesis, shardLeaser} = this.config;
+        const {instanceId, streamId, shardId, kinesis, shardLeaser, adaptiveStrategy} = this.config;
         const logPrefix = `[${instanceId}] [${streamId}] [${shardId}]`;
 
-        this.consecutiveErrorCount++;
+        const isThrottle = error.name === 'ProvisionedThroughputExceededException';
+        if (!isThrottle) {
+            this.consecutiveErrorCount++;
+        }
         logger.error(`${logPrefix} Error in processing iteration (Count: ${this.consecutiveErrorCount}):`, error);
+
+        // Notify adaptive strategy of the error
+        if (isThrottle) {
+            adaptiveStrategy?.recordBatchResult({
+                shardId,
+                recordCount: 0,
+                successCount: 0,
+                failureCount: 0,
+                processingTimeMs: 0,
+                taskTypes: [],
+                failedTaskTypes: [],
+                throttled: true,
+                poisonPill: false,
+            });
+        }
 
         if (error.name === 'ExpiredIteratorException') {
             logger.warn(`${logPrefix} Iterator expired, attempting to get new one`);
@@ -419,9 +562,10 @@ export class KinesisShardConsumer {
                 this.shardIterator = undefined;
             }
 
-        } else if (error.name === 'ProvisionedThroughputExceededException') {
-            logger.warn(`${logPrefix} Throughput exceeded, backing off`);
-            await new Promise(resolve => setTimeout(resolve, PROCESSING_DELAY * 5));
+        } else if (isThrottle) {
+            const throttleDelay = adaptiveStrategy?.getProcessingDelay(shardId) ?? PROCESSING_DELAY * 5;
+            logger.warn(`${logPrefix} Throughput exceeded, backing off ${throttleDelay}ms (not counted as error)`);
+            await new Promise(resolve => setTimeout(resolve, throttleDelay));
 
         } else {
             logger.warn(`${logPrefix} Non-specific error, will retry`);
