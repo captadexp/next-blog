@@ -1,0 +1,292 @@
+.page {
+    min-height: 100vh;
+    background-color: #F9FAFB;
+    color: #1F2937;
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    background-color: white;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.headerContainer {
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.headerTitle {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.dashboardLink {
+    padding: 0.5rem 1rem;
+    background-color: #2563EB;
+    color: white;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    transition: background-color 0.2s;
+}
+
+.dashboardLink:hover {
+    background-color: #1D4ED8;
+}
+
+.main {
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 3rem 1.5rem;
+    flex-grow: 1;
+    width: 100%;
+}
+
+/* Hero */
+.hero {
+    text-align: center;
+    padding: 4rem 0 3rem;
+}
+
+.mainTitle {
+    font-size: 2.75rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+.mainSubtitle {
+    color: #6B7280;
+    font-size: 1.15rem;
+    margin-bottom: 2rem;
+    max-width: 540px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.ctaButton {
+    display: inline-block;
+    padding: 0.6rem 1.4rem;
+    background-color: #111827;
+    color: white;
+    border-radius: 2rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: background-color 0.2s;
+    text-decoration: none;
+}
+
+.ctaButton:hover {
+    background-color: #374151;
+}
+
+/* Sections */
+.section {
+    margin-bottom: 4rem;
+}
+
+.postsSection {
+    margin-top: 2rem;
+    padding-top: 3rem;
+    border-top: 1px solid #E5E7EB;
+}
+
+.sectionTitle {
+    font-size: 1.375rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: #111827;
+}
+
+/* Writing Tips */
+.tipsGrid {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(1, 1fr);
+}
+
+@media (min-width: 768px) {
+    .tipsGrid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.tipCard {
+    background-color: white;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+    border: 1px solid #F3F4F6;
+}
+
+.tipEmoji {
+    font-size: 1.75rem;
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+.tipTitle {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+    color: #111827;
+}
+
+.tipBody {
+    color: #6B7280;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+/* Reading Links */
+.linksGrid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(1, 1fr);
+}
+
+@media (min-width: 768px) {
+    .linksGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.linkCard {
+    display: block;
+    background-color: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.linkCard:hover {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.linkLabel {
+    font-weight: 600;
+    color: #2563EB;
+    font-size: 0.95rem;
+    display: block;
+    margin-bottom: 0.35rem;
+}
+
+.linkDesc {
+    color: #6B7280;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Posts */
+.postGrid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 2rem;
+}
+
+@media (min-width: 768px) {
+    .postGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .postGrid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.postCard {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s;
+}
+
+.postCard:hover {
+    transform: translateY(-0.5rem);
+}
+
+.postCardContent {
+    padding: 1.5rem;
+    flex-grow: 1;
+}
+
+.postCardTitle {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    transition: color 0.2s;
+}
+
+.postCard:hover .postCardTitle {
+    color: #2563EB;
+}
+
+.postCardExcerpt {
+    color: #4B5563;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
+.postCardFooter {
+    padding: 1.5rem;
+    background-color: #F9FAFB;
+    text-align: right;
+}
+
+.postCardLink {
+    color: #2563EB;
+    font-weight: 600;
+}
+
+.noPosts {
+    text-align: center;
+    padding: 4rem 0;
+}
+
+.noPostsTitle {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.noPostsText {
+    color: #6B7280;
+    margin-top: 0.5rem;
+}
+
+.footer {
+    background-color: white;
+    margin-top: 3rem;
+    padding: 1.5rem 0;
+}
+
+.footerContainer {
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+    color: #6B7280;
+}
