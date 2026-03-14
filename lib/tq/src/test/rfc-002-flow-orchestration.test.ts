@@ -74,16 +74,12 @@ function createFlowStack(opts?: { entityProjection?: IEntityProjectionProvider<s
     const taskQueue = new TaskQueuesManager<string>(messageQueue);
     const taskStore = new TaskStore<string>(databaseAdapter);
     const barrierProvider = new InMemoryFlowBarrierProvider();
-    const flowMiddleware = new FlowMiddleware<string>(
-        barrierProvider,
-        () => databaseAdapter.generateId()
-    );
 
     const taskHandler = new TaskHandler<string>(
         messageQueue, taskQueue, databaseAdapter, cacheProvider,
         undefined, undefined,
         {
-            flowMiddleware,
+            flowBarrierProvider: barrierProvider,
             entityProjection: opts?.entityProjection,
         }
     );
@@ -108,7 +104,6 @@ function createFlowStack(opts?: { entityProjection?: IEntityProjectionProvider<s
         taskStore,
         taskHandler,
         barrierProvider,
-        flowMiddleware,
     };
 }
 
@@ -659,8 +654,6 @@ describe("Phase 5: TaskHandler Integration", () => {
             messageQueue,
             cacheProvider,
             taskStore,
-            barrierProvider,
-            flowMiddleware,
         } = createFlowStack({entityProjection: entityProvider});
 
         // Register a parent executor that starts a flow with entity
@@ -815,7 +808,8 @@ describe("Phase 6: End-to-End Pipeline", () => {
     });
 
     it("step retries do NOT decrement barrier", async () => {
-        const {barrierProvider, flowMiddleware} = createFlowStack();
+        const barrierProvider = new InMemoryFlowBarrierProvider();
+        const flowMiddleware = new FlowMiddleware<string>(barrierProvider, () => `gen-${Date.now()}`);
 
         const flowId = "flow-retry";
         await barrierProvider.initBarrier(flowId, 2);

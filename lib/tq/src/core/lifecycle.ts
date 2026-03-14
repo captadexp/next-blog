@@ -3,6 +3,7 @@
  * Provides interfaces for task and worker lifecycle callbacks
  */
 import type {EntityProjectionConfig, IEntityProjectionProvider} from "./entity/IEntityProjectionProvider.js";
+import type {IFlowBarrierProvider} from "./flow/IFlowBarrierProvider.js";
 
 // ============ Task Lifecycle Types ============
 
@@ -242,8 +243,8 @@ export interface TaskHandlerConfig {
     entityProjection?: IEntityProjectionProvider;
     /** RFC-003: Entity projection configuration */
     entityProjectionConfig?: EntityProjectionConfig;
-    /** RFC-002: Flow middleware for fan-out/fan-in orchestration */
-    flowMiddleware?: import("./flow/FlowMiddleware.js").FlowMiddleware<any>;
+    /** RFC-002: Flow barrier provider — TaskHandler assembles FlowMiddleware internally */
+    flowBarrierProvider?: IFlowBarrierProvider;
     /** Flow lifecycle event provider */
     flowLifecycleProvider?: IFlowLifecycleProvider;
 }

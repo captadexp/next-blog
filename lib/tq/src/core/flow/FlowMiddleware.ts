@@ -34,19 +34,12 @@ function getFlowMetaRequired(task: CronTask<any>): FlowMeta {
 }
 
 export class FlowMiddleware<ID> {
-    private flowLifecycleProvider?: IFlowLifecycleProvider;
-
     constructor(
         private readonly barrierProvider: IFlowBarrierProvider,
         private readonly generateId: () => ID,
+        private readonly flowLifecycleProvider?: IFlowLifecycleProvider,
+        private readonly workerId: string = '',
     ) {}
-
-    private workerId: string = '';
-
-    setFlowLifecycleProvider(provider: IFlowLifecycleProvider, workerId: string): void {
-        this.flowLifecycleProvider = provider;
-        this.workerId = workerId;
-    }
 
     private emitFlowEvent<T>(
         callback: ((ctx: T) => void | Promise<void>) | undefined,

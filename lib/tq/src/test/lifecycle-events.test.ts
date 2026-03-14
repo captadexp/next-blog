@@ -136,7 +136,9 @@ function createStack(opts?: {
     const barrierProvider = new InMemoryFlowBarrierProvider();
     const flowMiddleware = new FlowMiddleware<string>(
         barrierProvider,
-        () => databaseAdapter.generateId()
+        () => databaseAdapter.generateId(),
+        opts?.flowLifecycleProvider,
+        "test-server-1-12345-1710000000000",
     );
 
     const taskRunner = new TaskRunner<string>({
@@ -339,7 +341,6 @@ describe("Flow lifecycle events", () => {
     it("F2: onFlowCompleted emitted when barrier hits 0", async () => {
         const flowLp = createMockFlowLifecycleProvider();
         const {flowMiddleware, barrierProvider} = createStack({flowLifecycleProvider: flowLp});
-        flowMiddleware.setFlowLifecycleProvider(flowLp, "test-worker");
 
         const flowId = "flow-complete-1";
         await barrierProvider.initBarrier(flowId, 2);
@@ -376,7 +377,6 @@ describe("Flow lifecycle events", () => {
     it("F3: onFlowAborted emitted on step failure with failure_policy: abort", async () => {
         const flowLp = createMockFlowLifecycleProvider();
         const {flowMiddleware, barrierProvider} = createStack({flowLifecycleProvider: flowLp});
-        flowMiddleware.setFlowLifecycleProvider(flowLp, "test-worker");
 
         const flowId = "flow-abort-1";
         await barrierProvider.initBarrier(flowId, 3);
@@ -413,7 +413,6 @@ describe("Flow lifecycle events", () => {
     it("F4: onFlowTimedOut emitted when timeout sentinel fires", async () => {
         const flowLp = createMockFlowLifecycleProvider();
         const {flowMiddleware, barrierProvider} = createStack({flowLifecycleProvider: flowLp});
-        flowMiddleware.setFlowLifecycleProvider(flowLp, "test-worker");
 
         const flowId = "flow-timeout-1";
         // Do NOT init barrier yet — timeout can fire before any step completes

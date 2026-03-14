@@ -30,6 +30,7 @@ import type {
 } from "./lifecycle.js";
 import type {IEntityProjectionProvider, EntityTaskProjection} from "./entity/IEntityProjectionProvider.js";
 import {buildProjection, syncProjections} from "./entity/IEntityProjectionProvider.js";
+import {FlowMiddleware} from "./flow/FlowMiddleware.js";
 import * as os from "os";
 
 const METRICS_KEY_PREFIX = 'task_metrics:';
@@ -46,6 +47,7 @@ export class TaskHandler<ID> {
     private matureTaskTimer: NodeJS.Timeout | null = null;
     private heartbeatTimer: NodeJS.Timeout | null = null;
     private readonly config: TaskHandlerConfig;
+    private readonly flowMiddleware?: FlowMiddleware<ID>;
 
     // Worker info
     private readonly workerId: string;
@@ -90,6 +92,21 @@ export class TaskHandler<ID> {
         this.workerStartedAt = new Date();
 
         this.taskStore = new TaskStore<ID>(databaseAdapter);
+
+        if (this.config.flowLifecycleProvider && !this.config.flowBarrierProvider) {
+            throw new Error('[TQ] flowLifecycleProvider requires flowBarrierProvider — flow lifecycle events need flow orchestration enabled');
+        }
+
+        // Assemble FlowMiddleware internally — all deps provided at construction, no mutable setter
+        this.flowMiddleware = this.config.flowBarrierProvider
+            ? new FlowMiddleware<ID>(
+                this.config.flowBarrierProvider,
+                databaseAdapter.generateId.bind(databaseAdapter),
+                this.config.flowLifecycleProvider,
+                this.workerId,
+            )
+            : undefined;
+
         this.taskRunner = new TaskRunner<ID>({
             messageQueue,
             taskQueue: taskQueuesManager,
@@ -100,15 +117,10 @@ export class TaskHandler<ID> {
             lifecycleConfig: this.config.lifecycle,
             entityProjection: this.config.entityProjection,
             entityProjectionConfig: this.config.entityProjectionConfig,
-            flowMiddleware: this.config.flowMiddleware,
+            flowMiddleware: this.flowMiddleware,
             flowLifecycleProvider: this.config.flowLifecycleProvider,
             workerId: this.workerId,
         });
-
-        // Wire flow lifecycle provider into flow middleware
-        if (this.config.flowMiddleware && this.config.flowLifecycleProvider) {
-            this.config.flowMiddleware.setFlowLifecycleProvider(this.config.flowLifecycleProvider, this.workerId);
-        }
     }
 
     // ============ Lifecycle Event Helpers ============
@@ -506,9 +518,9 @@ export class TaskHandler<ID> {
         }
 
         // RFC-002: Flow middleware — process completed tasks for barrier tracking and join dispatch
-        if (this.config.flowMiddleware) {
+        if (this.flowMiddleware) {
             try {
-                const flowResult = await this.config.flowMiddleware.onPostProcess({successTasks, failedTasks: finalFailedTasks});
+                const flowResult = await this.flowMiddleware.onPostProcess({successTasks, failedTasks: finalFailedTasks});
 
                 // Sync flow entity projections
                 if (flowResult.projections.length > 0 && this.entityProjectionProvider) {
