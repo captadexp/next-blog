@@ -119,17 +119,25 @@ taskHandler.processMatureTasks();
 
 ### TaskRunner
 
-Handles task execution with locking and async support:
+Handles task execution with locking and async support. Internal to TaskHandler — not typically instantiated directly.
 
 ```typescript
 import {TaskRunner} from '@supergrowthai/tq';
 
-const taskRunner = new TaskRunner(
+const taskRunner = new TaskRunner({
     messageQueue,
     taskQueue,
     taskStore,
-    cacheProvider
-);
+    cacheProvider,
+    generateId: databaseAdapter.generateId.bind(databaseAdapter),
+    lifecycleProvider,       // optional
+    lifecycleConfig,         // optional
+    entityProjection,        // optional
+    entityProjectionConfig,  // optional
+    flowMiddleware,          // optional — typically created by TaskHandler
+    flowLifecycleProvider,   // optional
+    workerId: 'my-worker',   // optional
+});
 
 // Run tasks
 const result = await taskRunner.run(
@@ -364,7 +372,7 @@ const workerLifecycleProvider: IWorkerLifecycleProvider = {
         console.log(`Heartbeat: ${info.worker_id}, processed: ${info.stats.tasks_processed}`);
     },
 
-    onWorkerStopped(info: WorkerInfo & { reason: string; final_stats: WorkerStats }) {
+    onWorkerStopped(info: WorkerInfo & { reason: 'shutdown' | 'error' | 'idle_timeout'; final_stats: WorkerStats }) {
         console.log(`Worker stopped: ${info.worker_id}, reason: ${info.reason}`);
     },
 
@@ -374,6 +382,62 @@ const workerLifecycleProvider: IWorkerLifecycleProvider = {
 
     onBatchCompleted(info: WorkerInfo & { batch_size: number; succeeded: number; failed: number }) {
         console.log(`Batch completed: ${info.succeeded}/${info.batch_size} succeeded`);
+    },
+
+    onConsumerStarted(info: ConsumerInfo) {
+        console.log(`Consumer started: ${info.consumer_id} on queue ${info.queue_id}`);
+    },
+
+    onConsumerStopped(info: ConsumerInfo & { reason: 'shutdown' | 'error' | 'idle_timeout'; stats: ConsumerStats }) {
+        console.log(`Consumer stopped: ${info.consumer_id}, processed: ${info.stats.tasks_processed}`);
+    }
+};
+```
+
+The heartbeat callback also includes `active_consumers: ConsumerStats[]` for per-consumer-per-worker visibility in SRE dashboards.
+
+### Flow Lifecycle Provider
+
+Track flow orchestration events (fan-out/fan-in):
+
+```typescript
+import {IFlowLifecycleProvider, FlowContext} from '@supergrowthai/tq';
+
+const flowLifecycleProvider: IFlowLifecycleProvider = {
+    onFlowStarted(ctx: FlowContext & { started_at: Date; step_types: string[] }) {
+        console.log(`Flow started: ${ctx.flow_id}, ${ctx.total_steps} steps`);
+    },
+
+    onFlowCompleted(ctx: FlowContext & { duration_ms: number; steps_succeeded: number; steps_failed: number }) {
+        console.log(`Flow completed: ${ctx.flow_id} in ${ctx.duration_ms}ms`);
+    },
+
+    onFlowAborted(ctx: FlowContext & { duration_ms: number; steps_completed: number; trigger_step_index: number }) {
+        console.log(`Flow aborted: ${ctx.flow_id}, trigger step: ${ctx.trigger_step_index}`);
+    },
+
+    onFlowTimedOut(ctx: FlowContext & { duration_ms: number; steps_completed: number }) {
+        console.log(`Flow timed out: ${ctx.flow_id}, ${ctx.steps_completed} steps completed`);
+    }
+};
+```
+
+Flow events are split across two pipeline stages:
+- `onFlowStarted` fires during task execution (when `actions.startFlow()` is called)
+- `onFlowCompleted/Aborted/TimedOut` fire during post-processing (when barriers resolve)
+
+### Batch Executor Lifecycle
+
+Track multi-task (batch) executor events for task-level accounting:
+
+```typescript
+const taskLifecycleProvider: ITaskLifecycleProvider = {
+    onTaskBatchStarted(ctx) {
+        console.log(`Batch started: ${ctx.task_type}, ${ctx.tasks.length} tasks`);
+    },
+
+    onTaskBatchCompleted(ctx) {
+        console.log(`Batch done: ${ctx.succeeded.length} ok, ${ctx.failed.length} failed in ${ctx.duration_ms}ms`);
     }
 };
 ```
@@ -437,6 +501,8 @@ const taskHandler = new TaskHandler(
 | max_retries  | number                  | Maximum retry attempts           |
 | scheduled_at | Date                    | When task was scheduled          |
 | worker_id    | string?                 | ID of worker processing the task |
+| consumer_id  | string?                 | Consumer stream identity (distinguishes multiple consumers on same worker) |
+| log_context  | Record<string, string>? | User-provided log correlation context (RFC-005) |
 
 ### WorkerInfo Properties
 
@@ -658,10 +724,9 @@ class RedisFlowBarrierProvider implements IFlowBarrierProvider {
 ### Wiring It Up
 
 ```typescript
-import { FlowMiddleware, InMemoryFlowBarrierProvider } from '@supergrowthai/tq';
+import { InMemoryFlowBarrierProvider } from '@supergrowthai/tq';
 
 const barrierProvider = new InMemoryFlowBarrierProvider(); // or your Redis impl
-const flowMiddleware = new FlowMiddleware(barrierProvider, generateId);
 
 const taskHandler = new TaskHandler(
     messageQueue,
@@ -674,10 +739,13 @@ const taskHandler = new TaskHandler(
         lifecycleProvider: myLifecycleProvider,
         workerProvider: myWorkerProvider,
         entityProjection: myProjectionProvider,
-        flowMiddleware,  // RFC-002
+        flowBarrierProvider: barrierProvider,        // RFC-002: TaskHandler creates FlowMiddleware internally
+        flowLifecycleProvider: myFlowLifecycleProvider,  // optional: flow lifecycle events
     }
 );
 ```
+
+TaskHandler assembles `FlowMiddleware` internally from the barrier provider — no need to construct it yourself. If `flowLifecycleProvider` is set without `flowBarrierProvider`, TaskHandler throws immediately (fail-fast).
 
 ### Entity Tracking on Flows
 
@@ -699,6 +767,79 @@ Individual step tasks do **not** carry `CronTask.entity` — entity tracking is 
 - **FlowMiddleware returns data, doesn't write**: Returns `{ joinTasks, projections }` to `TaskHandler`, which owns all writes. Clean separation of concerns.
 - **Nested flows**: A join executor can call `actions.startFlow()` to start another flow. Flow IDs are independent UUIDs — no special handling needed.
 - **IMultiTaskExecutor optimization**: Flow steps of the same type in the same processing cycle batch into a single executor call automatically via `TaskRunner`'s existing grouping logic.
+
+## API Reference — Lifecycle Interfaces
+
+### ITaskLifecycleProvider
+
+| Method | Context | Description |
+|--------|---------|-------------|
+| `onTaskScheduled?(ctx)` | `TaskContext` | Task added to queue |
+| `onTaskStarted?(ctx)` | `TaskContext & { started_at, queued_duration_ms }` | Worker picks up task |
+| `onTaskCompleted?(ctx)` | `TaskContext & { timing: TaskTiming, result? }` | Task succeeds |
+| `onTaskFailed?(ctx)` | `TaskContext & { timing: TaskTiming, error, will_retry, next_attempt_at? }` | Task fails (before retry decision) |
+| `onTaskExhausted?(ctx)` | `TaskContext & { timing: TaskTiming, error, total_attempts }` | All retries exhausted |
+| `onTaskCancelled?(ctx)` | `TaskContext & { reason }` | Task manually cancelled |
+| `onTaskBatchStarted?(ctx)` | `{ task_type, queue_id, tasks: TaskContext[], worker_id, consumer_id?, started_at }` | Batch executor starts |
+| `onTaskBatchCompleted?(ctx)` | `{ task_type, queue_id, tasks, worker_id, consumer_id?, succeeded: string[], failed: string[], duration_ms }` | Batch executor finishes |
+
+### IWorkerLifecycleProvider
+
+| Method | Context | Description |
+|--------|---------|-------------|
+| `onWorkerStarted?(info)` | `WorkerInfo` | Worker process starts consuming |
+| `onWorkerHeartbeat?(info)` | `WorkerInfo & { stats: WorkerStats, memory_usage_mb, active_consumers: ConsumerStats[] }` | Periodic health check |
+| `onWorkerStopped?(info)` | `WorkerInfo & { reason, final_stats: WorkerStats }` | Worker shuts down |
+| `onBatchStarted?(info)` | `WorkerInfo & { batch_size, task_types: string[] }` | Processing batch begins |
+| `onBatchCompleted?(info)` | `WorkerInfo & { batch_size, succeeded, failed, duration_ms }` | Processing batch ends |
+| `onConsumerStarted?(info)` | `ConsumerInfo` | First batch arrives on a consumer (lazy registration) |
+| `onConsumerStopped?(info)` | `ConsumerInfo & { reason, stats: ConsumerStats }` | Consumer stops (shutdown) |
+
+### IFlowLifecycleProvider
+
+| Method | Context | Description |
+|--------|---------|-------------|
+| `onFlowStarted?(ctx)` | `FlowContext & { started_at, step_types: string[] }` | `actions.startFlow()` called |
+| `onFlowCompleted?(ctx)` | `FlowContext & { duration_ms, steps_succeeded, steps_failed }` | All steps done, barrier met |
+| `onFlowAborted?(ctx)` | `FlowContext & { duration_ms, steps_completed, trigger_step_index }` | Step failed with `abort` policy |
+| `onFlowTimedOut?(ctx)` | `FlowContext & { duration_ms, steps_completed }` | Timeout sentinel fired before barrier met |
+
+### IFlowBarrierProvider
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `initBarrier` | `(flowId: string, totalSteps: number) => Promise<void>` | Initialize barrier for a new flow |
+| `batchDecrementAndCheck` | `(flowId: string, results: FlowStepResult[]) => Promise<BarrierDecrementResult>` | Record step results, decrement barrier (HSETNX dedup) |
+| `getStepResults` | `(flowId: string) => Promise<FlowStepResult[]>` | Get all recorded step results |
+| `markAborted` | `(flowId: string) => Promise<boolean>` | Mark flow aborted (returns true on first call) |
+| `isComplete` | `(flowId: string) => Promise<boolean>` | Check if barrier fully met |
+| `getStartedAt` | `(flowId: string) => Promise<Date \| null>` | Get barrier init timestamp (for duration tracking) |
+
+### TaskHandlerConfig
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `lifecycleProvider?` | `ITaskLifecycleProvider` | Task lifecycle event callbacks |
+| `workerProvider?` | `IWorkerLifecycleProvider` | Worker/consumer lifecycle event callbacks |
+| `lifecycle?` | `TaskHandlerLifecycleConfig` | Callback mode (`sync`/`async`), heartbeat interval, payload inclusion |
+| `entityProjection?` | `IEntityProjectionProvider` | Entity-task projection provider (RFC-003) |
+| `entityProjectionConfig?` | `EntityProjectionConfig` | Projection options (`includePayload`) |
+| `flowBarrierProvider?` | `IFlowBarrierProvider` | Flow barrier provider — enables flow orchestration (RFC-002) |
+| `flowLifecycleProvider?` | `IFlowLifecycleProvider` | Flow lifecycle events (requires `flowBarrierProvider`) |
+
+### Supporting Types
+
+| Type | Fields | Description |
+|------|--------|-------------|
+| `TaskContext` | `task_id, task_hash?, task_type, queue_id, payload, attempt, max_retries, scheduled_at, worker_id?, consumer_id?, log_context?` | Core task identity passed to all lifecycle callbacks |
+| `TaskTiming` | `queued_duration_ms, processing_duration_ms, total_duration_ms` | Timing breakdown for completed/failed tasks |
+| `WorkerInfo` | `worker_id, hostname, pid, started_at, enabled_queues` | Worker process identity |
+| `WorkerStats` | `tasks_processed, tasks_succeeded, tasks_failed, avg_processing_ms, current_task?` | Aggregate worker metrics |
+| `ConsumerInfo` | `consumer_id, queue_id, worker_id, started_at` | Consumer stream identity |
+| `ConsumerStats` | `consumer_id, queue_id, tasks_processed, tasks_succeeded, tasks_failed, last_task_at?` | Per-consumer metrics |
+| `FlowContext` | `flow_id, total_steps, join, failure_policy, entity?, worker_id, consumer_id?` | Flow identity for lifecycle events |
+| `FlowStepResult` | `step_index, status, result?, error?` | Individual step outcome in barrier |
+| `BarrierDecrementResult` | `remaining` | `0` = barrier met, `>0` = pending, `-1` = already complete/aborted |
 
 ## Error Handling and Retries
 
