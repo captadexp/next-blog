@@ -57,4 +57,9 @@ export interface IFlowBarrierProvider {
      * Check if a flow's barrier has been fully met (remaining = 0).
      */
     isComplete(flowId: string): Promise<boolean>;
+
+    /**
+     * Get the time when a flow's barrier was initialized.
+     */
+    getStartedAt(flowId: string): Promise<Date | null>;
 }

@@ -19,6 +19,7 @@ const logger = new Logger('AsyncActions', LogLevel.INFO);
 export interface AsyncLifecycleEmitter {
     onCompleted(task: CronTask<any>, result?: unknown): void;
     onFailed(task: CronTask<any>, error: Error, willRetry: boolean): void;
+    onScheduled?(task: CronTask<any>): void;
 }
 
 export class AsyncActions<ID = any> {
@@ -217,8 +218,22 @@ export class AsyncActions<ID = any> {
                 const executor = this.taskQueue.getExecutor(task.queue_id, task.type);
                 const shouldStoreOnFailure = executor?.store_on_failure ?? false;
                 const id = shouldStoreOnFailure ? {id: this.generateId()} : {};
-                return {...id, ...task};
+                const partitionKey = executor?.getPartitionKey?.(task);
+                return {...id, ...task, ...(partitionKey ? {partition_key: partitionKey} : {})};
             });
+
+            // Entity projections for scheduled tasks (mirrors TaskHandler.addTasks pattern)
+            if (this.entityProjection) {
+                try {
+                    const projections = queueTasks
+                        .filter(t => t.entity)
+                        .map(t => buildProjection(t, 'scheduled', {includePayload: this.entityProjectionConfig?.includePayload}))
+                        .filter((p): p is EntityTaskProjection<ID> => p !== null);
+                    await syncProjections(projections, this.entityProjection, logger);
+                } catch (err) {
+                    logger.error(`[AsyncActions] Entity projection failed (non-fatal): ${err}`);
+                }
+            }
 
             try {
                 await this.messageQueue.addMessages(queue, queueTasks as CronTask<ID>[]);
@@ -226,6 +241,17 @@ export class AsyncActions<ID = any> {
             } catch (err) {
                 logger.error(`[AsyncActions] Failed to add tasks to queue ${queue}:`, err);
                 throw err;
+            }
+
+            // Emit onScheduled lifecycle event for each task
+            if (this.lifecycleEmitter?.onScheduled) {
+                for (const task of queueTasks) {
+                    try {
+                        this.lifecycleEmitter.onScheduled(task);
+                    } catch (err) {
+                        logger.error(`[AsyncActions] Lifecycle onScheduled error:`, err);
+                    }
+                }
             }
         }
 
@@ -235,8 +261,22 @@ export class AsyncActions<ID = any> {
                 const executor = this.taskQueue.getExecutor(task.queue_id, task.type);
                 const shouldStoreOnFailure = executor?.store_on_failure ?? false;
                 const id = shouldStoreOnFailure ? {id: this.generateId()} : {};
-                return {...id, ...task};
+                const partitionKey = executor?.getPartitionKey?.(task);
+                return {...id, ...task, ...(partitionKey ? {partition_key: partitionKey} : {})};
             });
+
+            // Entity projections for future scheduled tasks
+            if (this.entityProjection) {
+                try {
+                    const projections = futureTasks
+                        .filter(t => t.entity)
+                        .map(t => buildProjection(t, 'scheduled', {includePayload: this.entityProjectionConfig?.includePayload}))
+                        .filter((p): p is EntityTaskProjection<ID> => p !== null);
+                    await syncProjections(projections, this.entityProjection, logger);
+                } catch (err) {
+                    logger.error(`[AsyncActions] Entity projection failed (non-fatal): ${err}`);
+                }
+            }
 
             try {
                 await this.taskStore.addTasksToScheduled(futureTasks);
@@ -244,6 +284,17 @@ export class AsyncActions<ID = any> {
             } catch (err) {
                 logger.error(`[AsyncActions] Failed to add tasks to database:`, err);
                 throw err;
+            }
+
+            // Emit onScheduled lifecycle event for future tasks
+            if (this.lifecycleEmitter?.onScheduled) {
+                for (const task of futureTasks) {
+                    try {
+                        this.lifecycleEmitter.onScheduled(task);
+                    } catch (err) {
+                        logger.error(`[AsyncActions] Lifecycle onScheduled error:`, err);
+                    }
+                }
             }
         }
     }

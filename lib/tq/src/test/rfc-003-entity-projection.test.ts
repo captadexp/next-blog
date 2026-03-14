@@ -202,12 +202,11 @@ describe("C. Processing projection", () => {
         // Simulate consuming via startConsumingTasks — we need to trigger the TaskRunner path
         // For unit testing, we directly use TaskRunner
         const {taskQueue, taskStore, cacheProvider, messageQueue} = createStack(provider);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId(),
-            undefined, undefined,
-            provider, undefined
-        );
+            generateId: () => databaseAdapter.generateId(),
+            entityProjection: provider,
+        });
 
         const executor: ISingleTaskNonParallel<string, "entity-task"> = {
             multiple: false,
@@ -232,12 +231,11 @@ describe("C. Processing projection", () => {
         const {databaseAdapter} = createStack(provider);
 
         const {taskQueue, taskStore, cacheProvider, messageQueue} = createStack(provider);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId(),
-            undefined, undefined,
-            provider, undefined
-        );
+            generateId: () => databaseAdapter.generateId(),
+            entityProjection: provider,
+        });
 
         const executor: ISingleTaskNonParallel<string, "entity-task"> = {
             multiple: false,
@@ -459,12 +457,11 @@ describe("F. Async path", () => {
         };
         taskQueue.register(queueName, "entity-task", executor);
 
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId(),
-            undefined, undefined,
-            provider, undefined
-        );
+            generateId: () => databaseAdapter.generateId(),
+            entityProjection: provider,
+        });
 
         const task = makeEntityTask(databaseAdapter.generateId(), "order-async", "order");
 
@@ -614,12 +611,11 @@ describe("I. Full pipeline", () => {
 
         // Step 2: Consume and process (processing + executed projections)
         // We'll manually run the pipeline since startConsumingTasks is a streaming API
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId(),
-            undefined, undefined,
-            provider, undefined
-        );
+            generateId: () => databaseAdapter.generateId(),
+            entityProjection: provider,
+        });
 
         provider.calls.length = 0;
         const results = await taskRunner.run("worker-1", [task]);
@@ -678,12 +674,11 @@ describe("I. Full pipeline", () => {
         expect(scheduledProjections.length).toBe(1);
 
         // Step 2: Run the task (processing)
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId(),
-            undefined, undefined,
-            provider, undefined
-        );
+            generateId: () => databaseAdapter.generateId(),
+            entityProjection: provider,
+        });
 
         provider.calls.length = 0;
         const results = await taskRunner.run("worker-1", [task]);

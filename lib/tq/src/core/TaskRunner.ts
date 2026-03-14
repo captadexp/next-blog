@@ -12,7 +12,7 @@ import {LockManager} from "@supergrowthai/utils";
 import {TaskQueuesManager} from "./TaskQueuesManager";
 import {TaskStore} from "./TaskStore";
 import {IAsyncTaskManager} from "./async/async-task-manager";
-import type {ITaskLifecycleProvider, TaskContext, TaskHandlerLifecycleConfig, TaskTiming} from "./lifecycle.js";
+import type {ITaskLifecycleProvider, IFlowLifecycleProvider, TaskContext, TaskHandlerLifecycleConfig, TaskTiming} from "./lifecycle.js";
 import {runWithLogContext} from "./log-context.js";
 import type {LogStore} from "./log-context.js";
 import type {IEntityProjectionProvider, EntityProjectionConfig, EntityTaskProjection} from "./entity/IEntityProjectionProvider.js";
@@ -26,23 +26,67 @@ export interface AsyncTask<ID> {
     actions: AsyncActions<ID>;
 }
 
+export interface TaskRunnerOptions<ID> {
+    messageQueue: IMessageQueue<ID>;
+    taskQueue: TaskQueuesManager<ID>;
+    taskStore: TaskStore<ID>;
+    cacheProvider: CacheProvider<any>;
+    generateId: () => ID;
+    lifecycleProvider?: ITaskLifecycleProvider;
+    lifecycleConfig?: TaskHandlerLifecycleConfig;
+    entityProjection?: IEntityProjectionProvider<ID>;
+    entityProjectionConfig?: EntityProjectionConfig;
+    flowMiddleware?: FlowMiddleware<ID>;
+    flowLifecycleProvider?: IFlowLifecycleProvider;
+    /** Process identity (hostname-pid-timestamp) for lifecycle events */
+    workerId?: string;
+}
+
 export class TaskRunner<ID> {
     private readonly logger: Logger;
     private lockManager: LockManager;
     private readonly taskStartTimes = new Map<string, number>();
 
-    constructor(
-        private messageQueue: IMessageQueue<ID>,
-        private taskQueue: TaskQueuesManager<ID>,
-        private taskStore: TaskStore<ID>,
-        cacheProvider: CacheProvider<any>,
-        private generateId: () => ID,
-        private lifecycleProvider?: ITaskLifecycleProvider,
-        private lifecycleConfig?: TaskHandlerLifecycleConfig,
-        private entityProjection?: IEntityProjectionProvider<ID>,
-        private entityProjectionConfig?: EntityProjectionConfig,
-        private flowMiddleware?: FlowMiddleware<ID>
-    ) {
+    private messageQueue: IMessageQueue<ID>;
+    private taskQueue: TaskQueuesManager<ID>;
+    private taskStore: TaskStore<ID>;
+    private generateId: () => ID;
+    private lifecycleProvider?: ITaskLifecycleProvider;
+    private lifecycleConfig?: TaskHandlerLifecycleConfig;
+    private entityProjection?: IEntityProjectionProvider<ID>;
+    private entityProjectionConfig?: EntityProjectionConfig;
+    private flowMiddleware?: FlowMiddleware<ID>;
+    private flowLifecycleProvider?: IFlowLifecycleProvider;
+    private readonly workerId: string;
+
+    constructor(opts: TaskRunnerOptions<ID>) {
+        const {
+            messageQueue,
+            taskQueue,
+            taskStore,
+            cacheProvider,
+            generateId,
+            lifecycleProvider,
+            lifecycleConfig,
+            entityProjection,
+            entityProjectionConfig,
+            flowMiddleware,
+            flowLifecycleProvider,
+            workerId = '',
+        } = opts;
+
+        this.messageQueue = messageQueue;
+        this.taskQueue = taskQueue;
+        this.taskStore = taskStore;
+        this.generateId = generateId;
+        this.lifecycleProvider = lifecycleProvider;
+        this.lifecycleConfig = lifecycleConfig;
+        this.entityProjection = entityProjection;
+        this.entityProjectionConfig = entityProjectionConfig;
+        this.flowMiddleware = flowMiddleware;
+        this.flowLifecycleProvider = flowLifecycleProvider;
+        this.workerId = workerId;
+
         this.logger = new Logger('TaskRunner', LogLevel.INFO);
         this.lockManager = new LockManager(cacheProvider, {
             prefix: "task_lock_",
@@ -137,7 +181,7 @@ export class TaskRunner<ID> {
             }
         }
 
-        const actions = new Actions<ID>(taskRunnerId);
+        const actions = new Actions<ID>(taskRunnerId, this.flowLifecycleProvider, this.workerId);
         const asyncTasks: AsyncTask<ID>[] = [];
         const processedTaskIds = new Set<string>();
 
@@ -184,7 +228,23 @@ export class TaskRunner<ID> {
             this.logger.info(`[${taskRunnerId}] Processing ${taskGroup.tasks.length} tasks of type: ${taskGroup.type}`);
 
             if (executor.multiple) {
-                const batchStore = this.buildBatchLogStore(taskGroup.tasks, taskRunnerId);
+                const batchStore = this.buildBatchLogStore(taskGroup.tasks, this.workerId);
+                const batchTaskContexts = taskGroup.tasks.map(t => this.buildTaskContext(t, this.workerId, taskRunnerId));
+                const batchStartedAt = Date.now();
+
+                // Emit onTaskBatchStarted
+                this.emitLifecycleEvent(
+                    this.lifecycleProvider?.onTaskBatchStarted,
+                    {
+                        task_type: taskGroup.type as string,
+                        queue_id: firstTask.queue_id,
+                        tasks: batchTaskContexts,
+                        worker_id: this.workerId,
+                        consumer_id: taskRunnerId,
+                        started_at: new Date(batchStartedAt),
+                    }
+                );
+
                 await runWithLogContext(batchStore, () =>
                     executor.onTasks(taskGroup.tasks as any[], actions).catch(err => {
                         this.logger.error(`[${taskRunnerId}] executor.onTasks failed: ${err}`);
@@ -195,6 +255,30 @@ export class TaskRunner<ID> {
                         }
                     })
                 );
+
+                // Emit onTaskBatchCompleted
+                const succeeded: string[] = [];
+                const failed: string[] = [];
+                for (const task of taskGroup.tasks) {
+                    const status = actions.getTaskResultStatus(tId(task));
+                    if (status === 'success') succeeded.push(tId(task));
+                    else if (status === 'fail') failed.push(tId(task));
+                    else failed.push(tId(task)); // pending = no explicit call = treat as failed
+                }
+
+                this.emitLifecycleEvent(
+                    this.lifecycleProvider?.onTaskBatchCompleted,
+                    {
+                        task_type: taskGroup.type as string,
+                        queue_id: firstTask.queue_id,
+                        tasks: batchTaskContexts,
+                        worker_id: this.workerId,
+                        consumer_id: taskRunnerId,
+                        succeeded,
+                        failed,
+                        duration_ms: Date.now() - batchStartedAt,
+                    }
+                );
             } else {
                 if (executor.parallel) {
                     const chunks = chunk(taskGroup.tasks, executor.chunkSize) as CronTask<ID>[][];
@@ -202,14 +286,14 @@ export class TaskRunner<ID> {
                     for (const taskChunk of chunks) {
                         // Emit onTaskStarted for all tasks in chunk
                         for (const task of taskChunk) {
-                            this.emitTaskStarted(task, taskRunnerId);
+                            this.emitTaskStarted(task, this.workerId, taskRunnerId);
                         }
 
                         const chunkPromises: Promise<void>[] = [];
                         for (let j = 0; j < taskChunk.length; j++) {
                             const task = taskChunk[j];
                             const taskActions = actions.forkForTask(task);
-                            const logStore = this.buildLogStore(task, taskRunnerId);
+                            const logStore = this.buildLogStore(task, this.workerId);
                             chunkPromises.push(runWithLogContext(logStore, () =>
                                 executor.onTask(task, taskActions).catch(err => {
                                     this.logger.error(`[${taskRunnerId}] executor.onTask failed: ${err}`);
@@ -225,12 +309,12 @@ export class TaskRunner<ID> {
                         for (const task of taskChunk) {
                             const resultStatus = actions.getTaskResultStatus(tId(task));
                             if (resultStatus === 'success') {
-                                this.emitTaskCompleted(task, taskRunnerId, actions.getTaskResult(tId(task)));
+                                this.emitTaskCompleted(task, this.workerId, actions.getTaskResult(tId(task)), taskRunnerId);
                             } else if (resultStatus === 'fail') {
                                 const retryCount = (task.execution_stats?.retry_count as number) || 0;
                                 const maxRetries = task.retries ?? executor.default_retries ?? 0;
                                 const willRetry = retryCount < maxRetries;
-                                this.emitTaskFailed(task, taskRunnerId, new Error('Task failed'), willRetry);
+                                this.emitTaskFailed(task, this.workerId, new Error('Task failed'), willRetry, undefined, taskRunnerId);
                             }
                         }
                     }
@@ -242,10 +326,10 @@ export class TaskRunner<ID> {
 
                         if (!timeoutMs) {
                             // Emit onTaskStarted
-                            this.emitTaskStarted(task, taskRunnerId);
+                            this.emitTaskStarted(task, this.workerId, taskRunnerId);
 
                             const taskActions = actions.forkForTask(task);
-                            const logStore = this.buildLogStore(task, taskRunnerId);
+                            const logStore = this.buildLogStore(task, this.workerId);
                             await runWithLogContext(logStore, () =>
                                 executor.onTask(task, taskActions).catch(err => {
                                     this.logger.error(`[${taskRunnerId}] executor.onTask failed: ${err}`);
@@ -258,22 +342,22 @@ export class TaskRunner<ID> {
                             // Emit completion event based on result
                             const resultStatus = actions.getTaskResultStatus(tId(task));
                             if (resultStatus === 'success') {
-                                this.emitTaskCompleted(task, taskRunnerId, actions.getTaskResult(tId(task)));
+                                this.emitTaskCompleted(task, this.workerId, actions.getTaskResult(tId(task)), taskRunnerId);
                             } else if (resultStatus === 'fail') {
                                 const retryCount = (task.execution_stats?.retry_count as number) || 0;
                                 const maxRetries = task.retries ?? executor.default_retries ?? 0;
                                 const willRetry = retryCount < maxRetries;
-                                this.emitTaskFailed(task, taskRunnerId, new Error('Task failed'), willRetry);
+                                this.emitTaskFailed(task, this.workerId, new Error('Task failed'), willRetry, undefined, taskRunnerId);
                             }
                         } else {
                             // Emit onTaskStarted for async-capable tasks
-                            this.emitTaskStarted(task, taskRunnerId);
+                            this.emitTaskStarted(task, this.workerId, taskRunnerId);
 
                             const startTime = Date.now();
                             let isTimedOut = false;
 
                             const taskActions = actions.forkForTask(task);
-                            const logStore = this.buildLogStore(task, taskRunnerId);
+                            const logStore = this.buildLogStore(task, this.workerId);
 
                             const taskPromise = runWithLogContext(logStore, () =>
                                 executor.onTask(task, taskActions).catch(err => {
@@ -307,12 +391,12 @@ export class TaskRunner<ID> {
                                 // Task completed before timeout - emit lifecycle event
                                 const resultStatus = actions.getTaskResultStatus(tId(task));
                                 if (resultStatus === 'success') {
-                                    this.emitTaskCompleted(task, taskRunnerId, actions.getTaskResult(tId(task)));
+                                    this.emitTaskCompleted(task, this.workerId, actions.getTaskResult(tId(task)), taskRunnerId);
                                 } else if (resultStatus === 'fail') {
                                     const retryCount = (task.execution_stats?.retry_count as number) || 0;
                                     const maxRetries = task.retries ?? executor.default_retries ?? 0;
                                     const willRetry = retryCount < maxRetries;
-                                    this.emitTaskFailed(task, taskRunnerId, new Error('Task failed'), willRetry);
+                                    this.emitTaskFailed(task, this.workerId, new Error('Task failed'), willRetry, undefined, taskRunnerId);
                                 }
                             }
 
@@ -328,10 +412,18 @@ export class TaskRunner<ID> {
                                 } else {
                                     const asyncLifecycleEmitter = this.lifecycleProvider ? {
                                         onCompleted: (t: CronTask<ID>, result?: unknown) => {
-                                            this.emitTaskCompleted(t, taskRunnerId, result);
+                                            this.emitTaskCompleted(t, this.workerId, result, taskRunnerId);
                                         },
                                         onFailed: (t: CronTask<ID>, error: Error, willRetry: boolean) => {
-                                            this.emitTaskFailed(t, taskRunnerId, error, willRetry);
+                                            this.emitTaskFailed(t, this.workerId, error, willRetry, undefined, taskRunnerId);
+                                        },
+                                        onScheduled: (t: CronTask<ID>) => {
+                                            if (this.lifecycleProvider?.onTaskScheduled) {
+                                                this.emitLifecycleEvent(
+                                                    this.lifecycleProvider.onTaskScheduled,
+                                                    this.buildTaskContext(t, this.workerId, taskRunnerId)
+                                                );
+                                            }
                                         }
                                     } : undefined;
                                     const asyncActions = new AsyncActions<ID>(this.messageQueue, this.taskStore, this.taskQueue, actions, task, this.generateId, asyncLifecycleEmitter, this.entityProjection, this.entityProjectionConfig, this.flowMiddleware);
@@ -386,7 +478,7 @@ export class TaskRunner<ID> {
         }
     }
 
-    private buildTaskContext(task: CronTask<ID>, workerId?: string): TaskContext {
+    private buildTaskContext(task: CronTask<ID>, workerId?: string, consumerId?: string): TaskContext {
         const retryCount = (task.execution_stats && typeof task.execution_stats.retry_count === 'number')
             ? task.execution_stats.retry_count
             : 0;
@@ -404,16 +496,17 @@ export class TaskRunner<ID> {
             max_retries: maxRetries,
             scheduled_at: task.created_at || new Date(),
             worker_id: workerId,
+            consumer_id: consumerId,
             log_context: task.metadata?.log_context,
         };
     }
 
-    private emitTaskStarted(task: CronTask<ID>, workerId: string): void {
+    private emitTaskStarted(task: CronTask<ID>, workerId: string, consumerId?: string): void {
         const startedAt = Date.now();
         this.taskStartTimes.set(tId(task), startedAt);
 
         if (this.lifecycleProvider?.onTaskStarted) {
-            const ctx = this.buildTaskContext(task, workerId);
+            const ctx = this.buildTaskContext(task, workerId, consumerId);
             const queuedDuration = startedAt - (task.created_at?.getTime() || startedAt);
             this.emitLifecycleEvent(
                 this.lifecycleProvider.onTaskStarted,
@@ -426,13 +519,13 @@ export class TaskRunner<ID> {
         }
     }
 
-    private emitTaskCompleted(task: CronTask<ID>, workerId: string, result?: unknown): void {
+    private emitTaskCompleted(task: CronTask<ID>, workerId: string, result?: unknown, consumerId?: string): void {
         const completedAt = Date.now();
         const startedAt = this.taskStartTimes.get(tId(task)) || completedAt;
         this.taskStartTimes.delete(tId(task));
 
         if (this.lifecycleProvider?.onTaskCompleted) {
-            const ctx = this.buildTaskContext(task, workerId);
+            const ctx = this.buildTaskContext(task, workerId, consumerId);
             const timing: TaskTiming = {
                 queued_duration_ms: startedAt - (task.created_at?.getTime() || startedAt),
                 processing_duration_ms: completedAt - startedAt,
@@ -445,13 +538,13 @@ export class TaskRunner<ID> {
         }
     }
 
-    private emitTaskFailed(task: CronTask<ID>, workerId: string, error: Error, willRetry: boolean, nextAttemptAt?: Date): void {
+    private emitTaskFailed(task: CronTask<ID>, workerId: string, error: Error, willRetry: boolean, nextAttemptAt?: Date, consumerId?: string): void {
         const completedAt = Date.now();
         const startedAt = this.taskStartTimes.get(tId(task)) || completedAt;
         this.taskStartTimes.delete(tId(task));
 
         if (this.lifecycleProvider?.onTaskFailed) {
-            const ctx = this.buildTaskContext(task, workerId);
+            const ctx = this.buildTaskContext(task, workerId, consumerId);
             const timing: TaskTiming = {
                 queued_duration_ms: startedAt - (task.created_at?.getTime() || startedAt),
                 processing_duration_ms: completedAt - startedAt,

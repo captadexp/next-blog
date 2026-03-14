@@ -54,13 +54,13 @@ describe("T8: executor errors route tasks to failed (not ignored)", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue,
             taskQueue,
             taskStore,
             cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId()
+        });
 
         // Register executor that throws
         const crashExecutor: ISingleTaskNonParallel<string, "crash-task"> = {
@@ -89,13 +89,13 @@ describe("T8: executor errors route tasks to failed (not ignored)", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue,
             taskQueue,
             taskStore,
             cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId()
+        });
 
         const crashExecutor: ISingleTaskParallel<string, "crash-task"> = {
             multiple: false,
@@ -122,13 +122,13 @@ describe("T8: executor errors route tasks to failed (not ignored)", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue,
             taskQueue,
             taskStore,
             cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId()
+        });
 
         const crashExecutor: IMultiTaskExecutor<string, "crash-task"> = {
             multiple: true,
@@ -153,13 +153,13 @@ describe("T8: executor errors route tasks to failed (not ignored)", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue,
             taskQueue,
             taskStore,
             cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId()
+        });
 
         const goodExecutor: ISingleTaskNonParallel<string, "normal-task"> = {
             multiple: false,

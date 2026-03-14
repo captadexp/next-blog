@@ -308,13 +308,13 @@ describe("production readiness fixes", () => {
         const cacheProvider = new MemoryCacheProvider<any>();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue,
             taskQueue,
             taskStore,
             cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId()
+        });
 
         // Create task for unregistered type (no executor will be found)
         const task = {

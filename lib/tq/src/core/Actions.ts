@@ -4,6 +4,7 @@ import {tId} from "../utils/task-id-gen.js";
 import {CronTask} from "../adapters";
 import type {StartFlowInput, FlowMeta} from "./flow/types.js";
 import type {EntityTaskProjection} from "./entity/IEntityProjectionProvider.js";
+import type {IFlowLifecycleProvider} from "./lifecycle.js";
 import type {QueueName} from "@supergrowthai/mq";
 import {randomUUID} from "crypto";
 
@@ -87,8 +88,14 @@ export class Actions<ID = any> implements ExecutorActions<ID> {
     /** Logger for multi-task executors — carries runtime-only context (RFC-005) */
     readonly log: Logger;
 
-    constructor(taskRunnerId: string) {
+    private readonly flowLifecycleProvider?: IFlowLifecycleProvider;
+    /** Process identity (hostname-pid-timestamp) for lifecycle events */
+    private readonly workerId: string;
+
+    constructor(taskRunnerId: string, flowLifecycleProvider?: IFlowLifecycleProvider, workerId: string = '') {
         this.taskRunnerId = taskRunnerId;
+        this.flowLifecycleProvider = flowLifecycleProvider;
+        this.workerId = workerId;
         // Root actions logger has no task-specific context — only ALS runtime context applies
         this.log = logger.child({});
     }
@@ -321,6 +328,29 @@ export class Actions<ID = any> implements ExecutorActions<ID> {
         }
 
         logger.info(`[${this.taskRunnerId}] Started flow ${flowId} with ${steps.length} steps, join: ${config.join.type}`);
+
+        // Emit onFlowStarted lifecycle event
+        if (this.flowLifecycleProvider?.onFlowStarted) {
+            try {
+                const result = this.flowLifecycleProvider.onFlowStarted({
+                    flow_id: flowId,
+                    total_steps: steps.length,
+                    join: config.join,
+                    failure_policy: failurePolicy,
+                    entity: config.entity,
+                    worker_id: this.workerId,
+                    consumer_id: this.taskRunnerId,
+                    started_at: now,
+                    step_types: steps.map(s => s.type),
+                });
+                if (result instanceof Promise) {
+                    result.catch(err => logger.error(`[TQ] Flow lifecycle onFlowStarted error: ${err}`));
+                }
+            } catch (err) {
+                logger.error(`[TQ] Flow lifecycle onFlowStarted error: ${err}`);
+            }
+        }
+
         return flowId;
     }
 

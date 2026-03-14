@@ -12,6 +12,7 @@ interface FlowBarrierState {
     remaining: number;
     status: 'active' | 'aborted' | 'complete';
     results: Map<number, FlowStepResult>;
+    started_at: Date;
 }
 
 export class InMemoryFlowBarrierProvider implements IFlowBarrierProvider {
@@ -24,6 +25,7 @@ export class InMemoryFlowBarrierProvider implements IFlowBarrierProvider {
             remaining: totalSteps,
             status: 'active',
             results: new Map(),
+            started_at: new Date(),
         });
     }
 
@@ -79,5 +81,11 @@ export class InMemoryFlowBarrierProvider implements IFlowBarrierProvider {
         const state = this.barriers.get(flowId);
         if (!state) return false;
         return state.status === 'complete';
+    }
+
+    async getStartedAt(flowId: string): Promise<Date | null> {
+        const state = this.barriers.get(flowId);
+        if (!state) return null;
+        return state.started_at;
     }
 }

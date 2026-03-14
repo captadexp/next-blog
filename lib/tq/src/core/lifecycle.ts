@@ -23,8 +23,10 @@ export interface TaskContext {
     max_retries: number;
     /** When task was scheduled */
     scheduled_at: Date;
-    /** Worker processing this task */
+    /** Worker/server processing this task (hostname-pid-timestamp) */
     worker_id?: string;
+    /** Consumer stream identity (provider:queue or shard ID) — distinguishes M consumers on same worker */
+    consumer_id?: string;
     /** User-provided log correlation context (RFC-005) */
     log_context?: Record<string, string>;
 }
@@ -73,6 +75,28 @@ export interface ITaskLifecycleProvider {
     onTaskCancelled?(ctx: TaskContext & {
         reason: string;
     }): void | Promise<void>;
+
+    /** Called when a multi-task (batch) executor starts processing a task group */
+    onTaskBatchStarted?(ctx: {
+        task_type: string;
+        queue_id: string;
+        tasks: TaskContext[];
+        worker_id: string;
+        consumer_id?: string;
+        started_at: Date;
+    }): void | Promise<void>;
+
+    /** Called when a multi-task (batch) executor finishes processing a task group */
+    onTaskBatchCompleted?(ctx: {
+        task_type: string;
+        queue_id: string;
+        tasks: TaskContext[];
+        worker_id: string;
+        consumer_id?: string;
+        succeeded: string[];   // task_ids that succeeded
+        failed: string[];      // task_ids that failed
+        duration_ms: number;
+    }): void | Promise<void>;
 }
 
 // ============ Worker Lifecycle Types ============
@@ -106,6 +130,32 @@ export interface WorkerStats {
     };
 }
 
+export interface ConsumerInfo {
+    /** Consumer stream identity (provider:queue or shard ID) */
+    consumer_id: string;
+    /** Queue this consumer is bound to */
+    queue_id: string;
+    /** Worker/server hosting this consumer (hostname-pid-timestamp) */
+    worker_id: string;
+    /** When this consumer was first seen (first batch arrival) */
+    started_at: Date;
+}
+
+export interface ConsumerStats {
+    /** Consumer stream identity */
+    consumer_id: string;
+    /** Queue this consumer is bound to */
+    queue_id: string;
+    /** Total tasks processed by this consumer */
+    tasks_processed: number;
+    /** Successfully completed tasks */
+    tasks_succeeded: number;
+    /** Failed tasks */
+    tasks_failed: number;
+    /** When the last task was processed */
+    last_task_at?: Date;
+}
+
 export interface IWorkerLifecycleProvider {
     /** Called when a worker starts consuming tasks */
     onWorkerStarted?(info: WorkerInfo): void | Promise<void>;
@@ -115,6 +165,8 @@ export interface IWorkerLifecycleProvider {
         stats: WorkerStats;
         memory_usage_mb: number;
         cpu_percent?: number;
+        /** Per-consumer stats for SRE dashboard — identifies all active consumers on this worker */
+        active_consumers: ConsumerStats[];
     }): void | Promise<void>;
 
     /** Called when a worker stops */
@@ -136,6 +188,36 @@ export interface IWorkerLifecycleProvider {
         failed: number;
         duration_ms: number;
     }): void | Promise<void>;
+
+    /** Called lazily on first batch arrival for a consumer — use for SRE consumer→worker mapping */
+    onConsumerStarted?(info: ConsumerInfo): void | Promise<void>;
+
+    /** Called when a consumer stops (worker shutdown) */
+    onConsumerStopped?(info: ConsumerInfo & {
+        reason: 'shutdown' | 'error' | 'idle_timeout';
+        stats: ConsumerStats;
+    }): void | Promise<void>;
+}
+
+// ============ Flow Lifecycle Types ============
+
+export interface FlowContext {
+    flow_id: string;
+    total_steps: number;
+    join: { type: string; queue_id: string };
+    failure_policy: 'continue' | 'abort';
+    entity?: { id: string; type: string };
+    /** Worker/server that emitted this event — for SRE dashboard correlation */
+    worker_id: string;
+    /** Consumer stream identity — for multi-consumer-per-worker setups */
+    consumer_id?: string;
+}
+
+export interface IFlowLifecycleProvider {
+    onFlowStarted?(ctx: FlowContext & { started_at: Date; step_types: string[] }): void | Promise<void>;
+    onFlowCompleted?(ctx: FlowContext & { duration_ms: number; steps_succeeded: number; steps_failed: number }): void | Promise<void>;
+    onFlowAborted?(ctx: FlowContext & { duration_ms: number; steps_completed: number; trigger_step_index: number }): void | Promise<void>;
+    onFlowTimedOut?(ctx: FlowContext & { duration_ms: number; steps_completed: number }): void | Promise<void>;
 }
 
 // ============ Configuration Types ============
@@ -162,4 +244,6 @@ export interface TaskHandlerConfig {
     entityProjectionConfig?: EntityProjectionConfig;
     /** RFC-002: Flow middleware for fan-out/fan-in orchestration */
     flowMiddleware?: import("./flow/FlowMiddleware.js").FlowMiddleware<any>;
+    /** Flow lifecycle event provider */
+    flowLifecycleProvider?: IFlowLifecycleProvider;
 }

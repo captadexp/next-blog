@@ -97,10 +97,10 @@ describe("C. Single-task context propagation", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId()
+        });
 
         const executor: ISingleTaskNonParallel<string, "log-task"> = {
             multiple: false,
@@ -137,10 +137,11 @@ describe("C. Single-task context propagation", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId(),
+            workerId: "worker-1"
+        });
 
         const executor: ISingleTaskNonParallel<string, "log-task"> = {
             multiple: false,
@@ -181,10 +182,10 @@ describe("C. Single-task context propagation", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId()
+        });
 
         const executor: ISingleTaskNonParallel<string, "log-task"> = {
             multiple: false,
@@ -225,10 +226,10 @@ describe("D. Parallel execution — ALS isolation", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId()
+        });
 
         const executor: ISingleTaskParallel<string, "log-task"> = {
             multiple: false,
@@ -264,10 +265,10 @@ describe("D. Parallel execution — ALS isolation", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId()
+        });
 
         const executor: ISingleTaskParallel<string, "log-task"> = {
             multiple: false,
@@ -312,10 +313,11 @@ describe("E. Multi-task executor", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId(),
+            workerId: "worker-1"
+        });
 
         const executor: IMultiTaskExecutor<string, "log-task"> = {
             multiple: true,
@@ -349,10 +351,10 @@ describe("E. Multi-task executor", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId()
+        });
 
         const executor: IMultiTaskExecutor<string, "log-task"> = {
             multiple: true,
@@ -387,10 +389,10 @@ describe("F. Child task inheritance", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId()
+        });
 
         const executor: ISingleTaskNonParallel<string, "log-task"> = {
             multiple: false,
@@ -430,10 +432,10 @@ describe("F. Child task inheritance", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId()
+        });
 
         const results_newTasks: CronTask<string>[] = [];
 
@@ -471,10 +473,10 @@ describe("F. Child task inheritance", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId()
+        });
 
         const executor: ISingleTaskNonParallel<string, "log-task"> = {
             multiple: false,
@@ -516,10 +518,10 @@ describe("G. Retry persistence", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId()
+        });
 
         const executor: ISingleTaskNonParallel<string, "log-task"> = {
             multiple: false,
@@ -581,10 +583,10 @@ describe("H. Async handoff", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId()
+        });
 
         const executor: ISingleTaskNonParallel<string, "log-task"> = {
             multiple: false,
@@ -632,11 +634,11 @@ describe("I. Lifecycle events", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId(),
+            generateId: () => databaseAdapter.generateId(),
             lifecycleProvider
-        );
+        });
 
         const executor: ISingleTaskNonParallel<string, "log-task"> = {
             multiple: false,
@@ -671,11 +673,11 @@ describe("I. Lifecycle events", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId(),
+            generateId: () => databaseAdapter.generateId(),
             lifecycleProvider
-        );
+        });
 
         const executor: ISingleTaskNonParallel<string, "log-task"> = {
             multiple: false,
@@ -852,10 +854,11 @@ describe("K. Runtime key collision", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId(),
+            workerId: "real-worker"
+        });
 
         const executor: ISingleTaskNonParallel<string, "log-task"> = {
             multiple: false,
@@ -894,10 +897,10 @@ describe("L. actions.log", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId()
+        });
 
         const executor: ISingleTaskNonParallel<string, "log-task"> = {
             multiple: false,
@@ -935,10 +938,11 @@ describe("L. actions.log", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId(),
+            workerId: "worker-1"
+        });
 
         const executor: IMultiTaskExecutor<string, "log-task"> = {
             multiple: true,
@@ -982,10 +986,10 @@ describe("M. Value sanitization", () => {
         const cacheProvider = new MemoryCacheProvider();
         const taskQueue = new TaskQueuesManager<string>(messageQueue);
         const taskStore = new TaskStore<string>(databaseAdapter);
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId()
-        );
+            generateId: () => databaseAdapter.generateId()
+        });
 
         const executor: ISingleTaskNonParallel<string, "log-task"> = {
             multiple: false,

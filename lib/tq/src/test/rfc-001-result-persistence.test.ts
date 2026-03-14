@@ -223,11 +223,11 @@ describe("RFC-001: Result Persistence", () => {
                 }
             };
 
-            const taskRunner = new TaskRunner<string>(
+            const taskRunner = new TaskRunner<string>({
                 messageQueue, taskQueue, taskStore, cacheProvider,
-                () => databaseAdapter.generateId(),
-                lifecycleProvider
-            );
+                generateId: () => databaseAdapter.generateId(),
+                lifecycleProvider,
+            });
 
             const executor: ISingleTaskNonParallel<string, "rfc001-task"> = {
                 multiple: false,

@@ -24,7 +24,9 @@ import type {
     TaskContext,
     TaskHandlerConfig,
     WorkerInfo,
-    WorkerStats
+    WorkerStats,
+    ConsumerInfo,
+    ConsumerStats
 } from "./lifecycle.js";
 import type {IEntityProjectionProvider, EntityTaskProjection} from "./entity/IEntityProjectionProvider.js";
 import {buildProjection, syncProjections} from "./entity/IEntityProjectionProvider.js";
@@ -68,6 +70,9 @@ export class TaskHandler<ID> {
         ignored: number;
     }>();
 
+    // Consumer tracking (per consumer_id)
+    private readonly consumerStatsMap = new Map<string, ConsumerStats & { started_at: Date }>();
+
     constructor(
         private messageQueue: IMessageQueue<ID>,
         private taskQueuesManager: TaskQueuesManager<ID>,
@@ -85,18 +90,25 @@ export class TaskHandler<ID> {
         this.workerStartedAt = new Date();
 
         this.taskStore = new TaskStore<ID>(databaseAdapter);
-        this.taskRunner = new TaskRunner<ID>(
+        this.taskRunner = new TaskRunner<ID>({
             messageQueue,
-            taskQueuesManager,
-            this.taskStore,
-            this.cacheAdapter,
-            databaseAdapter.generateId.bind(databaseAdapter),
-            this.config.lifecycleProvider,
-            this.config.lifecycle,
-            this.config.entityProjection,
-            this.config.entityProjectionConfig,
-            this.config.flowMiddleware
-        );
+            taskQueue: taskQueuesManager,
+            taskStore: this.taskStore,
+            cacheProvider: this.cacheAdapter,
+            generateId: databaseAdapter.generateId.bind(databaseAdapter),
+            lifecycleProvider: this.config.lifecycleProvider,
+            lifecycleConfig: this.config.lifecycle,
+            entityProjection: this.config.entityProjection,
+            entityProjectionConfig: this.config.entityProjectionConfig,
+            flowMiddleware: this.config.flowMiddleware,
+            flowLifecycleProvider: this.config.flowLifecycleProvider,
+            workerId: this.workerId,
+        });
+
+        // Wire flow lifecycle provider into flow middleware
+        if (this.config.flowMiddleware && this.config.flowLifecycleProvider) {
+            this.config.flowMiddleware.setFlowLifecycleProvider(this.config.flowLifecycleProvider, this.workerId);
+        }
     }
 
     // ============ Lifecycle Event Helpers ============
@@ -528,6 +540,9 @@ export class TaskHandler<ID> {
             const batchStartTime = Date.now();
             const taskTypes = [...new Set(tasks.map(t => t.type))];
 
+            // Lazy consumer registration — emit onConsumerStarted on first batch
+            this.registerConsumerIfNew(id, streamName);
+
             // Emit batch started
             if (this.workerProvider?.onBatchStarted) {
                 this.emitLifecycleEvent(
@@ -623,6 +638,9 @@ export class TaskHandler<ID> {
             const batchDuration = Date.now() - batchStartTime;
             this.updateWorkerStats(successTasks.length, failedTasks.length, batchDuration);
 
+            // Update per-consumer stats
+            this.updateConsumerStats(id, successTasks.length, failedTasks.length);
+
             // Emit batch completed
             if (this.workerProvider?.onBatchCompleted) {
                 this.emitLifecycleEvent(
@@ -663,6 +681,7 @@ export class TaskHandler<ID> {
         // Handle worker shutdown
         abortSignal?.addEventListener('abort', () => {
             this.stopHeartbeat();
+            this.emitAllConsumersStopped('shutdown');
             this.emitWorkerStopped('shutdown');
         });
     }
@@ -703,7 +722,8 @@ export class TaskHandler<ID> {
             {
                 ...this.buildWorkerInfo(),
                 stats: {...this.workerStats},
-                memory_usage_mb: memUsage.heapUsed / 1024 / 1024
+                memory_usage_mb: memUsage.heapUsed / 1024 / 1024,
+                active_consumers: this.getActiveConsumerStats()
             }
         );
     }
@@ -732,6 +752,66 @@ export class TaskHandler<ID> {
 
         if (this.workerStats.tasks_processed > 0) {
             this.workerStats.avg_processing_ms = this.totalProcessingMs / this.workerStats.tasks_processed;
+        }
+    }
+
+    // ============ Consumer Tracking ============
+
+    private registerConsumerIfNew(consumerId: string, queueId: string): void {
+        if (this.consumerStatsMap.has(consumerId)) return;
+
+        const now = new Date();
+        this.consumerStatsMap.set(consumerId, {
+            consumer_id: consumerId,
+            queue_id: queueId,
+            tasks_processed: 0,
+            tasks_succeeded: 0,
+            tasks_failed: 0,
+            started_at: now,
+        });
+
+        if (this.workerProvider?.onConsumerStarted) {
+            this.emitLifecycleEvent(
+                this.workerProvider.onConsumerStarted,
+                {
+                    consumer_id: consumerId,
+                    queue_id: queueId,
+                    worker_id: this.workerId,
+                    started_at: now,
+                }
+            );
+        }
+    }
+
+    private updateConsumerStats(consumerId: string, succeeded: number, failed: number): void {
+        const stats = this.consumerStatsMap.get(consumerId);
+        if (!stats) return;
+        stats.tasks_processed += succeeded + failed;
+        stats.tasks_succeeded += succeeded;
+        stats.tasks_failed += failed;
+        stats.last_task_at = new Date();
+    }
+
+    private getActiveConsumerStats(): ConsumerStats[] {
+        return Array.from(this.consumerStatsMap.values()).map(({started_at, ...stats}) => stats);
+    }
+
+    private emitAllConsumersStopped(reason: 'shutdown' | 'error' | 'idle_timeout'): void {
+        if (!this.workerProvider?.onConsumerStopped) return;
+
+        for (const entry of this.consumerStatsMap.values()) {
+            const {started_at, ...stats} = entry;
+            this.emitLifecycleEvent(
+                this.workerProvider.onConsumerStopped,
+                {
+                    consumer_id: entry.consumer_id,
+                    queue_id: entry.queue_id,
+                    worker_id: this.workerId,
+                    started_at,
+                    reason,
+                    stats,
+                }
+            );
         }
     }
 
@@ -855,6 +935,7 @@ export class TaskHandler<ID> {
             attempt: retryCount + 1,
             max_retries: maxRetries,
             scheduled_at: task.created_at || new Date(),
+            worker_id: this.workerId,
             log_context: task.metadata?.log_context,
         };
     }

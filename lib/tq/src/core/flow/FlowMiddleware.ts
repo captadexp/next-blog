@@ -10,6 +10,7 @@ import type {FlowMeta, FlowResults, FlowStepResult} from "./types.js";
 import type {IFlowBarrierProvider} from "./IFlowBarrierProvider.js";
 import type {EntityTaskProjection} from "../entity/IEntityProjectionProvider.js";
 import {buildProjection} from "../entity/IEntityProjectionProvider.js";
+import type {IFlowLifecycleProvider, FlowContext} from "../lifecycle.js";
 import type {QueueName} from "@supergrowthai/mq";
 
 export interface FlowPostProcessInput<ID> {
@@ -33,10 +34,45 @@ function getFlowMetaRequired(task: CronTask<any>): FlowMeta {
 }
 
 export class FlowMiddleware<ID> {
+    private flowLifecycleProvider?: IFlowLifecycleProvider;
+
     constructor(
         private readonly barrierProvider: IFlowBarrierProvider,
         private readonly generateId: () => ID,
     ) {}
+
+    private workerId: string = '';
+
+    setFlowLifecycleProvider(provider: IFlowLifecycleProvider, workerId: string): void {
+        this.flowLifecycleProvider = provider;
+        this.workerId = workerId;
+    }
+
+    private emitFlowEvent<T>(
+        callback: ((ctx: T) => void | Promise<void>) | undefined,
+        ctx: T
+    ): void {
+        if (!callback) return;
+        try {
+            const result = callback(ctx);
+            if (result instanceof Promise) {
+                result.catch(() => { /* non-fatal */ });
+            }
+        } catch {
+            // non-fatal
+        }
+    }
+
+    private buildFlowContext(flowMeta: FlowMeta): FlowContext {
+        return {
+            flow_id: flowMeta.flow_id,
+            total_steps: flowMeta.total_steps,
+            join: flowMeta.join,
+            failure_policy: flowMeta.failure_policy,
+            entity: flowMeta.entity,
+            worker_id: this.workerId,
+        };
+    }
 
     /**
      * Process completed tasks for flow orchestration.
@@ -127,6 +163,17 @@ export class FlowMiddleware<ID> {
             const joinTask = this.buildJoinTask(flowMeta, flowResults);
             joinTasks.push(joinTask);
 
+            // Emit onFlowTimedOut
+            if (this.flowLifecycleProvider?.onFlowTimedOut) {
+                const startedAt = await this.barrierProvider.getStartedAt(flowId);
+                const durationMs = startedAt ? Date.now() - startedAt.getTime() : 0;
+                this.emitFlowEvent(this.flowLifecycleProvider.onFlowTimedOut, {
+                    ...this.buildFlowContext(flowMeta),
+                    duration_ms: durationMs,
+                    steps_completed: partialResults.length,
+                });
+            }
+
             // Entity projection for timeout
             if (flowMeta.entity) {
                 try {
@@ -182,6 +229,22 @@ export class FlowMiddleware<ID> {
                         const joinTask = this.buildJoinTask(firstFlowMeta, flowResults);
                         joinTasks.push(joinTask);
 
+                        // Emit onFlowAborted
+                        if (this.flowLifecycleProvider?.onFlowAborted) {
+                            const startedAt = await this.barrierProvider.getStartedAt(flowId);
+                            const durationMs = startedAt ? Date.now() - startedAt.getTime() : 0;
+                            const failedEntry = entries.find(e => !e.isSuccess);
+                            const triggerIndex = failedEntry
+                                ? (failedEntry.task.metadata?.flow_meta as unknown as FlowMeta)?.step_index ?? -1
+                                : -1;
+                            this.emitFlowEvent(this.flowLifecycleProvider.onFlowAborted, {
+                                ...this.buildFlowContext(firstFlowMeta),
+                                duration_ms: durationMs,
+                                steps_completed: allResults.length,
+                                trigger_step_index: triggerIndex,
+                            });
+                        }
+
                         // Entity projection for abort
                         if (firstFlowMeta.entity) {
                             try {
@@ -220,6 +283,20 @@ export class FlowMiddleware<ID> {
 
                 const joinTask = this.buildJoinTask(firstFlowMeta, flowResults);
                 joinTasks.push(joinTask);
+
+                // Emit onFlowCompleted
+                if (this.flowLifecycleProvider?.onFlowCompleted) {
+                    const startedAt = await this.barrierProvider.getStartedAt(flowId);
+                    const durationMs = startedAt ? Date.now() - startedAt.getTime() : 0;
+                    const stepsSucceeded = allResults.filter(r => r.status === 'success').length;
+                    const stepsFailed = allResults.filter(r => r.status === 'fail').length;
+                    this.emitFlowEvent(this.flowLifecycleProvider.onFlowCompleted, {
+                        ...this.buildFlowContext(firstFlowMeta),
+                        duration_ms: durationMs,
+                        steps_succeeded: stepsSucceeded,
+                        steps_failed: stepsFailed,
+                    });
+                }
             }
             // remaining > 0: not yet complete, wait for more steps
             // remaining === -1: late arrival (already aborted/completed), ignore

@@ -683,12 +683,11 @@ describe("Phase 5: TaskHandler Integration", () => {
         };
         taskQueue.register(queueName, "step-task", parentExecutor);
 
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId(),
-            undefined, undefined,
-            entityProvider, undefined
-        );
+            generateId: () => databaseAdapter.generateId(),
+            entityProjection: entityProvider,
+        });
 
         const parentTask = makeTask(databaseAdapter.generateId(), "step-task");
         const results = await taskRunner.run("worker-1", [parentTask]);
@@ -759,10 +758,10 @@ describe("Phase 6: End-to-End Pipeline", () => {
         };
         taskQueue.register(queueName, "join-task", joinExecutor);
 
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId(),
-        );
+            generateId: () => databaseAdapter.generateId(),
+        });
 
         // Phase 1: Run parent task
         const parentTask = makeTask(databaseAdapter.generateId(), "step-task");
@@ -798,10 +797,10 @@ describe("Phase 6: End-to-End Pipeline", () => {
         });
         expect(joinTasks.length).toBe(1);
 
-        const joinRunner = new TaskRunner<string>(
+        const joinRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId(),
-        );
+            generateId: () => databaseAdapter.generateId(),
+        });
         await joinRunner.run("worker-join", joinTasks);
 
         // Core contract: verify flow_results payload on join task
@@ -919,10 +918,10 @@ describe("Phase 6: End-to-End Pipeline", () => {
         };
         taskQueue.register(queueName, "step-task-c", stepTaskC);
 
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId(),
-        );
+            generateId: () => databaseAdapter.generateId(),
+        });
 
         // Build first-flow step tasks manually
         const flowId1 = "flow-outer";
@@ -1025,12 +1024,11 @@ describe("Phase 6: End-to-End Pipeline", () => {
         };
         taskQueue.register(queueName, "step-task", parentExecutor);
 
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId(),
-            undefined, undefined,
-            entityProvider, undefined
-        );
+            generateId: () => databaseAdapter.generateId(),
+            entityProjection: entityProvider,
+        });
 
         // Run parent task
         const parentTask = makeTask(databaseAdapter.generateId(), "step-task");
@@ -1240,10 +1238,10 @@ describe("Phase 7: Abort & Timeout", () => {
         };
         taskQueue.register(queueName, "join-task", joinExecutor);
 
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId(),
-        );
+            generateId: () => databaseAdapter.generateId(),
+        });
 
         const flowId = "flow-abort-pipeline";
         await barrierProvider.initBarrier(flowId, 3);
@@ -1547,10 +1545,10 @@ describe("Phase 6b: Continue Policy Failed Step E2E", () => {
         });
         await databaseAdapter.addTasksToScheduled([step0, step1]);
 
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId(),
-        );
+            generateId: () => databaseAdapter.generateId(),
+        });
 
         // Run both step tasks
         const stepResults = await taskRunner.run("worker-1", [step0, step1]);
@@ -1675,13 +1673,11 @@ describe("Phase 8: Async Flow Step Integration", () => {
             },
         };
 
-        const taskRunner = new TaskRunner<string>(
+        const taskRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId(),
-            undefined, undefined,
-            undefined, undefined,
-            flowMiddleware
-        );
+            generateId: () => databaseAdapter.generateId(),
+            flowMiddleware,
+        });
 
         // Run step task — it will timeout (10ms) and go async
         const results = await taskRunner.run("worker-1", [stepTask], asyncTaskManager as any);
@@ -1708,10 +1704,10 @@ describe("Phase 8: Async Flow Step Integration", () => {
         expect(joinTasks.length).toBe(1);
 
         // Run join task and verify payload
-        const joinRunner = new TaskRunner<string>(
+        const joinRunner = new TaskRunner<string>({
             messageQueue, taskQueue, taskStore, cacheProvider,
-            () => databaseAdapter.generateId(),
-        );
+            generateId: () => databaseAdapter.generateId(),
+        });
         await joinRunner.run("worker-join", joinTasks);
 
         expect(joinPayload).not.toBeNull();
