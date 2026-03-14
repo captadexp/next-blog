@@ -41,7 +41,7 @@
     },
     "lib/mq": {
       "name": "@supergrowthai/mq",
-      "version": "1.0.12",
+      "version": "1.0.13",
       "dependencies": {
         "@aws-sdk/client-kinesis": "^3.994.0",
         "bson": "^7.2.0",
@@ -63,7 +63,7 @@
     },
     "lib/oneapi": {
       "name": "@supergrowthai/oneapi",
-      "version": "2.0.11",
+      "version": "2.0.12",
       "dependencies": {
         "iron-session": "^8.0.4",
       },
@@ -97,7 +97,7 @@
     },
     "lib/tq": {
       "name": "@supergrowthai/tq",
-      "version": "1.0.12",
+      "version": "1.0.13",
       "dependencies": {
         "@supergrowthai/mq": "workspace:*",
         "lodash": "^4.17.23",
