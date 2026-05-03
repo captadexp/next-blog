@@ -1,0 +1,60 @@
+{
+  "name": "@supergrowthai/mcp-blog-writer",
+  "version": "1.0.0",
+  "description": "MCP (Model Context Protocol) server for AI-assisted blog writing with authentication",
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "scripts": {
+    "clean": "rimraf dist",
+    "dev": "vite build --watch",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "blog",
+    "ai",
+    "content-generation"
+  ],
+  "files": [
+    "dist",
+    "package.json"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
+    },
+    "./auth": {
+      "types": "./dist/auth/mcp-auth.d.ts",
+      "import": "./dist/auth/mcp-auth.js"
+    },
+    "./tools": {
+      "types": "./dist/tools/index.d.ts",
+      "import": "./dist/tools/index.js"
+    }
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.91.1",
+    "@supergrowthai/next-blog-types": "file:../packages/types",
+    "@supergrowthai/oneapi": "file:../lib/oneapi",
+    "hono": "^4.12.15"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^2.1.8"
+  }
+}
